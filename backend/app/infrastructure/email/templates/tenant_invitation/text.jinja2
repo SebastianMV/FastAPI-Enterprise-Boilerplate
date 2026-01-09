@@ -1,0 +1,28 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+📨 {{ t('email.tenant_invitation.title') }}
+===========================================
+
+{{ t('email.tenant_invitation.greeting', name=recipient_name) }}
+
+{{ t('email.tenant_invitation.body', inviter_name=inviter_name|default('Someone'), tenant_name=tenant_name) }}
+
+{{ t('email.tenant_invitation.details') }}:
+🏢 {{ t('email.tenant_invitation.organization') }}: {{ tenant_name }}
+👤 {{ t('email.tenant_invitation.invited_by') }}: {{ inviter_name|default('N/A') }}
+{% if role %}
+🔑 {{ t('email.tenant_invitation.role') }}: {{ role }}
+{% endif %}
+
+{{ t('email.tenant_invitation.what_happens') }}
+
+{% if invitation_url is defined and invitation_url %}
+{{ t('email.tenant_invitation.accept_button') }}:
+{{ invitation_url }}
+
+{{ t('email.tenant_invitation.button_note') }}
+{% endif %}
+
+{{ t('email.tenant_invitation.ignore_note') }}
+{% endblock %}

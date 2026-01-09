@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# Except these files
+!.gitignore
+
+# This ensures the directory exists but stays empty
+# Storage directories are created at runtime

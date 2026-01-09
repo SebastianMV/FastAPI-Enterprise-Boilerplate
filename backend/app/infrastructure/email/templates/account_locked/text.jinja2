@@ -1,0 +1,28 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🔒 {{ t('email.account_locked.title') }}
+========================================
+
+{{ t('email.account_locked.greeting', name=recipient_name) }}
+
+{{ t('email.account_locked.body') }}
+
+{% if reason %}
+{{ t('email.account_locked.reason_title') }}:
+{{ reason }}
+{% endif %}
+
+{{ t('email.account_locked.what_to_do') }}
+
+* {{ t('email.account_locked.action_1') }}
+* {{ t('email.account_locked.action_2') }}
+* {{ t('email.account_locked.action_3') }}
+
+{% if unlock_url is defined and unlock_url %}
+{{ t('email.account_locked.unlock_button') }}:
+{{ unlock_url }}
+{% endif %}
+
+{{ t('email.account_locked.contact_support') }}
+{% endblock %}

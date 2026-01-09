@@ -1,0 +1,27 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🎉 {{ t('email.welcome.title') }}
+================================
+
+{{ t('email.welcome.greeting', name=recipient_name) }}
+
+{{ t('email.welcome.body', app_name=app_name) }}
+
+{{ t('email.welcome.verified_message') }}
+
+{{ t('email.welcome.getting_started') }}
+----------------------------------------
+
+* {{ t('email.welcome.tip_1') }}
+* {{ t('email.welcome.tip_2') }}
+* {{ t('email.welcome.tip_3') }}
+
+{{ t('email.welcome.need_help') }}
+{{ t('email.welcome.help_text') }}
+
+{% if login_url is defined and login_url %}
+{{ t('email.welcome.login_button') }}:
+{{ login_url }}
+{% endif %}
+{% endblock %}

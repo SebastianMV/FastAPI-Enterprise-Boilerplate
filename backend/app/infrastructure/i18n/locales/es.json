@@ -1,0 +1,239 @@
+{
+  "common": {
+    "success": "Operación completada exitosamente",
+    "error": "Ocurrió un error",
+    "not_found": "Recurso no encontrado",
+    "forbidden": "Acceso denegado",
+    "unauthorized": "Se requiere autenticación",
+    "bad_request": "Solicitud inválida",
+    "internal_error": "Error interno del servidor",
+    "validation_error": "Error de validación",
+    "created": "Recurso creado exitosamente",
+    "updated": "Recurso actualizado exitosamente",
+    "deleted": "Recurso eliminado exitosamente"
+  },
+  "auth": {
+    "login_success": "Inicio de sesión exitoso",
+    "login_failed": "Correo electrónico o contraseña inválidos",
+    "logout_success": "Sesión cerrada exitosamente",
+    "token_expired": "Sesión expirada. Por favor inicie sesión nuevamente",
+    "token_invalid": "Token de autenticación inválido",
+    "refresh_success": "Token renovado exitosamente",
+    "password_changed": "Contraseña cambiada exitosamente",
+    "password_reset_sent": "Correo de restablecimiento de contraseña enviado",
+    "password_reset_success": "Contraseña restablecida exitosamente",
+    "account_inactive": "Su cuenta está inactiva. Por favor contacte a soporte",
+    "account_locked": "Su cuenta ha sido bloqueada debido a demasiados intentos fallidos de inicio de sesión",
+    "mfa": {
+      "required": "Se requiere autenticación de dos factores",
+      "enabled": "Autenticación de dos factores habilitada exitosamente",
+      "disabled": "Autenticación de dos factores deshabilitada",
+      "invalid_code": "Código de verificación inválido",
+      "code_expired": "El código de verificación ha expirado",
+      "setup_required": "Por favor configure la autenticación de dos factores"
+    },
+    "api_key": {
+      "created": "Clave API creada exitosamente",
+      "revoked": "Clave API revocada",
+      "invalid": "Clave API inválida",
+      "expired": "La clave API ha expirado"
+    }
+  },
+  "email": {
+    "common": {
+      "sent_by": "Este correo fue enviado por {app_name}",
+      "questions": "¿Preguntas? Contáctenos en",
+      "all_rights_reserved": "Todos los derechos reservados."
+    },
+    "registration": {
+      "subject": "Bienvenido a {app_name} - Cuenta Creada",
+      "preheader": "Su cuenta de {app_name} ha sido creada exitosamente",
+      "title": "Cuenta Creada Exitosamente",
+      "greeting": "Hola {name},",
+      "body": "¡Gracias por registrarse en {app_name}! Su cuenta ha sido creada exitosamente.",
+      "account_email": "Correo de la Cuenta",
+      "next_steps": "Estos son sus próximos pasos:",
+      "step_1": "Verifique su correo electrónico haciendo clic en el botón a continuación",
+      "step_2": "Complete la información de su perfil",
+      "step_3": "Active la autenticación de dos factores para mayor seguridad",
+      "verify_button": "Verificar Correo Electrónico",
+      "button_note": "Este enlace de verificación expirará en 24 horas.",
+      "security_note": "Si usted no creó esta cuenta, por favor ignore este correo."
+    },
+    "email_verification": {
+      "subject": "Verifique su Correo Electrónico",
+      "preheader": "Por favor verifique su correo para activar su cuenta",
+      "title": "Verifique su Correo Electrónico",
+      "greeting": "Hola {name},",
+      "body": "Por favor haga clic en el botón a continuación para verificar su correo electrónico y activar su cuenta.",
+      "expires": "Este enlace de verificación expirará en {hours} horas.",
+      "verify_button": "Verificar Correo Electrónico",
+      "link_note": "Si el botón no funciona, copie y pegue el siguiente enlace en su navegador:",
+      "link_label": "Enlace de Verificación",
+      "ignore_note": "Si usted no creó una cuenta, por favor ignore este correo."
+    },
+    "password_reset": {
+      "subject": "Restablecer su Contraseña",
+      "preheader": "Usted solicitó restablecer su contraseña",
+      "title": "Restablecer su Contraseña",
+      "greeting": "Hola {name},",
+      "body": "Recibimos una solicitud para restablecer su contraseña. Haga clic en el botón a continuación para crear una nueva contraseña.",
+      "warning_title": "Importante",
+      "expires": "Este enlace de restablecimiento expirará en {hours} hora(s).",
+      "reset_button": "Restablecer Contraseña",
+      "link_note": "Si el botón no funciona, copie y pegue el siguiente enlace en su navegador:",
+      "link_label": "Enlace de Restablecimiento",
+      "security_warning": "Nunca comparta este enlace con nadie. Nuestro equipo nunca le pedirá su contraseña.",
+      "ignore_note": "Si usted no solicitó restablecer su contraseña, por favor ignore este correo. Su contraseña permanecerá sin cambios."
+    },
+    "password_changed": {
+      "subject": "Su Contraseña Ha Sido Cambiada",
+      "preheader": "Su contraseña fue cambiada exitosamente",
+      "title": "Contraseña Cambiada Exitosamente",
+      "greeting": "Hola {name},",
+      "body": "Esta es una confirmación de que su contraseña ha sido cambiada exitosamente.",
+      "details": "Detalles del Cambio",
+      "ip_address": "Dirección IP",
+      "device": "Dispositivo",
+      "time": "Hora",
+      "not_you_title": "¿No fue usted?",
+      "not_you_body": "Si usted no realizó este cambio, por favor asegure su cuenta inmediatamente restableciendo su contraseña y activando la autenticación de dos factores.",
+      "secure_account_button": "Asegurar Mi Cuenta"
+    },
+    "welcome": {
+      "subject": "¡Bienvenido a {app_name}!",
+      "preheader": "¡Bienvenido a bordo! Su cuenta ya está verificada.",
+      "title": "¡Bienvenido a {app_name}!",
+      "greeting": "Hola {name},",
+      "body": "Gracias por verificar su correo. ¡Bienvenido a {app_name}!",
+      "verified_message": "Su cuenta ahora está completamente activada y lista para usar.",
+      "getting_started": "Primeros Pasos",
+      "tip_1": "Explore su panel de control para ver todas las funciones disponibles",
+      "tip_2": "Complete su perfil para personalizar su experiencia",
+      "tip_3": "Active la autenticación de dos factores para mayor seguridad",
+      "need_help": "¿Necesita Ayuda?",
+      "help_text": "Nuestro equipo de soporte está aquí para ayudarle a aprovechar al máximo la plataforma.",
+      "login_button": "Ir al Panel de Control"
+    },
+    "login_new_device": {
+      "subject": "Nuevo Inicio de Sesión Detectado",
+      "preheader": "Un nuevo dispositivo inició sesión en su cuenta",
+      "title": "Nuevo Inicio de Sesión Detectado",
+      "greeting": "Hola {name},",
+      "body": "Detectamos un inicio de sesión en su cuenta desde un nuevo dispositivo o ubicación.",
+      "details": "Detalles del Inicio de Sesión",
+      "device": "Dispositivo",
+      "location": "Ubicación",
+      "ip_address": "Dirección IP",
+      "time": "Hora",
+      "if_you": "Si fue usted, puede ignorar este correo de forma segura.",
+      "not_you_title": "¿No fue usted?",
+      "not_you_body": "Si no reconoce esta actividad, por favor asegure su cuenta inmediatamente.",
+      "secure_account_button": "Asegurar Mi Cuenta"
+    },
+    "account_locked": {
+      "subject": "Cuenta Bloqueada - Acción Requerida",
+      "preheader": "Su cuenta ha sido bloqueada temporalmente",
+      "title": "Cuenta Bloqueada",
+      "greeting": "Hola {name},",
+      "body": "Su cuenta ha sido bloqueada temporalmente por razones de seguridad.",
+      "reason_title": "Razón",
+      "what_to_do": "Lo que puede hacer:",
+      "action_1": "Esperar a que expire el período de bloqueo (generalmente 30 minutos)",
+      "action_2": "Usar el enlace de desbloqueo a continuación si está disponible",
+      "action_3": "Contactar a soporte si necesita asistencia inmediata",
+      "unlock_button": "Desbloquear Cuenta",
+      "contact_support": "Si cree que esto es un error, por favor contacte a nuestro equipo de soporte."
+    },
+    "mfa_enabled": {
+      "subject": "Autenticación de Dos Factores Activada",
+      "preheader": "Su cuenta ahora es más segura",
+      "title": "Autenticación de Dos Factores Activada",
+      "greeting": "Hola {name},",
+      "body": "La autenticación de dos factores ha sido activada exitosamente en su cuenta.",
+      "status": "Estado MFA: Activado",
+      "status_message": "Su cuenta ahora está protegida con una capa adicional de seguridad.",
+      "what_this_means": "Qué Significa Esto",
+      "benefit_1": "Necesitará su aplicación de autenticación cada vez que inicie sesión",
+      "benefit_2": "Incluso si alguien conoce su contraseña, no podrá acceder a su cuenta",
+      "benefit_3": "Tiene códigos de respaldo en caso de perder acceso a su dispositivo",
+      "backup_codes_title": "Importante: Guarde sus Códigos de Respaldo",
+      "backup_codes_message": "Asegúrese de guardar sus códigos de respaldo en un lugar seguro. Los necesitará si pierde acceso a su aplicación de autenticación.",
+      "not_you": "Si usted no activó la autenticación de dos factores, por favor contacte a soporte inmediatamente."
+    },
+    "mfa_disabled": {
+      "subject": "Autenticación de Dos Factores Desactivada",
+      "preheader": "La autenticación de dos factores ha sido removida de su cuenta",
+      "title": "Autenticación de Dos Factores Desactivada",
+      "greeting": "Hola {name},",
+      "body": "La autenticación de dos factores ha sido desactivada en su cuenta.",
+      "warning": "Su cuenta ahora es menos segura. Recomendamos reactivar MFA.",
+      "not_you": "Si usted no desactivó la autenticación de dos factores, por favor asegure su cuenta inmediatamente."
+    },
+    "tenant_invitation": {
+      "subject": "Ha Sido Invitado a Unirse a {tenant_name}",
+      "preheader": "Tiene una invitación pendiente para unirse a {tenant_name}",
+      "title": "¡Está Invitado!",
+      "greeting": "Hola {name},",
+      "body": "{inviter_name} le ha invitado a unirse a {tenant_name}.",
+      "details": "Detalles de la Invitación",
+      "organization": "Organización",
+      "invited_by": "Invitado Por",
+      "role": "Su Rol",
+      "what_happens": "Haga clic en el botón a continuación para aceptar la invitación y unirse al equipo.",
+      "accept_button": "Aceptar Invitación",
+      "button_note": "Este enlace de invitación es único para usted.",
+      "ignore_note": "Si no desea unirse, simplemente ignore este correo."
+    }
+  },
+  "users": {
+    "created": "Usuario creado exitosamente",
+    "updated": "Usuario actualizado exitosamente",
+    "deleted": "Usuario eliminado exitosamente",
+    "not_found": "Usuario no encontrado",
+    "email_exists": "Ya existe un usuario con este correo electrónico",
+    "activated": "Cuenta de usuario activada",
+    "deactivated": "Cuenta de usuario desactivada",
+    "role_assigned": "Rol asignado exitosamente",
+    "role_removed": "Rol removido exitosamente",
+    "welcome": "¡Bienvenido, {name}!"
+  },
+  "tenants": {
+    "created": "Inquilino creado exitosamente",
+    "updated": "Inquilino actualizado exitosamente",
+    "deleted": "Inquilino eliminado exitosamente",
+    "not_found": "Inquilino no encontrado",
+    "suspended": "El inquilino ha sido suspendido",
+    "activated": "Inquilino activado",
+    "slug_exists": "Ya existe un inquilino con este identificador"
+  },
+  "roles": {
+    "created": "Rol creado exitosamente",
+    "updated": "Rol actualizado exitosamente",
+    "deleted": "Rol eliminado exitosamente",
+    "not_found": "Rol no encontrado",
+    "in_use": "No se puede eliminar un rol asignado a usuarios"
+  },
+  "permissions": {
+    "denied": "No tiene permiso para realizar esta acción",
+    "granted": "Permiso otorgado",
+    "revoked": "Permiso revocado"
+  },
+  "validation": {
+    "required": "Este campo es requerido",
+    "email_invalid": "Formato de correo electrónico inválido",
+    "password_weak": "La contraseña debe tener al menos 8 caracteres con mayúsculas, minúsculas y números",
+    "password_mismatch": "Las contraseñas no coinciden",
+    "min_length": "Debe tener al menos {min} caracteres",
+    "max_length": "Debe tener como máximo {max} caracteres",
+    "invalid_uuid": "Formato UUID inválido",
+    "invalid_date": "Formato de fecha inválido"
+  },
+  "rate_limit": {
+    "exceeded": "Demasiadas solicitudes. Por favor intente de nuevo en {seconds} segundos"
+  },
+  "audit": {
+    "action_logged": "Acción registrada exitosamente",
+    "export_complete": "Exportación de registro de auditoría completada"
+  }
+}

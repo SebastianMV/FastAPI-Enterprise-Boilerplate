@@ -1,0 +1,41 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.password_changed.preheader') }}{% endblock %}
+
+{% block content %}
+<h1>🔐 {{ t('email.password_changed.title') }}</h1>
+
+<p>{{ t('email.password_changed.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.password_changed.body') }}</p>
+
+{% if ip_address or user_agent %}
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.password_changed.details') }}:</strong><br>
+        {% if ip_address %}
+        • {{ t('email.password_changed.ip_address') }}: {{ ip_address }}<br>
+        {% endif %}
+        {% if user_agent %}
+        • {{ t('email.password_changed.device') }}: {{ user_agent }}<br>
+        {% endif %}
+        • {{ t('email.password_changed.time') }}: {{ now|default('N/A') }}
+    </p>
+</div>
+{% endif %}
+
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>⚠️ {{ t('email.password_changed.not_you_title') }}</strong><br>
+        {{ t('email.password_changed.not_you_body') }}
+    </p>
+</div>
+{% endblock %}
+
+{% block cta %}
+{% if security_url is defined and security_url %}
+<div class="cta-container">
+    <a href="{{ security_url }}" class="cta-button danger">{{ t('email.password_changed.secure_account_button') }}</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.email_verification.preheader') }}{% endblock %}
+
+{% block content %}
+<h1>{{ t('email.email_verification.title') }}</h1>
+
+<p>{{ t('email.email_verification.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.email_verification.body') }}</p>
+
+<p>{{ t('email.email_verification.expires', hours=expires_in_hours|default(24)) }}</p>
+{% endblock %}
+
+{% block cta %}
+<div class="cta-container">
+    <a href="{{ verification_url }}" class="cta-button success">{{ t('email.email_verification.verify_button') }}</a>
+</div>
+
+<p style="text-align: center; color: #6b7280; font-size: 14px;">
+    {{ t('email.email_verification.link_note') }}
+</p>
+
+<div class="info-box">
+    <p style="margin: 0; word-break: break-all; font-size: 12px;">
+        <strong>{{ t('email.email_verification.link_label') }}:</strong><br>
+        <a href="{{ verification_url }}" style="color: #2563eb;">{{ verification_url }}</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block footer_extra %}
+<p style="color: #9ca3af; font-size: 12px;">
+    {{ t('email.email_verification.ignore_note') }}
+</p>
+{% endblock %}

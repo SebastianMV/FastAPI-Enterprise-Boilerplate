@@ -1,0 +1,34 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🔔 {{ t('email.login_new_device.title') }}
+==========================================
+
+{{ t('email.login_new_device.greeting', name=recipient_name) }}
+
+{{ t('email.login_new_device.body') }}
+
+{{ t('email.login_new_device.details') }}:
+{% if device_info %}
+📱 {{ t('email.login_new_device.device') }}: {{ device_info }}
+{% endif %}
+{% if location %}
+📍 {{ t('email.login_new_device.location') }}: {{ location }}
+{% endif %}
+{% if ip_address %}
+🌐 {{ t('email.login_new_device.ip_address') }}: {{ ip_address }}
+{% endif %}
+{% if login_time %}
+🕐 {{ t('email.login_new_device.time') }}: {{ login_time }}
+{% endif %}
+
+{{ t('email.login_new_device.if_you') }}
+
+⚠️ {{ t('email.login_new_device.not_you_title') }}
+{{ t('email.login_new_device.not_you_body') }}
+
+{% if security_url is defined and security_url %}
+{{ t('email.login_new_device.secure_account_button') }}:
+{{ security_url }}
+{% endif %}
+{% endblock %}

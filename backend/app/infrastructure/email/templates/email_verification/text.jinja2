@@ -1,0 +1,19 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+{{ t('email.email_verification.title') }}
+=========================================
+
+{{ t('email.email_verification.greeting', name=recipient_name) }}
+
+{{ t('email.email_verification.body') }}
+
+{{ t('email.email_verification.expires', hours=expires_in_hours|default(24)) }}
+
+{{ t('email.email_verification.verify_button') }}:
+{{ verification_url }}
+
+{{ t('email.email_verification.link_note') }}
+
+{{ t('email.email_verification.ignore_note') }}
+{% endblock %}

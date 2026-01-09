@@ -1,0 +1,239 @@
+{
+  "common": {
+    "success": "Opération terminée avec succès",
+    "error": "Une erreur s'est produite",
+    "not_found": "Ressource non trouvée",
+    "forbidden": "Accès refusé",
+    "unauthorized": "Authentification requise",
+    "bad_request": "Requête invalide",
+    "internal_error": "Erreur interne du serveur",
+    "validation_error": "Erreur de validation",
+    "created": "Ressource créée avec succès",
+    "updated": "Ressource mise à jour avec succès",
+    "deleted": "Ressource supprimée avec succès"
+  },
+  "auth": {
+    "login_success": "Connexion réussie",
+    "login_failed": "Email ou mot de passe invalide",
+    "logout_success": "Déconnexion réussie",
+    "token_expired": "Session expirée. Veuillez vous reconnecter",
+    "token_invalid": "Jeton d'authentification invalide",
+    "refresh_success": "Jeton actualisé avec succès",
+    "password_changed": "Mot de passe modifié avec succès",
+    "password_reset_sent": "Email de réinitialisation du mot de passe envoyé",
+    "password_reset_success": "Réinitialisation du mot de passe réussie",
+    "account_inactive": "Votre compte est inactif. Veuillez contacter le support",
+    "account_locked": "Votre compte a été verrouillé en raison de trop nombreuses tentatives de connexion échouées",
+    "mfa": {
+      "required": "L'authentification à deux facteurs est requise",
+      "enabled": "Authentification à deux facteurs activée avec succès",
+      "disabled": "Authentification à deux facteurs désactivée",
+      "invalid_code": "Code de vérification invalide",
+      "code_expired": "Le code de vérification a expiré",
+      "setup_required": "Veuillez configurer l'authentification à deux facteurs"
+    },
+    "api_key": {
+      "created": "Clé API créée avec succès",
+      "revoked": "Clé API révoquée",
+      "invalid": "Clé API invalide",
+      "expired": "La clé API a expiré"
+    }
+  },
+  "email": {
+    "common": {
+      "sent_by": "Cet email a été envoyé par {app_name}",
+      "questions": "Des questions ? Contactez-nous à",
+      "all_rights_reserved": "Tous droits réservés."
+    },
+    "registration": {
+      "subject": "Bienvenue sur {app_name} - Compte créé",
+      "preheader": "Votre compte {app_name} a été créé avec succès",
+      "title": "Compte créé avec succès",
+      "greeting": "Bonjour {name},",
+      "body": "Merci de vous être inscrit sur {app_name} ! Votre compte a été créé avec succès.",
+      "account_email": "Email du compte",
+      "next_steps": "Voici vos prochaines étapes :",
+      "step_1": "Vérifiez votre adresse email en cliquant sur le bouton ci-dessous",
+      "step_2": "Complétez les informations de votre profil",
+      "step_3": "Activez l'authentification à deux facteurs pour plus de sécurité",
+      "verify_button": "Vérifier l'adresse email",
+      "button_note": "Ce lien de vérification expire dans 24 heures.",
+      "security_note": "Si vous n'avez pas créé ce compte, veuillez ignorer cet email."
+    },
+    "email_verification": {
+      "subject": "Vérifiez votre adresse email",
+      "preheader": "Veuillez vérifier votre email pour activer votre compte",
+      "title": "Vérifiez votre adresse email",
+      "greeting": "Bonjour {name},",
+      "body": "Veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email et activer votre compte.",
+      "expires": "Ce lien de vérification expire dans {hours} heures.",
+      "verify_button": "Vérifier l'adresse email",
+      "link_note": "Si le bouton ne fonctionne pas, copiez et collez le lien ci-dessous dans votre navigateur :",
+      "link_label": "Lien de vérification",
+      "ignore_note": "Si vous n'avez pas créé de compte, veuillez ignorer cet email."
+    },
+    "password_reset": {
+      "subject": "Réinitialisez votre mot de passe",
+      "preheader": "Vous avez demandé à réinitialiser votre mot de passe",
+      "title": "Réinitialisez votre mot de passe",
+      "greeting": "Bonjour {name},",
+      "body": "Nous avons reçu une demande de réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.",
+      "warning_title": "Important",
+      "expires": "Ce lien de réinitialisation expire dans {hours} heure(s).",
+      "reset_button": "Réinitialiser le mot de passe",
+      "link_note": "Si le bouton ne fonctionne pas, copiez et collez le lien ci-dessous dans votre navigateur :",
+      "link_label": "Lien de réinitialisation",
+      "security_warning": "Ne partagez jamais ce lien. Notre équipe ne vous demandera jamais votre mot de passe.",
+      "ignore_note": "Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignorer cet email. Votre mot de passe restera inchangé."
+    },
+    "password_changed": {
+      "subject": "Votre mot de passe a été modifié",
+      "preheader": "Votre mot de passe a été modifié avec succès",
+      "title": "Mot de passe modifié avec succès",
+      "greeting": "Bonjour {name},",
+      "body": "Ceci est une confirmation que votre mot de passe a été modifié avec succès.",
+      "details": "Détails de la modification",
+      "ip_address": "Adresse IP",
+      "device": "Appareil",
+      "time": "Heure",
+      "not_you_title": "Ce n'était pas vous ?",
+      "not_you_body": "Si vous n'avez pas effectué cette modification, veuillez sécuriser votre compte immédiatement en réinitialisant votre mot de passe et en activant l'authentification à deux facteurs.",
+      "secure_account_button": "Sécuriser mon compte"
+    },
+    "welcome": {
+      "subject": "Bienvenue sur {app_name} !",
+      "preheader": "Bienvenue ! Votre compte est maintenant vérifié.",
+      "title": "Bienvenue sur {app_name} !",
+      "greeting": "Bonjour {name},",
+      "body": "Merci d'avoir vérifié votre email. Bienvenue sur {app_name} !",
+      "verified_message": "Votre compte est maintenant entièrement activé et prêt à l'emploi.",
+      "getting_started": "Pour commencer",
+      "tip_1": "Explorez votre tableau de bord pour voir toutes les fonctionnalités disponibles",
+      "tip_2": "Complétez votre profil pour personnaliser votre expérience",
+      "tip_3": "Activez l'authentification à deux facteurs pour une sécurité renforcée",
+      "need_help": "Besoin d'aide ?",
+      "help_text": "Notre équipe de support est là pour vous aider à tirer le meilleur parti de la plateforme.",
+      "login_button": "Accéder au tableau de bord"
+    },
+    "login_new_device": {
+      "subject": "Nouvelle connexion détectée",
+      "preheader": "Un nouvel appareil s'est connecté à votre compte",
+      "title": "Nouvelle connexion détectée",
+      "greeting": "Bonjour {name},",
+      "body": "Nous avons détecté une connexion à votre compte depuis un nouvel appareil ou emplacement.",
+      "details": "Détails de connexion",
+      "device": "Appareil",
+      "location": "Emplacement",
+      "ip_address": "Adresse IP",
+      "time": "Heure",
+      "if_you": "Si c'était vous, vous pouvez ignorer cet email en toute sécurité.",
+      "not_you_title": "Ce n'était pas vous ?",
+      "not_you_body": "Si vous ne reconnaissez pas cette activité, veuillez sécuriser votre compte immédiatement.",
+      "secure_account_button": "Sécuriser mon compte"
+    },
+    "account_locked": {
+      "subject": "Compte verrouillé - Action requise",
+      "preheader": "Votre compte a été temporairement verrouillé",
+      "title": "Compte verrouillé",
+      "greeting": "Bonjour {name},",
+      "body": "Votre compte a été temporairement verrouillé pour des raisons de sécurité.",
+      "reason_title": "Raison",
+      "what_to_do": "Ce que vous pouvez faire :",
+      "action_1": "Attendez que la période de verrouillage expire (généralement 30 minutes)",
+      "action_2": "Utilisez le lien de déverrouillage ci-dessous si disponible",
+      "action_3": "Contactez le support si vous avez besoin d'une assistance immédiate",
+      "unlock_button": "Déverrouiller le compte",
+      "contact_support": "Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre équipe de support."
+    },
+    "mfa_enabled": {
+      "subject": "Authentification à deux facteurs activée",
+      "preheader": "Votre compte est maintenant plus sécurisé",
+      "title": "Authentification à deux facteurs activée",
+      "greeting": "Bonjour {name},",
+      "body": "L'authentification à deux facteurs a été activée avec succès sur votre compte.",
+      "status": "Statut MFA : Activé",
+      "status_message": "Votre compte est maintenant protégé par une couche de sécurité supplémentaire.",
+      "what_this_means": "Ce que cela signifie",
+      "benefit_1": "Vous aurez besoin de votre application d'authentification à chaque connexion",
+      "benefit_2": "Même si quelqu'un connaît votre mot de passe, il ne peut pas accéder à votre compte",
+      "benefit_3": "Vous avez des codes de secours en cas de perte d'accès à votre appareil",
+      "backup_codes_title": "Important : Gardez vos codes de secours en sécurité",
+      "backup_codes_message": "Assurez-vous de stocker vos codes de secours dans un endroit sûr. Vous en aurez besoin si vous perdez l'accès à votre application d'authentification.",
+      "not_you": "Si vous n'avez pas activé l'authentification à deux facteurs, veuillez contacter le support immédiatement."
+    },
+    "mfa_disabled": {
+      "subject": "Authentification à deux facteurs désactivée",
+      "preheader": "L'authentification à deux facteurs a été supprimée de votre compte",
+      "title": "Authentification à deux facteurs désactivée",
+      "greeting": "Bonjour {name},",
+      "body": "L'authentification à deux facteurs a été désactivée sur votre compte.",
+      "warning": "Votre compte est maintenant moins sécurisé. Nous vous recommandons de réactiver MFA.",
+      "not_you": "Si vous n'avez pas désactivé l'authentification à deux facteurs, veuillez sécuriser votre compte immédiatement."
+    },
+    "tenant_invitation": {
+      "subject": "Vous avez été invité à rejoindre {tenant_name}",
+      "preheader": "Vous avez une invitation en attente pour rejoindre {tenant_name}",
+      "title": "Vous êtes invité !",
+      "greeting": "Bonjour {name},",
+      "body": "{inviter_name} vous a invité à rejoindre {tenant_name}.",
+      "details": "Détails de l'invitation",
+      "organization": "Organisation",
+      "invited_by": "Invité par",
+      "role": "Votre rôle",
+      "what_happens": "Cliquez sur le bouton ci-dessous pour accepter l'invitation et rejoindre l'équipe.",
+      "accept_button": "Accepter l'invitation",
+      "button_note": "Ce lien d'invitation vous est unique.",
+      "ignore_note": "Si vous ne souhaitez pas rejoindre, ignorez simplement cet email."
+    }
+  },
+  "users": {
+    "created": "Utilisateur créé avec succès",
+    "updated": "Utilisateur mis à jour avec succès",
+    "deleted": "Utilisateur supprimé avec succès",
+    "not_found": "Utilisateur non trouvé",
+    "email_exists": "Un utilisateur avec cet email existe déjà",
+    "activated": "Compte utilisateur activé",
+    "deactivated": "Compte utilisateur désactivé",
+    "role_assigned": "Rôle attribué avec succès",
+    "role_removed": "Rôle retiré avec succès",
+    "welcome": "Bienvenue, {name} !"
+  },
+  "tenants": {
+    "created": "Tenant créé avec succès",
+    "updated": "Tenant mis à jour avec succès",
+    "deleted": "Tenant supprimé avec succès",
+    "not_found": "Tenant non trouvé",
+    "suspended": "Le tenant a été suspendu",
+    "activated": "Tenant activé",
+    "slug_exists": "Un tenant avec ce slug existe déjà"
+  },
+  "roles": {
+    "created": "Rôle créé avec succès",
+    "updated": "Rôle mis à jour avec succès",
+    "deleted": "Rôle supprimé avec succès",
+    "not_found": "Rôle non trouvé",
+    "in_use": "Impossible de supprimer un rôle attribué à des utilisateurs"
+  },
+  "permissions": {
+    "denied": "Vous n'avez pas la permission d'effectuer cette action",
+    "granted": "Permission accordée",
+    "revoked": "Permission révoquée"
+  },
+  "validation": {
+    "required": "Ce champ est obligatoire",
+    "email_invalid": "Format d'email invalide",
+    "password_weak": "Le mot de passe doit contenir au moins 8 caractères avec majuscules, minuscules et chiffres",
+    "password_mismatch": "Les mots de passe ne correspondent pas",
+    "min_length": "Doit contenir au moins {min} caractères",
+    "max_length": "Doit contenir au maximum {max} caractères",
+    "invalid_uuid": "Format UUID invalide",
+    "invalid_date": "Format de date invalide"
+  },
+  "rate_limit": {
+    "exceeded": "Trop de requêtes. Veuillez réessayer dans {seconds} secondes"
+  },
+  "audit": {
+    "action_logged": "Action enregistrée avec succès",
+    "export_complete": "Exportation du journal d'audit terminée"
+  }
+}

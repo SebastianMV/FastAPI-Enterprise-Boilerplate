@@ -1,0 +1,25 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+{{ t('email.registration.title') }}
+================================
+
+{{ t('email.registration.greeting', name=recipient_name) }}
+
+{{ t('email.registration.body', app_name=app_name) }}
+
+{{ t('email.registration.account_email') }}: {{ recipient_email }}
+
+{{ t('email.registration.next_steps') }}
+
+1. {{ t('email.registration.step_1') }}
+2. {{ t('email.registration.step_2') }}
+3. {{ t('email.registration.step_3') }}
+
+{% if verification_url is defined and verification_url %}
+{{ t('email.registration.verify_button') }}:
+{{ verification_url }}
+{% endif %}
+
+{{ t('email.registration.security_note') }}
+{% endblock %}

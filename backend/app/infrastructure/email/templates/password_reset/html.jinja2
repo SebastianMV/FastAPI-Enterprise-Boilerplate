@@ -1,0 +1,44 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.password_reset.preheader') }}{% endblock %}
+
+{% block content %}
+<h1>{{ t('email.password_reset.title') }}</h1>
+
+<p>{{ t('email.password_reset.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.password_reset.body') }}</p>
+
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>⚠️ {{ t('email.password_reset.warning_title') }}</strong><br>
+        {{ t('email.password_reset.expires', hours=expires_in_hours|default(1)) }}
+    </p>
+</div>
+{% endblock %}
+
+{% block cta %}
+<div class="cta-container">
+    <a href="{{ reset_url }}" class="cta-button warning">{{ t('email.password_reset.reset_button') }}</a>
+</div>
+
+<p style="text-align: center; color: #6b7280; font-size: 14px;">
+    {{ t('email.password_reset.link_note') }}
+</p>
+
+<div class="info-box">
+    <p style="margin: 0; word-break: break-all; font-size: 12px;">
+        <strong>{{ t('email.password_reset.link_label') }}:</strong><br>
+        <a href="{{ reset_url }}" style="color: #2563eb;">{{ reset_url }}</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block footer_extra %}
+<p style="color: #dc2626; font-size: 12px;">
+    <strong>{{ t('email.password_reset.security_warning') }}</strong>
+</p>
+<p style="color: #9ca3af; font-size: 12px;">
+    {{ t('email.password_reset.ignore_note') }}
+</p>
+{% endblock %}

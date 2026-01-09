@@ -1,0 +1,40 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.registration.preheader', app_name=app_name) }}{% endblock %}
+
+{% block content %}
+<h1>{{ t('email.registration.title') }}</h1>
+
+<p>{{ t('email.registration.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.registration.body', app_name=app_name) }}</p>
+
+<div class="info-box">
+    <p style="margin: 0;"><strong>{{ t('email.registration.account_email') }}:</strong> {{ recipient_email }}</p>
+</div>
+
+<p>{{ t('email.registration.next_steps') }}</p>
+
+<ul style="color: #374151; line-height: 1.8;">
+    <li>{{ t('email.registration.step_1') }}</li>
+    <li>{{ t('email.registration.step_2') }}</li>
+    <li>{{ t('email.registration.step_3') }}</li>
+</ul>
+{% endblock %}
+
+{% block cta %}
+{% if verification_url is defined and verification_url %}
+<div class="cta-container">
+    <a href="{{ verification_url }}" class="cta-button">{{ t('email.registration.verify_button') }}</a>
+</div>
+<p style="text-align: center; color: #6b7280; font-size: 14px;">
+    {{ t('email.registration.button_note') }}
+</p>
+{% endif %}
+{% endblock %}
+
+{% block footer_extra %}
+<p style="color: #9ca3af; font-size: 12px;">
+    {{ t('email.registration.security_note') }}
+</p>
+{% endblock %}

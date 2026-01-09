@@ -1,0 +1,4 @@
+# Copyright (c) 2025-2026 Sebastián Muñoz
+# Licensed under the MIT License
+
+"""Integration tests package."""

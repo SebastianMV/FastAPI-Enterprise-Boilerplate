@@ -1,0 +1,41 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.tenant_invitation.preheader', tenant_name=tenant_name) }}{% endblock %}
+
+{% block content %}
+<h1>📨 {{ t('email.tenant_invitation.title') }}</h1>
+
+<p>{{ t('email.tenant_invitation.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.tenant_invitation.body', inviter_name=inviter_name|default('Someone'), tenant_name=tenant_name) }}</p>
+
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.tenant_invitation.details') }}:</strong><br><br>
+        🏢 {{ t('email.tenant_invitation.organization') }}: {{ tenant_name }}<br>
+        👤 {{ t('email.tenant_invitation.invited_by') }}: {{ inviter_name|default('N/A') }}<br>
+        {% if role %}
+        🔑 {{ t('email.tenant_invitation.role') }}: {{ role }}<br>
+        {% endif %}
+    </p>
+</div>
+
+<p>{{ t('email.tenant_invitation.what_happens') }}</p>
+{% endblock %}
+
+{% block cta %}
+{% if invitation_url is defined and invitation_url %}
+<div class="cta-container">
+    <a href="{{ invitation_url }}" class="cta-button success">{{ t('email.tenant_invitation.accept_button') }}</a>
+</div>
+<p style="text-align: center; color: #6b7280; font-size: 14px;">
+    {{ t('email.tenant_invitation.button_note') }}
+</p>
+{% endif %}
+{% endblock %}
+
+{% block footer_extra %}
+<p style="color: #9ca3af; font-size: 12px;">
+    {{ t('email.tenant_invitation.ignore_note') }}
+</p>
+{% endblock %}

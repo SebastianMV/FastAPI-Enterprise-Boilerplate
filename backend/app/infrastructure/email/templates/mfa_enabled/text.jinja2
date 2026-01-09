@@ -1,0 +1,25 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🛡️ {{ t('email.mfa_enabled.title') }}
+=====================================
+
+{{ t('email.mfa_enabled.greeting', name=recipient_name) }}
+
+{{ t('email.mfa_enabled.body') }}
+
+✅ {{ t('email.mfa_enabled.status') }}
+{{ t('email.mfa_enabled.status_message') }}
+
+{{ t('email.mfa_enabled.what_this_means') }}
+--------------------------------------------
+
+* {{ t('email.mfa_enabled.benefit_1') }}
+* {{ t('email.mfa_enabled.benefit_2') }}
+* {{ t('email.mfa_enabled.benefit_3') }}
+
+{{ t('email.mfa_enabled.backup_codes_title') }}
+{{ t('email.mfa_enabled.backup_codes_message') }}
+
+{{ t('email.mfa_enabled.not_you') }}
+{% endblock %}

@@ -1,0 +1,640 @@
+import { useState, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { useAuthStore } from '@/stores/authStore';
+import { usersService } from '@/services/api';
+import ConnectedAccounts from '@/components/profile/ConnectedAccounts';
+import { ConfirmModal, AlertModal } from '@/components/common/Modal';
+import { 
+  User as UserIcon, 
+  Mail, 
+  Calendar, 
+  Shield, 
+  Save, 
+  Loader2, 
+  CheckCircle,
+  AlertCircle,
+  Key,
+  Lock,
+  Link2,
+  Camera
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+interface ProfileFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+interface PasswordFormData {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+/**
+ * User Profile page component.
+ * Allows users to view and edit their personal information.
+ */
+export default function ProfilePage() {
+  const { user, fetchUser } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'connections'>('profile');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingProfileData, setPendingProfileData] = useState<ProfileFormData | null>(null);
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: 'success' | 'error';
+  }>({ isOpen: false, title: '', message: '', variant: 'success' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    register: registerProfile,
+    handleSubmit: handleProfileSubmit,
+    formState: { errors: profileErrors, isDirty: isProfileDirty },
+  } = useForm<ProfileFormData>({
+    defaultValues: {
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      email: user?.email || '',
+    },
+  });
+
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+    reset: resetPasswordForm,
+    watch,
+  } = useForm<PasswordFormData>();
+
+  const newPassword = watch('new_password');
+
+  // Show confirmation modal before saving
+  const onProfileSubmit = (data: ProfileFormData) => {
+    setPendingProfileData(data);
+    setShowConfirmModal(true);
+  };
+
+  // Actually save the profile after confirmation
+  const handleConfirmSave = async () => {
+    if (!pendingProfileData) return;
+    
+    setShowConfirmModal(false);
+    setIsLoading(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+
+    try {
+      await usersService.updateMe({
+        first_name: pendingProfileData.first_name,
+        last_name: pendingProfileData.last_name,
+      });
+      // Refresh user data in the store
+      await fetchUser();
+      setAlertModal({
+        isOpen: true,
+        title: 'Success',
+        message: 'Profile updated successfully!',
+        variant: 'success',
+      });
+    } catch (error) {
+      setAlertModal({
+        isOpen: true,
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Failed to update profile',
+        variant: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+      setPendingProfileData(null);
+    }
+  };
+
+  // Handle avatar click
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setAlertModal({
+        isOpen: true,
+        title: 'Invalid File',
+        message: 'Please select a valid image file (JPEG, PNG, GIF, or WebP).',
+        variant: 'error',
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setAlertModal({
+        isOpen: true,
+        title: 'File Too Large',
+        message: 'Image must be less than 5MB.',
+        variant: 'error',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await usersService.uploadAvatar(file);
+      await fetchUser();
+      setAlertModal({
+        isOpen: true,
+        title: 'Success',
+        message: 'Avatar updated successfully!',
+        variant: 'success',
+      });
+    } catch (error) {
+      setAlertModal({
+        isOpen: true,
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Failed to upload avatar',
+        variant: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+      // Reset the input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const onPasswordSubmit = async (data: PasswordFormData) => {
+    setIsPasswordLoading(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+
+    try {
+      // Call password change endpoint
+      const response = await fetch('/api/v1/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')!).state.accessToken : ''}`,
+        },
+        body: JSON.stringify({
+          current_password: data.current_password,
+          new_password: data.new_password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail?.message || 'Failed to change password');
+      }
+
+      setSuccessMessage('Password changed successfully!');
+      resetPasswordForm();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to change password');
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          My Profile
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">
+          Manage your personal information and security settings
+        </p>
+      </div>
+
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center space-x-3">
+          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <p className="text-sm text-green-700 dark:text-green-300">{successMessage}</p>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center space-x-3">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <p className="text-sm text-red-700 dark:text-red-300">{errorMessage}</p>
+        </div>
+      )}
+
+      {/* Profile Header Card */}
+      <div className="card p-6">
+        <div className="flex items-center space-x-6">
+          {/* Avatar with upload capability */}
+          <div className="relative group">
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={`${user.first_name} ${user.last_name}`}
+                className="w-20 h-20 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-2xl font-bold">
+                  {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={handleAvatarClick}
+              disabled={isLoading}
+              className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+              type="button"
+              title="Change photo"
+            >
+              {isLoading ? (
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              ) : (
+                <Camera className="w-6 h-6 text-white" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+              {user?.first_name} {user?.last_name}
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400">{user?.email}</p>
+            <div className="flex items-center space-x-4 mt-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                user?.is_superuser 
+                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' 
+                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+              }`}>
+                <Shield className="w-3 h-3 mr-1" />
+                {user?.is_superuser ? 'Administrator' : 'User'}
+              </span>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                user?.is_active 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+              }`}>
+                {user?.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-slate-200 dark:border-slate-700">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'profile'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <UserIcon className="w-4 h-4 inline-block mr-2" />
+            Profile Information
+          </button>
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'security'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <Lock className="w-4 h-4 inline-block mr-2" />
+            Security
+          </button>
+          <button
+            onClick={() => setActiveTab('connections')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'connections'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <Link2 className="w-4 h-4 inline-block mr-2" />
+            Connected Accounts
+          </button>
+        </nav>
+      </div>
+
+      {/* Profile Tab Content */}
+      {activeTab === 'profile' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Edit Profile Form */}
+          <div className="lg:col-span-2">
+            <div className="card">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Edit Profile
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Update your personal information
+                </p>
+              </div>
+              <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      className="input"
+                      {...registerProfile('first_name', { required: 'First name is required' })}
+                    />
+                    {profileErrors.first_name && (
+                      <p className="mt-1 text-sm text-red-600">{profileErrors.first_name.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      className="input"
+                      {...registerProfile('last_name', { required: 'Last name is required' })}
+                    />
+                    {profileErrors.last_name && (
+                      <p className="mt-1 text-sm text-red-600">{profileErrors.last_name.message}</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    className="input bg-slate-50 dark:bg-slate-800"
+                    disabled
+                    {...registerProfile('email')}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">Email cannot be changed</p>
+                </div>
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={isLoading || !isProfileDirty}
+                    className="btn-primary"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* Account Info Sidebar */}
+          <div className="space-y-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Account Details
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Mail className="w-5 h-5 text-slate-400" />
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Email</p>
+                    <p className="text-sm text-slate-900 dark:text-white">{user?.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Calendar className="w-5 h-5 text-slate-400" />
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Member Since</p>
+                    <p className="text-sm text-slate-900 dark:text-white">
+                      {formatDate(user?.created_at)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Key className="w-5 h-5 text-slate-400" />
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Last Login</p>
+                    <p className="text-sm text-slate-900 dark:text-white">
+                      {formatDate(user?.last_login)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* MFA Status Card */}
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Two-Factor Authentication
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Add an extra layer of security to your account
+              </p>
+              <Link
+                to="/security/mfa"
+                className="btn-secondary w-full text-center"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Configure MFA
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Security Tab Content */}
+      {activeTab === 'security' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Change Password */}
+          <div className="card">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Change Password
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Update your password regularly for better security
+              </p>
+            </div>
+            <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  className="input"
+                  {...registerPassword('current_password', { required: 'Current password is required' })}
+                />
+                {passwordErrors.current_password && (
+                  <p className="mt-1 text-sm text-red-600">{passwordErrors.current_password.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  className="input"
+                  {...registerPassword('new_password', { 
+                    required: 'New password is required',
+                    minLength: { value: 8, message: 'Password must be at least 8 characters' },
+                    pattern: {
+                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                      message: 'Password must contain uppercase, lowercase, and a number'
+                    }
+                  })}
+                />
+                {passwordErrors.new_password && (
+                  <p className="mt-1 text-sm text-red-600">{passwordErrors.new_password.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  className="input"
+                  {...registerPassword('confirm_password', { 
+                    required: 'Please confirm your password',
+                    validate: value => value === newPassword || 'Passwords do not match'
+                  })}
+                />
+                {passwordErrors.confirm_password && (
+                  <p className="mt-1 text-sm text-red-600">{passwordErrors.confirm_password.message}</p>
+                )}
+              </div>
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={isPasswordLoading}
+                  className="btn-primary"
+                >
+                  {isPasswordLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 mr-2" />
+                      Update Password
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Security Options */}
+          <div className="space-y-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Two-Factor Authentication
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Protect your account with an additional layer of security using TOTP.
+              </p>
+              <Link
+                to="/security/mfa"
+                className="btn-secondary w-full text-center"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Configure 2FA
+              </Link>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Active Sessions
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Manage your active login sessions across devices.
+              </p>
+              <button
+                className="btn-secondary w-full"
+                onClick={() => alert('Coming soon!')}
+              >
+                View All Sessions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Connected Accounts Tab Content */}
+      {activeTab === 'connections' && (
+        <div className="card p-6">
+          <ConnectedAccounts />
+        </div>
+      )}
+
+      {/* Confirm Save Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingProfileData(null);
+        }}
+        onConfirm={handleConfirmSave}
+        title="Save Changes"
+        message="Are you sure you want to save these changes to your profile?"
+        confirmText={isLoading ? 'Saving...' : 'Save Changes'}
+        cancelText="Cancel"
+        variant="info"
+        isLoading={isLoading}
+      />
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant={alertModal.variant}
+      />
+    </div>
+  );
+}

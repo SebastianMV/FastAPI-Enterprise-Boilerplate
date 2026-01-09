@@ -1,0 +1,29 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🔐 {{ t('email.password_changed.title') }}
+==========================================
+
+{{ t('email.password_changed.greeting', name=recipient_name) }}
+
+{{ t('email.password_changed.body') }}
+
+{% if ip_address or user_agent %}
+{{ t('email.password_changed.details') }}:
+{% if ip_address %}
+• {{ t('email.password_changed.ip_address') }}: {{ ip_address }}
+{% endif %}
+{% if user_agent %}
+• {{ t('email.password_changed.device') }}: {{ user_agent }}
+{% endif %}
+• {{ t('email.password_changed.time') }}: {{ now|default('N/A') }}
+{% endif %}
+
+⚠️ {{ t('email.password_changed.not_you_title') }}
+{{ t('email.password_changed.not_you_body') }}
+
+{% if security_url is defined and security_url %}
+{{ t('email.password_changed.secure_account_button') }}:
+{{ security_url }}
+{% endif %}
+{% endblock %}

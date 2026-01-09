@@ -1,0 +1,16 @@
+{#
+  Base text email template.
+  
+  All email text templates should extend this base template.
+#}
+{% block content %}{% endblock %}
+
+---
+
+{% block footer %}
+{{ t('email.common.sent_by', app_name=app_name) }}
+
+{{ t('email.common.questions') }} {{ support_email }}
+
+© {{ year }} {{ app_name }}. {{ t('email.common.all_rights_reserved') }}
+{% endblock %}
