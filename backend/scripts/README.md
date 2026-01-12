@@ -4,12 +4,12 @@ This folder contains utility scripts for development and testing purposes.
 
 ## Scripts
 
-| Script | Description |
-|--------|-------------|
-| `create_test_user.py` | Creates test users for E2E testing |
-| `cleanup_e2e_users.py` | Cleans up test users after E2E tests |
-| `check_api_keys_columns.py` | Validates API keys table schema |
-| `check_policy.py` | Validates RLS policies in database |
+| Script                       | Description                              |
+| ---------------------------- | ---------------------------------------- |
+| `create_test_user.py`        | Creates test users for E2E testing       |
+| `cleanup_e2e_users.py`       | Cleans up test users after E2E tests     |
+| `check_api_keys_columns.py`  | Validates API keys table schema          |
+| `check_policy.py`            | Validates RLS policies in database       |
 
 ## Usage
 

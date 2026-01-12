@@ -35,8 +35,8 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/YOUR_USERNAME/pynest-pro.git
-cd pynest-pro
+git clone https://github.com/SebastianMV/FastAPI-Enterprise-Boilerplate.git
+cd FastAPI-Enterprise-Boilerplate
 
 # Copy environment variables
 cp .env.example .env
