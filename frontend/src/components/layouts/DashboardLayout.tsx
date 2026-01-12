@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
 import SearchBar from '@/components/common/SearchBar';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
+import EmailVerificationBanner from '@/components/common/EmailVerificationBanner';
 import {
   LayoutDashboard,
   Users,
@@ -16,7 +17,6 @@ import {
   Shield,
   Key,
   Globe,
-  MessageSquare,
   Bell,
 } from 'lucide-react';
 
@@ -29,7 +29,7 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  const { chat_enabled, fetchFeatures } = useConfigStore();
+  const { fetchFeatures } = useConfigStore();
 
   // Fetch feature config on mount
   useEffect(() => {
@@ -40,8 +40,6 @@ export default function DashboardLayout() {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Users', href: '/users', icon: Users },
-    // Only show Chat if feature is enabled
-    ...(chat_enabled ? [{ name: 'Chat', href: '/chat', icon: MessageSquare }] : []),
     { name: 'Notifications', href: '/notifications', icon: Bell },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
@@ -65,11 +63,9 @@ export default function DashboardLayout() {
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200 dark:border-slate-700">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">B</span>
-            </div>
+            <img src="/logo.svg" alt="PyNest Pro" className="w-8 h-8" />
             <span className="font-semibold text-slate-900 dark:text-white">
-              Boilerplate
+              PyNest Pro
             </span>
           </Link>
           <button
@@ -213,6 +209,9 @@ export default function DashboardLayout() {
             </div>
           </div>
         </header>
+        
+        {/* Email verification banner */}
+        <EmailVerificationBanner />
 
         {/* Page content */}
         <main className="p-6">

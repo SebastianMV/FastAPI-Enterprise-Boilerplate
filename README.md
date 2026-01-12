@@ -1,20 +1,31 @@
-# FastAPI Enterprise Boilerplate
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="PyNest Pro Logo" width="200" height="200">
+</p>
 
-> Production-ready FastAPI boilerplate with JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.
+<h1 align="center">PyNest Pro</h1>
 
-[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18.3.1%20LTS-61dafb?logo=react&logoColor=white)](https://react.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-555%20passing-brightgreen.svg)](https://github.com/SebastianMV/fastapi-enterprise-boilerplate)
-[![Coverage](https://img.shields.io/badge/coverage-57%25-yellow.svg)](https://github.com/SebastianMV/fastapi-enterprise-boilerplate)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Security](https://img.shields.io/badge/vulnerabilities-0-brightgreen.svg)](https://github.com/SebastianMV/fastapi-enterprise-boilerplate)
-[![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen.svg)](ROADMAP.md)
-[![v1.1.1](https://img.shields.io/badge/version-1.1.1-blue.svg)](CHANGELOG.md)
-[![Type Safety](https://img.shields.io/badge/type%20safety-100%25-brightgreen.svg)](https://github.com/SebastianMV/fastapi-enterprise-boilerplate)
-[![First Deploy](https://img.shields.io/badge/first%20deploy-verified-brightgreen.svg)](CHANGELOG.md)
+<p align="center">
+  <strong>Production-ready FastAPI boilerplate with JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.</strong>
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.13+-blue.svg" alt="Python 3.13+"></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115+-green.svg" alt="FastAPI"></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18.3.1%20LTS-61dafb?logo=react&logoColor=white" alt="React"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=node.js&logoColor=white" alt="Node.js"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+</p>
+
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/tests-3294%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/coverage-89%25-brightgreen.svg" alt="Coverage"></a>
+  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
+  <a href="#"><img src="https://img.shields.io/badge/vulnerabilities-0-brightgreen.svg" alt="Security"></a>
+  <a href="ROADMAP.md"><img src="https://img.shields.io/badge/status-production%20ready-brightgreen.svg" alt="Production Ready"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.3.0-blue.svg" alt="v1.3.0"></a>
+</p>
+
+---
 
 ## ⚡ Quick Start
 
@@ -24,8 +35,8 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/SebastianMV/fastapi-enterprise-boilerplate.git
-cd fastapi-enterprise-boilerplate
+git clone https://github.com/YOUR_USERNAME/pynest-pro.git
+cd pynest-pro
 
 # Copy environment variables
 cp .env.example .env
@@ -164,19 +175,20 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 - ✅ **Hexagonal Architecture** - Clean separation of concerns
 - ✅ **JWT + Refresh Tokens** - Secure stateless authentication
 - ✅ **MFA/2FA (TOTP)** - Two-factor authentication with backup codes
+- ✅ **Account Lockout** - Protection against brute-force attacks
+- ✅ **Session Management** - View and revoke active sessions
+- ✅ **Email Verification** - Validate user email addresses
 - ✅ **Granular ACL** - Permission-based access control
 - ✅ **Multi-Tenant (RLS)** - PostgreSQL Row Level Security
 - ✅ **SQLAlchemy 2.0 Async** - High-performance database operations
 
 ### Real-Time Features
 
-- ✅ **WebSocket Support** - Real-time bidirectional communication **(enabled by default for notifications)**
-- ✅ **Real-time Notifications** - Instant delivery via WebSocket **(primary use case)**
-- 🔧 **Internal Chat** *(Optional Feature - Disabled by default)* - Direct and group messaging
-- 🔧 **Presence Tracking** *(Optional)* - Online/offline user status (for chat)
+- ✅ **WebSocket Support** - Real-time bidirectional communication
+- ✅ **Real-time Notifications** - Instant delivery via WebSocket
 - ✅ **Pluggable Backend** - Memory (dev) / Redis Pub/Sub (production)
 
-> **💡 Note:** WebSocket is enabled by default for **notifications**. The internal chat feature is **optional** and can be enabled via environment variables (`CHAT_ENABLED=true`). See [docs/WEBSOCKET.md](docs/WEBSOCKET.md) for details.
+> **💡 Note:** WebSocket is enabled by default for **notifications**. See [docs/WEBSOCKET.md](docs/WEBSOCKET.md) for details.
 
 ### Infrastructure
 
@@ -184,7 +196,6 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 - ✅ **Audit Logging** - Complete action trail for compliance
 - ✅ **i18n Support** - Multi-language (EN, ES, PT + extensible)
 - ✅ **Health Checks** - Kubernetes liveness/readiness probes
-- ✅ **Feature Flags** - Safe deployments with instant rollback
 - ✅ **Rate Limiting** - Redis-based API protection
 - ✅ **Background Jobs** - Async task processing with retry
 
@@ -193,6 +204,7 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 - ✅ **CLI Tools** - `create-superuser`, `seed-db`, `generate-api-key` (manual admin tools)
 
 > 🚨 **Production Security**: Development users with known passwords are created automatically by migrations for testing. [**Delete them before production deployment!**](docs/DEPLOYMENT.md#production-security--initial-setup)
+
 - ✅ **508 Tests Passing** - 81.9% coverage with E2E validation
 - ✅ **E2E Validated** - Login flow + WebSocket tested
 - ✅ **Docker Compose** - One-command dev environment
@@ -218,6 +230,8 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 - ✅ **Profile Settings** - View and edit user info
 - ✅ **API Keys Management** - Create, view, revoke keys
 - ✅ **MFA Configuration** - Enable/disable 2FA
+- ✅ **Sessions Management** - View and revoke active sessions
+- ✅ **Email Verification** - Verify email with banner and resend
 
 ## 📁 Project Structure
 

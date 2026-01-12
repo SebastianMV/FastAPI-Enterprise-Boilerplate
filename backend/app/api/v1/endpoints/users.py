@@ -172,6 +172,43 @@ async def create_user(
 
 
 @router.patch(
+    "/me",
+    response_model=UserResponse,
+    summary="Update current user",
+    description="Update current user's profile (limited fields).",
+)
+async def update_self(
+    request: UserUpdateSelf,
+    current_user_id: CurrentUserId,
+    session: DbSession,
+) -> UserResponse:
+    """
+    Update current user's profile.
+    
+    Only name fields can be updated by the user themselves.
+    """
+    repo = SQLAlchemyUserRepository(session)
+    user = await repo.get_by_id(current_user_id)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "USER_NOT_FOUND", "message": "User not found"},
+        )
+    
+    if request.first_name is not None:
+        user.first_name = request.first_name
+    
+    if request.last_name is not None:
+        user.last_name = request.last_name
+    
+    user.mark_updated(by_user=current_user_id)
+    
+    updated_user = await repo.update(user)
+    return UserResponse.model_validate(updated_user)
+
+
+@router.patch(
     "/{user_id}",
     response_model=UserDetailResponse,
     summary="Update user",
@@ -269,43 +306,6 @@ async def delete_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": e.code, "message": e.message},
         )
-
-
-@router.patch(
-    "/me",
-    response_model=UserResponse,
-    summary="Update current user",
-    description="Update current user's profile (limited fields).",
-)
-async def update_self(
-    request: UserUpdateSelf,
-    current_user_id: CurrentUserId,
-    session: DbSession,
-) -> UserResponse:
-    """
-    Update current user's profile.
-    
-    Only name fields can be updated by the user themselves.
-    """
-    repo = SQLAlchemyUserRepository(session)
-    user = await repo.get_by_id(current_user_id)
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "USER_NOT_FOUND", "message": "User not found"},
-        )
-    
-    if request.first_name is not None:
-        user.first_name = request.first_name
-    
-    if request.last_name is not None:
-        user.last_name = request.last_name
-    
-    user.mark_updated(by_user=current_user_id)
-    
-    updated_user = await repo.update(user)
-    return UserResponse.model_validate(updated_user)
 
 
 # Maximum file size: 5MB

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, UTC
 from uuid import UUID, uuid4
 import secrets
 
-from fastapi import APIRouter, HTTPException, status, Header
+from fastapi import APIRouter, HTTPException, Request, status, Header
 
 from app.api.deps import CurrentUserId, CurrentUser, DbSession
 from app.api.v1.schemas.auth import (
@@ -53,6 +53,7 @@ router = APIRouter()
 async def login(
     request: LoginRequest,
     session: DbSession,
+    http_request: Request,
 ) -> TokenResponse:
     """
     Authenticate user and return tokens.
@@ -61,6 +62,8 @@ async def login(
     - **password**: User's password
     
     Returns access token (15 min) and refresh token (7 days).
+    
+    Account will be locked after multiple failed attempts.
     """
     # Validate email format
     try:
@@ -81,8 +84,38 @@ async def login(
             detail={"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"},
         )
     
+    # Check if account is locked
+    if settings.ACCOUNT_LOCKOUT_ENABLED and user.is_locked():
+        remaining = user.locked_until - datetime.now(UTC)
+        minutes = max(1, int(remaining.total_seconds() / 60))
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail={
+                "code": "ACCOUNT_LOCKED",
+                "message": f"Account is locked. Try again in {minutes} minute(s).",
+            },
+        )
+    
     # Verify password
     if not verify_password(request.password, user.password_hash):
+        # Record failed attempt
+        if settings.ACCOUNT_LOCKOUT_ENABLED:
+            is_now_locked = user.record_failed_login(
+                settings.ACCOUNT_LOCKOUT_THRESHOLD,
+                settings.ACCOUNT_LOCKOUT_DURATION_MINUTES,
+            )
+            await user_repository.update(user)
+            await session.commit()
+            
+            if is_now_locked:
+                raise HTTPException(
+                    status_code=status.HTTP_423_LOCKED,
+                    detail={
+                        "code": "ACCOUNT_LOCKED",
+                        "message": f"Account locked after {settings.ACCOUNT_LOCKOUT_THRESHOLD} failed attempts. Try again in {settings.ACCOUNT_LOCKOUT_DURATION_MINUTES} minutes.",
+                    },
+                )
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"},
@@ -95,8 +128,41 @@ async def login(
             detail={"code": "USER_INACTIVE", "message": "User account is disabled"},
         )
     
-    # Update last login
+    # Check if MFA is required
+    from app.api.v1.endpoints.mfa import get_mfa_config
+    mfa_config = get_mfa_config(str(user.id))
+    
+    if mfa_config and mfa_config.is_enabled:
+        # MFA is enabled, verify code
+        if not request.mfa_code:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "MFA_REQUIRED", "message": "MFA code is required"},
+            )
+        
+        # Verify MFA code
+        from app.application.services.mfa_service import get_mfa_service
+        mfa_service = get_mfa_service()
+        
+        is_valid, was_backup = mfa_service.verify_code(
+            mfa_config, 
+            request.mfa_code,
+            allow_backup=True
+        )
+        
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "INVALID_MFA_CODE", "message": "Invalid MFA code"},
+            )
+        
+        # Save updated config (in case backup code was used)
+        from app.api.v1.endpoints.mfa import save_mfa_config
+        save_mfa_config(mfa_config)
+    
+    # Update last login and reset failed attempts
     user.last_login = datetime.now(UTC)
+    user.reset_failed_attempts()
     await user_repository.update(user)
     await session.commit()
     
@@ -207,7 +273,13 @@ async def register(
         created_at=now,
         updated_at=now,
         last_login=None,
+        email_verified=False,  # Require verification
     )
+    
+    # Generate verification token if required
+    verification_token = None
+    if settings.EMAIL_VERIFICATION_REQUIRED:
+        verification_token = new_user.generate_verification_token()
     
     try:
         created_user = await user_repository.create(new_user)
@@ -217,6 +289,24 @@ async def register(
             status_code=status.HTTP_409_CONFLICT,
             detail={"code": "EMAIL_EXISTS", "message": str(e)},
         )
+    
+    # Send verification email if required
+    if settings.EMAIL_VERIFICATION_REQUIRED and verification_token:
+        try:
+            from app.infrastructure.email import get_email_service
+            
+            frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:3000"
+            verification_url = f"{frontend_url}/verify-email?token={verification_token}"
+            
+            email_service = get_email_service()
+            await email_service.send_verification_email(
+                to_email=str(created_user.email),
+                to_name=created_user.first_name,
+                verification_url=verification_url,
+                expires_in_hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS,
+            )
+        except Exception:
+            pass  # Don't fail registration if email fails
     
     # Create tokens
     access_token = create_access_token(
@@ -243,6 +333,7 @@ async def register(
             last_name=created_user.last_name,
             is_active=created_user.is_active,
             is_superuser=created_user.is_superuser,
+            email_verified=created_user.email_verified,
             created_at=created_user.created_at,
             last_login=None,
         ),
@@ -386,6 +477,7 @@ async def get_current_user_info(
         last_name=current_user.last_name,
         is_active=current_user.is_active,
         is_superuser=current_user.is_superuser,
+        email_verified=current_user.email_verified,
         created_at=current_user.created_at,
         last_login=current_user.last_login,
     )
@@ -629,3 +721,148 @@ async def reset_password(
         message="Password reset successfully. You can now login with your new password.",
         success=True,
     )
+
+
+# ===========================================
+# Email Verification Endpoints
+# ===========================================
+
+@router.post(
+    "/send-verification",
+    response_model=MessageResponse,
+    summary="Send verification email",
+    description="Send or resend email verification link.",
+)
+async def send_verification_email(
+    user_id: CurrentUserId,
+    session: DbSession,
+) -> MessageResponse:
+    """
+    Send verification email to the current user.
+    
+    Can be called multiple times to resend the verification link.
+    """
+    user_repository = SQLAlchemyUserRepository(session)
+    user = await user_repository.get_by_id(user_id)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "USER_NOT_FOUND", "message": "User not found"},
+        )
+    
+    if user.email_verified:
+        return MessageResponse(
+            message="Email is already verified.",
+            success=True,
+        )
+    
+    # Generate verification token
+    token = user.generate_verification_token()
+    await user_repository.update(user)
+    await session.commit()
+    
+    # Send verification email
+    try:
+        from app.infrastructure.email import get_email_service
+        
+        # Build verification URL
+        frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:3000"
+        verification_url = f"{frontend_url}/verify-email?token={token}"
+        
+        email_service = get_email_service()
+        await email_service.send_verification_email(
+            to_email=str(user.email),
+            to_name=user.first_name,
+            verification_url=verification_url,
+            expires_in_hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS,
+        )
+    except Exception as e:
+        # Log error but don't fail the request
+        pass
+    
+    return MessageResponse(
+        message="Verification email sent. Please check your inbox.",
+        success=True,
+    )
+
+
+@router.post(
+    "/verify-email",
+    response_model=MessageResponse,
+    summary="Verify email",
+    description="Verify email address with token.",
+)
+async def verify_email(
+    token: str,
+    session: DbSession,
+) -> MessageResponse:
+    """
+    Verify email address using the token from the verification email.
+    """
+    # Find user by verification token
+    from sqlalchemy import select
+    from app.infrastructure.database.models.user import UserModel
+    
+    stmt = select(UserModel).where(
+        UserModel.email_verification_token == token,
+        UserModel.is_deleted == False,
+    )
+    result = await session.execute(stmt)
+    user_model = result.scalar_one_or_none()
+    
+    if not user_model:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "INVALID_TOKEN", "message": "Invalid or expired verification token"},
+        )
+    
+    # Get user entity
+    user_repository = SQLAlchemyUserRepository(session)
+    user = await user_repository.get_by_id(user_model.id)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "USER_NOT_FOUND", "message": "User not found"},
+        )
+    
+    # Verify the email
+    success = user.verify_email(
+        token=token,
+        token_expire_hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS,
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "TOKEN_EXPIRED", "message": "Verification token has expired"},
+        )
+    
+    await user_repository.update(user)
+    await session.commit()
+    
+    return MessageResponse(
+        message="Email verified successfully!",
+        success=True,
+    )
+
+
+@router.get(
+    "/verification-status",
+    response_model=dict,
+    summary="Get email verification status",
+    description="Check if current user's email is verified.",
+)
+async def get_verification_status(
+    user: CurrentUser,
+) -> dict:
+    """
+    Get the email verification status for the current user.
+    """
+    return {
+        "email": str(user.email),
+        "email_verified": user.email_verified,
+        "verification_required": settings.EMAIL_VERIFICATION_REQUIRED,
+    }
+

@@ -9,7 +9,6 @@ from app.config import settings
 from app.api.v1.endpoints import (
     api_keys,
     auth,
-    chat,
     config,
     dashboard,
     health,
@@ -18,6 +17,7 @@ from app.api.v1.endpoints import (
     oauth,
     roles,
     search,
+    sessions,
     tenants,
     users,
 )
@@ -61,6 +61,13 @@ api_router.include_router(
     tags=["API Keys"],
 )
 
+# Session management
+api_router.include_router(
+    sessions.router,
+    prefix="/sessions",
+    tags=["Sessions"],
+)
+
 api_router.include_router(
     health.router,
     prefix="",
@@ -100,13 +107,6 @@ if settings.WEBSOCKET_ENABLED:
     api_router.include_router(
         websocket.router,
         tags=["WebSocket"],
-    )
-
-# Chat endpoints (if chat feature is enabled)
-if settings.CHAT_ENABLED:
-    api_router.include_router(
-        chat.router,
-        tags=["Chat"],
     )
 
 # Notifications endpoints (if WebSocket notifications is enabled)

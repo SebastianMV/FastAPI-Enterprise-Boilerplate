@@ -12,8 +12,11 @@ Provides endpoints for:
 """
 
 from datetime import datetime, UTC
+import json
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
+import redis
 
 from app.api.deps import get_current_user
 from app.api.v1.schemas.mfa import (
@@ -27,6 +30,7 @@ from app.api.v1.schemas.mfa import (
     MFAVerifyResponse,
 )
 from app.application.services.mfa_service import get_mfa_service, MFAService
+from app.config import settings
 from app.domain.entities.mfa import MFAConfig
 from app.domain.entities.user import User
 
@@ -34,19 +38,58 @@ from app.domain.entities.user import User
 router = APIRouter(prefix="/mfa", tags=["MFA"])
 
 
-# In-memory store for MFA configs (replace with repository in production)
-# This is a simplified example - use proper database storage
-_mfa_configs: dict[str, MFAConfig] = {}
+def _get_redis() -> redis.Redis:
+    """Get Redis connection for MFA storage."""
+    # Use REDIS_URL from environment if available, otherwise build from components
+    redis_url = settings.redis_url
+    return redis.from_url(redis_url, decode_responses=True)
+
+
+def _mfa_config_to_dict(config: MFAConfig) -> dict[str, Any]:
+    """Convert MFAConfig to dictionary for Redis storage."""
+    return {
+        "user_id": str(config.user_id),
+        "secret": config.secret,
+        "is_enabled": config.is_enabled,
+        "backup_codes": config.backup_codes,
+        "enabled_at": config.enabled_at.isoformat() if config.enabled_at else None,
+        "last_used_at": config.last_used_at.isoformat() if config.last_used_at else None,
+    }
+
+
+def _dict_to_mfa_config(data: dict[str, Any]) -> MFAConfig:
+    """Convert dictionary from Redis to MFAConfig."""
+    from uuid import UUID
+    config = MFAConfig(
+        user_id=UUID(data["user_id"]),
+        secret=data["secret"],
+        is_enabled=data["is_enabled"],
+        backup_codes=data["backup_codes"],
+    )
+    if data.get("enabled_at"):
+        config.enabled_at = datetime.fromisoformat(data["enabled_at"])
+    if data.get("last_used_at"):
+        config.last_used_at = datetime.fromisoformat(data["last_used_at"])
+    return config
 
 
 def get_mfa_config(user_id: str) -> MFAConfig | None:
-    """Get MFA config for user (placeholder - use repository)."""
-    return _mfa_configs.get(user_id)
+    """Get MFA config for user from Redis."""
+    r = _get_redis()
+    key = f"mfa:config:{user_id}"
+    data: str | None = r.get(key)  # type: ignore
+    if not data:
+        return None
+    return _dict_to_mfa_config(json.loads(data))
 
 
 def save_mfa_config(config: MFAConfig) -> None:
-    """Save MFA config (placeholder - use repository)."""
-    _mfa_configs[str(config.user_id)] = config
+    """Save MFA config to Redis."""
+    r = _get_redis()
+    key = f"mfa:config:{config.user_id}"
+    data = _mfa_config_to_dict(config)
+    # Store for 30 days
+    r.setex(key, 60 * 60 * 24 * 30, json.dumps(data))
 
 
 @router.get(

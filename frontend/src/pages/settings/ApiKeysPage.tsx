@@ -88,7 +88,7 @@ export default function ApiKeysPage() {
   const fetchApiKeys = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/api/v1/api-keys?include_revoked=${showRevokedKeys}`);
+      const response = await api.get(`/api-keys?include_revoked=${showRevokedKeys}`);
       setApiKeys(response.data.items);
     } catch {
       setErrorMessage('Failed to load API keys');
@@ -107,7 +107,7 @@ export default function ApiKeysPage() {
     setErrorMessage(null);
 
     try {
-      const response = await api.post('/api/v1/api-keys', {
+      const response = await api.post('/api-keys', {
         name: data.name,
         scopes: selectedScopes,
         expires_in_days: data.expires_in_days || null,
@@ -128,7 +128,7 @@ export default function ApiKeysPage() {
   const handleRevokeKey = async (keyId: string) => {
     setDeletingKeyId(keyId);
     try {
-      await api.delete(`/api/v1/api-keys/${keyId}`);
+      await api.delete(`/api-keys/${keyId}`);
       setShowRevokeModal(false);
       setKeyToRevoke(null);
       setAlertModal({

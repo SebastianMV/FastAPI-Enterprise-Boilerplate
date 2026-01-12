@@ -16,8 +16,10 @@ import {
   Moon,
   Sun,
   Check,
-  MessageSquare,
   Wifi,
+  Monitor,
+  Key,
+  ChevronRight,
 } from 'lucide-react';
 
 /**
@@ -28,7 +30,7 @@ export default function SettingsPage() {
   const { i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const { chat_enabled, websocket_enabled, websocket_notifications } = useConfigStore();
+  const { websocket_enabled, websocket_notifications } = useConfigStore();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
@@ -45,6 +47,10 @@ export default function SettingsPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     const stored = localStorage.getItem('notificationsEnabled');
     return stored !== null ? stored === 'true' : true;
+  });
+  const [timezone, setTimezone] = useState(() => {
+    const stored = localStorage.getItem('timezone');
+    return stored || 'America/Santiago';
   });
 
   // Apply theme on mount and when it changes
@@ -119,6 +125,17 @@ export default function SettingsPage() {
       isOpen: true,
       title: 'Language Updated',
       message: `Language changed to ${langName}.`,
+      variant: 'success',
+    });
+  };
+
+  const handleTimezoneChange = (newTimezone: string) => {
+    setTimezone(newTimezone);
+    localStorage.setItem('timezone', newTimezone);
+    setAlertModal({
+      isOpen: true,
+      title: 'Timezone Updated',
+      message: `Timezone changed to ${newTimezone}.`,
       variant: 'success',
     });
   };
@@ -287,7 +304,11 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Timezone
               </label>
-              <select className="input" defaultValue="America/Santiago">
+              <select 
+                className="input" 
+                value={timezone}
+                onChange={(e) => handleTimezoneChange(e.target.value)}
+              >
                 <option value="America/Santiago">America/Santiago (GMT-4)</option>
                 <option value="America/New_York">America/New_York (GMT-5)</option>
                 <option value="America/Los_Angeles">America/Los_Angeles (GMT-8)</option>
@@ -317,28 +338,6 @@ export default function SettingsPage() {
           </div>
         </div>
         <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                <MessageSquare className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-slate-900 dark:text-white">
-                  Internal Chat
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Real-time messaging between users
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className={`text-sm font-medium ${chat_enabled ? 'text-green-600' : 'text-slate-400'}`}>
-                {chat_enabled ? 'Enabled' : 'Disabled'}
-              </span>
-              <div className={`w-2 h-2 rounded-full ${chat_enabled ? 'bg-green-500' : 'bg-slate-300'}`} />
-            </div>
-          </div>
-
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
@@ -389,6 +388,61 @@ export default function SettingsPage() {
               Contact your administrator to enable or disable optional features.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Security section */}
+      <div className="card">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+              <Shield className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Security
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Manage your account security settings
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="divide-y divide-slate-200 dark:divide-slate-700">
+          <button
+            onClick={() => navigate('/security/mfa')}
+            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <Key className="w-5 h-5 text-slate-500" />
+              <div className="text-left">
+                <h3 className="font-medium text-slate-900 dark:text-white">
+                  Two-Factor Authentication
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Add an extra layer of security to your account
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </button>
+          <button
+            onClick={() => navigate('/security/sessions')}
+            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <Monitor className="w-5 h-5 text-slate-500" />
+              <div className="text-left">
+                <h3 className="font-medium text-slate-900 dark:text-white">
+                  Active Sessions
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  View and manage your active sessions across devices
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </button>
         </div>
       </div>
 

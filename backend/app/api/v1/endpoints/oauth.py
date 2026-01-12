@@ -606,12 +606,6 @@ async def list_providers(
             "icon": "microsoft",
             "available": bool(getattr(settings, "OAUTH_MICROSOFT_CLIENT_ID", "")),
         },
-        {
-            "provider": "discord",
-            "name": "Discord",
-            "icon": "discord",
-            "available": bool(getattr(settings, "OAUTH_DISCORD_CLIENT_ID", "")),
-        },
     ]
     
     # Add tenant SSO configs if available

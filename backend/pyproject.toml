@@ -125,3 +125,6 @@ plugins = ["pydantic.mypy"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore:coroutine .* was never awaited:RuntimeWarning",
+]

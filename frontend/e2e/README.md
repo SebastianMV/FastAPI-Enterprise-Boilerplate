@@ -1,0 +1,224 @@
+# Playwright E2E Tests
+
+Este directorio contiene los tests end-to-end (E2E) usando Playwright.
+
+## 📁 Estructura
+
+```text
+e2e/
+├── auth/
+│   ├── login.spec.ts          # Login básico sin MFA
+│   └── login-mfa.spec.ts      # Login con MFA habilitado
+├── settings/
+│   └── settings.spec.ts       # Página de configuración
+└── README.md
+```
+
+## 🚀 Ejecutar Tests
+
+### Ejecutar todos los tests
+
+```bash
+npm run test:e2e
+```
+
+### Modo interactivo con UI
+
+```bash
+npm run test:e2e:ui
+```
+
+### Modo visible (headed)
+
+```bash
+npm run test:e2e:headed
+```
+
+### Modo debug
+
+```bash
+npm run test:e2e:debug
+```
+
+### Ver reporte HTML
+
+```bash
+npm run test:e2e:report
+```
+
+## 📝 Comandos Disponibles
+
+- `npm run test:e2e` - Ejecuta tests en modo headless
+- `npm run test:e2e:ui` - Abre la UI de Playwright con modo watch
+- `npm run test:e2e:headed` - Ejecuta tests con el navegador visible
+- `npm run test:e2e:debug` - Ejecuta tests en modo debug paso a paso
+- `npm run test:e2e:report` - Muestra el reporte HTML de la última ejecución
+
+## 🔧 Configuración
+
+La configuración se encuentra en `playwright.config.ts`:
+
+- **baseURL**: `http://localhost:3000`
+- **Browser**: Chromium (se puede agregar Firefox y WebKit)
+- **Screenshots**: Solo en fallos
+- **Videos**: Solo en fallos
+- **Traces**: Solo en reintentos
+
+## 📊 Cobertura Actual
+
+### Tests Implementados (3 archivos, ~25 tests)
+
+#### ✅ Auth - Login Básico (`login.spec.ts`)
+
+- [x] Display login form
+- [x] Validation for empty fields
+- [x] Error for invalid credentials
+- [x] Successful login without MFA
+- [x] Navigate to register page
+- [x] Navigate to forgot password
+- [x] Toggle password visibility
+- [x] Show MFA field when required
+
+#### ✅ Auth - Login MFA (`login-mfa.spec.ts`)
+
+- [x] Complete login with MFA code
+- [x] Error for invalid MFA code
+- [x] Validate 6-digit MFA code
+- [x] Only accept numeric input
+- [x] Show MFA field after password
+
+#### ✅ Settings Page (`settings.spec.ts`)
+
+- [x] Display all sections
+- [x] **Theme buttons visible with contrast** ⚠️ Detecta bug arreglado
+- [x] Theme buttons functional
+- [x] Selected theme visually distinct
+- [x] **Timezone selector functional** ⚠️ Detecta bug arreglado
+- [x] Language selector functional
+- [x] Notification toggle works
+- [x] Navigate to profile page
+- [x] Delete account confirmation modal
+- [x] Features section read-only
+- [x] **Dark mode theme buttons visible** ⚠️ Test específico del bug
+
+## 🎯 Próximos Tests a Implementar
+
+### Sprint 1 - Fase B (Pendientes)
+
+1. **Profile Edit** (`e2e/profile/edit.spec.ts`)
+   - Update first name, last name
+   - Update email
+   - Form validation
+   - Success/error messages
+
+2. **Password Change** (`e2e/profile/password.spec.ts`)
+   - Change password flow
+   - Validation (current, new, confirm)
+   - Success message
+
+3. **MFA Setup** (`e2e/security/mfa-setup.spec.ts`)
+   - Begin MFA setup
+   - Display QR code
+   - Manual code entry
+   - Verify MFA code
+   - Show backup codes
+   - Download backup codes
+
+## 📖 Guía de Escritura de Tests
+
+### Patrón AAA (Arrange, Act, Assert)
+
+```typescript
+test('should do something', async ({ page }) => {
+  // Arrange: Setup
+  await page.goto('/some-page');
+  
+  // Act: Perform action
+  await page.getByRole('button', { name: /click me/i }).click();
+  
+  // Assert: Verify result
+  await expect(page.getByText('Success')).toBeVisible();
+});
+```
+
+### Selectores Recomendados (en orden de preferencia)
+
+1. **Role-based**: `page.getByRole('button', { name: /submit/i })`
+2. **Label**: `page.getByLabel(/email/i)`
+3. **Placeholder**: `page.getByPlaceholder(/enter email/i)`
+4. **Text**: `page.getByText(/welcome/i)`
+5. **Test ID**: `page.getByTestId('login-form')` (último recurso)
+
+### Esperas Recomendadas
+
+```typescript
+// ✅ Bueno: Espera automática de Playwright
+await expect(element).toBeVisible();
+
+// ⚠️ Evitar: Espera fija (frágil)
+await page.waitForTimeout(3000);
+
+// ✅ Bueno: Espera condicional
+await page.waitForURL(/\/dashboard/);
+```
+
+## 🐛 Tests que Detectan Bugs Arreglados
+
+Los siguientes tests **habrían detectado automáticamente** los bugs que arreglamos manualmente:
+
+### 1. Botones de Appearance no visibles (Dark Mode)
+
+**Test**: `e2e/settings/settings.spec.ts` → "theme buttons are visible in dark mode"
+
+```typescript
+// Este test falla si los botones no tienen color de texto en dark mode
+const lightBtnColor = await lightBtn.evaluate((el) => {
+  return window.getComputedStyle(el).color;
+});
+expect(lightBtnColor).not.toBe('rgb(0, 0, 0)'); // ❌ Fallaría antes del fix
+```
+
+### 2. Timezone selector no funcional
+
+**Test**: `e2e/settings/settings.spec.ts` → "timezone selector is functional"
+
+```typescript
+// Este test falla si el selector no tiene onChange handler
+await timezoneSelect.selectOption('Europe/Madrid');
+const savedTimezone = await page.evaluate(() => localStorage.getItem('timezone'));
+expect(savedTimezone).toBe('Europe/Madrid'); // ❌ Fallaría antes del fix
+```
+
+## 🔄 CI/CD Integration
+
+Para agregar a `.github/workflows/frontend.yml`:
+
+```yaml
+- name: Install Playwright Browsers
+  run: npx playwright install --with-deps chromium
+
+- name: Run E2E Tests
+  run: npm run test:e2e
+  
+- name: Upload Test Report
+  if: always()
+  uses: actions/upload-artifact@v3
+  with:
+    name: playwright-report
+    path: playwright-report/
+```
+
+## 💡 Tips
+
+- Ejecuta `npm run test:e2e:ui` para modo visual interactivo
+- Los tests reintentan automáticamente 2 veces en CI
+- Screenshots y videos se guardan solo en fallos
+- Usa `test.only()` para ejecutar un solo test durante desarrollo
+- Usa `test.skip()` para deshabilitar temporalmente un test
+
+## 📚 Recursos
+
+- [Playwright Docs](https://playwright.dev)
+- [Best Practices](https://playwright.dev/docs/best-practices)
+- [Debugging](https://playwright.dev/docs/debug)
+- [Selectors](https://playwright.dev/docs/selectors)

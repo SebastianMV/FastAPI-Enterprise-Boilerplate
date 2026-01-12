@@ -290,15 +290,9 @@ async def cleanup_expired_tokens_task(ctx: dict) -> dict:
     
     # Refresh tokens use Redis TTL for automatic expiration
     # This task handles any additional cleanup needed
-    from app.infrastructure.cache import get_cache_service
+    # Note: get_cache_service() is sync, tokens auto-expire via Redis TTL
     
-    cache = get_cache_service()
-    # Pattern to match expired token keys if needed
-    # Most cleanup is handled by Redis TTL automatically
-    
-    deleted_count = 0  # Tokens auto-expire via Redis TTL
-    
-    deleted_count = 0  # Placeholder
+    deleted_count = 0  # Tokens auto-expire via Redis TTL, no manual cleanup needed
     
     return {
         "status": "completed",

@@ -28,6 +28,13 @@ class LoginRequest(BaseModel):
         description="User's password",
         examples=["SecureP@ss123"],
     )
+    mfa_code: str | None = Field(
+        None,
+        min_length=6,
+        max_length=6,
+        description="Six-digit MFA code (required if MFA is enabled)",
+        examples=["123456"],
+    )
 
 
 class RegisterRequest(BaseModel):
@@ -156,6 +163,7 @@ class UserResponse(BaseModel):
     last_name: str
     is_active: bool
     is_superuser: bool
+    email_verified: bool = False
     created_at: datetime
     last_login: datetime | None = None
     

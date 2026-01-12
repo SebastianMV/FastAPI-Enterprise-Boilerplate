@@ -1,4 +1,4 @@
-# Contributing to FastAPI Enterprise Boilerplate
+# Contributing to PyNest Pro
 
 Thank you for considering contributing! This document provides guidelines.
 

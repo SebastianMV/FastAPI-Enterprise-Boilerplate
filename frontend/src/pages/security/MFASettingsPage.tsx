@@ -19,8 +19,10 @@ import { Link } from 'react-router-dom';
 import api from '@/services/api';
 
 interface MFAStatus {
-  mfa_enabled: boolean;
-  mfa_type: string | null;
+  is_enabled: boolean;
+  enabled_at: string | null;
+  backup_codes_remaining: number;
+  last_used_at: string | null;
 }
 
 interface MFASetupResponse {
@@ -78,7 +80,7 @@ export default function MFASettingsPage() {
   const fetchMFAStatus = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get<MFAStatus>('/api/v1/mfa/status');
+      const response = await api.get<MFAStatus>('/mfa/status');
       setMfaStatus(response.data);
     } catch {
       setErrorMessage('Failed to fetch MFA status');
@@ -91,7 +93,7 @@ export default function MFASettingsPage() {
     try {
       setIsSetupLoading(true);
       setErrorMessage(null);
-      const response = await api.post<MFASetupResponse>('/api/v1/mfa/setup');
+      const response = await api.post<MFASetupResponse>('/mfa/setup');
       setSetupData(response.data);
     } catch {
       setErrorMessage('Failed to setup MFA. Please try again.');
@@ -105,7 +107,7 @@ export default function MFASettingsPage() {
       setIsVerifying(true);
       setErrorMessage(null);
       
-      await api.post('/api/v1/mfa/verify', { code: data.code });
+      await api.post('/mfa/verify', { code: data.code });
       
       setSuccessMessage('MFA has been successfully enabled!');
       setSetupData(null);
@@ -123,7 +125,7 @@ export default function MFASettingsPage() {
       setIsDisabling(true);
       setErrorMessage(null);
       
-      await api.post('/api/v1/mfa/disable', { 
+      await api.post('/mfa/disable', { 
         code: data.code,
         password: data.password 
       });
@@ -210,11 +212,11 @@ export default function MFASettingsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className={`p-3 rounded-full ${
-              mfaStatus?.mfa_enabled 
+              mfaStatus?.is_enabled 
                 ? 'bg-green-100 dark:bg-green-900/30' 
                 : 'bg-slate-100 dark:bg-slate-800'
             }`}>
-              {mfaStatus?.mfa_enabled ? (
+              {mfaStatus?.is_enabled ? (
                 <ShieldCheck className="w-6 h-6 text-green-600 dark:text-green-400" />
               ) : (
                 <ShieldOff className="w-6 h-6 text-slate-400" />
@@ -222,27 +224,27 @@ export default function MFASettingsPage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {mfaStatus?.mfa_enabled ? '2FA is Enabled' : '2FA is Disabled'}
+                {mfaStatus?.is_enabled ? '2FA is Enabled' : '2FA is Disabled'}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {mfaStatus?.mfa_enabled 
-                  ? `Using ${mfaStatus.mfa_type?.toUpperCase() || 'TOTP'} authentication` 
+                {mfaStatus?.is_enabled 
+                  ? 'Using TOTP authentication' 
                   : 'Your account is not protected with two-factor authentication'}
               </p>
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            mfaStatus?.mfa_enabled
+            mfaStatus?.is_enabled
               ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
               : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
           }`}>
-            {mfaStatus?.mfa_enabled ? 'Active' : 'Inactive'}
+            {mfaStatus?.is_enabled ? 'Active' : 'Inactive'}
           </span>
         </div>
       </div>
 
       {/* Setup Flow - When MFA is disabled */}
-      {!mfaStatus?.mfa_enabled && !setupData && (
+      {!mfaStatus?.is_enabled && !setupData && (
         <div className="card p-6">
           <div className="text-center">
             <Shield className="w-12 h-12 text-primary-600 mx-auto mb-4" />
@@ -275,7 +277,7 @@ export default function MFASettingsPage() {
       )}
 
       {/* QR Code & Setup Instructions */}
-      {setupData && !mfaStatus?.mfa_enabled && (
+      {setupData && !mfaStatus?.is_enabled && (
         <div className="space-y-6">
           {/* Step 1: Scan QR Code */}
           <div className="card p-6">
@@ -293,7 +295,7 @@ export default function MFASettingsPage() {
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <img 
-                  src={`data:image/png;base64,${setupData.qr_code}`}
+                  src={setupData.qr_code}
                   alt="MFA QR Code"
                   className="w-48 h-48"
                 />
@@ -303,7 +305,7 @@ export default function MFASettingsPage() {
                   Can't scan? Enter this code manually:
                 </p>
                 <div className="flex items-center space-x-2">
-                  <code className="flex-1 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono break-all">
+                  <code className="flex-1 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono break-all text-slate-900 dark:text-white">
                     {setupData.secret}
                   </code>
                   <button
@@ -437,6 +439,12 @@ export default function MFASettingsPage() {
                   <p className="mt-1 text-sm text-red-600">{verifyErrors.code.message}</p>
                 )}
               </div>
+              {errorMessage && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                  <p className="text-sm text-red-700 dark:text-red-300">{errorMessage}</p>
+                </div>
+              )}
               <div className="flex space-x-3">
                 <button
                   type="submit"
@@ -469,7 +477,7 @@ export default function MFASettingsPage() {
       )}
 
       {/* MFA Enabled - Disable Option */}
-      {mfaStatus?.mfa_enabled && (
+      {mfaStatus?.is_enabled && (
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
             Disable Two-Factor Authentication

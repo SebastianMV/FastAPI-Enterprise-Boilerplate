@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuthStore } from '@/stores/authStore';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Shield } from 'lucide-react';
 import SocialLoginButtons from '@/components/auth/SocialLoginButtons';
 
 interface LoginFormData {
   email: string;
   password: string;
+  mfa_code?: string;
 }
 
 /**
@@ -17,11 +18,13 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login, isLoading, error, clearError } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
+  const [requiresMFA, setRequiresMFA] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
   } = useForm<LoginFormData>();
 
   const onSubmit = async (data: LoginFormData) => {
@@ -29,7 +32,17 @@ export default function LoginPage() {
       clearError();
       await login(data);
       navigate('/dashboard');
-    } catch {
+    } catch (err: unknown) {
+      // Check if MFA is required
+      if (err && typeof err === 'object' && 'response' in err) {
+        const error = err as { response?: { data?: { detail?: { code?: string } } } };
+        if (error?.response?.data?.detail?.code === 'MFA_REQUIRED') {
+          setRequiresMFA(true);
+          setError('root', {
+            message: 'Please enter your 6-digit authentication code',
+          });
+        }
+      }
       // Error is handled by the store
     }
   };
@@ -37,9 +50,9 @@ export default function LoginPage() {
   return (
     <div className="card p-8">
       {/* Logo */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
-          <span className="text-white font-bold text-2xl">B</span>
+      <div className="text-center mb-3">
+        <div className="inline-flex items-center justify-center w-48 h-48 mb-4">
+          <img src="/logo.png" alt="Boilerplate" className="w-48 h-48" />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
           Welcome back
@@ -130,6 +143,42 @@ export default function LoginPage() {
             </a>
           </div>
         </div>
+
+        {/* MFA Code - shown when MFA is required */}
+        {requiresMFA && (
+          <div>
+            <label
+              htmlFor="mfa_code"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
+              <Shield className="w-4 h-4 inline mr-1" />
+              Authentication Code
+            </label>
+            <input
+              id="mfa_code"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              autoFocus
+              className="input text-center text-2xl tracking-widest font-mono"
+              placeholder="000000"
+              {...register('mfa_code', {
+                required: requiresMFA ? 'MFA code is required' : false,
+                pattern: {
+                  value: /^\d{6}$/,
+                  message: 'Code must be 6 digits',
+                },
+              })}
+            />
+            {errors.mfa_code && (
+              <p className="mt-1 text-sm text-red-600">{errors.mfa_code.message}</p>
+            )}
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Enter the 6-digit code from your authenticator app
+            </p>
+          </div>
+        )}
 
         {/* Submit */}
         <button

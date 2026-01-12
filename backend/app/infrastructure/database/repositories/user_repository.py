@@ -211,6 +211,14 @@ class SQLAlchemyUserRepository(UserRepositoryPort):
             is_superuser=model.is_superuser,
             last_login=model.last_login,
             roles=list(model.roles) if model.roles else [],
+            # Account Lockout
+            failed_login_attempts=model.failed_login_attempts,
+            locked_until=model.locked_until,
+            # Email Verification
+            email_verified=model.email_verified,
+            email_verification_token=model.email_verification_token,
+            email_verification_sent_at=model.email_verification_sent_at,
+            # Timestamps
             created_at=model.created_at,
             updated_at=model.updated_at,
             created_by=model.created_by,
@@ -233,6 +241,14 @@ class SQLAlchemyUserRepository(UserRepositoryPort):
             is_superuser=entity.is_superuser,
             last_login=entity.last_login,
             roles=entity.roles,
+            # Account Lockout
+            failed_login_attempts=entity.failed_login_attempts,
+            locked_until=entity.locked_until,
+            # Email Verification
+            email_verified=entity.email_verified,
+            email_verification_token=entity.email_verification_token,
+            email_verification_sent_at=entity.email_verification_sent_at,
+            # Timestamps
             created_at=entity.created_at,
             updated_at=entity.updated_at,
             created_by=entity.created_by,

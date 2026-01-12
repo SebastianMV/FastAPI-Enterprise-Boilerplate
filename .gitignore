@@ -127,5 +127,10 @@ temp/
 *.tmp
 *.temp
 
+# Test artifacts
+MagicMock/
+test-results/
+playwright-report/
+
 # Alembic
 alembic/versions/*.pyc

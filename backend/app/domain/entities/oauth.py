@@ -24,7 +24,6 @@ class OAuthProvider(str, Enum):
     FACEBOOK = "facebook"
     LINKEDIN = "linkedin"
     TWITTER = "twitter"
-    DISCORD = "discord"
     SLACK = "slack"
     OKTA = "okta"
     AUTH0 = "auth0"

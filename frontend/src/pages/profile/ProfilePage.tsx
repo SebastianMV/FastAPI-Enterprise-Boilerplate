@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuthStore } from '@/stores/authStore';
 import { usersService } from '@/services/api';
@@ -16,7 +16,8 @@ import {
   Key,
   Lock,
   Link2,
-  Camera
+  Camera,
+  Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -44,6 +45,7 @@ export default function ProfilePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'connections'>('profile');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showDeleteAvatarModal, setShowDeleteAvatarModal] = useState(false);
   const [pendingProfileData, setPendingProfileData] = useState<ProfileFormData | null>(null);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
@@ -51,12 +53,14 @@ export default function ProfilePage() {
     message: string;
     variant: 'success' | 'error';
   }>({ isOpen: false, title: '', message: '', variant: 'success' });
+  const [isAvatarLoading, setIsAvatarLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register: registerProfile,
     handleSubmit: handleProfileSubmit,
     formState: { errors: profileErrors, isDirty: isProfileDirty },
+    reset: resetProfileForm,
   } = useForm<ProfileFormData>({
     defaultValues: {
       first_name: user?.first_name || '',
@@ -74,6 +78,24 @@ export default function ProfilePage() {
   } = useForm<PasswordFormData>();
 
   const newPassword = watch('new_password');
+
+  // Fetch user data on mount
+  useEffect(() => {
+    if (!user) {
+      fetchUser().catch(console.error);
+    }
+  }, [user, fetchUser]);
+
+  // Update form when user data changes
+  useEffect(() => {
+    if (user) {
+      resetProfileForm({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+      });
+    }
+  }, [user, resetProfileForm]);
 
   // Show confirmation modal before saving
   const onProfileSubmit = (data: ProfileFormData) => {
@@ -149,7 +171,7 @@ export default function ProfilePage() {
       return;
     }
 
-    setIsLoading(true);
+    setIsAvatarLoading(true);
     try {
       await usersService.uploadAvatar(file);
       await fetchUser();
@@ -167,11 +189,36 @@ export default function ProfilePage() {
         variant: 'error',
       });
     } finally {
-      setIsLoading(false);
+      setIsAvatarLoading(false);
       // Reset the input so the same file can be selected again
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  // Handle delete avatar confirmation
+  const handleDeleteAvatar = async () => {
+    setShowDeleteAvatarModal(false);
+    setIsAvatarLoading(true);
+    try {
+      await usersService.deleteAvatar();
+      await fetchUser();
+      setAlertModal({
+        isOpen: true,
+        title: 'Success',
+        message: 'Avatar removed successfully!',
+        variant: 'success',
+      });
+    } catch (error) {
+      setAlertModal({
+        isOpen: true,
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Failed to delete avatar',
+        variant: 'error',
+      });
+    } finally {
+      setIsAvatarLoading(false);
     }
   };
 
@@ -182,7 +229,7 @@ export default function ProfilePage() {
 
     try {
       // Call password change endpoint
-      const response = await fetch('/api/v1/auth/change-password', {
+      const response = await fetch('/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,40 +297,54 @@ export default function ProfilePage() {
       <div className="card p-6">
         <div className="flex items-center space-x-6">
           {/* Avatar with upload capability */}
-          <div className="relative group">
-            {user?.avatar_url ? (
-              <img
-                src={user.avatar_url}
-                alt={`${user.first_name} ${user.last_name}`}
-                className="w-20 h-20 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">
-                  {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
-                </span>
-              </div>
-            )}
-            <button
-              onClick={handleAvatarClick}
-              disabled={isLoading}
-              className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-              type="button"
-              title="Change photo"
-            >
-              {isLoading ? (
-                <Loader2 className="w-6 h-6 text-white animate-spin" />
+          <div className="relative">
+            <div className="relative group">
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={`${user.first_name} ${user.last_name}`}
+                  className="w-20 h-20 rounded-full object-cover"
+                />
               ) : (
-                <Camera className="w-6 h-6 text-white" />
+                <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">
+                    {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
+                  </span>
+                </div>
               )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
+              <button
+                onClick={handleAvatarClick}
+                disabled={isAvatarLoading}
+                className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                type="button"
+                title="Change photo"
+              >
+                {isAvatarLoading ? (
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-6 h-6 text-white" />
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+            </div>
+            {/* Delete avatar button - only show if user has avatar */}
+            {user?.avatar_url && (
+              <button
+                onClick={() => setShowDeleteAvatarModal(true)}
+                disabled={isAvatarLoading}
+                className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50"
+                type="button"
+                title="Remove photo"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
@@ -625,6 +686,19 @@ export default function ProfilePage() {
         cancelText="Cancel"
         variant="info"
         isLoading={isLoading}
+      />
+
+      {/* Confirm Delete Avatar Modal */}
+      <ConfirmModal
+        isOpen={showDeleteAvatarModal}
+        onClose={() => setShowDeleteAvatarModal(false)}
+        onConfirm={handleDeleteAvatar}
+        title="Remove Photo"
+        message="Are you sure you want to remove your profile photo? You can always upload a new one later."
+        confirmText={isAvatarLoading ? 'Removing...' : 'Remove Photo'}
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isAvatarLoading}
       />
 
       {/* Alert Modal */}

@@ -11,7 +11,6 @@ The boilerplate supports multiple OAuth2 providers out of the box:
 | Google | ✅ Ready | Email, profile, OIDC |
 | GitHub | ✅ Ready | Email, profile, organizations |
 | Microsoft | ✅ Ready | Azure AD, multi-tenant |
-| Discord | ✅ Ready | Email, profile |
 | Apple | 🔜 Planned | OIDC with SIWA |
 | Facebook | 🔜 Planned | Email, profile |
 | SAML 2.0 | 🔜 Planned | Enterprise SSO |
@@ -38,10 +37,6 @@ OAUTH_GITHUB_CLIENT_SECRET=your-github-secret
 OAUTH_MICROSOFT_CLIENT_ID=your-microsoft-client-id
 OAUTH_MICROSOFT_CLIENT_SECRET=your-microsoft-secret
 OAUTH_MICROSOFT_TENANT_ID=common  # or specific tenant ID
-
-# Discord OAuth
-OAUTH_DISCORD_CLIENT_ID=your-discord-client-id
-OAUTH_DISCORD_CLIENT_SECRET=your-discord-secret
 ```
 
 ### 2. Run Database Migration
@@ -82,7 +77,7 @@ Parameters:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| provider | path | Provider name (google, github, microsoft, discord) |
+| provider | path | Provider name (google, github, microsoft) |
 | redirect_uri | query | Custom redirect URI (optional) |
 | scope | query | Additional scopes (space-separated) |
 
@@ -293,14 +288,6 @@ const OAuthCallback = () => {
 5. Add redirect URI: `http://localhost:8000/api/v1/auth/oauth/microsoft/callback`
 6. Go to **Certificates & secrets** > **New client secret**
 7. Copy Application (client) ID and secret
-
-### Discord OAuth
-
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application
-3. Go to **OAuth2** > **General**
-4. Add redirect: `http://localhost:8000/api/v1/auth/oauth/discord/callback`
-5. Copy Client ID and Client Secret
 
 ## Security Considerations
 

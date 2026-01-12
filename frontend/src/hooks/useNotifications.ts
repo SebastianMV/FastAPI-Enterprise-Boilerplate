@@ -101,7 +101,7 @@ export function useNotifications(
       params.append('limit', String(opts?.limit ?? limit));
       
       const response = await api.get<{ items: Notification[]; total: number }>(
-        `/api/v1/notifications?${params}`
+        `/notifications?${params}`
       );
       
       setNotifications(response.data.items);
@@ -117,7 +117,7 @@ export function useNotifications(
   const fetchUnreadCount = useCallback(async () => {
     try {
       const response = await api.get<{ count: number }>(
-        '/api/v1/notifications/unread-count'
+        '/notifications/unread-count'
       );
       setUnreadCount(response.data.count);
     } catch (err) {
@@ -128,7 +128,7 @@ export function useNotifications(
   // Mark as read
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      await api.post(`/api/v1/notifications/${notificationId}/read`);
+      await api.post(`/notifications/${notificationId}/read`);
       
       setNotifications((prev) =>
         prev.map((n) =>
@@ -145,7 +145,7 @@ export function useNotifications(
   // Mark all as read
   const markAllAsRead = useCallback(async () => {
     try {
-      await api.post('/api/v1/notifications/read-all');
+      await api.post('/notifications/read-all');
       
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, is_read: true }))
@@ -160,7 +160,7 @@ export function useNotifications(
   // Delete notification
   const deleteNotification = useCallback(async (notificationId: string) => {
     try {
-      await api.delete(`/api/v1/notifications/${notificationId}`);
+      await api.delete(`/notifications/${notificationId}`);
       
       setNotifications((prev) => {
         const notification = prev.find((n) => n.id === notificationId);
@@ -177,7 +177,7 @@ export function useNotifications(
   // Clear all read notifications
   const clearRead = useCallback(async () => {
     try {
-      await api.delete('/api/v1/notifications/read');
+      await api.delete('/notifications/read');
       
       setNotifications((prev) => prev.filter((n) => !n.is_read));
     } catch (err) {

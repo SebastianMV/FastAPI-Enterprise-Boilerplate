@@ -31,6 +31,7 @@ services:
       - REFRESH_TOKEN_EXPIRE_DAYS=7
       - ENVIRONMENT=development
       - DEBUG=true
+      - RATE_LIMIT_ENABLED=false
     volumes:
       - ./backend:/app
     depends_on:
@@ -45,16 +46,31 @@ services:
           memory: 1G
 
   # ===========================================
-  # Frontend (React - Development with Vite)
+  # Nginx Reverse Proxy (Development)
   # ===========================================
-  frontend:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - vite
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # ===========================================
+  # Frontend Vite Dev Server (Internal)
+  # ===========================================
+  vite:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=http://backend:8000
+    expose:
+      - "5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules

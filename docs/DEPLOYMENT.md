@@ -310,7 +310,7 @@ docker compose -f docker-compose.prod.yml exec backend \
 
 #### Step 2: Remove Development Users
 
-**Option A: Using CLI (Recommended)**
+##### Option A: Using CLI (Recommended)
 
 ```bash
 # Deactivate development users
@@ -320,7 +320,7 @@ docker compose -f docker-compose.prod.yml exec backend \
 # Repeat for each development user
 ```
 
-**Option B: Direct SQL (Faster)**
+##### Option B: Direct SQL (Faster)
 
 ```sql
 -- Connect to production database
@@ -683,6 +683,7 @@ http {
     types_hash_max_size 2048;
 
     # Gzip
+
     gzip on;
     gzip_vary on;
     gzip_proxied any;
@@ -845,18 +846,21 @@ volumes:
 ### Pre-Deployment
 
 #### User & Access Management
+
 - [ ] **DELETE all development users** (`admin@example.com`, `manager@example.com`, `user@example.com`)
 - [ ] Create production admin account with **strong unique password** (16+ chars)
 - [ ] Document production admin credentials in secure vault (1Password, Vault, etc.)
 - [ ] Verify no test/demo users exist in database
 
 #### Secrets & Configuration
+
 - [ ] Generate **strong JWT secret** (32+ random characters)
 - [ ] Change **all default passwords** (database, Redis, etc.)
 - [ ] Use **environment variables** for all secrets (never commit to git)
 - [ ] Enable **secrets rotation** policy
 
 #### Network & Access
+
 - [ ] Enable **HTTPS only** (disable HTTP)
 - [ ] Configure **CORS** with specific allowed origins (no wildcards)
 - [ ] Enable **rate limiting** on all public endpoints
@@ -864,6 +868,7 @@ volumes:
 - [ ] Set up **firewall rules** (allow only necessary traffic)
 
 #### Code & Dependencies
+
 - [ ] Scan Docker images for **vulnerabilities** (`docker scan`)
 - [ ] Update all dependencies to **latest secure versions**
 - [ ] Remove or disable **debug/development features**
@@ -872,6 +877,7 @@ volumes:
 ### Post-Deployment
 
 #### Monitoring & Logging
+
 - [ ] Enable automatic **security updates**
 - [ ] Set up **log aggregation** (ELK, Loki, CloudWatch)
 - [ ] Configure **intrusion detection** (fail2ban, ModSecurity)
@@ -879,6 +885,7 @@ volumes:
 - [ ] Monitor **failed login attempts**
 
 #### Backup & Recovery
+
 - [ ] Enable **automated database backups**
 - [ ] Test **disaster recovery** procedure
 - [ ] Document **incident response** plan
@@ -886,6 +893,7 @@ volumes:
 - [ ] Test **restore from backup** monthly
 
 #### Compliance & Audit
+
 - [ ] Document **incident response** procedures
 - [ ] Review **access logs** for unauthorized attempts
 - [ ] Perform **security audit** of API endpoints

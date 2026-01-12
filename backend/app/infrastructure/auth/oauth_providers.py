@@ -402,56 +402,11 @@ class MicrosoftOAuthProvider(OAuthProviderBase):
             )
 
 
-class DiscordOAuthProvider(OAuthProviderBase):
-    """Discord OAuth2 provider."""
-    
-    provider = OAuthProvider.DISCORD
-    authorization_url = "https://discord.com/api/oauth2/authorize"
-    token_url = "https://discord.com/api/oauth2/token"
-    userinfo_url = "https://discord.com/api/users/@me"
-    revoke_url = "https://discord.com/api/oauth2/token/revoke"
-    
-    default_scopes = [
-        "identify",
-        "email",
-    ]
-    
-    async def get_user_info(self, access_token: str) -> OAuthUserInfo:
-        """Get user info from Discord."""
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                self.userinfo_url,
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # Build avatar URL
-            avatar_url = None
-            if data.get("avatar"):
-                avatar_url = f"https://cdn.discordapp.com/avatars/{data['id']}/{data['avatar']}.png"
-            
-            return OAuthUserInfo(
-                provider=self.provider,
-                provider_user_id=data["id"],
-                email=data.get("email"),
-                email_verified=data.get("verified", False),
-                name=data.get("global_name") or data.get("username"),
-                given_name=None,
-                family_name=None,
-                picture=avatar_url,
-                locale=data.get("locale"),
-                raw_data=data,
-            )
-
-
 # Provider registry
 OAUTH_PROVIDERS: dict[OAuthProvider, type[OAuthProviderBase]] = {
     OAuthProvider.GOOGLE: GoogleOAuthProvider,
     OAuthProvider.GITHUB: GitHubOAuthProvider,
     OAuthProvider.MICROSOFT: MicrosoftOAuthProvider,
-    OAuthProvider.DISCORD: DiscordOAuthProvider,
 }
 
 

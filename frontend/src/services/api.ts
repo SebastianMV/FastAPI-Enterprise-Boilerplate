@@ -9,6 +9,7 @@ export interface User {
   avatar_url?: string | null;
   is_active: boolean;
   is_superuser: boolean;
+  email_verified: boolean;
   created_at: string;
   last_login?: string;
 }
@@ -16,6 +17,7 @@ export interface User {
 export interface LoginCredentials {
   email: string;
   password: string;
+  mfa_code?: string;
 }
 
 export interface LoginResponse {
@@ -41,7 +43,7 @@ export interface PaginatedResponse<T> {
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
-  baseURL: '/',
+  baseURL: import.meta.env.VITE_API_URL || '/',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -80,7 +82,7 @@ api.interceptors.response.use(
           if (state?.refreshToken && !error.config._retry) {
             error.config._retry = true;
             
-            const refreshResponse = await axios.post('/api/v1/auth/refresh', {
+            const refreshResponse = await axios.post('/auth/refresh', {
               refresh_token: state.refreshToken,
             });
             
@@ -277,7 +279,6 @@ export const OAUTH_PROVIDERS: OAuthProvider[] = [
   { id: 'google', name: 'Google', icon: 'google', color: '#4285F4' },
   { id: 'github', name: 'GitHub', icon: 'github', color: '#333333' },
   { id: 'microsoft', name: 'Microsoft', icon: 'microsoft', color: '#00A4EF' },
-  { id: 'discord', name: 'Discord', icon: 'discord', color: '#5865F2' },
 ];
 
 export const oauthService = {
@@ -411,117 +412,6 @@ export const searchService = {
 };
 
 // ==============================================================================
-// Chat Types and Service
-// ==============================================================================
-
-export interface ChatMessage {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  content: string;
-  content_type: 'text' | 'image' | 'file' | 'audio' | 'video' | 'location' | 'system';
-  metadata?: Record<string, unknown>;
-  status: 'pending' | 'sent' | 'delivered' | 'read';
-  reply_to_id?: string;
-  reactions?: Record<string, string[]>;
-  is_edited?: boolean;
-  created_at: string;
-}
-
-export interface Conversation {
-  id: string;
-  type: 'direct' | 'group';
-  name?: string;
-  participants: Array<{
-    user_id: string;
-    role: string;
-    nickname?: string;
-  }>;
-  last_message_preview?: string;
-  last_message_at?: string;
-  unread_count: number;
-}
-
-export interface MessagesResponse {
-  items: ChatMessage[];
-  has_more: boolean;
-}
-
-export const chatService = {
-  /**
-   * Get all conversations for current user
-   */
-  getConversations: async (): Promise<Conversation[]> => {
-    const response = await api.get<Conversation[]>('/chat/conversations');
-    return response.data;
-  },
-
-  /**
-   * Get messages for a conversation
-   */
-  getMessages: async (
-    conversationId: string,
-    params?: { limit?: number; before?: string }
-  ): Promise<MessagesResponse> => {
-    const response = await api.get<MessagesResponse>(
-      `/chat/conversations/${conversationId}/messages`,
-      { params }
-    );
-    return response.data;
-  },
-
-  /**
-   * Send a message to a conversation
-   */
-  sendMessage: async (
-    conversationId: string,
-    data: { content: string; reply_to_id?: string }
-  ): Promise<ChatMessage> => {
-    const response = await api.post<ChatMessage>(
-      `/chat/conversations/${conversationId}/messages`,
-      data
-    );
-    return response.data;
-  },
-
-  /**
-   * Mark messages as read
-   */
-  markAsRead: async (
-    conversationId: string,
-    messageIds: string[]
-  ): Promise<void> => {
-    await api.post(`/chat/conversations/${conversationId}/read`, {
-      message_ids: messageIds,
-    });
-  },
-
-  /**
-   * Create a direct conversation
-   */
-  createDirectConversation: async (participantId: string): Promise<Conversation> => {
-    const response = await api.post<Conversation>('/chat/conversations/direct', {
-      participant_id: participantId,
-    });
-    return response.data;
-  },
-
-  /**
-   * Create a group conversation
-   */
-  createGroupConversation: async (
-    name: string,
-    participantIds: string[]
-  ): Promise<Conversation> => {
-    const response = await api.post<Conversation>('/chat/conversations/group', {
-      name,
-      participant_ids: participantIds,
-    });
-    return response.data;
-  },
-};
-
-// ==============================================================================
 // Notifications Types and Service
 // ==============================================================================
 
@@ -601,11 +491,8 @@ export const notificationsService = {
 // ==============================================================================
 
 export interface FeatureConfig {
-  chat_enabled: boolean;
   websocket_enabled: boolean;
   websocket_notifications: boolean;
-  websocket_chat: boolean;
-  websocket_presence: boolean;
 }
 
 export const configService = {
@@ -614,6 +501,95 @@ export const configService = {
    */
   getFeatures: async (): Promise<FeatureConfig> => {
     const response = await api.get<FeatureConfig>('/config/features');
+    return response.data;
+  },
+};
+
+// ==============================================================================
+// Session Types and Service
+// ==============================================================================
+
+export interface UserSession {
+  id: string;
+  device_name: string;
+  device_type: string;
+  browser: string;
+  os: string;
+  ip_address: string;
+  location: string;
+  last_activity: string;
+  is_current: boolean;
+  created_at: string;
+}
+
+export interface SessionListResponse {
+  sessions: UserSession[];
+  total: number;
+}
+
+export interface RevokeSessionsResponse {
+  message: string;
+  revoked_count: number;
+}
+
+export const sessionsService = {
+  /**
+   * List all active sessions for current user
+   */
+  list: async (): Promise<SessionListResponse> => {
+    const response = await api.get<SessionListResponse>('/sessions');
+    return response.data;
+  },
+
+  /**
+   * Revoke a specific session
+   */
+  revoke: async (sessionId: string): Promise<RevokeSessionsResponse> => {
+    const response = await api.delete<RevokeSessionsResponse>(`/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  /**
+   * Revoke all other sessions
+   */
+  revokeAll: async (): Promise<RevokeSessionsResponse> => {
+    const response = await api.delete<RevokeSessionsResponse>('/sessions');
+    return response.data;
+  },
+};
+
+// ==============================================================================
+// Email Verification Service
+// ==============================================================================
+
+export interface VerificationStatus {
+  email: string;
+  email_verified: boolean;
+  verification_required: boolean;
+}
+
+export const emailVerificationService = {
+  /**
+   * Send verification email
+   */
+  sendVerification: async (): Promise<{ message: string; success: boolean }> => {
+    const response = await api.post<{ message: string; success: boolean }>('/auth/send-verification');
+    return response.data;
+  },
+
+  /**
+   * Verify email with token
+   */
+  verifyEmail: async (token: string): Promise<{ message: string; success: boolean }> => {
+    const response = await api.post<{ message: string; success: boolean }>(`/auth/verify-email?token=${token}`);
+    return response.data;
+  },
+
+  /**
+   * Get verification status
+   */
+  getStatus: async (): Promise<VerificationStatus> => {
+    const response = await api.get<VerificationStatus>('/auth/verification-status');
     return response.data;
   },
 };

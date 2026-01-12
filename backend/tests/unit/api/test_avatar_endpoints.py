@@ -4,6 +4,7 @@
 """Integration tests for avatar upload functionality."""
 
 import io
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -117,7 +118,8 @@ class TestUploadAvatarEndpoint:
             )
         
         assert exc_info.value.status_code == 400
-        assert exc_info.value.detail["code"] == "INVALID_FILE_TYPE"
+        detail = cast(dict[str, Any], exc_info.value.detail)
+        assert detail["code"] == "INVALID_FILE_TYPE"
 
     @pytest.mark.asyncio
     async def test_upload_avatar_file_too_large(self, mock_user):
@@ -142,7 +144,8 @@ class TestUploadAvatarEndpoint:
             )
         
         assert exc_info.value.status_code == 400
-        assert exc_info.value.detail["code"] == "FILE_TOO_LARGE"
+        detail = cast(dict[str, Any], exc_info.value.detail)
+        assert detail["code"] == "FILE_TOO_LARGE"
 
     @pytest.mark.asyncio
     async def test_upload_avatar_user_not_found(self, valid_image_file):
@@ -165,7 +168,8 @@ class TestUploadAvatarEndpoint:
                 )
             
             assert exc_info.value.status_code == 404
-            assert exc_info.value.detail["code"] == "USER_NOT_FOUND"
+            detail = cast(dict[str, Any], exc_info.value.detail)
+            assert detail["code"] == "USER_NOT_FOUND"
 
 
 class TestDeleteAvatarEndpoint:
@@ -230,7 +234,8 @@ class TestDeleteAvatarEndpoint:
                 )
             
             assert exc_info.value.status_code == 400
-            assert exc_info.value.detail["code"] == "NO_AVATAR"
+            detail = cast(dict[str, Any], exc_info.value.detail)
+            assert detail["code"] == "NO_AVATAR"
 
     @pytest.mark.asyncio
     async def test_delete_avatar_user_not_found(self):
@@ -252,4 +257,5 @@ class TestDeleteAvatarEndpoint:
                 )
             
             assert exc_info.value.status_code == 404
-            assert exc_info.value.detail["code"] == "USER_NOT_FOUND"
+            detail = cast(dict[str, Any], exc_info.value.detail)
+            assert detail["code"] == "USER_NOT_FOUND"

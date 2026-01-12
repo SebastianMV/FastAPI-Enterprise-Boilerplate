@@ -14,7 +14,7 @@ We take security seriously. If you discover a security vulnerability, please rep
 ### How to Report
 
 1. **DO NOT** create a public GitHub issue for security vulnerabilities
-2. Email: <security@kairos.cl>
+2. Email: security@yourdomain.com (replace with your security contact)
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

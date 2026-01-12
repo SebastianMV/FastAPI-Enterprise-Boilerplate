@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     # ===========================================
     # Redis
     # ===========================================
+    REDIS_URL_OVERRIDE: Optional[str] = Field(default=None, alias="REDIS_URL")
     REDIS_HOST: str = Field(default="localhost")
     REDIS_PORT: int = Field(default=6379, ge=1, le=65535)
     REDIS_PASSWORD: Optional[str] = Field(default=None)
@@ -94,6 +95,36 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, ge=1, le=30)
 
     # ===========================================
+    # Account Security
+    # ===========================================
+    ACCOUNT_LOCKOUT_ENABLED: bool = Field(
+        default=True,
+        description="Enable account lockout after failed login attempts"
+    )
+    ACCOUNT_LOCKOUT_THRESHOLD: int = Field(
+        default=5,
+        ge=3,
+        le=10,
+        description="Number of failed attempts before account lockout"
+    )
+    ACCOUNT_LOCKOUT_DURATION_MINUTES: int = Field(
+        default=30,
+        ge=5,
+        le=1440,
+        description="Duration of account lockout in minutes"
+    )
+    EMAIL_VERIFICATION_REQUIRED: bool = Field(
+        default=True,
+        description="Require email verification for new users"
+    )
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = Field(
+        default=24,
+        ge=1,
+        le=72,
+        description="Email verification token expiration in hours"
+    )
+    
+    # ===========================================
     # Rate Limiting
     # ===========================================
     RATE_LIMIT_ENABLED: bool = Field(default=True)
@@ -110,11 +141,6 @@ class Settings(BaseSettings):
         default=["en", "es", "pt", "fr", "de"],
         description="List of supported locales"
     )
-
-    # ===========================================
-    # Feature Flags
-    # ===========================================
-    FEATURE_FLAGS_ENABLED: bool = True
 
     # ===========================================
     # Observability (OpenTelemetry)
@@ -174,22 +200,6 @@ class Settings(BaseSettings):
     WEBSOCKET_NOTIFICATIONS: bool = Field(
         default=True,
         description="Enable real-time notifications via WebSocket (recommended)"
-    )
-    
-    # ===========================================
-    # Chat Feature (Optional - Disabled by default)
-    # ===========================================
-    CHAT_ENABLED: bool = Field(
-        default=False,
-        description="Enable internal chat functionality (optional feature)"
-    )
-    WEBSOCKET_CHAT: bool = Field(
-        default=False,
-        description="Enable real-time chat messages via WebSocket (requires CHAT_ENABLED=True)"
-    )
-    WEBSOCKET_PRESENCE: bool = Field(
-        default=False,
-        description="Enable online/offline presence tracking (for chat)"
     )
 
     # ===========================================
@@ -254,10 +264,6 @@ class Settings(BaseSettings):
         default="common",
         description="Azure AD tenant ID or 'common' for multi-tenant"
     )
-    
-    # Discord OAuth
-    OAUTH_DISCORD_CLIENT_ID: Optional[str] = Field(default=None)
-    OAUTH_DISCORD_CLIENT_SECRET: Optional[str] = Field(default=None)
 
     # ===========================================
     # Full-Text Search Configuration
@@ -293,7 +299,11 @@ class Settings(BaseSettings):
 
     @property
     def redis_url(self) -> str:
-        """Build Redis URL from components."""
+        """Build Redis URL from components or use override."""
+        # Prioritize REDIS_URL environment variable if set
+        if self.REDIS_URL_OVERRIDE:
+            return self.REDIS_URL_OVERRIDE
+        # Otherwise build from components
         auth = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
         return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
     

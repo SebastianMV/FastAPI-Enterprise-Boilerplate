@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
       }
 
       try {
-        const response = await fetch(`/api/v1/auth/verify-reset-token?token=${resetToken}`);
+        const response = await fetch(`/auth/verify-reset-token?token=${resetToken}`);
         setIsTokenValid(response.ok);
       } catch {
         // If endpoint doesn't exist, assume token is valid and let reset fail if invalid
@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/api/v1/auth/reset-password', {
+      const response = await fetch('/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

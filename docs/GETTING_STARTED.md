@@ -71,9 +71,9 @@ On first startup, the backend automatically runs Alembic migrations which create
 | Demo User            | `user@example.com`     | `User123!`    | user       |
 
 > 🚨 **SECURITY WARNING - DEVELOPMENT ONLY**
-> 
+>
 > These users are **automatically created by migrations** for testing. They have **known public passwords**.
-> 
+>
 > 📖 **For production deployment instructions**, see the complete [Production Security & Initial Setup Guide](./DEPLOYMENT.md#production-security--initial-setup).
 
 #### ✅ Verification
@@ -292,7 +292,8 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 > 🚨 **CRITICAL: Production Security**
 >
 > **Before deploying to production, you MUST:**
-> 1. Delete all development users (admin@example.com, manager@example.com, user@example.com)
+>
+> 1. Delete all development users (`admin@example.com`, `manager@example.com`, `user@example.com`)
 > 2. Create secure production admin accounts
 > 3. Change all default passwords and secrets
 >

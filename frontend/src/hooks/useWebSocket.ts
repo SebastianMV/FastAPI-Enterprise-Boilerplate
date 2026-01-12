@@ -52,7 +52,7 @@ export interface WebSocketMessage {
 }
 
 export interface UseWebSocketOptions {
-  /** Custom WebSocket URL (defaults to /api/v1/ws) */
+  /** Custom WebSocket URL (defaults to /ws which nginx proxies to backend /api/v1/ws) */
   url?: string;
   /** Auto-connect on mount */
   autoConnect?: boolean;
@@ -134,6 +134,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const optionsRef = useRef(options);
+  const isIntentionalCloseRef = useRef(false);
+  
+  // Keep options ref up to date without triggering reconnections
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
   
   // Build WebSocket URL
   const getWebSocketUrl = useCallback(() => {
@@ -141,7 +148,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    return `${protocol}//${host}/api/v1/ws?token=${accessToken}`;
+    // Use /ws path - nginx will proxy to backend /api/v1/ws
+    return `${protocol}//${host}/ws?token=${accessToken}`;
   }, [opts.url, accessToken]);
   
   // Handle incoming messages
@@ -151,37 +159,37 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       setLastMessage(message);
       
       // Call general message handler
-      options.onMessage?.(message);
+      optionsRef.current.onMessage?.(message);
       
       // Handle specific message types
       switch (message.type) {
         case 'connected':
           setConnectionId(message.payload.connection_id as string);
-          options.onConnected?.(message.payload.connection_id as string);
+          optionsRef.current.onConnected?.(message.payload.connection_id as string);
           break;
           
         case 'notification':
-          options.onNotification?.(message.payload);
+          optionsRef.current.onNotification?.(message.payload);
           break;
           
         case 'chat_message':
-          options.onChatMessage?.(message.payload);
+          optionsRef.current.onChatMessage?.(message.payload);
           break;
           
         case 'presence_online':
-          options.onPresenceChange?.(message.payload.user_id as string, 'online');
+          optionsRef.current.onPresenceChange?.(message.payload.user_id as string, 'online');
           break;
           
         case 'presence_offline':
-          options.onPresenceChange?.(message.payload.user_id as string, 'offline');
+          optionsRef.current.onPresenceChange?.(message.payload.user_id as string, 'offline');
           break;
           
         case 'presence_away':
-          options.onPresenceChange?.(message.payload.user_id as string, 'away');
+          optionsRef.current.onPresenceChange?.(message.payload.user_id as string, 'away');
           break;
           
         case 'chat_typing':
-          options.onTyping?.(
+          optionsRef.current.onTyping?.(
             message.payload.user_id as string,
             message.payload.is_typing as boolean,
             message.room_id,
@@ -189,13 +197,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
           break;
           
         case 'error':
-          options.onError?.(new Error(message.payload.message as string));
+          optionsRef.current.onError?.(new Error(message.payload.message as string));
           break;
       }
     } catch (error) {
       console.error('Failed to parse WebSocket message:', error);
     }
-  }, [options]);
+  }, []);
   
   // Start ping interval
   const startPingInterval = useCallback(() => {
@@ -220,15 +228,27 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       return;
     }
     
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
+    // Don't reconnect if already connected or connecting
+    if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        console.log('[WebSocket] Already connected, skipping');
+        return;
+      }
+      if (wsRef.current.readyState === WebSocket.CONNECTING) {
+        console.log('[WebSocket] Already connecting, skipping');
+        return;
+      }
     }
+    
+    isIntentionalCloseRef.current = false;
+    console.log('[WebSocket] Initiating connection... (v2024-01-12)');
     
     try {
       const ws = new WebSocket(getWebSocketUrl());
       wsRef.current = ws;
       
       ws.onopen = () => {
+        console.log('[WebSocket] Connection opened successfully');
         setIsConnected(true);
         reconnectAttemptsRef.current = 0;
         startPingInterval();
@@ -236,17 +256,19 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       
       ws.onmessage = handleMessage;
       
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        console.log('[WebSocket] Connection closed:', event.code, event.reason, 'intentional:', isIntentionalCloseRef.current);
         setIsConnected(false);
         setConnectionId(null);
-        options.onDisconnected?.();
+        optionsRef.current.onDisconnected?.();
         
         if (pingIntervalRef.current) {
           clearInterval(pingIntervalRef.current);
         }
         
-        // Auto-reconnect
-        if (opts.autoReconnect && reconnectAttemptsRef.current < opts.maxReconnectAttempts) {
+        // Auto-reconnect only if not intentional close
+        if (!isIntentionalCloseRef.current && opts.autoReconnect && reconnectAttemptsRef.current < opts.maxReconnectAttempts) {
+          console.log('[WebSocket] Scheduling reconnect attempt', reconnectAttemptsRef.current + 1);
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttemptsRef.current++;
             connect();
@@ -254,25 +276,30 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         }
       };
       
-      ws.onerror = () => {
+      ws.onerror = (error) => {
+        console.error('[WebSocket] Error:', error);
         // WebSocket errors are expected when server is not running
         // Silently notify via callback, avoid console noise
-        options.onError?.(new Error('WebSocket connection error'));
+        optionsRef.current.onError?.(new Error('WebSocket connection error'));
       };
     } catch (error) {
       // Silently notify via callback
-      options.onError?.(error as Error);
+      optionsRef.current.onError?.(error as Error);
     }
-  }, [accessToken, getWebSocketUrl, handleMessage, startPingInterval, opts, options]);
+  }, [accessToken, getWebSocketUrl, handleMessage, startPingInterval, opts]);
   
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
+    isIntentionalCloseRef.current = true;
+    
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     
     if (pingIntervalRef.current) {
       clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
     }
     
     if (wsRef.current) {
@@ -337,14 +364,21 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   
   // Auto-connect on mount
   useEffect(() => {
-    if (opts.autoConnect && accessToken) {
-      connect();
+    if (!opts.autoConnect || !accessToken) {
+      return;
     }
     
+    // Small delay to avoid rapid connect/disconnect in React Strict Mode
+    const connectTimer = setTimeout(() => {
+      connect();
+    }, 100);
+    
     return () => {
+      clearTimeout(connectTimer);
       disconnect();
     };
-  }, [opts.autoConnect, accessToken, connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts.autoConnect, accessToken]);
   
   return {
     isConnected,

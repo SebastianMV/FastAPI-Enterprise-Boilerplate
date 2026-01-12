@@ -5,8 +5,8 @@
 
 from app.infrastructure.database.models.api_key import APIKeyModel
 from app.infrastructure.database.models.audit_log import AuditLogModel
-from app.infrastructure.database.models.chat_message import ChatMessageModel
-from app.infrastructure.database.models.conversation import ConversationModel, ConversationParticipantModel
+# from app.infrastructure.database.models.chat_message import ChatMessageModel
+# from app.infrastructure.database.models.conversation import ConversationModel, ConversationParticipantModel
 from app.infrastructure.database.models.mfa import MFAConfigModel
 from app.infrastructure.database.models.notification import NotificationModel
 from app.infrastructure.database.models.oauth import OAuthConnectionModel, SSOConfigurationModel
@@ -17,9 +17,9 @@ from app.infrastructure.database.models.user import UserModel
 __all__ = [
     "APIKeyModel",
     "AuditLogModel",
-    "ChatMessageModel",
-    "ConversationModel",
-    "ConversationParticipantModel",
+    # "ChatMessageModel",
+    # "ConversationModel",
+    # "ConversationParticipantModel",
     "MFAConfigModel",
     "NotificationModel",
     "OAuthConnectionModel",

@@ -47,7 +47,7 @@ export default function RegisterPage() {
     setErrorMessage(null);
 
     try {
-      await api.post('/api/v1/auth/register', {
+      await api.post('/auth/register', {
         email: data.email,
         password: data.password,
         first_name: data.first_name,
@@ -98,8 +98,8 @@ export default function RegisterPage() {
     <div className="card p-8">
       {/* Logo */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
-          <UserPlus className="w-8 h-8 text-white" />
+        <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
+          <img src="/logo.svg" alt="PyNest Pro" className="w-16 h-16" />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
           Create Account

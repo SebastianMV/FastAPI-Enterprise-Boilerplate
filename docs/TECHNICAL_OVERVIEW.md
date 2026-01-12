@@ -150,7 +150,7 @@ frontend/
 
 - JWT (stateless tokens)
 - API Keys (service-to-service)
-- OAuth2/SSO (Google, GitHub, Microsoft, Discord)
+- OAuth2/SSO (Google, GitHub, Microsoft)
 - MFA/2FA (TOTP + backup codes)
 
 **Granular ACL (Permissions):**
@@ -197,7 +197,7 @@ ALTER TABLE users FORCE ROW LEVEL SECURITY;
 DATABASE_URL=postgresql+asyncpg://app_user:app_password@db:5432/boilerplate
 ```
 
-**Documentation:** See [RLS_SETUP.md](RLS_SETUP.md) and [PRODUCTION_DATABASE_CONFIG.md](PRODUCTION_DATABASE_CONFIG.md)
+**Documentation:** See [RLS_SETUP.md](RLS_SETUP.md) and [DEPLOYMENT.md](DEPLOYMENT.md#database-setup)
 
 ---
 

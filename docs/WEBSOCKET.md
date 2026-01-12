@@ -2,51 +2,26 @@
 
 ## Overview
 
-This document describes the pluggable WebSocket architecture for **real-time bidirectional communication**, primarily used for:
+This document describes the pluggable WebSocket architecture for **real-time bidirectional communication**, used for:
 
-- 🔔 **Real-time Notifications** ⭐ **(PRIMARY USE CASE)** - Instant delivery to connected clients
-- 💬 **Internal Chat** *(Optional Feature - Disabled by default)* - Direct and group messaging
-- 👥 **Presence Tracking** *(Optional - For chat)* - Online/offline status  
-- ⌨️ **Typing Indicators** *(Optional - For chat)* - Live typing status in chat
-
-> **Note:** WebSocket is **enabled by default** for real-time notifications. The internal chat feature is **optional and disabled by default**. It can be enabled via environment variables.
+- 🔔 **Real-time Notifications** - Instant delivery to connected clients
+- 📊 **Live Dashboard Updates** - Real-time metrics and status changes
+- 🔄 **Data Synchronization** - Keep UI in sync across tabs/devices
 
 ## Feature Flags
 
-Control which WebSocket features are enabled via environment variables:
+Control WebSocket features via environment variables:
 
 ```bash
-# WebSocket Core (Required for notifications)
+# WebSocket Core
 WEBSOCKET_ENABLED=true              # Enable/disable all WebSocket functionality
 WEBSOCKET_BACKEND=memory            # Backend: memory (dev) or redis (production)
 WEBSOCKET_NOTIFICATIONS=true        # Enable real-time notifications (recommended)
-
-# Chat Feature (Optional - Disabled by default)
-CHAT_ENABLED=false                  # Enable internal chat functionality
-WEBSOCKET_CHAT=false                # Enable real-time chat messages via WebSocket
-WEBSOCKET_PRESENCE=false            # Enable online/offline presence tracking
 ```
-
-### Enabling Chat Feature
-
-To enable the optional chat feature:
-
-1. Set environment variables:
-   ```bash
-   CHAT_ENABLED=true
-   WEBSOCKET_CHAT=true
-   WEBSOCKET_PRESENCE=true    # Optional, for online status
-   ```
-
-2. Restart the backend server
-
-3. Users will see the Chat option in the sidebar automatically
-
-4. Chat endpoints (`/api/v1/chat/*`) will be available
 
 ## Architecture
 
-`````````text
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Clients                                  │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
@@ -62,21 +37,21 @@ To enable the optional chat feature:
                       ▼             ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    FastAPI WebSocket Endpoints                   │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │    /ws       │  │/ws/notif...  │  │ /ws/chat/    │          │
-│  │   (main)     │  │(read-only)   │  │  {room_id}   │          │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
-│         │                 │                 │                   │
-│         └─────────────────┼─────────────────┘                   │
-│                           │                                     │
-│                           ▼                                     │
+│  ┌──────────────────────┐  ┌──────────────────────┐            │
+│  │        /ws           │  │  /ws/notifications   │            │
+│  │       (main)         │  │    (read-only)       │            │
+│  └──────────┬───────────┘  └──────────┬───────────┘            │
+│             │                         │                         │
+│             └────────────┬────────────┘                         │
+│                          │                                      │
+│                          ▼                                      │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │                   WebSocket Port (ABC)                    │  │
 │  │              domain/ports/websocket.py                    │  │
 │  └──────────────────────────────────────────────────────────┘  │
-│                           │                                     │
-│              ┌────────────┼────────────┐                       │
-│              ▼                         ▼                       │
+│                          │                                      │
+│             ┌────────────┼────────────┐                        │
+│             ▼                         ▼                        │
 │  ┌──────────────────────┐  ┌──────────────────────┐           │
 │  │   MemoryWebSocket    │  │   RedisWebSocket     │           │
 │  │      Manager         │  │      Manager         │           │
@@ -94,8 +69,6 @@ Configure WebSocket features via environment variables:
 WEBSOCKET_ENABLED=true
 WEBSOCKET_BACKEND=memory  # "memory" or "redis"
 WEBSOCKET_NOTIFICATIONS=true
-WEBSOCKET_CHAT=true
-WEBSOCKET_PRESENCE=true
 
 # Redis URL (required for redis backend)
 REDIS_URL=redis://localhost:6379/0
@@ -125,12 +98,6 @@ ws.onmessage = (event) => {
     case 'notification':
       handleNotification(message.payload);
       break;
-    case 'chat_message':
-      handleChatMessage(message.payload);
-      break;
-    case 'presence_change':
-      handlePresence(message.payload);
-      break;
   }
 };
 ```
@@ -143,14 +110,6 @@ Read-only WebSocket for receiving notifications.
 const ws = new WebSocket(`wss://api.example.com/api/v1/ws/notifications?token=${accessToken}`);
 ```
 
-### Chat Room (`/api/v1/ws/chat/{room_id}`)
-
-Room-specific WebSocket for chat functionality.
-
-```typescript
-const ws = new WebSocket(`wss://api.example.com/api/v1/ws/chat/${conversationId}?token=${accessToken}`);
-```
-
 ## Message Types
 
 ### Incoming (Client → Server)
@@ -158,10 +117,6 @@ const ws = new WebSocket(`wss://api.example.com/api/v1/ws/chat/${conversationId}
 | Type | Description | Payload |
 |------|-------------|---------|
 | `ping` | Keep-alive | `{}` |
-| `chat_message` | Send message | `{ conversation_id, content, content_type?, reply_to_id? }` |
-| `typing_start` | Start typing | `{ room_id? }` |
-| `typing_stop` | Stop typing | `{ room_id? }` |
-| `read_receipt` | Mark as read | `{ message_id }` |
 
 ### Outgoing (Server → Client)
 
@@ -169,11 +124,6 @@ const ws = new WebSocket(`wss://api.example.com/api/v1/ws/chat/${conversationId}
 |------|-------------|---------|
 | `pong` | Keep-alive response | `{ timestamp }` |
 | `notification` | New notification | `{ id, type, title, message, priority, data? }` |
-| `chat_message` | New chat message | `{ id, conversation_id, sender_id, content, ... }` |
-| `typing_indicator` | User typing | `{ user_id, is_typing, room_id? }` |
-| `presence_change` | User online/offline | `{ user_id, status, tenant_id }` |
-| `message_delivered` | Delivery confirmation | `{ message_id, delivered_at }` |
-| `message_read` | Read confirmation | `{ message_id, user_id, read_at }` |
 
 ## Frontend Integration
 
@@ -230,47 +180,7 @@ function NotificationList() {
 }
 ```
 
-#### useChat
-
-Real-time chat with typing indicators:
-
-```tsx
-import { useChat } from '@/hooks/useChat';
-
-function ChatWindow({ conversationId }) {
-  const { 
-    messages, 
-    typingUsers, 
-    sendMessage, 
-    setTyping 
-  } = useChat(conversationId);
-  
-  return (
-    <div>
-      {messages.map(m => <Message key={m.id} message={m} />)}
-      {typingUsers.length > 0 && <TypingIndicator users={typingUsers} />}
-      <MessageInput 
-        onSend={sendMessage}
-        onTyping={(isTyping) => setTyping(isTyping)}
-      />
-    </div>
-  );
-}
-```
-
 ## REST API Endpoints
-
-### Chat
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/chat/conversations` | List conversations |
-| `POST` | `/api/v1/chat/conversations/direct` | Create direct conversation |
-| `POST` | `/api/v1/chat/conversations/group` | Create group conversation |
-| `GET` | `/api/v1/chat/conversations/{id}` | Get conversation |
-| `GET` | `/api/v1/chat/conversations/{id}/messages` | List messages |
-| `POST` | `/api/v1/chat/conversations/{id}/messages` | Send message |
-| `POST` | `/api/v1/chat/conversations/{id}/read` | Mark as read |
 
 ### Notifications
 
@@ -285,55 +195,6 @@ function ChatWindow({ conversationId }) {
 | `DELETE` | `/api/v1/notifications/read` | Delete read notifications |
 
 ## Database Schema
-
-### Conversations
-
-```sql
-CREATE TABLE conversations (
-    id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL,
-    type VARCHAR(20) NOT NULL,  -- 'direct', 'group'
-    name VARCHAR(100),
-    created_by UUID REFERENCES users(id),
-    last_message_at TIMESTAMP WITH TIME ZONE,
-    last_message_preview VARCHAR(200),
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-);
-
-CREATE TABLE conversation_participants (
-    id UUID PRIMARY KEY,
-    conversation_id UUID NOT NULL,
-    user_id UUID NOT NULL,
-    role VARCHAR(20) DEFAULT 'member',  -- 'admin', 'member'
-    nickname VARCHAR(50),
-    joined_at TIMESTAMP WITH TIME ZONE,
-    left_at TIMESTAMP WITH TIME ZONE,
-    last_read_at TIMESTAMP WITH TIME ZONE,
-    is_muted BOOLEAN DEFAULT FALSE,
-    UNIQUE(conversation_id, user_id)
-);
-```
-
-### Chat Messages
-
-```sql
-CREATE TABLE chat_messages (
-    id UUID PRIMARY KEY,
-    conversation_id UUID NOT NULL,
-    sender_id UUID NOT NULL,
-    content TEXT NOT NULL,
-    content_type VARCHAR(20) DEFAULT 'text',
-    metadata JSONB,
-    status VARCHAR(20) DEFAULT 'sent',
-    reply_to_id UUID,
-    reactions JSONB DEFAULT '{}',
-    is_edited BOOLEAN DEFAULT FALSE,
-    edited_at TIMESTAMP WITH TIME ZONE,
-    deleted_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE
-);
-```
 
 ### Notifications
 
@@ -482,10 +343,9 @@ class NotificationType(str, Enum):
 ## Security Considerations
 
 1. **Authentication**: WebSocket connections require valid JWT token via query parameter
-2. **Authorization**: Chat endpoints verify participant membership
-3. **Rate Limiting**: Consider implementing per-connection rate limits
-4. **Message Sanitization**: Always sanitize user-generated content
-5. **Tenant Isolation**: RLS ensures data isolation at database level
+2. **Rate Limiting**: Consider implementing per-connection rate limits
+3. **Message Sanitization**: Always sanitize user-generated content
+4. **Tenant Isolation**: RLS ensures data isolation at database level
 
 ## Monitoring
 
@@ -496,7 +356,6 @@ class NotificationType(str, Enum):
 manager = get_websocket_manager()
 print(f"Total connections: {manager.total_connections}")
 print(f"Total users: {manager.total_users}")
-print(f"Total rooms: {manager.total_rooms}")
 ```
 
 ### Health Check
@@ -516,8 +375,7 @@ The `/api/v1/health` endpoint includes WebSocket status when enabled.
 
 1. Check user is connected (`manager.is_user_connected(user_id)`)
 2. Verify tenant isolation matches
-3. Check room membership for chat messages
-4. Review Redis pub/sub connectivity
+3. Review Redis pub/sub connectivity
 
 ### Performance Issues
 

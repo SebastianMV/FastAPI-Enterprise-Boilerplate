@@ -20,11 +20,8 @@ export const useConfigStore = create<ConfigState>()(
   persist(
     (set) => ({
       // Initial state - all features disabled until fetched
-      chat_enabled: false,
       websocket_enabled: true,
       websocket_notifications: true,
-      websocket_chat: false,
-      websocket_presence: false,
       isLoading: false,
       error: null,
 
@@ -53,11 +50,8 @@ export const useConfigStore = create<ConfigState>()(
     {
       name: 'config-storage',
       partialize: (state) => ({
-        chat_enabled: state.chat_enabled,
         websocket_enabled: state.websocket_enabled,
         websocket_notifications: state.websocket_notifications,
-        websocket_chat: state.websocket_chat,
-        websocket_presence: state.websocket_presence,
       }),
     }
   )

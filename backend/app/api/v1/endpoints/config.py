@@ -19,11 +19,8 @@ router = APIRouter()
 class FeatureConfigResponse(BaseModel):
     """Feature configuration response."""
     
-    chat_enabled: bool
     websocket_enabled: bool
     websocket_notifications: bool
-    websocket_chat: bool
-    websocket_presence: bool
 
 
 @router.get("/features", response_model=FeatureConfigResponse)
@@ -36,9 +33,6 @@ async def get_feature_config(
     Returns the status of optional features like chat, websocket, etc.
     """
     return FeatureConfigResponse(
-        chat_enabled=settings.CHAT_ENABLED,
         websocket_enabled=settings.WEBSOCKET_ENABLED,
         websocket_notifications=settings.WEBSOCKET_NOTIFICATIONS,
-        websocket_chat=settings.WEBSOCKET_CHAT,
-        websocket_presence=settings.WEBSOCKET_PRESENCE,
     )

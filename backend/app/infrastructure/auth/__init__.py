@@ -16,7 +16,6 @@ from app.infrastructure.auth.oauth_providers import (
     GoogleOAuthProvider,
     GitHubOAuthProvider,
     MicrosoftOAuthProvider,
-    DiscordOAuthProvider,
     get_oauth_provider,
     OAUTH_PROVIDERS,
 )
@@ -34,7 +33,6 @@ __all__ = [
     "GoogleOAuthProvider",
     "GitHubOAuthProvider",
     "MicrosoftOAuthProvider",
-    "DiscordOAuthProvider",
     "get_oauth_provider",
     "OAUTH_PROVIDERS",
 ]

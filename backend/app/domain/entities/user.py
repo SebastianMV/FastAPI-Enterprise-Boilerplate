@@ -30,6 +30,15 @@ class User(SoftDeletableEntity):
     last_login: datetime | None = None
     roles: list[UUID] = field(default_factory=list)
     
+    # Account Lockout
+    failed_login_attempts: int = 0
+    locked_until: datetime | None = None
+    
+    # Email Verification
+    email_verified: bool = False
+    email_verification_token: str | None = None
+    email_verification_sent_at: datetime | None = None
+    
     @property
     def full_name(self) -> str:
         """Get user's full name."""
@@ -83,3 +92,95 @@ class User(SoftDeletableEntity):
     def has_role(self, role_id: UUID) -> bool:
         """Check if user has specific role."""
         return role_id in self.roles
+    
+    # ===========================================
+    # Account Lockout Methods
+    # ===========================================
+    
+    def is_locked(self) -> bool:
+        """Check if account is currently locked."""
+        if self.locked_until is None:
+            return False
+        return datetime.now(UTC) < self.locked_until
+    
+    def record_failed_login(self, lockout_threshold: int, lockout_duration_minutes: int) -> bool:
+        """
+        Record a failed login attempt.
+        
+        Args:
+            lockout_threshold: Number of failures before lockout
+            lockout_duration_minutes: How long to lock the account
+            
+        Returns:
+            True if account is now locked, False otherwise
+        """
+        from datetime import timedelta
+        self.failed_login_attempts += 1
+        
+        if self.failed_login_attempts >= lockout_threshold:
+            self.locked_until = datetime.now(UTC) + timedelta(minutes=lockout_duration_minutes)
+            return True
+        return False
+    
+    def reset_failed_attempts(self) -> None:
+        """Reset failed login attempts after successful login."""
+        self.failed_login_attempts = 0
+        self.locked_until = None
+    
+    def unlock(self) -> None:
+        """Manually unlock the account."""
+        self.locked_until = None
+        self.failed_login_attempts = 0
+    
+    # ===========================================
+    # Email Verification Methods
+    # ===========================================
+    
+    def generate_verification_token(self) -> str:
+        """Generate a new email verification token."""
+        import secrets
+        self.email_verification_token = secrets.token_urlsafe(32)
+        self.email_verification_sent_at = datetime.now(UTC)
+        return self.email_verification_token
+    
+    def verify_email(self, token: str, token_expire_hours: int = 24) -> bool:
+        """
+        Verify email with provided token.
+        
+        Args:
+            token: Verification token to check
+            token_expire_hours: How long the token is valid
+            
+        Returns:
+            True if verification successful, False otherwise
+        """
+        from datetime import timedelta
+        
+        if self.email_verified:
+            return True  # Already verified
+            
+        if self.email_verification_token != token:
+            return False
+            
+        if self.email_verification_sent_at is None:
+            return False
+            
+        # Check if token expired
+        expiry = self.email_verification_sent_at + timedelta(hours=token_expire_hours)
+        if datetime.now(UTC) > expiry:
+            return False
+            
+        # Mark as verified
+        self.email_verified = True
+        self.email_verification_token = None
+        return True
+    
+    def is_verification_token_expired(self, token_expire_hours: int = 24) -> bool:
+        """Check if verification token has expired."""
+        from datetime import timedelta
+        
+        if self.email_verification_sent_at is None:
+            return True
+            
+        expiry = self.email_verification_sent_at + timedelta(hours=token_expire_hours)
+        return datetime.now(UTC) > expiry
