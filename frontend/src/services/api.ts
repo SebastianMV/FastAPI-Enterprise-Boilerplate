@@ -71,25 +71,34 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      // Try to refresh token
+    const originalRequest = error.config;
+    
+    // Handle 401 errors (token expired)
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
       const authStorage = localStorage.getItem('auth-storage');
       
       if (authStorage) {
         try {
           const { state } = JSON.parse(authStorage);
           
-          if (state?.refreshToken && !error.config._retry) {
-            error.config._retry = true;
+          if (state?.refreshToken) {
+            // Use axios.create to avoid interceptor loop
+            const refreshApi = axios.create({
+              baseURL: import.meta.env.VITE_API_URL || '/',
+            });
             
-            const refreshResponse = await axios.post('/auth/refresh', {
+            const refreshResponse = await refreshApi.post<RefreshResponse>('/auth/refresh', {
               refresh_token: state.refreshToken,
             });
+            
+            const newAccessToken = refreshResponse.data.access_token;
             
             // Update stored token
             const newState = {
               ...state,
-              accessToken: refreshResponse.data.access_token,
+              accessToken: newAccessToken,
             };
             
             localStorage.setItem('auth-storage', JSON.stringify({
@@ -97,15 +106,27 @@ api.interceptors.response.use(
               version: 0,
             }));
             
-            // Retry original request
-            error.config.headers.Authorization = `Bearer ${refreshResponse.data.access_token}`;
-            return api(error.config);
+            // Retry original request with new token
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return api(originalRequest);
           }
-        } catch {
-          // Refresh failed, clear storage
+        } catch (refreshError) {
+          // Refresh failed, clear storage and redirect to login
+          console.error('[API] Token refresh failed:', refreshError);
           localStorage.removeItem('auth-storage');
-          window.location.href = '/login';
+          
+          // Only redirect if not already on login page
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+          
+          return Promise.reject(refreshError);
         }
+      }
+      
+      // No refresh token available, redirect to login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
     }
     
@@ -590,6 +611,353 @@ export const emailVerificationService = {
    */
   getStatus: async (): Promise<VerificationStatus> => {
     const response = await api.get<VerificationStatus>('/auth/verification-status');
+    return response.data;
+  },
+};
+
+// ==============================================================================
+// Roles Service
+// ==============================================================================
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[];
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RoleListResponse {
+  items: Role[];
+  total: number;
+}
+
+export interface CreateRoleData {
+  name: string;
+  description?: string;
+  permissions: string[];
+}
+
+export interface UpdateRoleData {
+  name?: string;
+  description?: string;
+  permissions?: string[];
+}
+
+export interface UserPermissions {
+  user_id: string;
+  permissions: string[];
+  roles: Role[];
+}
+
+export interface AssignRoleRequest {
+  user_id: string;
+  role_id: string;
+}
+
+export const rolesService = {
+  /**
+   * List all roles for current tenant
+   */
+  list: async (params?: { skip?: number; limit?: number }): Promise<RoleListResponse> => {
+    const response = await api.get<RoleListResponse>('/roles', { params });
+    return response.data;
+  },
+
+  /**
+   * Get role by ID
+   */
+  get: async (id: string): Promise<Role> => {
+    const response = await api.get<Role>(`/roles/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new role
+   */
+  create: async (data: CreateRoleData): Promise<Role> => {
+    const response = await api.post<Role>('/roles', data);
+    return response.data;
+  },
+
+  /**
+   * Update an existing role
+   */
+  update: async (id: string, data: UpdateRoleData): Promise<Role> => {
+    const response = await api.patch<Role>(`/roles/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete a role
+   */
+  delete: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete<{ message: string }>(`/roles/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Assign role to user
+   */
+  assignToUser: async (data: AssignRoleRequest): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>('/roles/assign', data);
+    return response.data;
+  },
+
+  /**
+   * Revoke role from user
+   */
+  revokeFromUser: async (data: AssignRoleRequest): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>('/roles/revoke', data);
+    return response.data;
+  },
+
+  /**
+   * Get user's permissions
+   */
+  getUserPermissions: async (userId: string): Promise<UserPermissions> => {
+    const response = await api.get<UserPermissions>(`/roles/users/${userId}/permissions`);
+    return response.data;
+  },
+};
+
+// ==============================================================================
+// Audit Logs Service
+// ==============================================================================
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  resource_type: string;
+  resource_id?: string;
+  resource_name?: string;
+  actor_id?: string;
+  actor_email?: string;
+  actor_ip?: string;
+  actor_user_agent?: string;
+  tenant_id?: string;
+  old_value?: Record<string, unknown>;
+  new_value?: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  reason?: string;
+}
+
+export interface AuditLogListResponse {
+  items: AuditLog[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface AuditLogFilters {
+  skip?: number;
+  limit?: number;
+  action?: string;
+  resource_type?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export const auditLogsService = {
+  /**
+   * List audit logs for current tenant
+   */
+  list: async (filters?: AuditLogFilters): Promise<AuditLogListResponse> => {
+    const response = await api.get<AuditLogListResponse>('/audit-logs', { params: filters });
+    return response.data;
+  },
+
+  /**
+   * Get specific audit log entry
+   */
+  get: async (id: string): Promise<AuditLog> => {
+    const response = await api.get<AuditLog>(`/audit-logs/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Get my activity
+   */
+  getMyActivity: async (filters?: AuditLogFilters): Promise<AuditLogListResponse> => {
+    const response = await api.get<AuditLogListResponse>('/audit-logs/my-activity', { params: filters });
+    return response.data;
+  },
+
+  /**
+   * Get recent logins
+   */
+  getRecentLogins: async (limit?: number, includeFailed?: boolean): Promise<AuditLogListResponse> => {
+    const response = await api.get<AuditLogListResponse>('/audit-logs/recent-logins', {
+      params: { limit, include_failed: includeFailed },
+    });
+    return response.data;
+  },
+
+  /**
+   * Get resource history
+   */
+  getResourceHistory: async (resourceType: string, resourceId: string, filters?: AuditLogFilters): Promise<AuditLogListResponse> => {
+    const response = await api.get<AuditLogListResponse>(`/audit-logs/resource/${resourceType}/${resourceId}`, { params: filters });
+    return response.data;
+  },
+
+  /**
+   * Get available actions
+   */
+  getActions: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/audit-logs/actions/list');
+    return response.data;
+  },
+
+  /**
+   * Get available resource types
+   */
+  getResourceTypes: async (): Promise<string[]> => {
+    const response = await api.get<string[]>('/audit-logs/resource-types/list');
+    return response.data;
+  },
+};
+
+// ==============================================================================
+// Tenants Service (Superuser only)
+// ==============================================================================
+
+export interface TenantSettings {
+  enable_2fa: boolean;
+  enable_api_keys: boolean;
+  enable_webhooks: boolean;
+  max_users: number;
+  max_api_keys_per_user: number;
+  max_storage_mb: number;
+  primary_color: string;
+  logo_url?: string;
+  password_min_length: number;
+  session_timeout_minutes: number;
+  require_email_verification: boolean;
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  email?: string;
+  phone?: string;
+  is_active: boolean;
+  is_verified: boolean;
+  plan: string;
+  plan_expires_at?: string;
+  settings: TenantSettings;
+  domain?: string;
+  timezone: string;
+  locale: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TenantListResponse {
+  items: Tenant[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface CreateTenantData {
+  name: string;
+  slug: string;
+  email?: string;
+  phone?: string;
+  domain?: string;
+  timezone?: string;
+  locale?: string;
+  plan?: string;
+  settings?: Partial<TenantSettings>;
+}
+
+export interface UpdateTenantData {
+  name?: string;
+  slug?: string;
+  email?: string;
+  phone?: string;
+  domain?: string;
+  timezone?: string;
+  locale?: string;
+  plan?: string;
+  settings?: Partial<TenantSettings>;
+}
+
+export const tenantsService = {
+  /**
+   * List all tenants (superuser only)
+   */
+  list: async (params?: { skip?: number; limit?: number; is_active?: boolean }): Promise<TenantListResponse> => {
+    const response = await api.get<TenantListResponse>('/tenants', { params });
+    return response.data;
+  },
+
+  /**
+   * Get tenant by ID
+   */
+  get: async (id: string): Promise<Tenant> => {
+    const response = await api.get<Tenant>(`/tenants/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new tenant
+   */
+  create: async (data: CreateTenantData): Promise<Tenant> => {
+    const response = await api.post<Tenant>('/tenants', data);
+    return response.data;
+  },
+
+  /**
+   * Update a tenant
+   */
+  update: async (id: string, data: UpdateTenantData): Promise<Tenant> => {
+    const response = await api.patch<Tenant>(`/tenants/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete a tenant
+   */
+  delete: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete<{ message: string }>(`/tenants/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Activate a tenant
+   */
+  activate: async (id: string): Promise<Tenant> => {
+    const response = await api.post<Tenant>(`/tenants/${id}/activate`);
+    return response.data;
+  },
+
+  /**
+   * Deactivate a tenant
+   */
+  deactivate: async (id: string): Promise<Tenant> => {
+    const response = await api.post<Tenant>(`/tenants/${id}/deactivate`);
+    return response.data;
+  },
+
+  /**
+   * Verify a tenant
+   */
+  verify: async (id: string): Promise<Tenant> => {
+    const response = await api.post<Tenant>(`/tenants/${id}/verify`);
+    return response.data;
+  },
+
+  /**
+   * Update tenant plan
+   */
+  updatePlan: async (id: string, plan: string, expiresAt?: string): Promise<Tenant> => {
+    const response = await api.patch<Tenant>(`/tenants/${id}/plan`, { plan, plan_expires_at: expiresAt });
     return response.data;
   },
 };

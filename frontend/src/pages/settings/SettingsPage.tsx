@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import { usersService } from '@/services/api';
 import { ConfirmModal, AlertModal } from '@/components/common/Modal';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
@@ -27,10 +28,11 @@ import {
  */
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const { websocket_enabled, websocket_notifications } = useConfigStore();
+  const { theme, setTheme } = useDarkMode();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
@@ -39,11 +41,6 @@ export default function SettingsPage() {
     variant: 'success' | 'error';
   }>({ isOpen: false, title: '', message: '', variant: 'success' });
 
-  // Theme state - persisted in localStorage
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
-    const stored = localStorage.getItem('theme');
-    return (stored as 'light' | 'dark' | 'system') || 'system';
-  });
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     const stored = localStorage.getItem('notificationsEnabled');
     return stored !== null ? stored === 'true' : true;
@@ -52,25 +49,6 @@ export default function SettingsPage() {
     const stored = localStorage.getItem('timezone');
     return stored || 'America/Santiago';
   });
-
-  // Apply theme on mount and when it changes
-  useEffect(() => {
-    const applyTheme = (selectedTheme: 'light' | 'dark' | 'system') => {
-      if (selectedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else if (selectedTheme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        // System preference
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
-    };
-    applyTheme(theme);
-  }, [theme]);
 
   // Delete account mutation
   const deleteAccountMutation = useMutation({
@@ -97,7 +75,6 @@ export default function SettingsPage() {
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
     setAlertModal({
       isOpen: true,
       title: 'Theme Updated',
@@ -120,13 +97,18 @@ export default function SettingsPage() {
 
   const handleLanguageChange = (newLanguage: string) => {
     i18n.changeLanguage(newLanguage);
+    localStorage.setItem('i18nextLng', newLanguage);
     const langName = SUPPORTED_LANGUAGES.find(l => l.code === newLanguage)?.name || newLanguage;
-    setAlertModal({
-      isOpen: true,
-      title: 'Language Updated',
-      message: `Language changed to ${langName}.`,
-      variant: 'success',
-    });
+    
+    // Force re-render and show success message
+    setTimeout(() => {
+      setAlertModal({
+        isOpen: true,
+        title: t('common.success'),
+        message: `${t('settings.language')}: ${langName}`,
+        variant: 'success',
+      });
+    }, 100);
   };
 
   const handleTimezoneChange = (newTimezone: string) => {
@@ -145,10 +127,10 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Settings
+          {t('settings.title')}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          Manage your account settings and preferences
+          {t('settings.description')}
         </p>
       </div>
 
@@ -167,7 +149,7 @@ export default function SettingsPage() {
               </h2>
               <p className="text-slate-500 dark:text-slate-400">{user?.email}</p>
               <p className="text-sm text-primary-600 dark:text-primary-400 mt-1">
-                {user?.is_superuser ? 'Administrator' : 'User'}
+                {user?.is_superuser ? t('settings.administrator') : t('settings.user')}
               </p>
             </div>
           </div>
@@ -175,7 +157,7 @@ export default function SettingsPage() {
             onClick={() => navigate('/profile')}
             className="btn-secondary"
           >
-            Edit Profile
+            {t('profile.editProfile')}
           </button>
         </div>
       </div>
@@ -189,10 +171,10 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Notifications
+                {t('settings.notifications')}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Configure notification preferences
+                {t('settings.notificationPreferences')}
               </p>
             </div>
           </div>
@@ -201,10 +183,10 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-medium text-slate-900 dark:text-white">
-                Email Notifications
+                {t('settings.emailNotifications')}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Receive email notifications for important updates
+                {t('settings.emailNotificationsDescription')}
               </p>
             </div>
             <button
@@ -245,15 +227,15 @@ export default function SettingsPage() {
             {[
               { value: 'light', icon: Sun, label: 'Light' },
               { value: 'dark', icon: Moon, label: 'Dark' },
-              { value: 'system', icon: Shield, label: 'System' },
+              { value: 'system', icon: Monitor, label: 'System' },
             ].map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleThemeChange(option.value as 'light' | 'dark' | 'system')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
                   theme === option.value
-                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-600'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-primary-300'
+                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-primary-300 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800'
                 }`}
               >
                 <option.icon className="w-4 h-4" />

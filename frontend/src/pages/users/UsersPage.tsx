@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { usersService, type User } from '@/services/api';
 import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
 import {
@@ -38,6 +39,7 @@ interface EditUserFormData {
  * Users management page with full CRUD operations.
  */
 export default function UsersPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -67,16 +69,16 @@ export default function UsersPage() {
       resetCreateForm();
       setAlertModal({
         isOpen: true,
-        title: 'User Created',
-        message: 'The user has been created successfully.',
+        title: t('users.userCreated'),
+        message: t('users.createSuccess'),
         variant: 'success',
       });
     },
     onError: (error: Error) => {
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error.message || 'Failed to create user. Please try again.',
+        title: t('common.error'),
+        message: error.message || t('users.createError'),
         variant: 'error',
       });
     },
@@ -92,16 +94,16 @@ export default function UsersPage() {
       setSelectedUser(null);
       setAlertModal({
         isOpen: true,
-        title: 'User Updated',
-        message: 'The user has been updated successfully.',
+        title: t('users.userUpdated'),
+        message: t('users.updateSuccess'),
         variant: 'success',
       });
     },
     onError: (error: Error) => {
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error.message || 'Failed to update user. Please try again.',
+        title: t('common.error'),
+        message: error.message || t('users.updateError'),
         variant: 'error',
       });
     },
@@ -116,16 +118,16 @@ export default function UsersPage() {
       setSelectedUser(null);
       setAlertModal({
         isOpen: true,
-        title: 'User Deleted',
-        message: 'The user has been deleted successfully. This action can be reversed by an administrator.',
+        title: t('users.userDeleted'),
+        message: t('users.deleteSuccess'),
         variant: 'success',
       });
     },
     onError: (error: Error) => {
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error.message || 'Failed to delete user. Please try again.',
+        title: t('common.error'),
+        message: error.message || t('users.deleteError'),
         variant: 'error',
       });
     },
@@ -196,7 +198,7 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Users
+            {t('users.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
             Manage user accounts and permissions
@@ -206,7 +208,7 @@ export default function UsersPage() {
           <button
             onClick={() => refetch()}
             className="btn-secondary"
-            title="Refresh"
+            title={t('users.refreshUsers')}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -215,7 +217,7 @@ export default function UsersPage() {
             className="btn-primary"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add User
+            {t('users.addUser')}
           </button>
         </div>
       </div>
@@ -225,7 +227,7 @@ export default function UsersPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
           type="text"
-          placeholder="Search users..."
+          placeholder={t('users.searchPlaceholder')}
           className="input pl-10"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -241,7 +243,7 @@ export default function UsersPage() {
         ) : error ? (
           <div className="p-12 text-center">
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 mb-4">Failed to load users. Please try again.</p>
+            <p className="text-red-600 mb-4">{t('users.loadingUsers')}</p>
             <button onClick={() => refetch()} className="btn-primary">
               <RefreshCw className="w-4 h-4 mr-2" />
               Retry
@@ -253,19 +255,19 @@ export default function UsersPage() {
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/50">
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    User
+                    {t('users.email')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Status
+                    {t('users.status')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Role
+                    {t('users.role')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Created
+                    {t('users.createdAt')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Actions
+                    {t('common.actions')}
                   </th>
                 </tr>
               </thead>
@@ -276,7 +278,7 @@ export default function UsersPage() {
                       colSpan={5}
                       className="px-6 py-12 text-center text-slate-500"
                     >
-                      No users found
+                      {t('users.noUsersFound')}
                     </td>
                   </tr>
                 ) : (
@@ -313,18 +315,18 @@ export default function UsersPage() {
                           {user.is_active ? (
                             <>
                               <CheckCircle className="w-3 h-3 mr-1" />
-                              Active
+                              {t('users.active')}
                             </>
                           ) : (
                             <>
                               <XCircle className="w-3 h-3 mr-1" />
-                              Inactive
+                              {t('users.inactive')}
                             </>
                           )}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                        {user.is_superuser ? 'Administrator' : 'User'}
+                        {user.is_superuser ? t('settings.administrator') : t('settings.user')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                         {new Date(user.created_at).toLocaleDateString()}
@@ -333,14 +335,14 @@ export default function UsersPage() {
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             className="p-2 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                            title="Edit"
+                            title={t('common.edit')}
                             onClick={() => handleEditClick(user)}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            title="Delete"
+                            title={t('common.delete')}
                             onClick={() => handleDeleteClick(user)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -370,19 +372,19 @@ export default function UsersPage() {
           setShowCreateModal(false);
           resetCreateForm();
         }}
-        title="Create New User"
+        title={t('users.createUser')}
         size="lg"
       >
         <form onSubmit={handleCreateSubmit(onCreateSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                First Name
+                {t('users.firstName')}
               </label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
-                  {...registerCreate('first_name', { required: 'First name is required' })}
+                  {...registerCreate('first_name', { required: t('validation.required') })}
                   className="input pl-10"
                   placeholder="John"
                 />
@@ -393,12 +395,12 @@ export default function UsersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Last Name
+                {t('users.lastName')}
               </label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
-                  {...registerCreate('last_name', { required: 'Last name is required' })}
+                  {...registerCreate('last_name', { required: t('validation.required') })}
                   className="input pl-10"
                   placeholder="Doe"
                 />
@@ -411,16 +413,16 @@ export default function UsersPage() {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Email
+              {t('users.email')}
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 {...registerCreate('email', {
-                  required: 'Email is required',
+                  required: t('validation.required'),
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
+                    message: t('validation.emailInvalid'),
                   },
                 })}
                 type="email"
@@ -435,16 +437,16 @@ export default function UsersPage() {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Password
+              {t('users.password')}
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 {...registerCreate('password', {
-                  required: 'Password is required',
+                  required: t('validation.required'),
                   minLength: {
                     value: 8,
-                    message: 'Password must be at least 8 characters',
+                    message: t('validation.passwordMin', { min: 8 }),
                   },
                 })}
                 type="password"
@@ -464,7 +466,7 @@ export default function UsersPage() {
                 type="checkbox"
                 className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
               />
-              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">Active</span>
+              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">{t('users.active')}</span>
             </label>
             <label className="flex items-center">
               <input
@@ -472,7 +474,7 @@ export default function UsersPage() {
                 type="checkbox"
                 className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
               />
-              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">Administrator</span>
+              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">{t('settings.administrator')}</span>
             </label>
           </div>
 
@@ -485,7 +487,7 @@ export default function UsersPage() {
               }}
               className="btn-secondary"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -495,12 +497,12 @@ export default function UsersPage() {
               {createMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  {t('common.loading')}
                 </>
               ) : (
                 <>
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Create User
+                  {t('users.createUser')}
                 </>
               )}
             </button>
@@ -515,17 +517,17 @@ export default function UsersPage() {
           setShowEditModal(false);
           setSelectedUser(null);
         }}
-        title="Edit User"
+        title={t('users.editUser')}
         size="lg"
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                First Name
+                {t('users.firstName')}
               </label>
               <input
-                {...registerEdit('first_name', { required: 'First name is required' })}
+                {...registerEdit('first_name', { required: t('validation.required') })}
                 className="input"
               />
               {editErrors.first_name && (
@@ -534,10 +536,10 @@ export default function UsersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Last Name
+                {t('users.lastName')}
               </label>
               <input
-                {...registerEdit('last_name', { required: 'Last name is required' })}
+                {...registerEdit('last_name', { required: t('validation.required') })}
                 className="input"
               />
               {editErrors.last_name && (
@@ -548,14 +550,14 @@ export default function UsersPage() {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Email
+              {t('users.email')}
             </label>
             <input
               {...registerEdit('email', {
-                required: 'Email is required',
+                required: t('validation.required'),
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address',
+                  message: t('validation.emailInvalid'),
                 },
               })}
               type="email"
@@ -573,7 +575,7 @@ export default function UsersPage() {
                 type="checkbox"
                 className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
               />
-              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">Active</span>
+              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">{t('users.active')}</span>
             </label>
           </div>
 
@@ -586,7 +588,7 @@ export default function UsersPage() {
               }}
               className="btn-secondary"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -596,12 +598,12 @@ export default function UsersPage() {
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
+                  {t('common.loading')}
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Save Changes
+                  {t('common.save')}
                 </>
               )}
             </button>
@@ -617,10 +619,10 @@ export default function UsersPage() {
           setSelectedUser(null);
         }}
         onConfirm={onDeleteConfirm}
-        title="Delete User"
-        message={`Are you sure you want to delete ${selectedUser?.first_name} ${selectedUser?.last_name}? This action uses soft delete and can be reversed by an administrator.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('users.deleteUser')}
+        message={t('users.deleteConfirm')}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
         variant="danger"
         isLoading={deleteMutation.isPending}
       />

@@ -1,0 +1,26 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.account_unlocked.preheader', default='Your account has been unlocked') }}{% endblock %}
+
+{% block content %}
+<h1>🔓 {{ t('email.account_unlocked.title', default='Account Unlocked') }}</h1>
+
+<p>{{ t('email.account_unlocked.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}</p>
+
+<p>{{ t('email.account_unlocked.body', default='Good news! Your account has been unlocked and you can now log in again.') }}</p>
+
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.account_unlocked.security_tip', default='Security Tip') }}</strong><br>
+        {{ t('email.account_unlocked.security_message', default='If you did not request this unlock, please contact our support team immediately.') }}
+    </p>
+</div>
+{% endblock %}
+
+{% block cta %}
+{% if login_url is defined and login_url %}
+<div class="cta-container">
+    <a href="{{ login_url }}" class="cta-button success">{{ t('email.account_unlocked.login_button', default='Log In Now') }}</a>
+</div>
+{% endif %}
+{% endblock %}

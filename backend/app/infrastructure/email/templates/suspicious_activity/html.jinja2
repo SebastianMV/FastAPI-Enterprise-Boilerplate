@@ -1,0 +1,42 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.suspicious_activity.preheader', default='Suspicious activity detected on your account') }}{% endblock %}
+
+{% block content %}
+<h1>🚨 {{ t('email.suspicious_activity.title', default='Suspicious Activity Detected') }}</h1>
+
+<p>{{ t('email.suspicious_activity.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}</p>
+
+<p>{{ t('email.suspicious_activity.body', default='We detected unusual activity on your account that may indicate unauthorized access.') }}</p>
+
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.suspicious_activity.activity_type', default='Activity Type') }}:</strong> {{ activity_type | default('Unknown') }}<br>
+        <strong>{{ t('email.suspicious_activity.time', default='Time') }}:</strong> {{ detected_at | default('Just now') }}<br>
+        <strong>{{ t('email.suspicious_activity.location', default='Location') }}:</strong> {{ location | default('Unknown') }}<br>
+        <strong>{{ t('email.suspicious_activity.ip', default='IP Address') }}:</strong> {{ ip_address | default('Unknown') }}
+    </p>
+</div>
+
+<h2>{{ t('email.suspicious_activity.what_to_do', default='What should you do?') }}</h2>
+
+<ul style="color: #374151; line-height: 1.8;">
+    <li>{{ t('email.suspicious_activity.step_1', default='Change your password immediately') }}</li>
+    <li>{{ t('email.suspicious_activity.step_2', default='Enable two-factor authentication if not already active') }}</li>
+    <li>{{ t('email.suspicious_activity.step_3', default='Review your recent account activity') }}</li>
+    <li>{{ t('email.suspicious_activity.step_4', default='Revoke any sessions you don\'t recognize') }}</li>
+</ul>
+
+<p>{{ t('email.suspicious_activity.contact_support', default='If this was you, you can safely ignore this email. Otherwise, please contact our support team.') }}</p>
+{% endblock %}
+
+{% block cta %}
+<div class="cta-container">
+    {% if change_password_url is defined and change_password_url %}
+    <a href="{{ change_password_url }}" class="cta-button danger">{{ t('email.suspicious_activity.change_password', default='Change Password') }}</a>
+    {% endif %}
+    {% if sessions_url is defined and sessions_url %}
+    <a href="{{ sessions_url }}" class="cta-button">{{ t('email.suspicious_activity.review_sessions', default='Review Sessions') }}</a>
+    {% endif %}
+</div>
+{% endblock %}

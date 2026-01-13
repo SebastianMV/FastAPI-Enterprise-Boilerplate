@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Bell, 
   Check, 
@@ -27,23 +28,23 @@ type FilterType = 'all' | 'unread' | 'read';
 /**
  * Format a timestamp as relative time.
  */
-function formatRelativeTime(timestamp: string): string {
+function formatRelativeTime(timestamp: string, t: any): string {
   try {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 60) return t('notifications.timeAgo.justNow');
     const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 60) return t('notifications.timeAgo.minutesAgo', { count: diffInMinutes });
     const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 24) return t('notifications.timeAgo.hoursAgo', { count: diffInHours });
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d ago`;
+    if (diffInDays < 7) return t('notifications.timeAgo.daysAgo', { count: diffInDays });
     
     return date.toLocaleDateString();
   } catch {
-    return 'Just now';
+    return t('notifications.timeAgo.justNow');
   }
 }
 
@@ -67,6 +68,7 @@ function getNotificationIcon(type: Notification['type']) {
  * Notifications page with full history.
  */
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -149,12 +151,12 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Notifications
+            {t('notifications.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
             {unreadCount > 0 
-              ? `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
-              : 'You\'re all caught up!'
+              ? t(unreadCount === 1 ? 'notifications.unreadCount' : 'notifications.unreadCount_plural', { count: unreadCount })
+              : t('notifications.allCaughtUp')
             }
           </p>
         </div>
@@ -165,7 +167,7 @@ export default function NotificationsPage() {
             className="btn-secondary"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('notifications.refresh')}
           </button>
           {unreadCount > 0 && (
             <button
@@ -173,7 +175,7 @@ export default function NotificationsPage() {
               className="btn-primary"
             >
               <CheckCheck className="w-4 h-4 mr-2" />
-              Mark all as read
+              {t('notifications.markAllRead')}
             </button>
           )}
         </div>
@@ -193,7 +195,7 @@ export default function NotificationsPage() {
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
+              {t(`notifications.${f}`)}
               {f === 'unread' && unreadCount > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
                   {unreadCount}
@@ -214,14 +216,14 @@ export default function NotificationsPage() {
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Bell className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
             <h3 className="text-lg font-medium text-slate-900 dark:text-white">
-              No notifications
+              {t('notifications.noNotifications')}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               {filter === 'unread' 
-                ? 'You have no unread notifications' 
+                ? t('notifications.noUnread') 
                 : filter === 'read'
-                ? 'You have no read notifications'
-                : 'You don\'t have any notifications yet'
+                ? t('notifications.noRead')
+                : t('notifications.noNotificationsYet')
               }
             </p>
           </div>
@@ -244,7 +246,7 @@ export default function NotificationsPage() {
                       {notification.title}
                     </p>
                     <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                      {formatRelativeTime(notification.created_at)}
+                      {formatRelativeTime(notification.created_at, t)}
                     </span>
                   </div>
                   {notification.message && (
@@ -280,7 +282,7 @@ export default function NotificationsPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, filteredNotifications.length)} of {filteredNotifications.length}
+              {t('notifications.showingRange', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, filteredNotifications.length), total: filteredNotifications.length })}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -288,17 +290,17 @@ export default function NotificationsPage() {
                 disabled={page === 1}
                 className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                Previous
+                {t('notifications.previous')}
               </button>
               <span className="text-sm text-slate-600 dark:text-slate-400">
-                Page {page} of {totalPages}
+                {t('notifications.pageOf', { current: page, total: totalPages })}
               </span>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page === totalPages}
                 className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                Next
+                {t('notifications.next')}
               </button>
             </div>
           </div>

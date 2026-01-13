@@ -41,6 +41,19 @@ from app.infrastructure.database.repositories.user_repository import (
 router = APIRouter()
 
 
+def _role_to_response(role: Role) -> RoleResponse:
+    """Convert Role entity to RoleResponse, handling Permission objects."""
+    return RoleResponse(
+        id=role.id,
+        name=role.name,
+        description=role.description,
+        permissions=[str(p) for p in role.permissions],
+        is_system=role.is_system,
+        created_at=role.created_at,
+        updated_at=role.updated_at,
+    )
+
+
 def get_role_repository(
     session: AsyncSession = Depends(get_db_session),
 ) -> CachedRoleRepository:
@@ -73,7 +86,7 @@ async def list_roles(
     roles = await repo.list(tenant_id=tenant_id, skip=skip, limit=limit)
     
     return RoleListResponse(
-        items=[RoleResponse.model_validate(r) for r in roles],
+        items=[_role_to_response(r) for r in roles],
         total=len(roles),
     )
 
@@ -99,7 +112,7 @@ async def get_role(
             detail={"code": "ROLE_NOT_FOUND", "message": f"Role {role_id} not found"},
         )
     
-    return RoleResponse.model_validate(role)
+    return _role_to_response(role)
 
 
 @router.post(
@@ -152,7 +165,7 @@ async def create_role(
     
     try:
         created_role = await repo.create(role)
-        return RoleResponse.model_validate(created_role)
+        return _role_to_response(created_role)
     
     except ConflictError as e:
         raise HTTPException(
@@ -205,7 +218,7 @@ async def update_role(
     
     try:
         updated_role = await repo.update(role)
-        return RoleResponse.model_validate(updated_role)
+        return _role_to_response(updated_role)
     
     except EntityNotFoundError as e:
         raise HTTPException(
@@ -284,7 +297,7 @@ async def get_user_permissions(
     return UserPermissionsResponse(
         user_id=user_id,
         permissions=permissions,
-        roles=[RoleResponse.model_validate(r) for r in roles],
+        roles=[_role_to_response(r) for r in roles],
     )
 
 

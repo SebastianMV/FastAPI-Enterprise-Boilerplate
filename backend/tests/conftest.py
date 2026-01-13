@@ -128,6 +128,44 @@ async def authenticated_client(client, test_user) -> AsyncGenerator[AsyncClient,
     yield client
 
 
+@pytest.fixture
+async def auth_headers(test_user) -> dict[str, str]:
+    """
+    Create authentication headers for tests.
+    
+    Returns headers dict that can be passed to client requests.
+    
+    Example:
+        async def test_protected_route(client, auth_headers):
+            response = await client.get("/api/v1/users/me", headers=auth_headers)
+            assert response.status_code == 200
+    """
+    token = create_access_token(
+        user_id=test_user["id"],
+        tenant_id=test_user.get("tenant_id", uuid4()),
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+async def superuser_auth_headers(test_superuser) -> dict[str, str]:
+    """
+    Create authentication headers for superuser tests.
+    
+    Returns headers dict with superuser token.
+    
+    Example:
+        async def test_admin_route(client, superuser_auth_headers):
+            response = await client.get("/api/v1/admin/stats", headers=superuser_auth_headers)
+            assert response.status_code == 200
+    """
+    token = create_access_token(
+        user_id=test_superuser["id"],
+        tenant_id=test_superuser.get("tenant_id", uuid4()),
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
 # ===========================================
 # Test Data Factories
 # ===========================================

@@ -11,6 +11,7 @@ from app.infrastructure.database.models.mfa import MFAConfigModel
 from app.infrastructure.database.models.notification import NotificationModel
 from app.infrastructure.database.models.oauth import OAuthConnectionModel, SSOConfigurationModel
 from app.infrastructure.database.models.role import RoleModel
+from app.infrastructure.database.models.session import UserSessionModel
 from app.infrastructure.database.models.tenant import TenantModel
 from app.infrastructure.database.models.user import UserModel
 
@@ -27,4 +28,5 @@ __all__ = [
     "SSOConfigurationModel",
     "TenantModel",
     "UserModel",
+    "UserSessionModel",
 ]

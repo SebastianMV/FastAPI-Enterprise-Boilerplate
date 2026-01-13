@@ -1,0 +1,22 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+⚠️ {{ t('email.account_deactivated.title', default='Account Deactivated') }}
+============================================================================
+
+{{ t('email.account_deactivated.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}
+
+{{ t('email.account_deactivated.body', default='Your account has been deactivated. You will no longer be able to access the platform until it is reactivated.') }}
+
+{% if reason is defined and reason %}
+{{ t('email.account_deactivated.reason_label', default='Reason') }}:
+{{ reason }}
+{% endif %}
+
+{{ t('email.account_deactivated.contact_support', default='If you believe this was done in error, please contact our support team.') }}
+
+{% if support_url is defined and support_url %}
+{{ t('email.account_deactivated.contact_button', default='Contact Support') }}:
+{{ support_url }}
+{% endif %}
+{% endblock %}

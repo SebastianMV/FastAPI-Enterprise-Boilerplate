@@ -1,0 +1,40 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.tenant_role_changed.preheader', default='Your role has been updated') }}{% endblock %}
+
+{% block content %}
+<h1>👤 {{ t('email.tenant_role_changed.title', default='Role Updated') }}</h1>
+
+<p>{{ t('email.tenant_role_changed.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}</p>
+
+<p>{{ t('email.tenant_role_changed.body', default='Your role within the organization has been updated.') }}</p>
+
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.tenant_role_changed.organization', default='Organization') }}:</strong> {{ tenant_name | default('Your Organization') }}<br>
+        <strong>{{ t('email.tenant_role_changed.previous_role', default='Previous Role') }}:</strong> {{ previous_role | default('N/A') }}<br>
+        <strong>{{ t('email.tenant_role_changed.new_role', default='New Role') }}:</strong> {{ new_role | default('Updated') }}<br>
+        <strong>{{ t('email.tenant_role_changed.changed_by', default='Changed By') }}:</strong> {{ changed_by | default('Administrator') }}<br>
+        <strong>{{ t('email.tenant_role_changed.changed_at', default='Changed At') }}:</strong> {{ changed_at | default('Just now') }}
+    </p>
+</div>
+
+{% if new_permissions is defined and new_permissions %}
+<h2>{{ t('email.tenant_role_changed.new_permissions', default='Your New Permissions') }}</h2>
+<ul style="color: #374151; line-height: 1.8;">
+    {% for permission in new_permissions %}
+    <li>{{ permission }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<p>{{ t('email.tenant_role_changed.questions', default='If you have questions about this change, please contact your administrator.') }}</p>
+{% endblock %}
+
+{% block cta %}
+{% if dashboard_url is defined and dashboard_url %}
+<div class="cta-container">
+    <a href="{{ dashboard_url }}" class="cta-button">{{ t('email.tenant_role_changed.go_to_dashboard', default='Go to Dashboard') }}</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="PyNest Pro Logo" width="200" height="200">
+  <img src="docs/assets/logo.svg" alt="FastAPI-Enterprise-Boilerplate Logo" width="200" height="200">
 </p>
 
-<h1 align="center">PyNest Pro</h1>
+<h1 align="center">FastAPI-Enterprise-Boilerplate</h1>
 
 <p align="center">
   <strong>Production-ready FastAPI boilerplate with JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.</strong>
@@ -21,7 +21,7 @@
   <a href="#"><img src="https://img.shields.io/badge/coverage-89%25-brightgreen.svg" alt="Coverage"></a>
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
   <a href="#"><img src="https://img.shields.io/badge/vulnerabilities-0-brightgreen.svg" alt="Security"></a>
-  <a href="ROADMAP.md"><img src="https://img.shields.io/badge/status-production%20ready-brightgreen.svg" alt="Production Ready"></a>
+  <a href="PROJECT_STATUS.md"><img src="https://img.shields.io/badge/status-production%20ready-brightgreen.svg" alt="Production Ready"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.3.0-blue.svg" alt="v1.3.0"></a>
 </p>
 
@@ -194,7 +194,7 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 
 - ✅ **OpenTelemetry** - Traces, metrics, structured logs
 - ✅ **Audit Logging** - Complete action trail for compliance
-- ✅ **i18n Support** - Multi-language (EN, ES, PT + extensible)
+- ✅ **i18n Support (100%)** - Multi-language with lazy loading ([EN/ES/PT active](docs/I18N.md), FR/DE available)
 - ✅ **Health Checks** - Kubernetes liveness/readiness probes
 - ✅ **Rate Limiting** - Redis-based API protection
 - ✅ **Background Jobs** - Async task processing with retry
@@ -220,18 +220,39 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 - ✅ **React Query** - Server state management
 - ✅ **React Router v6** - Client-side routing
 - ✅ **Zustand** - Client state management
-- ✅ **i18n (react-i18next)** - Multi-language support
+- ✅ **i18n (react-i18next)** - Multi-language support (100% coverage, lazy loading)
 
-### Frontend Pages (v1.1.0) 🆕
+### Frontend Pages (v1.3.0) 🆕
+
+**Authentication & Security:**
 
 - ✅ **Login/Logout** - JWT authentication flow
 - ✅ **User Registration** - `/register` with validation
 - ✅ **Password Recovery** - Forgot/Reset password flow
-- ✅ **Profile Settings** - View and edit user info
-- ✅ **API Keys Management** - Create, view, revoke keys
-- ✅ **MFA Configuration** - Enable/disable 2FA
-- ✅ **Sessions Management** - View and revoke active sessions
 - ✅ **Email Verification** - Verify email with banner and resend
+- ✅ **OAuth/SSO Callback** - External provider authentication
+
+**User Management:**
+
+- ✅ **Profile Settings** - View and edit user info + avatar upload
+- ✅ **Users Management** - CRUD operations (admin)
+- ✅ **Roles Management** - Permissions and role assignment (admin)
+- ✅ **Sessions Management** - View and revoke active sessions
+
+**Security & API:**
+
+- ✅ **API Keys Management** - Create, view, revoke keys with scopes
+- ✅ **MFA Configuration** - Enable/disable 2FA with TOTP and backup codes
+
+**Operations:**
+
+- ✅ **Dashboard** - Real-time metrics and system health
+- ✅ **Audit Log Viewer** - Filter and search security events
+- ✅ **Notifications Center** - Real-time WebSocket notifications
+- ✅ **Search** - Full-text search across resources
+- ✅ **Tenant Management** - Multi-tenant administration (superadmin)
+
+> **🌍 i18n:** All pages are fully translated to 3 languages (EN/ES/PT active, FR/DE available). See [docs/I18N.md](docs/I18N.md) for details.
 
 ## 📁 Project Structure
 
@@ -448,7 +469,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete deployment guide.
 | Document | Description |
 | -------- | ----------- |
 | [📖 Technical Overview](docs/TECHNICAL_OVERVIEW.md) | **Complete technical documentation (START HERE)** |
-| [🗺️ Roadmap](ROADMAP.md) | Project status, versions, and roadmap |
+| [� Project Status](PROJECT_STATUS.md) | Project status, versions, and roadmap |
 | [Getting Started](docs/GETTING_STARTED.md) | Quick setup guide |
 | [🐳 Docker Guide](docs/DOCKER.md) | Complete Docker setup and troubleshooting |
 | [Architecture](docs/ARCHITECTURE.md) | Hexagonal architecture overview |
@@ -459,7 +480,8 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete deployment guide.
 | [OAuth2/SSO](docs/OAUTH2_SSO.md) | OAuth2 provider configuration |
 | [WebSocket](docs/WEBSOCKET.md) | Real-time features guide |
 | [Full-Text Search](docs/FULL_TEXT_SEARCH.md) | Search implementation |
-| [Security Audit](docs/SECURITY_AUDIT.md) | Security measures documentation |
+| [i18n Guide](docs/I18N.md) | Internationalization (100% coverage) |
+| [Security Features](docs/SECURITY.md) | Security audit and best practices |
 | [Windows Commands](MAKEFILE.md) | PowerShell equivalent of Makefile |
 
 ## 🎯 Project Status
@@ -501,7 +523,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete deployment guide.
 | Docker Build | < 2 minutes |
 | Security Issues | 0 |
 
-See [ROADMAP.md](ROADMAP.md) and [PROJECT_STATUS.md](PROJECT_STATUS.md) for complete validation results and [CHANGELOG.md](CHANGELOG.md) for release notes.
+See [PROJECT_STATUS.md](PROJECT_STATUS.md) for complete validation results and [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## 📝 License
 

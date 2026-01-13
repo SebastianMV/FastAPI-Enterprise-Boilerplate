@@ -236,10 +236,9 @@ class TestInitDatabase:
             assert call_args[0][0] == ["alembic", "upgrade", "head"]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Test is flaky due to state sharing with other tests")
     async def test_handles_alembic_error(self):
         """Test that init_database handles alembic errors gracefully."""
-        with patch("subprocess.run") as mock_run:
+        with patch("app.infrastructure.database.connection.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=1, 
                 stdout="", 

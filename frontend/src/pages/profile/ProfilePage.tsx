@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { usersService } from '@/services/api';
 import ConnectedAccounts from '@/components/profile/ConnectedAccounts';
@@ -38,6 +39,7 @@ interface PasswordFormData {
  * Allows users to view and edit their personal information.
  */
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const { user, fetchUser } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
@@ -121,15 +123,15 @@ export default function ProfilePage() {
       await fetchUser();
       setAlertModal({
         isOpen: true,
-        title: 'Success',
-        message: 'Profile updated successfully!',
+        title: t('common.success'),
+        message: t('profile.updateSuccess'),
         variant: 'success',
       });
     } catch (error) {
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to update profile',
+        title: t('common.error'),
+        message: error instanceof Error ? error.message : t('profile.updateError'),
         variant: 'error',
       });
     } finally {
@@ -206,15 +208,15 @@ export default function ProfilePage() {
       await fetchUser();
       setAlertModal({
         isOpen: true,
-        title: 'Success',
-        message: 'Avatar removed successfully!',
+        title: t('common.success'),
+        message: t('profile.avatarDeleteSuccess'),
         variant: 'success',
       });
     } catch (error) {
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to delete avatar',
+        title: t('common.error'),
+        message: error instanceof Error ? error.message : t('profile.avatarDeleteError'),
         variant: 'error',
       });
     } finally {
@@ -246,10 +248,10 @@ export default function ProfilePage() {
         throw new Error(errorData.detail?.message || 'Failed to change password');
       }
 
-      setSuccessMessage('Password changed successfully!');
+      setSuccessMessage(t('profile.passwordChangeSuccess'));
       resetPasswordForm();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to change password');
+      setErrorMessage(error instanceof Error ? error.message : t('profile.passwordChangeError'));
     } finally {
       setIsPasswordLoading(false);
     }
@@ -271,10 +273,10 @@ export default function ProfilePage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          My Profile
+          {t('profile.title')}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          Manage your personal information and security settings
+          {t('profile.subtitle')}
         </p>
       </div>
 
@@ -358,14 +360,14 @@ export default function ProfilePage() {
                   : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
               }`}>
                 <Shield className="w-3 h-3 mr-1" />
-                {user?.is_superuser ? 'Administrator' : 'User'}
+                {user?.is_superuser ? t('settings.administrator') : t('settings.user')}
               </span>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 user?.is_active 
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
                   : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
               }`}>
-                {user?.is_active ? 'Active' : 'Inactive'}
+                {user?.is_active ? t('users.active') : t('users.inactive')}
               </span>
             </div>
           </div>
@@ -384,7 +386,7 @@ export default function ProfilePage() {
             }`}
           >
             <UserIcon className="w-4 h-4 inline-block mr-2" />
-            Profile Information
+            {t('profile.tabs.profile')}
           </button>
           <button
             onClick={() => setActiveTab('security')}
@@ -395,7 +397,7 @@ export default function ProfilePage() {
             }`}
           >
             <Lock className="w-4 h-4 inline-block mr-2" />
-            Security
+            {t('profile.tabs.security')}
           </button>
           <button
             onClick={() => setActiveTab('connections')}
@@ -406,7 +408,7 @@ export default function ProfilePage() {
             }`}
           >
             <Link2 className="w-4 h-4 inline-block mr-2" />
-            Connected Accounts
+            {t('profile.tabs.connections')}
           </button>
         </nav>
       </div>
@@ -419,22 +421,22 @@ export default function ProfilePage() {
             <div className="card">
               <div className="p-6 border-b border-slate-200 dark:border-slate-700">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Edit Profile
+                  {t('profile.editProfile')}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Update your personal information
+                  {t('profile.updatePersonalInfo')}
                 </p>
               </div>
               <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="p-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      First Name
+                      {t('users.firstName')}
                     </label>
                     <input
                       type="text"
                       className="input"
-                      {...registerProfile('first_name', { required: 'First name is required' })}
+                      {...registerProfile('first_name', { required: t('validation.required') })}
                     />
                     {profileErrors.first_name && (
                       <p className="mt-1 text-sm text-red-600">{profileErrors.first_name.message}</p>
@@ -442,12 +444,12 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Last Name
+                      {t('users.lastName')}
                     </label>
                     <input
                       type="text"
                       className="input"
-                      {...registerProfile('last_name', { required: 'Last name is required' })}
+                      {...registerProfile('last_name', { required: t('validation.required') })}
                     />
                     {profileErrors.last_name && (
                       <p className="mt-1 text-sm text-red-600">{profileErrors.last_name.message}</p>
@@ -456,7 +458,7 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Email Address
+                    {t('auth.emailAddress')}
                   </label>
                   <input
                     type="email"
@@ -464,7 +466,7 @@ export default function ProfilePage() {
                     disabled
                     {...registerProfile('email')}
                   />
-                  <p className="mt-1 text-xs text-slate-500">Email cannot be changed</p>
+                  <p className="mt-1 text-xs text-slate-500">{t('profile.emailNoChange')}</p>
                 </div>
                 <div className="pt-4">
                   <button
@@ -475,12 +477,12 @@ export default function ProfilePage() {
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
+                        {t('common.loading')}
                       </>
                     ) : (
                       <>
                         <Save className="w-4 h-4 mr-2" />
-                        Save Changes
+                        {t('common.save')}
                       </>
                     )}
                   </button>
@@ -493,20 +495,20 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Account Details
+                {t('profile.accountDetails')}
               </h3>
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <Mail className="w-5 h-5 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Email</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('auth.emailAddress')}</p>
                     <p className="text-sm text-slate-900 dark:text-white">{user?.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Calendar className="w-5 h-5 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Member Since</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('profile.memberSince')}</p>
                     <p className="text-sm text-slate-900 dark:text-white">
                       {formatDate(user?.created_at)}
                     </p>
@@ -515,7 +517,7 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-3">
                   <Key className="w-5 h-5 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Last Login</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('profile.lastLogin')}</p>
                     <p className="text-sm text-slate-900 dark:text-white">
                       {formatDate(user?.last_login)}
                     </p>
@@ -527,17 +529,17 @@ export default function ProfilePage() {
             {/* MFA Status Card */}
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Two-Factor Authentication
+                {t('profile.twoFactorAuth')}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Add an extra layer of security to your account
+                {t('profile.twoFactorDescription')}
               </p>
               <Link
                 to="/security/mfa"
                 className="btn-secondary w-full text-center"
               >
                 <Shield className="w-4 h-4 mr-2" />
-                Configure MFA
+                {t('profile.configureMfa')}
               </Link>
             </div>
           </div>
@@ -551,21 +553,21 @@ export default function ProfilePage() {
           <div className="card">
             <div className="p-6 border-b border-slate-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Change Password
+                {t('profile.changePassword')}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Update your password regularly for better security
+                {t('profile.changePasswordDescription')}
               </p>
             </div>
             <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Current Password
+                  {t('profile.currentPassword')}
                 </label>
                 <input
                   type="password"
                   className="input"
-                  {...registerPassword('current_password', { required: 'Current password is required' })}
+                  {...registerPassword('current_password', { required: t('validation.required') })}
                 />
                 {passwordErrors.current_password && (
                   <p className="mt-1 text-sm text-red-600">{passwordErrors.current_password.message}</p>
@@ -573,17 +575,17 @@ export default function ProfilePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  New Password
+                  {t('profile.newPassword')}
                 </label>
                 <input
                   type="password"
                   className="input"
                   {...registerPassword('new_password', { 
-                    required: 'New password is required',
-                    minLength: { value: 8, message: 'Password must be at least 8 characters' },
+                    required: t('validation.required'),
+                    minLength: { value: 8, message: t('validation.passwordMin', { min: 8 }) },
                     pattern: {
                       value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                      message: 'Password must contain uppercase, lowercase, and a number'
+                      message: t('validation.passwordStrength')
                     }
                   })}
                 />
@@ -593,14 +595,14 @@ export default function ProfilePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Confirm New Password
+                  {t('profile.confirmPassword')}
                 </label>
                 <input
                   type="password"
                   className="input"
                   {...registerPassword('confirm_password', { 
-                    required: 'Please confirm your password',
-                    validate: value => value === newPassword || 'Passwords do not match'
+                    required: t('validation.required'),
+                    validate: value => value === newPassword || t('profile.passwordsNoMatch')
                   })}
                 />
                 {passwordErrors.confirm_password && (
@@ -616,12 +618,12 @@ export default function ProfilePage() {
                   {isPasswordLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Updating...
+                      {t('common.loading')}
                     </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4 mr-2" />
-                      Update Password
+                      {t('profile.updatePassword')}
                     </>
                   )}
                 </button>
@@ -680,10 +682,10 @@ export default function ProfilePage() {
           setPendingProfileData(null);
         }}
         onConfirm={handleConfirmSave}
-        title="Save Changes"
-        message="Are you sure you want to save these changes to your profile?"
-        confirmText={isLoading ? 'Saving...' : 'Save Changes'}
-        cancelText="Cancel"
+        title={t('profile.saveChanges')}
+        message={t('profile.saveChangesConfirm')}
+        confirmText={isLoading ? t('common.loading') : t('common.save')}
+        cancelText={t('common.cancel')}
         variant="info"
         isLoading={isLoading}
       />
@@ -693,10 +695,10 @@ export default function ProfilePage() {
         isOpen={showDeleteAvatarModal}
         onClose={() => setShowDeleteAvatarModal(false)}
         onConfirm={handleDeleteAvatar}
-        title="Remove Photo"
-        message="Are you sure you want to remove your profile photo? You can always upload a new one later."
-        confirmText={isAvatarLoading ? 'Removing...' : 'Remove Photo'}
-        cancelText="Cancel"
+        title={t('profile.removePhoto')}
+        message={t('profile.removePhotoConfirm')}
+        confirmText={isAvatarLoading ? t('common.loading') : t('profile.removePhoto')}
+        cancelText={t('common.cancel')}
         variant="danger"
         isLoading={isAvatarLoading}
       />

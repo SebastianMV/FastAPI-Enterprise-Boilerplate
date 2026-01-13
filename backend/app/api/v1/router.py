@@ -8,6 +8,7 @@ from fastapi import APIRouter
 from app.config import settings
 from app.api.v1.endpoints import (
     api_keys,
+    audit_logs,
     auth,
     config,
     dashboard,
@@ -91,6 +92,12 @@ api_router.include_router(
 api_router.include_router(
     search.router,
     tags=["Search"],
+)
+
+# Audit Log endpoints
+api_router.include_router(
+    audit_logs.router,
+    tags=["Audit Logs"],
 )
 
 # Configuration endpoints (feature flags, settings)

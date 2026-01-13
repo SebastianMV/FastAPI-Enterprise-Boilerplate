@@ -1,0 +1,27 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+📬 {{ t('email.generic_notification.title', default=title | default('Notification')) }}
+========================================================================================
+
+{{ t('email.generic_notification.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}
+
+{{ message | default('You have received a notification.') }}
+
+{% if details is defined and details %}
+Details
+-------
+{% for key, value in details.items() %}
+{{ key }}: {{ value }}
+{% endfor %}
+{% endif %}
+
+{% if footer_text is defined and footer_text %}
+{{ footer_text }}
+{% endif %}
+
+{% if action_url is defined and action_url %}
+{{ action_text | default(t('email.generic_notification.action', default='View Details')) }}:
+{{ action_url }}
+{% endif %}
+{% endblock %}

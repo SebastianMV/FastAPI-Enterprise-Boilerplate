@@ -7,14 +7,32 @@ from datetime import datetime, UTC
 from uuid import UUID
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Header, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 from app.api.deps import CurrentUser, CurrentUserId, DbSession
+from app.infrastructure.auth.jwt_handler import validate_access_token
 from app.infrastructure.database.repositories.session_repository import SQLAlchemySessionRepository
 
 
 router = APIRouter()
+
+# Security scheme
+security = HTTPBearer(auto_error=False)
+
+
+def get_current_token_jti(
+    credentials: HTTPAuthorizationCredentials | None,
+) -> str | None:
+    """Extract JTI (session ID) from the current access token."""
+    if not credentials:
+        return None
+    try:
+        payload = validate_access_token(credentials.credentials)
+        return payload.get("jti")
+    except Exception:
+        return None
 
 
 # ===========================================
@@ -64,6 +82,7 @@ async def list_sessions(
     user_id: CurrentUserId,
     session: DbSession,
     request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> SessionListResponse:
     """
     List all active sessions for the authenticated user.
@@ -74,8 +93,8 @@ async def list_sessions(
     repo = SQLAlchemySessionRepository(session)
     user_sessions = await repo.get_user_sessions(user_id)
     
-    # Get current session ID from request state if available
-    current_session_id = getattr(request.state, "session_id", None)
+    # Get current session ID from JWT token's jti claim
+    current_token_jti = get_current_token_jti(credentials)
     
     sessions = [
         SessionResponse(
@@ -87,7 +106,7 @@ async def list_sessions(
             ip_address=s.ip_address,
             location=s.location,
             last_activity=s.last_activity,
-            is_current=(str(s.id) == str(current_session_id)) if current_session_id else False,
+            is_current=(str(s.id) == current_token_jti) if current_token_jti else False,
             created_at=s.created_at,
         )
         for s in user_sessions
@@ -109,7 +128,7 @@ async def revoke_session(
     session_id: UUID,
     user_id: CurrentUserId,
     session: DbSession,
-    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> RevokeSessionsResponse:
     """
     Revoke a specific session.
@@ -117,9 +136,9 @@ async def revoke_session(
     This will log out the user on that specific device.
     Cannot revoke the current session (use /auth/logout instead).
     """
-    # Check if trying to revoke current session
-    current_session_id = getattr(request.state, "session_id", None)
-    if current_session_id and str(session_id) == str(current_session_id):
+    # Check if trying to revoke current session using JWT's jti
+    current_token_jti = get_current_token_jti(credentials)
+    if current_token_jti and str(session_id) == current_token_jti:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
@@ -169,7 +188,7 @@ async def revoke_session(
 async def revoke_all_sessions(
     user_id: CurrentUserId,
     session: DbSession,
-    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> RevokeSessionsResponse:
     """
     Revoke all sessions except the current one.
@@ -179,11 +198,17 @@ async def revoke_all_sessions(
     """
     repo = SQLAlchemySessionRepository(session)
     
-    # Get current session ID
-    current_session_id = getattr(request.state, "session_id", None)
+    # Get current session ID from JWT's jti claim
+    current_token_jti = get_current_token_jti(credentials)
     
-    if current_session_id:
-        count = await repo.revoke_all_except(user_id, UUID(str(current_session_id)))
+    if current_token_jti:
+        # Try to parse as UUID, otherwise use as string
+        try:
+            current_uuid = UUID(current_token_jti)
+            count = await repo.revoke_all_except(user_id, current_uuid)
+        except ValueError:
+            # If jti is not a valid UUID, revoke all sessions
+            count = await repo.revoke_all(user_id)
     else:
         count = await repo.revoke_all(user_id)
     

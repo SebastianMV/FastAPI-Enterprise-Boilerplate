@@ -23,6 +23,9 @@ const SessionsPage = lazy(() => import('@/pages/security/SessionsPage'));
 const VerifyEmailPage = lazy(() => import('@/pages/auth/VerifyEmailPage'));
 const SearchPage = lazy(() => import('@/pages/search/SearchPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
+const RolesPage = lazy(() => import('@/pages/roles/RolesPage'));
+const AuditLogPage = lazy(() => import('@/pages/audit/AuditLogPage'));
+const TenantsPage = lazy(() => import('@/pages/admin/TenantsPage'));
 
 /**
  * Loading fallback component for lazy loaded pages.
@@ -97,6 +100,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/roles" element={<RolesPage />} />
           
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/search" element={<SearchPage />} />
@@ -105,6 +109,8 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security/mfa" element={<MFASettingsPage />} />
           <Route path="/security/sessions" element={<SessionsPage />} />
+          <Route path="/security/audit" element={<AuditLogPage />} />
+          <Route path="/admin/tenants" element={<TenantsPage />} />
         </Route>
 
         {/* 404 */}

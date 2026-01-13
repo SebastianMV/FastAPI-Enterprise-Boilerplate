@@ -1,0 +1,32 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🔑 {{ t('email.api_key_created.title', default='New API Key Created') }}
+========================================================================
+
+{{ t('email.api_key_created.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}
+
+{{ t('email.api_key_created.body', default='A new API key has been created for your account.') }}
+
+Key Details
+-----------
+{{ t('email.api_key_created.key_name', default='Key Name') }}: {{ key_name | default('Unnamed Key') }}
+{{ t('email.api_key_created.created_at', default='Created') }}: {{ created_at | default('Just now') }}
+{% if expires_at is defined and expires_at %}
+{{ t('email.api_key_created.expires_at', default='Expires') }}: {{ expires_at }}
+{% endif %}
+{% if scopes is defined and scopes %}
+{{ t('email.api_key_created.scopes', default='Permissions') }}: {{ scopes }}
+{% endif %}
+
+⚠️ {{ t('email.api_key_created.security_notice', default='Security Notice') }}
+------------------------------------------------------------------------------
+{{ t('email.api_key_created.security_message', default='Never share your API key publicly. If you did not create this key, revoke it immediately.') }}
+
+{{ t('email.api_key_created.not_you', default='If you did not create this API key, please review your account security settings.') }}
+
+{% if api_keys_url is defined and api_keys_url %}
+{{ t('email.api_key_created.manage_keys', default='Manage API Keys') }}:
+{{ api_keys_url }}
+{% endif %}
+{% endblock %}

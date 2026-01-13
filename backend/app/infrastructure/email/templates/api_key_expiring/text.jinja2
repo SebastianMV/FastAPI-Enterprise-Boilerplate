@@ -1,0 +1,30 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+⏰ {{ t('email.api_key_expiring.title', default='API Key Expiring Soon') }}
+==========================================================================
+
+{{ t('email.api_key_expiring.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}
+
+{{ t('email.api_key_expiring.body', default='One of your API keys is about to expire. Please take action to avoid service interruption.') }}
+
+Key Details
+-----------
+{{ t('email.api_key_expiring.key_name', default='Key Name') }}: {{ key_name | default('Unnamed Key') }}
+{{ t('email.api_key_expiring.expires_in', default='Expires In') }}: {{ expires_in | default('Soon') }}
+{{ t('email.api_key_expiring.expires_at', default='Expiration Date') }}: {{ expires_at | default('Unknown') }}
+
+{{ t('email.api_key_expiring.what_to_do', default='What should you do?') }}
+---------------------------------------------------------------------------
+
+1. {{ t('email.api_key_expiring.step_1', default='Create a new API key before this one expires') }}
+2. {{ t('email.api_key_expiring.step_2', default='Update your applications with the new key') }}
+3. {{ t('email.api_key_expiring.step_3', default='Revoke the old key once migration is complete') }}
+
+{{ t('email.api_key_expiring.no_action', default='If you no longer need this API key, you can ignore this notification.') }}
+
+{% if api_keys_url is defined and api_keys_url %}
+{{ t('email.api_key_expiring.manage_keys', default='Manage API Keys') }}:
+{{ api_keys_url }}
+{% endif %}
+{% endblock %}

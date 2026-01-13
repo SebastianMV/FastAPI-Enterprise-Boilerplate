@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
   Key,
   Plus,
@@ -45,20 +46,22 @@ interface NewlyCreatedKey {
   created_at: string;
 }
 
-const AVAILABLE_SCOPES = [
-  { value: 'users:read', label: 'Read Users', description: 'View user information' },
-  { value: 'users:write', label: 'Write Users', description: 'Create and update users' },
-  { value: 'roles:read', label: 'Read Roles', description: 'View roles and permissions' },
-  { value: 'roles:write', label: 'Write Roles', description: 'Manage roles' },
-  { value: 'api-keys:read', label: 'Read API Keys', description: 'View API keys' },
-  { value: 'api-keys:write', label: 'Write API Keys', description: 'Manage API keys' },
-];
-
 /**
  * API Keys management page.
  * Allows users to create, view, and revoke their API keys.
  */
 export default function ApiKeysPage() {
+  const { t } = useTranslation();
+  
+  const AVAILABLE_SCOPES = [
+    { value: 'users:read', label: t('apiKeys.scopes.usersRead'), description: t('apiKeys.scopes.usersReadDesc') },
+    { value: 'users:write', label: t('apiKeys.scopes.usersWrite'), description: t('apiKeys.scopes.usersWriteDesc') },
+    { value: 'roles:read', label: t('apiKeys.scopes.rolesRead'), description: t('apiKeys.scopes.rolesReadDesc') },
+    { value: 'roles:write', label: t('apiKeys.scopes.rolesWrite'), description: t('apiKeys.scopes.rolesWriteDesc') },
+    { value: 'api-keys:read', label: t('apiKeys.scopes.apiKeysRead'), description: t('apiKeys.scopes.apiKeysReadDesc') },
+    { value: 'api-keys:write', label: t('apiKeys.scopes.apiKeysWrite'), description: t('apiKeys.scopes.apiKeysWriteDesc') },
+  ];
+  
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -91,11 +94,11 @@ export default function ApiKeysPage() {
       const response = await api.get(`/api-keys?include_revoked=${showRevokedKeys}`);
       setApiKeys(response.data.items);
     } catch {
-      setErrorMessage('Failed to load API keys');
+      setErrorMessage(t('apiKeys.loadError'));
     } finally {
       setIsLoading(false);
     }
-  }, [showRevokedKeys]);
+  }, [showRevokedKeys, t]);
 
   // Fetch API keys on mount
   useEffect(() => {
@@ -119,7 +122,7 @@ export default function ApiKeysPage() {
       setSelectedScopes([]);
       await fetchApiKeys();
     } catch {
-      setErrorMessage('Failed to create API key');
+      setErrorMessage(t('apiKeys.createError'));
     } finally {
       setIsCreating(false);
     }
@@ -133,8 +136,8 @@ export default function ApiKeysPage() {
       setKeyToRevoke(null);
       setAlertModal({
         isOpen: true,
-        title: 'API Key Revoked',
-        message: 'The API key has been revoked successfully and can no longer be used.',
+        title: t('apiKeys.revokedSuccess'),
+        message: t('apiKeys.revokedMessage'),
         variant: 'success',
       });
       await fetchApiKeys();
@@ -142,8 +145,8 @@ export default function ApiKeysPage() {
       setShowRevokeModal(false);
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: 'Failed to revoke API key. Please try again.',
+        title: t('common.error'),
+        message: t('apiKeys.revokeError'),
         variant: 'error',
       });
     } finally {
@@ -175,7 +178,7 @@ export default function ApiKeysPage() {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Never';
+    if (!dateString) return t('apiKeys.never');
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -196,10 +199,10 @@ export default function ApiKeysPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            API Keys
+            {t('apiKeys.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Manage your API keys for programmatic access
+            {t('apiKeys.subtitle')}
           </p>
         </div>
         <button
@@ -207,7 +210,7 @@ export default function ApiKeysPage() {
           className="btn-primary"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Create API Key
+          {t('apiKeys.createKey')}
         </button>
       </div>
 
@@ -224,24 +227,24 @@ export default function ApiKeysPage() {
 
       {/* Newly Created Key Modal */}
       {newlyCreatedKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="card p-6 max-w-lg w-full mx-4">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Key className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                API Key Created!
+                {t('apiKeys.keyCreatedTitle')}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                Copy your API key now. You won't be able to see it again!
+                {t('apiKeys.keyCreatedWarning')}
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Your API Key
+                  {t('apiKeys.yourApiKey')}
                 </label>
                 <div className="flex items-center space-x-2">
                   <code className="flex-1 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono break-all">
@@ -262,26 +265,26 @@ export default function ApiKeysPage() {
 
               <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                 <p className="text-sm text-amber-800 dark:text-amber-300">
-                  <strong>Warning:</strong> This key will only be shown once. Store it securely!
+                  <strong>{t('common.warning')}:</strong> {t('apiKeys.warningOnce')}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-slate-500">Name:</span>
+                  <span className="text-slate-500">{t('apiKeys.name')}:</span>
                   <span className="ml-2 font-medium">{newlyCreatedKey.name}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500">Prefix:</span>
+                  <span className="text-slate-500">{t('apiKeys.prefix')}:</span>
                   <span className="ml-2 font-mono">{newlyCreatedKey.prefix}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500">Expires:</span>
+                  <span className="text-slate-500">{t('apiKeys.expires')}:</span>
                   <span className="ml-2">{formatDate(newlyCreatedKey.expires_at)}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500">Scopes:</span>
-                  <span className="ml-2">{newlyCreatedKey.scopes.length || 'All'}</span>
+                  <span className="text-slate-500">{t('apiKeys.scopes')}:</span>
+                  <span className="ml-2">{newlyCreatedKey.scopes.length || t('apiKeys.scopes')}</span>
                 </div>
               </div>
             </div>
@@ -290,7 +293,7 @@ export default function ApiKeysPage() {
               onClick={() => setNewlyCreatedKey(null)}
               className="btn-primary w-full mt-6"
             >
-              I've Saved My Key
+              {t('apiKeys.savedKey')}
             </button>
           </div>
         </div>
@@ -298,11 +301,11 @@ export default function ApiKeysPage() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="card p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Create API Key
+                {t('apiKeys.createKey')}
               </h2>
               <button
                 onClick={() => {
@@ -319,13 +322,13 @@ export default function ApiKeysPage() {
             <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Key Name
+                  {t('apiKeys.keyName')}
                 </label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="e.g., Production CI/CD"
-                  {...register('name', { required: 'Name is required' })}
+                  placeholder={t('apiKeys.keyNamePlaceholder')}
+                  {...register('name', { required: t('validation.required') })}
                 />
                 {errors.name && (
                   <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -334,24 +337,24 @@ export default function ApiKeysPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Expiration (days)
+                  {t('apiKeys.expirationDays')}
                 </label>
                 <input
                   type="number"
                   className="input"
-                  placeholder="Leave empty for no expiration"
+                  placeholder={t('apiKeys.expirationPlaceholder')}
                   min={1}
                   max={365}
                   {...register('expires_in_days', { valueAsNumber: true })}
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  Leave empty for a key that never expires
+                  {t('apiKeys.expirationHelp')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Permissions (Scopes)
+                  {t('apiKeys.permissions')}
                 </label>
                 <div className="space-y-2">
                   {AVAILABLE_SCOPES.map((scope) => (
@@ -375,7 +378,7 @@ export default function ApiKeysPage() {
                   ))}
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
-                  Leave all unchecked for full access
+                  {t('apiKeys.permissionsHelp')}
                 </p>
               </div>
 
@@ -389,7 +392,7 @@ export default function ApiKeysPage() {
                   }}
                   className="btn-secondary flex-1"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -399,12 +402,12 @@ export default function ApiKeysPage() {
                   {isCreating ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
+                      {t('common.loading')}
                     </>
                   ) : (
                     <>
                       <Key className="w-4 h-4 mr-2" />
-                      Create Key
+                      {t('apiKeys.createKey')}
                     </>
                   )}
                 </button>
@@ -423,7 +426,7 @@ export default function ApiKeysPage() {
             onChange={(e) => setShowRevokedKeys(e.target.checked)}
             className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
           />
-          <span>Show revoked keys</span>
+          <span>{t('apiKeys.showRevokedKeys')}</span>
         </label>
       </div>
 
@@ -436,17 +439,17 @@ export default function ApiKeysPage() {
         <div className="card p-12 text-center">
           <Key className="w-12 h-12 text-slate-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-            No API Keys
+            {t('apiKeys.noKeysTitle')}
           </h3>
           <p className="text-slate-500 dark:text-slate-400 mb-6">
-            Create your first API key to get started with programmatic access.
+            {t('apiKeys.noKeysDescription')}
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn-primary"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Create API Key
+            {t('apiKeys.createKey')}
           </button>
         </div>
       ) : (
@@ -483,12 +486,12 @@ export default function ApiKeysPage() {
                       </code>
                       {!key.is_active && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
-                          Revoked
+                          {t('apiKeys.revoked')}
                         </span>
                       )}
                       {key.is_active && isExpired(key.expires_at) && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                          Expired
+                          {t('apiKeys.expired')}
                         </span>
                       )}
                     </div>
@@ -506,7 +509,7 @@ export default function ApiKeysPage() {
                     ) : (
                       <>
                         <Trash2 className="w-4 h-4 mr-1" />
-                        Revoke
+                        {t('apiKeys.revoke')}
                       </>
                     )}
                   </button>
@@ -517,7 +520,7 @@ export default function ApiKeysPage() {
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-4 h-4 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500">Created</p>
+                    <p className="text-xs text-slate-500">{t('apiKeys.created')}</p>
                     <p className="text-sm text-slate-700 dark:text-slate-300">
                       {formatDate(key.created_at)}
                     </p>
@@ -526,7 +529,7 @@ export default function ApiKeysPage() {
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500">Expires</p>
+                    <p className="text-xs text-slate-500">{t('apiKeys.expires')}</p>
                     <p className="text-sm text-slate-700 dark:text-slate-300">
                       {formatDate(key.expires_at)}
                     </p>
@@ -535,7 +538,7 @@ export default function ApiKeysPage() {
                 <div className="flex items-center space-x-2">
                   <Activity className="w-4 h-4 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500">Last Used</p>
+                    <p className="text-xs text-slate-500">{t('apiKeys.lastUsed')}</p>
                     <p className="text-sm text-slate-700 dark:text-slate-300">
                       {formatDate(key.last_used_at)}
                     </p>
@@ -544,9 +547,9 @@ export default function ApiKeysPage() {
                 <div className="flex items-center space-x-2">
                   <Shield className="w-4 h-4 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500">Usage</p>
+                    <p className="text-xs text-slate-500">{t('apiKeys.usage')}</p>
                     <p className="text-sm text-slate-700 dark:text-slate-300">
-                      {key.usage_count} requests
+                      {key.usage_count} {t('apiKeys.requests')}
                     </p>
                   </div>
                 </div>
@@ -573,21 +576,20 @@ export default function ApiKeysPage() {
       <div className="card p-6 bg-slate-50 dark:bg-slate-800/50">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
           <Key className="w-5 h-5 mr-2" />
-          Using API Keys
+          {t('apiKeys.usingApiKeys')}
         </h3>
         <div className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
           <p>
-            API keys provide programmatic access to the API without requiring user authentication.
+            {t('apiKeys.usingDescription')}
           </p>
           <div>
-            <p className="font-medium mb-1">Usage example:</p>
+            <p className="font-medium mb-1">{t('apiKeys.usageExample')}</p>
             <code className="block p-3 bg-slate-100 dark:bg-slate-900 rounded-lg text-xs overflow-x-auto">
               curl -H "X-API-Key: your_api_key_here" https://api.example.com/v1/users
             </code>
           </div>
           <p>
-            <strong>Best practices:</strong> Use separate keys for different applications,
-            set appropriate expiration dates, and revoke keys that are no longer needed.
+            <strong>{t('apiKeys.bestPractices')}</strong> {t('apiKeys.bestPracticesText')}
           </p>
         </div>
       </div>
@@ -600,10 +602,10 @@ export default function ApiKeysPage() {
           setKeyToRevoke(null);
         }}
         onConfirm={() => keyToRevoke && handleRevokeKey(keyToRevoke.id)}
-        title="Revoke API Key"
-        message={`Are you sure you want to revoke the API key "${keyToRevoke?.name}"? This action cannot be undone and the key will immediately stop working.`}
-        confirmText="Revoke Key"
-        cancelText="Cancel"
+        title={t('apiKeys.revokeTitle')}
+        message={t('apiKeys.revokeMessage', { name: keyToRevoke?.name })}
+        confirmText={t('apiKeys.revokeConfirm')}
+        cancelText={t('common.cancel')}
         variant="danger"
         isLoading={deletingKeyId !== null}
       />

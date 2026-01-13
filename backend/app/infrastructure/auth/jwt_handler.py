@@ -12,7 +12,7 @@ Provides stateless authentication with:
 
 from datetime import datetime, timedelta, UTC
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import bcrypt
 import jwt
@@ -81,9 +81,13 @@ def create_access_token(
     now = datetime.now(UTC)
     expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
+    # Generate unique token ID for session tracking
+    jti = str(uuid4())
+    
     payload = {
         "sub": str(user_id),
         "type": "access",
+        "jti": jti,  # Token ID for session identification
         "iat": now,
         "exp": expire,
     }
@@ -118,9 +122,13 @@ def create_refresh_token(
     now = datetime.now(UTC)
     expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     
+    # Generate unique token ID for session tracking
+    jti = str(uuid4())
+    
     payload = {
         "sub": str(user_id),
         "type": "refresh",
+        "jti": jti,  # Token ID for session identification
         "iat": now,
         "exp": expire,
     }

@@ -134,3 +134,6 @@ playwright-report/
 
 # Alembic
 alembic/versions/*.pyc
+
+# AI Agent context files (private)
+AGENTS.md

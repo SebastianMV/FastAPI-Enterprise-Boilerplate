@@ -1,0 +1,19 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🔓 {{ t('email.account_unlocked.title', default='Account Unlocked') }}
+======================================================================
+
+{{ t('email.account_unlocked.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}
+
+{{ t('email.account_unlocked.body', default='Good news! Your account has been unlocked and you can now log in again.') }}
+
+{{ t('email.account_unlocked.security_tip', default='Security Tip') }}
+----------------------------------------------------------------------
+{{ t('email.account_unlocked.security_message', default='If you did not request this unlock, please contact our support team immediately.') }}
+
+{% if login_url is defined and login_url %}
+{{ t('email.account_unlocked.login_button', default='Log In Now') }}:
+{{ login_url }}
+{% endif %}
+{% endblock %}

@@ -500,7 +500,6 @@ class TestOAuthServiceCreateSSOConfig:
             mock_cache.return_value = MagicMock()
             return OAuthService(session=mock_session)
 
-    @pytest.mark.skip(reason="create_sso_config not implemented")
     @pytest.mark.asyncio
     async def test_create_sso_config(
         self, oauth_service, mock_session: AsyncMock

@@ -31,7 +31,6 @@ class TestSearchEndpoint:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture with working registration")
     async def test_search_basic_query(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -56,7 +55,6 @@ class TestSearchEndpoint:
         assert isinstance(data["hits"], list)
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_with_filters(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -76,7 +74,6 @@ class TestSearchEndpoint:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_with_sorting(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -96,7 +93,6 @@ class TestSearchEndpoint:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_with_highlighting(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -119,7 +115,6 @@ class TestSearchEndpoint:
             assert "highlights" in data["hits"][0]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_pagination(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -158,7 +153,6 @@ class TestSearchEndpoint:
         assert data2["page"] == 2
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_fuzzy_matching(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -180,7 +174,6 @@ class TestSearchValidation:
     """Tests for search input validation."""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_empty_query_rejected(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -197,7 +190,6 @@ class TestSearchValidation:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_invalid_index(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -216,7 +208,6 @@ class TestSearchValidation:
         assert "detail" in data
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_query_too_long(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -233,7 +224,6 @@ class TestSearchValidation:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_invalid_page_number(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -251,7 +241,6 @@ class TestSearchValidation:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_invalid_page_size(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -269,7 +258,6 @@ class TestSearchValidation:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_invalid_filter_operator(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -294,7 +282,6 @@ class TestSearchIndices:
     """Tests for different search indices."""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_users_index(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -311,7 +298,6 @@ class TestSearchIndices:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_posts_index(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -328,7 +314,6 @@ class TestSearchIndices:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_messages_index(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -345,7 +330,6 @@ class TestSearchIndices:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_documents_index(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -362,7 +346,6 @@ class TestSearchIndices:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_audit_logs_index(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -394,7 +377,6 @@ class TestSearchSuggestions:
         assert response.status_code in [401, 404]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_suggestions(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -418,7 +400,6 @@ class TestSearchMultiTenant:
     """Tests for multi-tenant search isolation."""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_respects_tenant_isolation(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -480,7 +461,6 @@ class TestSearchSQLInjectionPrevention:
     """Tests for SQL injection prevention in search."""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_sql_injection_in_query(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -507,7 +487,6 @@ class TestSearchSQLInjectionPrevention:
             assert response.status_code != 500, f"Injection payload caused 500: {payload}"
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_sql_injection_in_filter_value(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -527,7 +506,6 @@ class TestSearchSQLInjectionPrevention:
         assert response.status_code != 500
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_sql_injection_in_sort_field(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -551,7 +529,6 @@ class TestSearchPerformance:
     """Tests for search performance characteristics."""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_returns_timing(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -572,7 +549,6 @@ class TestSearchPerformance:
             assert data["took_ms"] >= 0
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_max_score(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -597,7 +573,6 @@ class TestSearchSpecialCharacters:
     """Tests for handling special characters in search."""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture")
     async def test_search_with_special_characters(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/services/api';
 
 interface OAuthCallbackResult {
@@ -19,12 +20,13 @@ interface OAuthCallbackResult {
  * Processes the authorization code and completes the authentication.
  */
 export default function OAuthCallbackPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { setTokens, fetchUser } = useAuthStore();
   
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Processing authentication...');
+  const [message, setMessage] = useState(t('oauth.processing'));
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
@@ -38,14 +40,14 @@ export default function OAuthCallbackPage() {
       // Handle OAuth error
       if (error) {
         setStatus('error');
-        setMessage(errorDescription || `Authentication failed: ${error}`);
+        setMessage(errorDescription || t('oauth.authError', { error }));
         return;
       }
 
       // Validate required params
       if (!code || !state) {
         setStatus('error');
-        setMessage('Invalid callback: missing authorization code or state');
+        setMessage(t('oauth.invalidCallback'));
         return;
       }
 
@@ -54,7 +56,7 @@ export default function OAuthCallbackPage() {
         const provider = state.split('_')[0];
         
         if (!provider) {
-          throw new Error('Invalid state parameter');
+          throw new Error(t('oauth.invalidState'));
         }
 
         // Complete OAuth flow
@@ -77,8 +79,8 @@ export default function OAuthCallbackPage() {
         setStatus('success');
         setMessage(
           is_new_user 
-            ? 'Account created successfully!' 
-            : 'Signed in successfully!'
+            ? t('oauth.accountCreated') 
+            : t('oauth.signedIn')
         );
 
         // Redirect after short delay
@@ -93,7 +95,7 @@ export default function OAuthCallbackPage() {
         if (error instanceof Error) {
           setMessage(error.message);
         } else {
-          setMessage('Authentication failed. Please try again.');
+          setMessage(t('oauth.authFailedGeneric'));
         }
       }
     };
@@ -125,9 +127,9 @@ export default function OAuthCallbackPage() {
 
         {/* Title */}
         <h1 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-          {status === 'loading' && 'Completing Sign In'}
-          {status === 'success' && (isNewUser ? 'Welcome!' : 'Welcome Back!')}
-          {status === 'error' && 'Authentication Failed'}
+          {status === 'loading' && t('oauth.completingSignIn')}
+          {status === 'success' && (isNewUser ? t('oauth.welcome') : t('oauth.welcomeBack'))}
+          {status === 'error' && t('oauth.authFailed')}
         </h1>
 
         {/* Message */}
@@ -142,20 +144,22 @@ export default function OAuthCallbackPage() {
               onClick={() => navigate('/login')}
               className="btn-primary w-full"
             >
-              Back to Login
+              {t('oauth.backToLogin')}
             </button>
             <button
               onClick={() => window.location.reload()}
               className="btn-secondary w-full"
             >
-              Try Again
+              {t('oauth.tryAgain')}
             </button>
           </div>
         )}
 
         {status === 'success' && (
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Redirecting you to {isNewUser ? 'your profile' : 'the dashboard'}...
+            {t('oauth.redirecting', {
+              destination: isNewUser ? t('oauth.yourProfile') : t('oauth.theDashboard')
+            })}
           </p>
         )}
       </div>

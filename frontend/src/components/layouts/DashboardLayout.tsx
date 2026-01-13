@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
 import SearchBar from '@/components/common/SearchBar';
@@ -18,12 +19,15 @@ import {
   Key,
   Globe,
   Bell,
+  FileText,
+  Building2,
 } from 'lucide-react';
 
 /**
  * Main dashboard layout with sidebar navigation.
  */
 export default function DashboardLayout() {
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
@@ -38,10 +42,14 @@ export default function DashboardLayout() {
 
   // Build navigation based on enabled features
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Users', href: '/users', icon: Users },
-    { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: t('navigation.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+    { name: t('navigation.users'), href: '/users', icon: Users },
+    { name: t('navigation.roles'), href: '/roles', icon: Shield },
+    { name: t('navigation.notifications'), href: '/notifications', icon: Bell },
+    { name: t('navigation.auditLog'), href: '/security/audit', icon: FileText },
+    { name: t('navigation.settings'), href: '/settings', icon: Settings },
+    // Superuser only
+    ...(user?.is_superuser ? [{ name: t('navigation.tenants'), href: '/admin/tenants', icon: Building2 }] : []),
   ];
 
   return (
@@ -49,7 +57,7 @@ export default function DashboardLayout() {
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -63,9 +71,9 @@ export default function DashboardLayout() {
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200 dark:border-slate-700">
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/logo.svg" alt="PyNest Pro" className="w-8 h-8" />
+            <img src="/logo.svg" alt="FastAPI Enterprise Boilerplate" className="w-8 h-8" />
             <span className="font-semibold text-slate-900 dark:text-white">
-              PyNest Pro
+              FastAPI Enterprise
             </span>
           </Link>
           <button

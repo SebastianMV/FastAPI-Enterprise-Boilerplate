@@ -17,6 +17,7 @@ from app.infrastructure.database.models import (
     UserModel,
     RoleModel,
     APIKeyModel,
+    UserSessionModel,
 )
 
 router = APIRouter(tags=["Dashboard"])
@@ -305,12 +306,10 @@ async def get_system_health(
     uptime_tracker = get_uptime_tracker()
     uptime_percentage = await uptime_tracker.get_uptime_percentage()
     
-    # Get active sessions (users with last_login in last 24 hours)
-    last_24_hours = datetime.now(UTC) - timedelta(hours=24)
+    # Get active sessions (count non-revoked sessions from user_sessions table)
     active_sessions_result = await session.execute(
-        select(func.count(UserModel.id)).where(
-            UserModel.last_login >= last_24_hours,
-            UserModel.deleted_at.is_(None),
+        select(func.count(UserSessionModel.id)).where(
+            UserSessionModel.is_revoked.is_(False),
         )
     )
     active_sessions = active_sessions_result.scalar() or 0

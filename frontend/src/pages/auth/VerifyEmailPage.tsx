@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { emailVerificationService } from '@/services/api';
 import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
 
@@ -9,6 +10,7 @@ import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
  * Handles the email verification flow when user clicks the verification link.
  */
 export default function VerifyEmailPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
@@ -50,10 +52,10 @@ export default function VerifyEmailPage() {
                 <Loader2 className="w-8 h-8 text-primary-600 dark:text-primary-400 animate-spin" />
               </div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                Verifying your email...
+                {t('auth.verifyEmail')}
               </h1>
               <p className="text-slate-500 dark:text-slate-400">
-                Please wait while we verify your email address.
+                {t('auth.verifyEmailDescription')}
               </p>
             </>
           )}
@@ -93,7 +95,7 @@ export default function VerifyEmailPage() {
               </p>
               <div className="space-y-3">
                 <Link to="/settings" className="btn-primary w-full block">
-                  Resend Verification Email
+                  {t('auth.resendVerification')}
                 </Link>
                 <Link to="/dashboard" className="btn-secondary w-full block">
                   Go to Dashboard

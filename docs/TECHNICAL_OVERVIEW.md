@@ -599,12 +599,12 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for:
 | Document | Description |
 | -------- | ----------- |
 | [README.md](../README.md) | Quick start and feature overview |
-| [ROADMAP.md](../ROADMAP.md) | Complete project status and roadmap |
+| [PROJECT_STATUS.md](../PROJECT_STATUS.md) | Complete project status and roadmap |
 | [CHANGELOG.md](../CHANGELOG.md) | Version history and release notes |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed architecture documentation |
 | [API_REFERENCE.md](API_REFERENCE.md) | Complete API endpoint reference |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Production deployment guide |
-| [SECURITY_AUDIT.md](SECURITY_AUDIT.md) | Security review and best practices |
+| [SECURITY.md](SECURITY.md) | Security features, audit, and best practices |
 | [RLS_SETUP.md](RLS_SETUP.md) | Multi-tenant RLS implementation |
 | [PRODUCTION_DATABASE_CONFIG.md](PRODUCTION_DATABASE_CONFIG.md) | Database setup for production |
 | [WEBSOCKET.md](WEBSOCKET.md) | WebSocket implementation details |

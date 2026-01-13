@@ -266,7 +266,6 @@ class TestOAuthServiceSSOConfig:
         assert result == []
         mock_session.execute.assert_called_once()
 
-    @pytest.mark.skip(reason="create_sso_config not implemented in OAuthService")
     @pytest.mark.asyncio
     async def test_create_sso_config(self, mock_session):
         """Test creating SSO configuration."""

@@ -358,9 +358,9 @@ class OAuthService:
         config_id = uuid4()
         now = datetime.now(UTC)
         
-        # Encrypt client_secret before storing
-        from app.infrastructure.auth.password_utils import get_password_hash
-        encrypted_secret = get_password_hash(client_secret)
+        # Store client_secret encrypted (use Fernet or similar in production)
+        # For now, we store it as-is since OAuth secrets need to be decrypted
+        # In production, use a secrets manager (Vault, AWS Secrets Manager, etc.)
         
         model = SSOConfigurationModel(
             id=config_id,
@@ -368,7 +368,7 @@ class OAuthService:
             provider=provider.value,
             name=name,
             client_id=client_id,
-            client_secret=encrypted_secret,  # Encrypted with bcrypt
+            client_secret=client_secret,  # Store as-is (use secrets manager in prod)
             scopes=kwargs.get("scopes", []),
             attribute_mapping=kwargs.get("attribute_mapping", {}),
             auto_create_users=kwargs.get("auto_create_users", True),

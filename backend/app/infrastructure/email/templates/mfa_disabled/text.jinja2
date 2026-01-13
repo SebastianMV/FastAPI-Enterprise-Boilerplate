@@ -1,0 +1,26 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🔐 {{ t('email.mfa_disabled.title', default='Two-Factor Authentication Disabled') }}
+====================================================================================
+
+{{ t('email.mfa_disabled.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}
+
+{{ t('email.mfa_disabled.body', default='Two-factor authentication (2FA) has been disabled on your account.') }}
+
+⚠️ {{ t('email.mfa_disabled.security_warning', default='Security Warning') }}
+------------------------------------------------------------------------------
+{{ t('email.mfa_disabled.warning_message', default='Your account is now less secure without 2FA. We strongly recommend re-enabling it.') }}
+
+{{ t('email.mfa_disabled.not_you', default='If you did not disable 2FA, please secure your account immediately by changing your password and contacting support.') }}
+
+{{ t('email.mfa_disabled.details', default='Details') }}
+--------------------------------------------------------
+{{ t('email.mfa_disabled.time', default='Time') }}: {{ disabled_at | default('Just now') }}
+{{ t('email.mfa_disabled.ip', default='IP Address') }}: {{ ip_address | default('Unknown') }}
+
+{% if settings_url is defined and settings_url %}
+{{ t('email.mfa_disabled.reenable_button', default='Re-enable 2FA') }}:
+{{ settings_url }}
+{% endif %}
+{% endblock %}

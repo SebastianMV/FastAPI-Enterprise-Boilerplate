@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { 
   Shield, 
   ShieldCheck, 
@@ -45,6 +46,7 @@ interface DisableFormData {
  * Allows users to enable, configure, and disable Two-Factor Authentication.
  */
 export default function MFASettingsPage() {
+  const { t } = useTranslation();
   const [mfaStatus, setMfaStatus] = useState<MFAStatus | null>(null);
   const [setupData, setSetupData] = useState<MFASetupResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +85,7 @@ export default function MFASettingsPage() {
       const response = await api.get<MFAStatus>('/mfa/status');
       setMfaStatus(response.data);
     } catch {
-      setErrorMessage('Failed to fetch MFA status');
+      setErrorMessage(t('mfa.fetchError'));
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +98,7 @@ export default function MFASettingsPage() {
       const response = await api.post<MFASetupResponse>('/mfa/setup');
       setSetupData(response.data);
     } catch {
-      setErrorMessage('Failed to setup MFA. Please try again.');
+      setErrorMessage(t('mfa.setupError'));
     } finally {
       setIsSetupLoading(false);
     }
@@ -109,12 +111,12 @@ export default function MFASettingsPage() {
       
       await api.post('/mfa/verify', { code: data.code });
       
-      setSuccessMessage('MFA has been successfully enabled!');
+      setSuccessMessage(t('mfa.enableSuccess'));
       setSetupData(null);
       resetVerifyForm();
       await fetchMFAStatus();
     } catch {
-      setErrorMessage('Invalid verification code. Please try again.');
+      setErrorMessage(t('mfa.enableError'));
     } finally {
       setIsVerifying(false);
     }
@@ -130,12 +132,12 @@ export default function MFASettingsPage() {
         password: data.password 
       });
       
-      setSuccessMessage('MFA has been disabled.');
+      setSuccessMessage(t('mfa.disableSuccess'));
       setShowDisableForm(false);
       resetDisableForm();
       await fetchMFAStatus();
     } catch {
-      setErrorMessage('Failed to disable MFA. Check your code and password.');
+      setErrorMessage(t('mfa.disableError'));
     } finally {
       setIsDisabling(false);
     }
@@ -184,10 +186,10 @@ export default function MFASettingsPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Two-Factor Authentication
+            {t('mfa.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Secure your account with TOTP-based authentication
+            {t('mfa.subtitle')}
           </p>
         </div>
       </div>
@@ -224,12 +226,12 @@ export default function MFASettingsPage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {mfaStatus?.is_enabled ? '2FA is Enabled' : '2FA is Disabled'}
+                {mfaStatus?.is_enabled ? t('mfa.enabled') : t('mfa.disabled')}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {mfaStatus?.is_enabled 
-                  ? 'Using TOTP authentication' 
-                  : 'Your account is not protected with two-factor authentication'}
+                  ? t('mfa.usingTotp') 
+                  : t('mfa.notProtected')}
               </p>
             </div>
           </div>
@@ -238,7 +240,7 @@ export default function MFASettingsPage() {
               ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
               : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
           }`}>
-            {mfaStatus?.is_enabled ? 'Active' : 'Inactive'}
+            {mfaStatus?.is_enabled ? t('mfa.active') : t('mfa.inactive')}
           </span>
         </div>
       </div>
@@ -249,11 +251,10 @@ export default function MFASettingsPage() {
           <div className="text-center">
             <Shield className="w-12 h-12 text-primary-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-              Enable Two-Factor Authentication
+              {t('mfa.enableTitle')}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
-              Add an extra layer of security by requiring a verification code from your 
-              authenticator app when signing in.
+              {t('mfa.enableDescription')}
             </p>
             <button
               onClick={handleSetupMFA}
@@ -263,12 +264,12 @@ export default function MFASettingsPage() {
               {isSetupLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Setting up...
+                  {t('mfa.settingUp')}
                 </>
               ) : (
                 <>
                   <QrCode className="w-4 h-4 mr-2" />
-                  Begin Setup
+                  {t('mfa.beginSetup')}
                 </>
               )}
             </button>
@@ -286,11 +287,11 @@ export default function MFASettingsPage() {
                 1
               </span>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Scan QR Code
+                {t('mfa.step1Title')}
               </h3>
             </div>
             <p className="text-slate-500 dark:text-slate-400 mb-4">
-              Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.)
+              {t('mfa.step1Description')}
             </p>
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
@@ -302,7 +303,7 @@ export default function MFASettingsPage() {
               </div>
               <div className="flex-1 space-y-4">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Can't scan? Enter this code manually:
+                  {t('mfa.cantScan')}
                 </p>
                 <div className="flex items-center space-x-2">
                   <code className="flex-1 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono break-all text-slate-900 dark:text-white">
@@ -311,7 +312,7 @@ export default function MFASettingsPage() {
                   <button
                     onClick={() => copyToClipboard(setupData.secret)}
                     className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-                    title="Copy secret"
+                    title={t('mfa.copySecret')}
                   >
                     {copiedSecret ? (
                       <Check className="w-5 h-5 text-green-600" />
@@ -331,11 +332,11 @@ export default function MFASettingsPage() {
                 2
               </span>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Save Backup Codes
+                {t('mfa.step2Title')}
               </h3>
             </div>
             <p className="text-slate-500 dark:text-slate-400 mb-4">
-              Store these backup codes in a safe place. You can use them to access your account if you lose your authenticator.
+              {t('mfa.step2Description')}
             </p>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -346,12 +347,12 @@ export default function MFASettingsPage() {
                   {showBackupCodes ? (
                     <>
                       <EyeOff className="w-4 h-4 mr-1" />
-                      Hide Codes
+                      {t('mfa.hideCodes')}
                     </>
                   ) : (
                     <>
                       <Eye className="w-4 h-4 mr-1" />
-                      Show Codes
+                      {t('mfa.showCodes')}
                     </>
                   )}
                 </button>
@@ -362,12 +363,12 @@ export default function MFASettingsPage() {
                   {copiedIndex === -1 ? (
                     <>
                       <Check className="w-4 h-4 mr-1" />
-                      Copied!
+                      {t('mfa.copied')}
                     </>
                   ) : (
                     <>
                       <Copy className="w-4 h-4 mr-1" />
-                      Copy All
+                      {t('mfa.copyAll')}
                     </>
                   )}
                 </button>
@@ -396,7 +397,7 @@ export default function MFASettingsPage() {
               )}
               <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                 <p className="text-sm text-amber-800 dark:text-amber-300">
-                  <strong>Warning:</strong> These codes will only be shown once. Make sure to save them now!
+                  <strong>{t('common.warning')}:</strong> {t('mfa.backupWarning')}
                 </p>
               </div>
             </div>
@@ -409,16 +410,16 @@ export default function MFASettingsPage() {
                 3
               </span>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Verify Setup
+                {t('mfa.step3Title')}
               </h3>
             </div>
             <p className="text-slate-500 dark:text-slate-400 mb-4">
-              Enter the 6-digit code from your authenticator app to complete setup.
+              {t('mfa.step3Description')}
             </p>
             <form onSubmit={handleVerifySubmit(onVerifySubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Verification Code
+                  {t('mfa.verificationCode')}
                 </label>
                 <input
                   type="text"
@@ -428,10 +429,10 @@ export default function MFASettingsPage() {
                   placeholder="000000"
                   className="input max-w-xs text-center text-2xl tracking-widest font-mono"
                   {...registerVerify('code', { 
-                    required: 'Code is required',
+                    required: t('mfa.codeRequired'),
                     pattern: {
                       value: /^\d{6}$/,
-                      message: 'Code must be 6 digits'
+                      message: t('mfa.codeInvalid')
                     }
                   })}
                 />
@@ -454,12 +455,12 @@ export default function MFASettingsPage() {
                   {isVerifying ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying...
+                      {t('mfa.verifying')}
                     </>
                   ) : (
                     <>
                       <ShieldCheck className="w-4 h-4 mr-2" />
-                      Enable 2FA
+                      {t('mfa.enable2fa')}
                     </>
                   )}
                 </button>
@@ -468,7 +469,7 @@ export default function MFASettingsPage() {
                   onClick={() => setSetupData(null)}
                   className="btn-secondary"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -480,10 +481,10 @@ export default function MFASettingsPage() {
       {mfaStatus?.is_enabled && (
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-            Disable Two-Factor Authentication
+            {t('mfa.disableTitle')}
           </h3>
           <p className="text-slate-500 dark:text-slate-400 mb-4">
-            Disabling 2FA will make your account less secure. You'll need to verify your identity to proceed.
+            {t('mfa.disableDescription')}
           </p>
           
           {!showDisableForm ? (
@@ -492,13 +493,13 @@ export default function MFASettingsPage() {
               className="btn-danger"
             >
               <ShieldOff className="w-4 h-4 mr-2" />
-              Disable 2FA
+              {t('mfa.disable2fa')}
             </button>
           ) : (
             <form onSubmit={handleDisableSubmit(onDisableSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Current 2FA Code
+                  {t('mfa.current2faCode')}
                 </label>
                 <input
                   type="text"
@@ -508,10 +509,10 @@ export default function MFASettingsPage() {
                   placeholder="000000"
                   className="input max-w-xs text-center tracking-widest font-mono"
                   {...registerDisable('code', { 
-                    required: 'Code is required',
+                    required: t('mfa.codeRequired'),
                     pattern: {
                       value: /^\d{6}$/,
-                      message: 'Code must be 6 digits'
+                      message: t('mfa.codeInvalid')
                     }
                   })}
                 />
@@ -521,12 +522,12 @@ export default function MFASettingsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Password
+                  {t('mfa.password')}
                 </label>
                 <input
                   type="password"
                   className="input max-w-xs"
-                  {...registerDisable('password', { required: 'Password is required' })}
+                  {...registerDisable('password', { required: t('mfa.passwordRequired') })}
                 />
                 {disableErrors.password && (
                   <p className="mt-1 text-sm text-red-600">{disableErrors.password.message}</p>
@@ -541,12 +542,12 @@ export default function MFASettingsPage() {
                   {isDisabling ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Disabling...
+                      {t('mfa.disabling')}
                     </>
                   ) : (
                     <>
                       <ShieldOff className="w-4 h-4 mr-2" />
-                      Confirm Disable
+                      {t('mfa.confirmDisable')}
                     </>
                   )}
                 </button>
@@ -558,7 +559,7 @@ export default function MFASettingsPage() {
                   }}
                   className="btn-secondary"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -570,20 +571,17 @@ export default function MFASettingsPage() {
       <div className="card p-6 bg-slate-50 dark:bg-slate-800/50">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center">
           <Key className="w-5 h-5 mr-2" />
-          About Two-Factor Authentication
+          {t('mfa.aboutTitle')}
         </h3>
         <div className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
           <p>
-            Two-factor authentication adds an extra layer of security to your account by 
-            requiring both your password and a time-based code from your authenticator app.
+            {t('mfa.aboutDescription')}
           </p>
           <p>
-            <strong>Recommended apps:</strong> Google Authenticator, Microsoft Authenticator, 
-            Authy, 1Password, or any TOTP-compatible app.
+            <strong>{t('auth.mfa.backupCodes')}:</strong> {t('mfa.recommendedApps')}
           </p>
           <p>
-            <strong>Lost your device?</strong> Use one of your backup codes to sign in, 
-            then reconfigure 2FA with a new device.
+            <strong>{t('mfa.lostDevice').split(':')[0]}?</strong> {t('mfa.lostDevice').split(':').slice(1).join(':') || t('mfa.lostDevice')}
           </p>
         </div>
       </div>

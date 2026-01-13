@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { sessionsService, type UserSession } from '@/services/api';
 import { ConfirmModal, AlertModal } from '@/components/common/Modal';
 import {
@@ -31,7 +32,7 @@ function DeviceIcon({ type }: { type: string }) {
 /**
  * Format relative time
  */
-function formatRelativeTime(dateStr: string): string {
+function formatRelativeTime(dateStr: string, t: any): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -39,10 +40,10 @@ function formatRelativeTime(dateStr: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffHours < 24) return `${diffHours} hours ago`;
-  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffMins < 1) return t('sessions.timeAgo.justNow');
+  if (diffMins < 60) return t('sessions.timeAgo.minutesAgo', { count: diffMins });
+  if (diffHours < 24) return t('sessions.timeAgo.hoursAgo', { count: diffHours });
+  if (diffDays < 7) return t('sessions.timeAgo.daysAgo', { count: diffDays });
   return date.toLocaleDateString();
 }
 
@@ -50,6 +51,7 @@ function formatRelativeTime(dateStr: string): string {
  * Sessions management page component.
  */
 export default function SessionsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [showRevokeAllModal, setShowRevokeAllModal] = useState(false);
   const [sessionToRevoke, setSessionToRevoke] = useState<UserSession | null>(null);
@@ -74,7 +76,7 @@ export default function SessionsPage() {
       setSessionToRevoke(null);
       setAlertModal({
         isOpen: true,
-        title: 'Session Revoked',
+        title: t('sessions.sessionRevoked'),
         message: response.message,
         variant: 'success',
       });
@@ -83,8 +85,8 @@ export default function SessionsPage() {
       setSessionToRevoke(null);
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error.message || 'Failed to revoke session',
+        title: t('common.error'),
+        message: error.message || t('sessions.revokeError'),
         variant: 'error',
       });
     },
@@ -98,7 +100,7 @@ export default function SessionsPage() {
       setShowRevokeAllModal(false);
       setAlertModal({
         isOpen: true,
-        title: 'Sessions Revoked',
+        title: t('sessions.sessionsRevoked'),
         message: response.message,
         variant: 'success',
       });
@@ -107,8 +109,8 @@ export default function SessionsPage() {
       setShowRevokeAllModal(false);
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error.message || 'Failed to revoke sessions',
+        title: t('common.error'),
+        message: error.message || t('sessions.revokeAllError'),
         variant: 'error',
       });
     },
@@ -126,7 +128,7 @@ export default function SessionsPage() {
     return (
       <div className="card p-6">
         <div className="text-center text-red-600">
-          Failed to load sessions. Please try again.
+          {t('sessions.loadError')}
         </div>
       </div>
     );
@@ -140,10 +142,10 @@ export default function SessionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Active Sessions
+            {t('sessions.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Manage your active sessions across devices
+            {t('sessions.subtitle')}
           </p>
         </div>
         {sessions.length > 1 && (
@@ -152,7 +154,7 @@ export default function SessionsPage() {
             className="btn-danger flex items-center space-x-2"
           >
             <LogOut className="w-4 h-4" />
-            <span>Sign out all other devices</span>
+            <span>{t('sessions.signOutAll')}</span>
           </button>
         )}
       </div>
@@ -163,10 +165,10 @@ export default function SessionsPage() {
           <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
           <div>
             <h3 className="font-medium text-blue-900 dark:text-blue-100">
-              Security Tip
+              {t('sessions.securityTip')}
             </h3>
             <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              If you see any unfamiliar sessions, revoke them immediately and change your password.
+              {t('sessions.securityTipMessage')}
             </p>
           </div>
         </div>
@@ -176,7 +178,7 @@ export default function SessionsPage() {
       <div className="card divide-y divide-slate-200 dark:divide-slate-700">
         {sessions.length === 0 ? (
           <div className="p-6 text-center text-slate-500">
-            No active sessions found.
+            {t('sessions.noSessions')}
           </div>
         ) : (
           sessions.map((session) => (
@@ -205,7 +207,7 @@ export default function SessionsPage() {
                     {session.is_current && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        Current session
+                        {t('sessions.currentSession')}
                       </span>
                     )}
                   </div>
@@ -217,11 +219,11 @@ export default function SessionsPage() {
                     </span>
                     <span className="flex items-center">
                       <Clock className="w-4 h-4 mr-1" />
-                      {formatRelativeTime(session.last_activity)}
+                      {formatRelativeTime(session.last_activity, t)}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                    {session.browser} on {session.os} • Started {new Date(session.created_at).toLocaleDateString()}
+                    {session.browser} on {session.os} • {t('sessions.started')} {new Date(session.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -245,9 +247,9 @@ export default function SessionsPage() {
         isOpen={!!sessionToRevoke}
         onClose={() => setSessionToRevoke(null)}
         onConfirm={() => sessionToRevoke && revokeMutation.mutate(sessionToRevoke.id)}
-        title="Revoke Session"
-        message={`Are you sure you want to sign out from "${sessionToRevoke?.device_name}"? This device will need to log in again.`}
-        confirmText="Revoke"
+        title={t('sessions.revokeSession')}
+        message={t('sessions.revokeMessage', { device: sessionToRevoke?.device_name })}
+        confirmText={t('apiKeys.revoke')}
         variant="danger"
         isLoading={revokeMutation.isPending}
       />
@@ -257,9 +259,9 @@ export default function SessionsPage() {
         isOpen={showRevokeAllModal}
         onClose={() => setShowRevokeAllModal(false)}
         onConfirm={() => revokeAllMutation.mutate()}
-        title="Sign Out All Other Devices"
-        message="This will sign you out from all other devices. Only your current session will remain active."
-        confirmText="Sign Out All"
+        title={t('sessions.revokeAllTitle')}
+        message={t('sessions.revokeAllMessage')}
+        confirmText={t('sessions.revokeAllConfirm')}
         variant="danger"
         isLoading={revokeAllMutation.isPending}
       />

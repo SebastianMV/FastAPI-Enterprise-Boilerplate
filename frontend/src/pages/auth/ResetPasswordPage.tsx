@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Lock, 
   ArrowLeft, 
@@ -22,6 +23,7 @@ interface ResetPasswordFormData {
  * Allows users to set a new password using a reset token.
  */
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   
@@ -109,7 +111,7 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-slate-500 dark:text-slate-400">Validating reset link...</p>
+          <p className="text-slate-500 dark:text-slate-400">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -136,7 +138,7 @@ export default function ResetPasswordPage() {
               </Link>
               <Link to="/login" className="btn-secondary">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Login
+                {t('auth.backToLogin')}
               </Link>
             </div>
           </div>
@@ -155,14 +157,14 @@ export default function ResetPasswordPage() {
               <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              Password Reset Successful
+              {t('auth.passwordResetSuccess')}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mb-6">
-              Your password has been successfully reset. You can now sign in with your new password.
+              {t('auth.nowYouCanLogin')}
             </p>
             <Link to="/login" className="btn-primary w-full justify-center">
               <ShieldCheck className="w-4 h-4 mr-2" />
-              Sign In
+              {t('auth.signIn')}
             </Link>
           </div>
         </div>
@@ -180,10 +182,10 @@ export default function ResetPasswordPage() {
             <Lock className="w-8 h-8 text-primary-600 dark:text-primary-400" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Reset Your Password
+            {t('auth.resetPasswordTitle')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-2">
-            Enter a new password for your account.
+            {t('auth.resetPasswordDescription')}
           </p>
         </div>
 
@@ -203,7 +205,7 @@ export default function ResetPasswordPage() {
                 htmlFor="password" 
                 className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
               >
-                New Password
+                {t('profile.newPassword')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -213,17 +215,17 @@ export default function ResetPasswordPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  placeholder="Enter new password"
+                  placeholder={t('auth.enterPassword')}
                   className="input pl-10 pr-10"
                   {...register('password', {
-                    required: 'Password is required',
+                    required: t('validation.required'),
                     minLength: {
                       value: 8,
-                      message: 'Password must be at least 8 characters',
+                      message: t('validation.passwordMin', { min: 8 }),
                     },
                     pattern: {
                       value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                      message: 'Must contain uppercase, lowercase, and a number',
+                      message: t('validation.passwordStrength'),
                     },
                   })}
                 />
@@ -250,7 +252,7 @@ export default function ResetPasswordPage() {
                 htmlFor="confirmPassword" 
                 className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
               >
-                Confirm Password
+                {t('profile.confirmPassword')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -260,12 +262,12 @@ export default function ResetPasswordPage() {
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  placeholder="Confirm new password"
+                  placeholder={t('auth.enterPassword')}
                   className="input pl-10 pr-10"
                   {...register('confirmPassword', {
-                    required: 'Please confirm your password',
+                    required: t('validation.required'),
                     validate: value => 
-                      value === password || 'Passwords do not match',
+                      value === password || t('profile.passwordsNoMatch'),
                   })}
                 />
                 <button
@@ -314,12 +316,12 @@ export default function ResetPasswordPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Resetting...
+                  {t('common.loading')}
                 </>
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4 mr-2" />
-                  Reset Password
+                  {t('profile.updatePassword')}
                 </>
               )}
             </button>
@@ -331,7 +333,7 @@ export default function ResetPasswordPage() {
               className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center justify-center"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to Login
+              {t('auth.backToLogin')}
             </Link>
           </div>
         </div>

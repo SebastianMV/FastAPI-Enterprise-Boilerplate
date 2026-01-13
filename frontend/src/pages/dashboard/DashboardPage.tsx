@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import {
   dashboardService,
@@ -32,6 +33,7 @@ import {
  * Dashboard overview page with real-time statistics and activity.
  */
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
@@ -184,7 +186,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-slate-500 dark:text-slate-400">Loading dashboard...</p>
+          <p className="text-slate-500 dark:text-slate-400">{t('dashboard.loadingDashboard')}</p>
         </div>
       </div>
     );
@@ -201,7 +203,7 @@ export default function DashboardPage() {
             className="btn-primary"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
+            {t('dashboard.refreshData')}
           </button>
         </div>
       </div>
@@ -214,7 +216,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Welcome back, {user?.first_name}!
+            {t('dashboard.welcome', { name: user?.first_name })}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
             Here's what's happening with your application today.
@@ -226,7 +228,7 @@ export default function DashboardPage() {
           className="btn-secondary"
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          {isRefreshing ? `${t('common.loading')}` : t('dashboard.refreshData')}
         </button>
       </div>
 
@@ -291,12 +293,12 @@ export default function DashboardPage() {
                 {health.database_status === 'healthy' ? (
                   <span className="flex items-center text-green-600 dark:text-green-400 text-sm font-medium">
                     <CheckCircle className="w-4 h-4 mr-1" />
-                    Healthy
+                    {t('dashboard.healthy')}
                   </span>
                 ) : (
                   <span className="flex items-center text-red-600 dark:text-red-400 text-sm font-medium">
                     <XCircle className="w-4 h-4 mr-1" />
-                    Unhealthy
+                    {t('dashboard.unhealthy')}
                   </span>
                 )}
               </div>
@@ -306,12 +308,12 @@ export default function DashboardPage() {
                 {health.cache_status === 'healthy' ? (
                   <span className="flex items-center text-green-600 dark:text-green-400 text-sm font-medium">
                     <CheckCircle className="w-4 h-4 mr-1" />
-                    Healthy
+                    {t('dashboard.healthy')}
                   </span>
                 ) : (
                   <span className="flex items-center text-yellow-600 dark:text-yellow-400 text-sm font-medium">
                     <AlertCircle className="w-4 h-4 mr-1" />
-                    Degraded
+                    {t('dashboard.degraded')}
                   </span>
                 )}
               </div>

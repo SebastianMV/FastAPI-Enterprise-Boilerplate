@@ -1,0 +1,41 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.api_key_created.preheader', default='A new API key has been created') }}{% endblock %}
+
+{% block content %}
+<h1>🔑 {{ t('email.api_key_created.title', default='New API Key Created') }}</h1>
+
+<p>{{ t('email.api_key_created.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}</p>
+
+<p>{{ t('email.api_key_created.body', default='A new API key has been created for your account.') }}</p>
+
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.api_key_created.key_name', default='Key Name') }}:</strong> {{ key_name | default('Unnamed Key') }}<br>
+        <strong>{{ t('email.api_key_created.created_at', default='Created') }}:</strong> {{ created_at | default('Just now') }}<br>
+        {% if expires_at is defined and expires_at %}
+        <strong>{{ t('email.api_key_created.expires_at', default='Expires') }}:</strong> {{ expires_at }}<br>
+        {% endif %}
+        {% if scopes is defined and scopes %}
+        <strong>{{ t('email.api_key_created.scopes', default='Permissions') }}:</strong> {{ scopes }}
+        {% endif %}
+    </p>
+</div>
+
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>⚠️ {{ t('email.api_key_created.security_notice', default='Security Notice') }}</strong><br>
+        {{ t('email.api_key_created.security_message', default='Never share your API key publicly. If you did not create this key, revoke it immediately.') }}
+    </p>
+</div>
+
+<p>{{ t('email.api_key_created.not_you', default='If you did not create this API key, please review your account security settings.') }}</p>
+{% endblock %}
+
+{% block cta %}
+{% if api_keys_url is defined and api_keys_url %}
+<div class="cta-container">
+    <a href="{{ api_keys_url }}" class="cta-button">{{ t('email.api_key_created.manage_keys', default='Manage API Keys') }}</a>
+</div>
+{% endif %}
+{% endblock %}

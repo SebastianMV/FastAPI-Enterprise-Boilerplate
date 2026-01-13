@@ -223,7 +223,6 @@ class TestOAuthConnections:
         assert response.status_code in [401, 404]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture with working registration")
     async def test_list_user_connections(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -240,7 +239,6 @@ class TestOAuthConnections:
             assert isinstance(data, list) or "connections" in data
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires auth_headers fixture with working registration")
     async def test_disconnect_oauth_provider(
         self, client: AsyncClient, auth_headers: dict
     ) -> None:
@@ -267,9 +265,8 @@ class TestSSOConfiguration:
         assert response.status_code in [401, 404]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires admin auth_headers")
     async def test_create_sso_config(
-        self, client: AsyncClient, auth_headers: dict
+        self, client: AsyncClient, superuser_auth_headers: dict
     ) -> None:
         """Test creating SSO configuration."""
         response = await client.post(
@@ -282,15 +279,14 @@ class TestSSOConfiguration:
                 "auto_create_users": True,
                 "allowed_domains": ["company.com"],
             },
-            headers=auth_headers
+            headers=superuser_auth_headers
         )
         
         assert response.status_code in [201, 403, 404]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires admin auth_headers")
     async def test_update_sso_config(
-        self, client: AsyncClient, auth_headers: dict
+        self, client: AsyncClient, superuser_auth_headers: dict
     ) -> None:
         """Test updating SSO configuration."""
         config_id = str(uuid4())
@@ -300,7 +296,7 @@ class TestSSOConfiguration:
                 "name": "Updated Corporate SSO",
                 "auto_create_users": False,
             },
-            headers=auth_headers
+            headers=superuser_auth_headers
         )
         
         assert response.status_code in [200, 403, 404]

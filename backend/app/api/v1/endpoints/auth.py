@@ -164,7 +164,6 @@ async def login(
     user.last_login = datetime.now(UTC)
     user.reset_failed_attempts()
     await user_repository.update(user)
-    await session.commit()
     
     # Create tokens
     access_token = create_access_token(
@@ -180,6 +179,41 @@ async def login(
         user_id=user.id,
         tenant_id=user.tenant_id,
     )
+    
+    # Decode refresh token to get jti for session tracking
+    from app.infrastructure.auth.jwt_handler import decode_token, hash_password
+    payload = decode_token(refresh_token)
+    jti = payload.get("jti", "")
+    
+    # Create session record
+    from app.infrastructure.database.repositories.session_repository import SQLAlchemySessionRepository
+    from app.domain.entities.session import UserSession
+    
+    session_repo = SQLAlchemySessionRepository(session)
+    
+    # Extract device info from User-Agent
+    user_agent = http_request.headers.get("User-Agent", "Unknown")
+    device_name = user_agent[:100] if user_agent else "Unknown"
+    
+    # Get IP address
+    ip_address = http_request.client.host if http_request.client else "Unknown"
+    
+    # Create session entity
+    user_session = UserSession(
+        user_id=user.id,
+        tenant_id=user.tenant_id,
+        refresh_token_hash=hash_password(jti),  # Hash the jti as identifier
+        device_name=device_name,
+        device_type="desktop",  # Could parse from User-Agent
+        browser="",
+        os="",
+        ip_address=ip_address,
+        location="",
+        last_activity=datetime.now(UTC),
+    )
+    
+    await session_repo.create(user_session)
+    await session.commit()
     
     return TokenResponse(
         access_token=access_token,
@@ -397,6 +431,45 @@ async def refresh_token(
         user_id=user.id,
         tenant_id=user.tenant_id,
     )
+    
+    # Update session activity
+    from app.infrastructure.database.repositories.session_repository import SQLAlchemySessionRepository
+    from app.infrastructure.auth.jwt_handler import hash_password
+    
+    session_repo = SQLAlchemySessionRepository(session)
+    old_jti = payload.get("jti", "")
+    
+    if old_jti:
+        # Find and revoke old session
+        old_session = await session_repo.get_by_token_hash(hash_password(old_jti))
+        if old_session:
+            await session_repo.revoke(old_session.id)
+        
+        # Decode new refresh token to get new jti
+        from app.infrastructure.auth.jwt_handler import decode_token
+        new_payload = decode_token(new_refresh_token)
+        new_jti = new_payload.get("jti", "")
+        
+        if new_jti:
+            # Create new session with rotated token
+            from app.domain.entities.session import UserSession
+            
+            user_session = UserSession(
+                user_id=user.id,
+                tenant_id=user.tenant_id,
+                refresh_token_hash=hash_password(new_jti),
+                device_name=old_session.device_name if old_session else "Unknown",
+                device_type=old_session.device_type if old_session else "desktop",
+                browser=old_session.browser if old_session else "",
+                os=old_session.os if old_session else "",
+                ip_address=old_session.ip_address if old_session else "",
+                location=old_session.location if old_session else "",
+                last_activity=datetime.now(UTC),
+            )
+            
+            await session_repo.create(user_session)
+    
+    await session.commit()
     
     return TokenResponse(
         access_token=new_access_token,

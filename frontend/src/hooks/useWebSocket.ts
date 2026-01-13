@@ -126,6 +126,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   ]);
   
   const { accessToken } = useAuthStore();
+  const refreshAccessToken = useAuthStore((state) => state.refreshAccessToken);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionId, setConnectionId] = useState<string | null>(null);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
@@ -266,6 +267,20 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
           clearInterval(pingIntervalRef.current);
         }
         
+        // 403/1008 = Policy Violation (likely auth issue)
+        if (event.code === 1008 && !isIntentionalCloseRef.current) {
+          console.log('[WebSocket] Authentication failed, attempting token refresh...');
+          refreshAccessToken().then(() => {
+            console.log('[WebSocket] Token refreshed, reconnecting...');
+            reconnectAttemptsRef.current++;
+            setTimeout(() => connect(), 1000);
+          }).catch((err) => {
+            console.error('[WebSocket] Token refresh failed:', err);
+            optionsRef.current.onError?.(new Error('WebSocket authentication failed'));
+          });
+          return;
+        }
+        
         // Auto-reconnect only if not intentional close
         if (!isIntentionalCloseRef.current && opts.autoReconnect && reconnectAttemptsRef.current < opts.maxReconnectAttempts) {
           console.log('[WebSocket] Scheduling reconnect attempt', reconnectAttemptsRef.current + 1);
@@ -286,7 +301,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       // Silently notify via callback
       optionsRef.current.onError?.(error as Error);
     }
-  }, [accessToken, getWebSocketUrl, handleMessage, startPingInterval, opts]);
+  }, [accessToken, getWebSocketUrl, handleMessage, startPingInterval, refreshAccessToken, opts]);
   
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
@@ -368,9 +383,36 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       return;
     }
     
+    // Check if token is expired or about to expire (within 1 minute)
+    const checkTokenAndConnect = async () => {
+      try {
+        // Decode JWT to check expiration
+        const parts = accessToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const expiresAt = payload.exp * 1000; // Convert to milliseconds
+          const now = Date.now();
+          const timeUntilExpiry = expiresAt - now;
+          
+          // If token expires in less than 1 minute, refresh first
+          if (timeUntilExpiry < 60000) {
+            console.log('[WebSocket] Token expiring soon, refreshing before connect...');
+            await refreshAccessToken();
+            // New token will trigger this effect again
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('[WebSocket] Failed to check token expiry:', error);
+      }
+      
+      // Token is valid, proceed with connection
+      connect();
+    };
+    
     // Small delay to avoid rapid connect/disconnect in React Strict Mode
     const connectTimer = setTimeout(() => {
-      connect();
+      checkTokenAndConnect();
     }, 100);
     
     return () => {
