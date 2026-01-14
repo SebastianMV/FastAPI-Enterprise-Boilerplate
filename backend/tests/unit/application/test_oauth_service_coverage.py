@@ -340,20 +340,9 @@ class TestOAuthServiceHelpers:
             assert client_id == "ms_id"
             assert client_secret == "ms_secret"
 
-    def test_get_default_oauth_config_discord(self, mock_session):
-        """Test getting default Discord OAuth config."""
-        from app.application.services.oauth_service import OAuthService
-        
-        service = OAuthService(mock_session)
-        
-        with patch('app.application.services.oauth_service.settings') as mock_settings:
-            mock_settings.OAUTH_DISCORD_CLIENT_ID = "discord_id"
-            mock_settings.OAUTH_DISCORD_CLIENT_SECRET = "discord_secret"
-            
-            client_id, client_secret = service._get_default_oauth_config(OAuthProvider.DISCORD)
-            
-            assert client_id == "discord_id"
-            assert client_secret == "discord_secret"
+    # Discord provider removed - not implemented
+    # def test_get_default_oauth_config_discord(self, mock_session):
+    #     """Test getting default Discord OAuth config."""
 
     def test_get_redirect_uri(self, mock_session):
         """Test building redirect URI."""

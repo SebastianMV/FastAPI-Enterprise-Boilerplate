@@ -436,10 +436,6 @@ class OAuthService:
                 getattr(settings, "OAUTH_MICROSOFT_CLIENT_ID", ""),
                 getattr(settings, "OAUTH_MICROSOFT_CLIENT_SECRET", ""),
             ),
-            OAuthProvider.DISCORD: (
-                getattr(settings, "OAUTH_DISCORD_CLIENT_ID", ""),
-                getattr(settings, "OAUTH_DISCORD_CLIENT_SECRET", ""),
-            ),
         }
         
         return config_map.get(provider, ("", ""))

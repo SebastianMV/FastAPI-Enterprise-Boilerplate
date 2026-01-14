@@ -36,7 +36,8 @@ class TestOAuthProvider:
         """Test social OAuth provider values."""
         assert OAuthProvider.LINKEDIN.value == "linkedin"
         assert OAuthProvider.TWITTER.value == "twitter"
-        assert OAuthProvider.DISCORD.value == "discord"
+        # Discord provider removed - not implemented
+        # assert OAuthProvider.DISCORD.value == "discord"
         assert OAuthProvider.SLACK.value == "slack"
 
     def test_enterprise_providers(self) -> None:

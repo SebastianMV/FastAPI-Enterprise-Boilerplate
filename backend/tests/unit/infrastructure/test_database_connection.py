@@ -238,7 +238,7 @@ class TestInitDatabase:
     @pytest.mark.asyncio
     async def test_handles_alembic_error(self):
         """Test that init_database handles alembic errors gracefully."""
-        with patch("app.infrastructure.database.connection.subprocess.run") as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=1, 
                 stdout="", 

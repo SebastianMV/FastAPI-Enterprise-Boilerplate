@@ -100,18 +100,9 @@ class TestOAuthServiceGetDefaultOAuthConfig:
             assert client_id == "ms-client-id"
             assert client_secret == "ms-secret"
 
-    def test_get_discord_config(self, oauth_service) -> None:
-        """Test getting Discord OAuth config."""
-        with patch("app.application.services.oauth_service.settings") as mock_settings:
-            mock_settings.OAUTH_DISCORD_CLIENT_ID = "discord-client-id"
-            mock_settings.OAUTH_DISCORD_CLIENT_SECRET = "discord-secret"
-
-            client_id, client_secret = oauth_service._get_default_oauth_config(
-                OAuthProvider.DISCORD
-            )
-
-            assert client_id == "discord-client-id"
-            assert client_secret == "discord-secret"
+    # Discord provider removed - not implemented
+    # def test_get_discord_config(self, oauth_service) -> None:
+    #     """Test getting Discord OAuth config."""
 
 
 class TestOAuthServiceGetRedirectUri:
@@ -646,7 +637,8 @@ class TestOAuthProvider:
         assert OAuthProvider.GOOGLE.value == "google"
         assert OAuthProvider.GITHUB.value == "github"
         assert OAuthProvider.MICROSOFT.value == "microsoft"
-        assert OAuthProvider.DISCORD.value == "discord"
+        # Discord provider removed - not implemented
+        # assert OAuthProvider.DISCORD.value == "discord"
 
 
 class TestOAuthState:
