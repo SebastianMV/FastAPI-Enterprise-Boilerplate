@@ -9,10 +9,11 @@ from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, String, text
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.database.connection import Base
+from app.infrastructure.database.models.custom_types import JSONEncodedList
 
 
 class RoleModel(Base):
@@ -51,8 +52,9 @@ class RoleModel(Base):
     )
     
     # Permissions stored as array of strings (resource:action)
+    # Uses PostgreSQL ARRAY or JSON for SQLite
     permissions: Mapped[list[str]] = mapped_column(
-        ARRAY(String(100)),
+        JSONEncodedList,
         nullable=False,
         default=list,
     )

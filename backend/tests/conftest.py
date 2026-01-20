@@ -12,6 +12,7 @@ This module provides reusable fixtures for testing:
 """
 
 import asyncio
+import os
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
 from uuid import uuid4
@@ -20,7 +21,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import StaticPool, NullPool
 
 from app.main import app
 from app.infrastructure.database.connection import Base
@@ -52,21 +53,50 @@ async def test_engine():
     """
     Create test database engine.
     
-    Uses SQLite in-memory for fast tests, or PostgreSQL for integration tests.
+    Uses PostgreSQL for integration tests (matches production),
+    or SQLite for unit tests (fast, isolated).
+    
+    Set TEST_DATABASE_URL environment variable to use PostgreSQL:
+        TEST_DATABASE_URL=postgresql+asyncpg://test_user:test_password@localhost:5433/test_boilerplate
     """
-    # Use SQLite for unit tests (fast)
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    # Check for PostgreSQL test database
+    test_db_url = os.getenv("TEST_DATABASE_URL")
     
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    yield engine
-    
-    await engine.dispose()
+    if test_db_url:
+        # PostgreSQL for integration tests
+        print(f"\n🗄️  Using PostgreSQL for integration tests: {test_db_url.split('@')[1]}")
+        engine = create_async_engine(
+            test_db_url,
+            poolclass=NullPool,  # Disable pooling for tests
+            echo=False,
+        )
+        
+        # Create all tables (matches production schema)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
+        yield engine
+        
+        # Cleanup: Drop all tables after session
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+        
+        await engine.dispose()
+    else:
+        # SQLite for unit tests (fast, in-memory)
+        print("\n💾 Using SQLite in-memory for unit tests")
+        engine = create_async_engine(
+            "sqlite+aiosqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
+        yield engine
+        
+        await engine.dispose()
 
 
 @pytest.fixture
@@ -266,3 +296,35 @@ def mock_redis(monkeypatch):
             return key in self._store
     
     return MockRedis()
+
+
+@pytest.fixture(autouse=True)
+def mock_cache_global(monkeypatch):
+    """
+    Automatically mock get_cache() for all tests to avoid Redis dependency.
+    
+    This fixture runs for every test automatically (autouse=True).
+    """
+    from unittest.mock import MagicMock
+    
+    class MockCache:
+        def __init__(self):
+            self._store = {}
+        
+        async def get(self, key: str):
+            return self._store.get(key)
+        
+        async def set(self, key: str, value: str, ex: int = None):
+            self._store[key] = value
+        
+        async def delete(self, key: str):
+            self._store.pop(key, None)
+    
+    # Create a mock that returns the same MockCache instance
+    mock_instance = MockCache()
+    mock_factory = MagicMock(return_value=mock_instance)
+    
+    # Patch get_cache at module level
+    monkeypatch.setattr("app.infrastructure.cache.get_cache", mock_factory)
+    
+    return mock_instance

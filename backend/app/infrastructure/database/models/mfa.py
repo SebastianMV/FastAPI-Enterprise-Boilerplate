@@ -11,7 +11,8 @@ from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.infrastructure.database.models.custom_types import JSONEncodedList
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.connection import Base
@@ -61,7 +62,7 @@ class MFAConfigModel(Base):
     
     # Backup codes (array of hashed codes)
     backup_codes: Mapped[list[str]] = mapped_column(
-        ARRAY(String(64)),
+        JSONEncodedList,
         nullable=False,
         default=list,
     )

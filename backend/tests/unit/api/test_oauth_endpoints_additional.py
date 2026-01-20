@@ -357,6 +357,54 @@ class TestCreateSSOConfigEndpoint:
         assert exc.value.status_code == 400
         assert "Unsupported OAuth provider" in exc.value.detail
 
+    @pytest.mark.asyncio
+    async def test_create_sso_config_success(self, mock_session, mock_superuser):
+        """Test successful SSO config creation."""
+        from app.api.v1.endpoints.oauth import create_sso_config
+        from app.domain.entities.oauth import OAuthProvider
+        
+        data = MagicMock()
+        data.provider = "google"
+        data.name = "Google SSO"
+        data.client_id = "test_client_id"
+        data.client_secret = "test_secret"
+        data.scopes = ["openid", "email", "profile"]
+        data.auto_create_users = True
+        data.auto_update_users = True
+        data.default_role_id = None
+        data.allowed_domains = ["example.com"]
+        data.is_required = False
+        
+        # Mock the OAuthService.create_sso_config method
+        mock_config = MagicMock()
+        mock_config.id = uuid4()
+        mock_config.provider = OAuthProvider.GOOGLE
+        mock_config.name = "Google SSO"
+        mock_config.is_enabled = True
+        mock_config.auto_create_users = True
+        mock_config.auto_update_users = True
+        mock_config.default_role_id = None
+        mock_config.allowed_domains = ["example.com"]
+        mock_config.is_required = False
+        mock_config.tenant_id = uuid4()
+        
+        with patch("app.api.v1.endpoints.oauth.OAuthService") as MockService:
+            mock_service_instance = AsyncMock()
+            mock_service_instance.create_sso_config = AsyncMock(return_value=mock_config)
+            MockService.return_value = mock_service_instance
+            
+            result = await create_sso_config(
+                data=data,
+                session=mock_session,
+                current_user=mock_superuser,
+                tenant_id=uuid4(),
+            )
+            
+            assert result.id == mock_config.id
+            assert result.provider == "google"
+            assert result.name == "Google SSO"
+            assert result.is_enabled is True
+
 
 class TestListProvidersEndpoint:
     """Tests for OAuth providers list endpoint."""

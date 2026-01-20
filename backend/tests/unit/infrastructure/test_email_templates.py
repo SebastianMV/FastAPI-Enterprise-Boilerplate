@@ -363,3 +363,52 @@ class TestEmailTemplateEngineRender:
         
         assert locale == "en"
 
+    def test_translate_method(self) -> None:
+        """Test _translate method delegates to i18n."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            engine = EmailTemplateEngine()
+            
+            engine._current_locale = "es"
+            
+            with patch.object(engine._i18n, "t", return_value="Traducido") as mock_t:
+                result = engine._translate("test.key", name="Test")
+                
+                assert result == "Traducido"
+                mock_t.assert_called_once_with("test.key", locale="es", name="Test")
+
+    def test_get_current_year(self) -> None:
+        """Test _get_current_year helper."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            engine = EmailTemplateEngine()
+            
+            year = engine._get_current_year()
+            
+            assert isinstance(year, int)
+            assert year >= 2025
+
+    def test_get_app_name(self) -> None:
+        """Test _get_app_name helper."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            with patch("app.config.settings") as mock_settings:
+                mock_settings.APP_NAME = "Test App"
+                engine = EmailTemplateEngine()
+                
+                app_name = engine._get_app_name()
+                
+                assert app_name == "Test App"
+
+    def test_get_support_email(self) -> None:
+        """Test _get_support_email helper."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            with patch("app.config.settings") as mock_settings:
+                mock_settings.SUPPORT_EMAIL = "support@test.com"
+                engine = EmailTemplateEngine()
+                
+                support_email = engine._get_support_email()
+                
+                assert support_email == "support@test.com"
+

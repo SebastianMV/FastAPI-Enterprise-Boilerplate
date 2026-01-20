@@ -95,3 +95,52 @@ class TestStorageQuota:
         quota_bytes = 100 * 1024 * 1024  # 100 MB
         usage_percent = (used_bytes / quota_bytes) * 100
         assert usage_percent == 5.0
+
+
+class TestStorageFactoryFallbacks:
+    """Tests for storage factory fallback behavior when dependencies are missing."""
+
+    @patch("app.infrastructure.storage._create_local_storage")
+    def test_s3_storage_fallback_on_import_error(self, mock_local: MagicMock) -> None:
+        """Test S3 storage falls back to local when boto3 not installed."""
+        from app.infrastructure.storage import _create_s3_storage
+        
+        # Mock LocalStorageAdapter
+        mock_local_adapter = MagicMock()
+        mock_local.return_value = mock_local_adapter
+        
+        # Patch the import to raise ImportError
+        with patch.dict("sys.modules", {"app.infrastructure.storage.s3": None}):
+            with patch("app.infrastructure.storage.settings") as mock_settings:
+                mock_settings.S3_BUCKET = "test-bucket"
+                
+                # Force ImportError by making the import fail
+                with patch("builtins.__import__", side_effect=ImportError("boto3 not found")):
+                    result = _create_s3_storage()
+        
+        # Should fall back to local storage
+        assert result == mock_local_adapter
+        mock_local.assert_called_once()
+
+    @patch("app.infrastructure.storage._create_local_storage")
+    def test_minio_storage_fallback_on_import_error(self, mock_local: MagicMock) -> None:
+        """Test MinIO storage falls back to local when boto3 not installed."""
+        from app.infrastructure.storage import _create_minio_storage
+        
+        # Mock LocalStorageAdapter
+        mock_local_adapter = MagicMock()
+        mock_local.return_value = mock_local_adapter
+        
+        # Patch the import to raise ImportError
+        with patch.dict("sys.modules", {"app.infrastructure.storage.s3": None}):
+            with patch("app.infrastructure.storage.settings") as mock_settings:
+                mock_settings.MINIO_BUCKET = "test-bucket"
+                mock_settings.MINIO_ENDPOINT = "localhost:9000"
+                
+                # Force ImportError by making the import fail
+                with patch("builtins.__import__", side_effect=ImportError("boto3 not found")):
+                    result = _create_minio_storage()
+        
+        # Should fall back to local storage
+        assert result == mock_local_adapter
+        mock_local.assert_called_once()

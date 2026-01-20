@@ -138,6 +138,7 @@ class SQLAlchemyUserRepository(UserRepositoryPort):
         
         if not model:
             raise EntityNotFoundError(
+                message="",
                 entity_type="User",
                 entity_id=str(user_id),
             )

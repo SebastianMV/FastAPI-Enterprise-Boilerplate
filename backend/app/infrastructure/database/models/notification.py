@@ -7,11 +7,12 @@ from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, text
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.entities.notification import NotificationPriority, NotificationType
 from app.infrastructure.database.connection import Base
+from app.infrastructure.database.models.custom_types import JSONEncodedList, JSONBCompat
 
 
 class NotificationModel(Base):
@@ -64,7 +65,7 @@ class NotificationModel(Base):
     # Rich content metadata
     extra_data: Mapped[dict] = mapped_column(
         "metadata",  # Column name in DB
-        JSONB,
+        JSONBCompat,
         nullable=False,
         server_default="{}",
     )
@@ -83,14 +84,14 @@ class NotificationModel(Base):
     
     # Delivery channels
     channels: Mapped[list[str]] = mapped_column(
-        ARRAY(String(20)),
+        JSONEncodedList,
         nullable=False,
         server_default="{}",
     )
     
     # Delivery status per channel
     delivery_status: Mapped[dict] = mapped_column(
-        JSONB,
+        JSONBCompat,
         nullable=False,
         server_default="{}",
     )

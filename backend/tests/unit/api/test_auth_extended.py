@@ -491,6 +491,7 @@ class TestAuthEdgeCases:
         mock_user.tenant_id = uuid4()
         mock_user.password_hash = "hashed"
         mock_user.is_active = True
+        mock_user.is_locked.return_value = False  # Not locked
         mock_user.is_superuser = False
         mock_user.roles = []
         mock_user.last_login = None
@@ -515,10 +516,16 @@ class TestAuthEdgeCases:
                         "app.api.v1.endpoints.auth.create_refresh_token",
                         return_value="refresh",
                     ):
-                        result = await login(
-                            request=request,
-                            session=mock_session,
-                        )
+                        with patch(
+                            "app.infrastructure.auth.jwt_handler.decode_token",
+                            return_value={"jti": "mfa-test-jti"},
+                        ):
+                            mock_http_request = MagicMock()
+                            result = await login(
+                                request=request,
+                                session=mock_session,
+                                http_request=mock_http_request,
+                            )
 
         assert result.access_token == "access"
 

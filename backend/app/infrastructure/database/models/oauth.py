@@ -10,10 +10,11 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID as PgUUID
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.connection import Base
+from app.infrastructure.database.models.custom_types import JSONEncodedList, JSONBCompat
 
 
 class OAuthConnectionModel(Base):
@@ -59,10 +60,10 @@ class OAuthConnectionModel(Base):
     token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Scopes
-    scopes: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    scopes: Mapped[list[str]] = mapped_column(JSONEncodedList, default=list)
     
     # Raw provider data
-    raw_data: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    raw_data: Mapped[dict[str, Any]] = mapped_column(JSONBCompat, default=dict)
     
     # Status
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -124,10 +125,10 @@ class SSOConfigurationModel(Base):
     saml_certificate: Mapped[str | None] = mapped_column(Text, nullable=True)
     
     # Scopes
-    scopes: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    scopes: Mapped[list[str]] = mapped_column(JSONEncodedList, default=list)
     
     # Attribute mapping
-    attribute_mapping: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict)
+    attribute_mapping: Mapped[dict[str, str]] = mapped_column(JSONBCompat, default=dict)
     
     # Auto-provisioning
     auto_create_users: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -139,7 +140,7 @@ class SSOConfigurationModel(Base):
     )
     
     # Domain restrictions
-    allowed_domains: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    allowed_domains: Mapped[list[str]] = mapped_column(JSONEncodedList, default=list)
     
     # Status
     is_required: Mapped[bool] = mapped_column(Boolean, default=False)

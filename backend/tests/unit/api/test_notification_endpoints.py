@@ -230,6 +230,51 @@ class TestListNotificationsEndpoint:
         assert len(result.items) == 1
         assert result.items[0].title == "Test"
 
+    @pytest.mark.asyncio
+    async def test_list_notifications_unread_only(self) -> None:
+        """Test listing only unread notifications."""
+        from app.api.v1.endpoints.notifications import list_notifications
+
+        mock_user = MagicMock()
+        mock_user.id = uuid4()
+        mock_session = AsyncMock()
+        
+        # Create mock notification
+        mock_notification = MagicMock()
+        mock_notification.id = uuid4()
+        mock_notification.type = "info"
+        mock_notification.title = "Unread Test"
+        mock_notification.message = "Unread Message"
+        mock_notification.priority = "normal"
+        mock_notification.metadata = None
+        mock_notification.action_url = None
+        mock_notification.read_at = None  # Unread
+        mock_notification.created_at = datetime.now(timezone.utc)
+        
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [mock_notification]
+        
+        mock_count_result = MagicMock()
+        mock_count_result.scalar.return_value = 1
+        
+        mock_session.execute.side_effect = [
+            mock_result,  # notifications
+            mock_count_result,  # total (unread_only filtered)
+            mock_count_result,  # unread
+        ]
+        
+        result = await list_notifications(
+            current_user=mock_user,
+            session=mock_session,
+            limit=50,
+            offset=0,
+            unread_only=True,  # Test unread_only filter
+        )
+        
+        assert len(result.items) == 1
+        assert result.items[0].title == "Unread Test"
+        assert result.items[0].is_read is False
+
 
 class TestGetUnreadCountEndpoint:
     """Tests for GET /notifications/unread/count endpoint."""

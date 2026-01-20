@@ -17,12 +17,12 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/tests-3294%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="#"><img src="https://img.shields.io/badge/coverage-89%25-brightgreen.svg" alt="Coverage"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-3151%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/coverage-94%25-brightgreen.svg" alt="Coverage"></a>
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
   <a href="#"><img src="https://img.shields.io/badge/vulnerabilities-0-brightgreen.svg" alt="Security"></a>
   <a href="PROJECT_STATUS.md"><img src="https://img.shields.io/badge/status-production%20ready-brightgreen.svg" alt="Production Ready"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.3.1-blue.svg" alt="v1.3.1"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.3.3-blue.svg" alt="v1.3.3"></a>
 </p>
 
 ---

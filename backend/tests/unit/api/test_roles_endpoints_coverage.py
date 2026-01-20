@@ -586,3 +586,122 @@ class TestRevokeRoleEndpoint:
             
             assert result.success is True
             mock_user.remove_role.assert_called_once_with(role_id)
+
+
+class TestCreateRoleConflict:
+    """Test ConflictError in create_role."""
+
+    @pytest.mark.asyncio
+    async def test_create_role_conflict_error(self) -> None:
+        """Test create role when name conflicts."""
+        from fastapi import HTTPException
+        
+        mock_session = AsyncMock()
+        
+        request = RoleCreate(
+            name="Admin",
+            description="Admin role",
+            permissions=["users:read"],
+        )
+        
+        with patch("app.api.v1.endpoints.roles.SQLAlchemyRoleRepository") as mock_repo_cls:
+            mock_repo = AsyncMock()
+            mock_repo.create.side_effect = ConflictError("ROLE_EXISTS", "Role already exists")
+            mock_repo_cls.return_value = mock_repo
+            
+            with pytest.raises(HTTPException) as exc:
+                await create_role(
+                    request=request,
+                    superuser_id=uuid4(),
+                    tenant_id=uuid4(),
+                    session=mock_session,
+                )
+            
+            assert exc.value.status_code == 409
+
+
+class TestUpdateRoleEdgeCases:
+    """Test edge cases in update_role."""
+
+    @pytest.mark.asyncio
+    async def test_update_role_invalid_permission(self) -> None:
+        """Test update role with invalid permission format."""
+        from fastapi import HTTPException
+        
+        mock_repo = AsyncMock()
+        mock_role = MagicMock()
+        mock_role.name = "Test"
+        mock_repo.get_by_id.return_value = mock_role
+        mock_session = MagicMock()
+        
+        request = RoleUpdate(
+            permissions=["invalid:format:too:many:colons"],
+        )
+        
+        with patch("app.api.v1.endpoints.roles.SQLAlchemyRoleRepository") as mock_role_cls:
+            mock_role_cls.return_value = mock_repo
+            
+            with pytest.raises(HTTPException) as exc:
+                await update_role(
+                    role_id=uuid4(),
+                    request=request,
+                    superuser_id=uuid4(),
+                    session=mock_session,
+                )
+            
+            assert exc.value.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_update_role_entity_not_found(self) -> None:
+        """Test update role when repo.update raises EntityNotFoundError."""
+        from fastapi import HTTPException
+        
+        mock_repo = AsyncMock()
+        mock_role = MagicMock()
+        mock_role.name = "Test"
+        mock_role.mark_updated = MagicMock()
+        mock_repo.get_by_id.return_value = mock_role
+        mock_repo.update.side_effect = EntityNotFoundError("Role not found")
+        mock_session = MagicMock()
+        
+        request = RoleUpdate(name="Updated")
+        
+        with patch("app.api.v1.endpoints.roles.SQLAlchemyRoleRepository") as mock_role_cls:
+            mock_role_cls.return_value = mock_repo
+            
+            with pytest.raises(HTTPException) as exc:
+                await update_role(
+                    role_id=uuid4(),
+                    request=request,
+                    superuser_id=uuid4(),
+                    session=mock_session,
+                )
+            
+            assert exc.value.status_code == 404
+
+
+class TestGetUserPermissionsNotFound:
+    """Test get_user_permissions when user doesn't exist."""
+
+    @pytest.mark.asyncio
+    async def test_get_user_permissions_user_not_found(self) -> None:
+        """Test get permissions for non-existent user."""
+        from fastapi import HTTPException
+        
+        mock_session = MagicMock()
+        user_id = uuid4()
+        
+        with patch("app.api.v1.endpoints.roles.SQLAlchemyUserRepository") as mock_user_cls:
+            mock_user_repo = AsyncMock()
+            mock_user_repo.get_by_id.return_value = None  # User not found
+            mock_user_cls.return_value = mock_user_repo
+            
+            with pytest.raises(HTTPException) as exc:
+                await get_user_permissions(
+                    user_id=user_id,
+                    current_user_id=uuid4(),
+                    session=mock_session,
+                )
+            
+            assert exc.value.status_code == 404
+            assert "USER_NOT_FOUND" in str(exc.value.detail)

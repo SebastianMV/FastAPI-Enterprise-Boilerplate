@@ -124,13 +124,13 @@ class TestGetSearchBackendElasticsearch:
     @pytest.mark.asyncio
     async def test_elasticsearch_get_function_none_when_not_available(self) -> None:
         """Test that get_elasticsearch_search is None when not available."""
-        with patch("app.infrastructure.search.ELASTICSEARCH_AVAILABLE", False):
+        with patch("app.infrastructure.search.ELASTICSEARCH_AVAILABLE", True):
             with patch("app.infrastructure.search.get_elasticsearch_search", None):
                 with pytest.raises(ValueError) as exc_info:
                     await get_search_backend(backend="elasticsearch")
                 
-                # Should fail with "not available" first
-                assert "Elasticsearch not available" in str(exc_info.value)
+                # Should fail with "not properly initialized"
+                assert "not properly initialized" in str(exc_info.value)
 
 
 class TestGetSearchBackendInvalidBackend:

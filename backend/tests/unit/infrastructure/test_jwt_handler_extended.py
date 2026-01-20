@@ -211,3 +211,27 @@ class TestTokenPayload:
 
         # Refresh tokens typically have a different type or longer expiration
         assert payload is not None
+
+
+class TestValidateRefreshTokenEdgeCases:
+    """Test edge cases in validate_refresh_token."""
+
+    def test_validate_refresh_token_missing_user_id(self) -> None:
+        """Test validation fails when token has no 'sub' claim."""
+        from app.infrastructure.auth.jwt_handler import validate_refresh_token
+        from app.domain.exceptions.base import AuthenticationError
+        import jwt
+        from app.config import settings
+
+        # Create token without 'sub' claim
+        payload = {
+            "exp": datetime.now(UTC) + timedelta(days=7),
+            "jti": str(uuid4()),
+        }
+        token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+        with pytest.raises(AuthenticationError) as exc:
+            validate_refresh_token(token)
+
+        assert exc.value.code in ("INVALID_TOKEN", "INVALID_TOKEN_TYPE")
+        assert exc.value.message is not None

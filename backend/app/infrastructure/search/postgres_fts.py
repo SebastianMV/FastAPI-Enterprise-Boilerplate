@@ -45,11 +45,11 @@ INDEX_CONFIGS: dict[SearchIndex, dict[str, Any]] = {
         "deleted_column": "deleted_at",
         "search_columns": {
             "email": "A",  # Weight A (highest)
-            "full_name": "A",
-            "username": "B",
+            "first_name": "A",
+            "last_name": "A",
         },
-        "highlight_columns": ["email", "full_name", "username"],
-        "suggest_column": "full_name",
+        "highlight_columns": ["email", "first_name", "last_name"],
+        "suggest_column": "email",
     },
     SearchIndex.POSTS: {
         "table": "posts",

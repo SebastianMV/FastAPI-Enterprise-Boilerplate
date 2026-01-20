@@ -7,10 +7,11 @@ from datetime import datetime, UTC
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Index
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.database.connection import Base
+from app.infrastructure.database.models.custom_types import JSONEncodedList
 
 
 class APIKeyModel(Base):
@@ -64,7 +65,7 @@ class APIKeyModel(Base):
     # Permissions (scopes)
     scopes: Mapped[list[str]] = mapped_column(
         "permissions",  # Column name in database
-        ARRAY(String),
+        JSONEncodedList,
         nullable=False,
         default=list,
     )

@@ -8,10 +8,11 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, Index, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.connection import Base
+from app.infrastructure.database.models.custom_types import JSONBCompat
 
 if TYPE_CHECKING:
     from app.infrastructure.database.models.user import UserModel
@@ -60,7 +61,7 @@ class TenantModel(Base):
     
     # Settings (JSONB for flexibility)
     settings: Mapped[dict] = mapped_column(
-        JSONB,
+        JSONBCompat,
         default=dict,
         nullable=False,
     )

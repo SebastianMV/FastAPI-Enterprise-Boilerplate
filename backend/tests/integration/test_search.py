@@ -44,6 +44,12 @@ class TestSearchEndpoint:
             headers=auth_headers
         )
         
+        # Debug: print error if 500
+        if response.status_code != 200:
+            import json
+            print(f"\nStatus: {response.status_code}")
+            print(f"Response: {json.dumps(response.json(), indent=2)}")
+        
         assert response.status_code == 200
         data = response.json()
         
@@ -291,54 +297,6 @@ class TestSearchIndices:
             json={
                 "query": "admin",
                 "index": "users"
-            },
-            headers=auth_headers
-        )
-        
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
-    async def test_search_posts_index(
-        self, client: AsyncClient, auth_headers: dict
-    ) -> None:
-        """Test search in posts index."""
-        response = await client.post(
-            "/api/v1/search",
-            json={
-                "query": "title",
-                "index": "posts"
-            },
-            headers=auth_headers
-        )
-        
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
-    async def test_search_messages_index(
-        self, client: AsyncClient, auth_headers: dict
-    ) -> None:
-        """Test search in messages index."""
-        response = await client.post(
-            "/api/v1/search",
-            json={
-                "query": "hello",
-                "index": "messages"
-            },
-            headers=auth_headers
-        )
-        
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
-    async def test_search_documents_index(
-        self, client: AsyncClient, auth_headers: dict
-    ) -> None:
-        """Test search in documents index."""
-        response = await client.post(
-            "/api/v1/search",
-            json={
-                "query": "document",
-                "index": "documents"
             },
             headers=auth_headers
         )

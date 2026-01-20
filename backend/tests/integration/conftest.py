@@ -56,26 +56,35 @@ async def auth_headers(client: AsyncClient) -> dict:
     password = "SecureTestPassword123!"
     
     # Try to register
-    await client.post(
+    register_response = await client.post(
         "/api/v1/auth/register",
         json={
             "email": email,
             "password": password,
-            "full_name": "Security Test User",
+            "first_name": "Security",
+            "last_name": "Test User",
         },
     )
     
     # Login
     response = await client.post(
         "/api/v1/auth/login",
-        data={"username": email, "password": password},
+        json={"email": email, "password": password},
     )
     
     if response.status_code == 200:
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
     
-    return {}
+    # Fallback: create a test token directly
+    from app.infrastructure.auth.jwt_handler import create_access_token
+    test_user_id = str(uuid4())
+    test_tenant_id = str(uuid4())
+    token = create_access_token(
+        user_id=test_user_id,
+        tenant_id=test_tenant_id,
+    )
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture

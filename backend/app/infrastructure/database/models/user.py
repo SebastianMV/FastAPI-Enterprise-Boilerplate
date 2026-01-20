@@ -12,10 +12,11 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, text
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.connection import Base
+from app.infrastructure.database.models.custom_types import JSONEncodedUUIDList
 
 if TYPE_CHECKING:
     from app.infrastructure.database.models.tenant import TenantModel
@@ -89,7 +90,7 @@ class UserModel(Base):
     
     # Authorization
     roles: Mapped[list[UUID]] = mapped_column(
-        ARRAY(UUID(as_uuid=True)),
+        JSONEncodedUUIDList,
         nullable=False,
         default=list,
     )

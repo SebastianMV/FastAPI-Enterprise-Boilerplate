@@ -90,24 +90,52 @@ function Start-Frontend {
 # 🧪 TESTING
 # ------------------------------------------------------------------------------
 
-# Tests completos
+# Iniciar PostgreSQL para testing
+function Start-TestDatabase {
+    Write-Host "🗄️  Iniciando PostgreSQL de testing..." -ForegroundColor Cyan
+    docker compose -f docker-compose.test.yml up -d
+    Write-Host "✅ PostgreSQL de testing iniciado en puerto 5433" -ForegroundColor Green
+    Write-Host "📝 Usa: `$env:TEST_DATABASE_URL='postgresql+asyncpg://test_user:test_password@localhost:5433/test_boilerplate'" -ForegroundColor Yellow
+}
+
+# Detener PostgreSQL de testing
+function Stop-TestDatabase {
+    Write-Host "🛑 Deteniendo PostgreSQL de testing..." -ForegroundColor Cyan
+    docker compose -f docker-compose.test.yml down
+}
+
+# Tests completos (SQLite)
 function Invoke-AllTests {
     Set-Location backend
     python -m pytest tests/ -v --cov=app
     Set-Location ..
 }
 
-# Tests unitarios
+# Tests unitarios (SQLite)
 function Invoke-UnitTests {
     Set-Location backend
     python -m pytest tests/unit/ -v
     Set-Location ..
 }
 
-# Tests integración
+# Tests integración con PostgreSQL
 function Invoke-IntegrationTests {
+    Write-Host "🗄️  Ejecutando tests de integración con PostgreSQL..." -ForegroundColor Cyan
     Set-Location backend
+    $env:TEST_DATABASE_URL = "postgresql+asyncpg://test_user:test_password@localhost:5433/test_boilerplate"
     python -m pytest tests/integration/ -v
+    Remove-Item env:TEST_DATABASE_URL
+    Set-Location ..
+}
+
+# Tests integración con coverage
+function Invoke-IntegrationTestsCoverage {
+    Write-Host "🗄️  Ejecutando tests de integración con coverage..." -ForegroundColor Cyan
+    Set-Location backend
+    $env:TEST_DATABASE_URL = "postgresql+asyncpg://test_user:test_password@localhost:5433/test_boilerplate"
+    coverage run --source=app -m pytest tests/integration/ -v
+    coverage report
+    Remove-Item env:TEST_DATABASE_URL
     Set-Location ..
 }
 

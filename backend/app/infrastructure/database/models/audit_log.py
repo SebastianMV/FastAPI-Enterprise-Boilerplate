@@ -12,7 +12,8 @@ from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.infrastructure.database.models.custom_types import JSONBCompat
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.database.connection import Base
@@ -102,18 +103,18 @@ class AuditLogModel(Base):
     
     # Change details (stored as JSONB for flexibility)
     old_value: Mapped[dict | None] = mapped_column(
-        JSONB,
+        JSONBCompat,
         nullable=True,
     )
     new_value: Mapped[dict | None] = mapped_column(
-        JSONB,
+        JSONBCompat,
         nullable=True,
     )
     
     # Additional context
     extra_data: Mapped[dict | None] = mapped_column(
         "metadata",  # Column name in DB
-        JSONB,
+        JSONBCompat,
         nullable=True,
         default=dict,
     )

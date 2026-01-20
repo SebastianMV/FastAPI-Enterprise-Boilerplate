@@ -1,7 +1,7 @@
 # 📊 Project Status & Roadmap
 
-**Version:** v1.3.0  
-**Date:** January 12, 2026  
+**Version:** v1.3.4  
+**Date:** January 19, 2026  
 **Status:** ✅ Production Ready
 
 ---
@@ -14,8 +14,8 @@
 
 | Metric | Value | Status |
 | ------- | ----- | ------ |
-| Tests Passing | 3,294 | ✅ |
-| Code Coverage | 89% | ✅ |
+| Tests Passing | 3,425 | ✅ |
+| Code Coverage | 92% | ✅ |
 | Type Errors | 0 | ✅ |
 | Security Vulnerabilities | 0 | ✅ |
 | Docker Services | 4/4 healthy | ✅ |
@@ -34,7 +34,11 @@
 | v1.1.1 | Jan 8, 2026 | Code Quality & First-Time Deployment |
 | v1.2.0 | Jan 9, 2026 | OAuth, Chat, Notifications, Search UI |
 | v1.2.1 | Jan 10, 2026 | i18n Expansion (FR, DE) + JWT Migration |
-| **v1.3.0** | Jan 12, 2026 | Avatar Upload + Code Splitting |
+| v1.3.0 | Jan 12, 2026 | Avatar Upload + Code Splitting |
+| v1.3.1 | Jan 14, 2026 | Test Coverage Improvements (84% → 86%) |
+| v1.3.2 | Jan 15, 2026 | Coverage 86% → 87% (+50 tests: CLI, OAuth, Sessions) |
+| v1.3.3 | Jan 15, 2026 | Major Coverage Boost: 87% → 94% (WebSocket 87%, Storage 99%) |
+| **v1.3.4** | Jan 19, 2026 | Auth & Users Tests: 91% → 92% (+24 tests, self-deletion fix) |
 
 ---
 
@@ -160,8 +164,9 @@ src/
 
 | Metric | Value |
 | ------- | ----- |
-| Backend Tests | 3,294 passing |
-| Code Coverage | 89% |
+| Backend Tests | 3,151 passing |
+| Code Coverage | 94% |
+| Modules < 95% Coverage | 63 modules |
 | Frontend E2E Tests | ~25 tests |
 | Type Errors (Python) | 0 |
 | Type Errors (TypeScript) | 0 |
@@ -171,13 +176,16 @@ src/
 
 ## 📅 Future Roadmap
 
-### v1.4.0 - Testing & Coverage (Planned)
+### v1.4.0 - Testing & Coverage (In Progress)
 
-| Task | Priority |
-| ----- | --------- |
-| Frontend unit tests (Vitest) | High |
-| Backend coverage 95%+ | Medium |
-| Additional E2E tests | Medium |
+| Task | Priority | Status |
+| ----- | --------- | ------ |
+| Backend coverage 94% → 95%+ | High | 🔄 In Progress |
+| Coverage for Auth endpoints (58%) | High | Pending |
+| Coverage for CLI commands (16-32%) | Medium | Pending |
+| Coverage for MFA endpoints (43%) | High | Pending |
+| Frontend unit tests (Vitest) | Medium | Pending |
+| Additional E2E tests | Low | Pending |
 
 ### v1.5.0 - Advanced Features
 

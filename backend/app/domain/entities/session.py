@@ -72,14 +72,8 @@ class UserSession(TenantEntity):
         
         user_agent_lower = user_agent.lower()
         
-        # Detect OS
-        if "windows" in user_agent_lower:
-            os = "Windows"
-        elif "mac os" in user_agent_lower or "macos" in user_agent_lower:
-            os = "macOS"
-        elif "linux" in user_agent_lower:
-            os = "Linux"
-        elif "android" in user_agent_lower:
+        # Detect OS - check mobile/tablet FIRST before desktop OS
+        if "android" in user_agent_lower:
             os = "Android"
             device_type = "mobile"
         elif "iphone" in user_agent_lower:
@@ -88,6 +82,12 @@ class UserSession(TenantEntity):
         elif "ipad" in user_agent_lower:
             os = "iOS"
             device_type = "tablet"
+        elif "windows" in user_agent_lower:
+            os = "Windows"
+        elif "mac os" in user_agent_lower or "macos" in user_agent_lower:
+            os = "macOS"
+        elif "linux" in user_agent_lower:
+            os = "Linux"
         
         # Detect Browser
         if "edg/" in user_agent_lower:

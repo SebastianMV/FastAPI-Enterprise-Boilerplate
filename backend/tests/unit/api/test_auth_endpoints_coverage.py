@@ -44,6 +44,7 @@ class TestLoginEndpoint:
             email="notfound@example.com",
             password="Password123!",
         )
+        mock_http_request = MagicMock()
         
         with patch("app.api.v1.endpoints.auth.SQLAlchemyUserRepository") as mock_repo_cls:
             mock_repo = AsyncMock()
@@ -52,7 +53,7 @@ class TestLoginEndpoint:
             
             from fastapi import HTTPException
             with pytest.raises(HTTPException) as exc:
-                await login(request=request, session=mock_session)
+                await login(request=request, session=mock_session, http_request=mock_http_request)
             
             assert exc.value.status_code == 401
             assert "INVALID_CREDENTIALS" in str(exc.value.detail)
@@ -64,11 +65,14 @@ class TestLoginEndpoint:
             email="test@example.com",
             password="WrongPassword123!",
         )
+        mock_http_request = MagicMock()
         
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_user.password_hash = "hashed_correct_password"
         mock_user.is_active = True
+        mock_user.is_locked.return_value = False
+        mock_user.record_failed_login.return_value = False  # Not locked after failed attempt
         
         with patch("app.api.v1.endpoints.auth.SQLAlchemyUserRepository") as mock_repo_cls:
             mock_repo = AsyncMock()
@@ -80,7 +84,7 @@ class TestLoginEndpoint:
                 
                 from fastapi import HTTPException
                 with pytest.raises(HTTPException) as exc:
-                    await login(request=request, session=mock_session)
+                    await login(request=request, session=mock_session, http_request=mock_http_request)
                 
                 assert exc.value.status_code == 401
 
@@ -91,11 +95,13 @@ class TestLoginEndpoint:
             email="inactive@example.com",
             password="Password123!",
         )
+        mock_http_request = MagicMock()
         
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_user.password_hash = "hashed"
         mock_user.is_active = False
+        mock_user.is_locked.return_value = False
         
         with patch("app.api.v1.endpoints.auth.SQLAlchemyUserRepository") as mock_repo_cls:
             mock_repo = AsyncMock()
@@ -107,7 +113,7 @@ class TestLoginEndpoint:
                 
                 from fastapi import HTTPException
                 with pytest.raises(HTTPException) as exc:
-                    await login(request=request, session=mock_session)
+                    await login(request=request, session=mock_session, http_request=mock_http_request)
                 
                 assert exc.value.status_code == 403
                 assert "USER_INACTIVE" in str(exc.value.detail)
@@ -119,6 +125,7 @@ class TestLoginEndpoint:
             email="test@example.com",
             password="Password123!",
         )
+        mock_http_request = MagicMock()
         
         mock_user = MagicMock()
         mock_user.id = uuid4()
@@ -126,6 +133,7 @@ class TestLoginEndpoint:
         mock_user.email = Email("test@example.com")
         mock_user.password_hash = "hashed"
         mock_user.is_active = True
+        mock_user.is_locked.return_value = False
         mock_user.first_name = "Test"
         mock_user.last_name = "User"
         mock_user.is_superuser = False
@@ -144,10 +152,12 @@ class TestLoginEndpoint:
                 
                 with patch("app.api.v1.endpoints.auth.create_access_token") as mock_access:
                     with patch("app.api.v1.endpoints.auth.create_refresh_token") as mock_refresh:
-                        mock_access.return_value = "access_token"
-                        mock_refresh.return_value = "refresh_token"
+                        with patch("app.infrastructure.auth.jwt_handler.decode_token") as mock_decode:
+                            mock_access.return_value = "access_token"
+                            mock_refresh.return_value = "refresh_token"
+                            mock_decode.return_value = {"jti": "test-jti-456"}
                         
-                        result = await login(request=request, session=mock_session)
+                            result = await login(request=request, session=mock_session, http_request=mock_http_request)
                         
                         # login returns TokenResponse directly, not AuthResponse
                         assert result.access_token == "access_token"
