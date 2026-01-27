@@ -538,3 +538,228 @@ class TestCacheServiceDisabled:
         """Test set returns False when cache is disabled."""
         result = await disabled_cache_service.set("key", "value")
         assert result is False
+
+    @pytest.mark.asyncio
+    async def test_clear_all_returns_false_when_disabled(
+        self, disabled_cache_service
+    ) -> None:
+        """Test clear_all returns False when cache is disabled."""
+        result = await disabled_cache_service.clear_all()
+        assert result is False
+
+
+class TestCacheServiceClearAll:
+    """Tests for CacheService clear_all method."""
+
+    @pytest.fixture
+    def mock_redis_client(self):
+        """Create mock Redis client."""
+        return AsyncMock()
+
+    @pytest.fixture
+    def cache_service(self, mock_redis_client):
+        """Create CacheService with mock Redis."""
+        from app.infrastructure.cache.cache_service import CacheService
+        return CacheService(mock_redis_client)
+
+    @pytest.mark.asyncio
+    async def test_clear_all_success(
+        self, cache_service, mock_redis_client: AsyncMock
+    ) -> None:
+        """Test clear_all succeeds when delete_pattern works."""
+        # Mock scan_iter and delete to simulate delete_pattern behavior
+        mock_redis_client.scan_iter.return_value = AsyncIterator(["key1", "key2"])
+        mock_redis_client.delete.return_value = 2
+        
+        result = await cache_service.clear_all()
+        
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_clear_all_returns_false_on_error(
+        self, cache_service, mock_redis_client: AsyncMock
+    ) -> None:
+        """Test clear_all returns False when delete_pattern raises error."""
+        from unittest.mock import patch
+        
+        # Patch delete_pattern to raise exception
+        with patch.object(cache_service, 'delete_pattern', side_effect=Exception("Redis error")):
+            result = await cache_service.clear_all()
+        
+        assert result is False
+
+
+class AsyncIterator:
+    """Helper async iterator for testing."""
+    def __init__(self, items):
+        self.items = items
+        self.index = 0
+        
+    def __aiter__(self):
+        return self
+        
+    async def __anext__(self):
+        if self.index >= len(self.items):
+            raise StopAsyncIteration
+        item = self.items[self.index]
+        self.index += 1
+        return item
+
+
+class TestGetCacheServiceCoverage:
+    """Tests for get_cache_service function coverage."""
+
+    @pytest.mark.asyncio
+    async def test_get_cache_service_creates_connection(self) -> None:
+        """Test get_cache_service creates Redis connection (lines 332-349)."""
+        from unittest.mock import patch
+        import app.infrastructure.cache.cache_service as cache_module
+        
+        # Save original
+        original = cache_module._cache_service
+        cache_module._cache_service = None
+        
+        try:
+            with patch.object(cache_module, 'settings') as mock_settings, \
+                 patch.object(cache_module, 'redis') as mock_redis:
+                
+                mock_settings.CACHE_ENABLED = True
+                mock_settings.REDIS_HOST = "localhost"
+                mock_settings.REDIS_PORT = 6379
+                mock_settings.REDIS_PASSWORD = None
+                mock_settings.REDIS_DB = 0
+                
+                mock_client = AsyncMock()
+                mock_client.ping = AsyncMock()
+                mock_redis.Redis.return_value = mock_client
+                
+                result = await cache_module.get_cache_service()
+                
+                assert result is not None
+                mock_client.ping.assert_called_once()
+        finally:
+            cache_module._cache_service = original
+
+    @pytest.mark.asyncio
+    async def test_get_cache_service_handles_redis_error(self) -> None:
+        """Test get_cache_service handles Redis connection error (lines 350-353)."""
+        from unittest.mock import patch
+        import app.infrastructure.cache.cache_service as cache_module
+        
+        original = cache_module._cache_service
+        cache_module._cache_service = None
+        
+        try:
+            with patch.object(cache_module, 'settings') as mock_settings, \
+                 patch.object(cache_module, 'redis') as mock_redis:
+                
+                mock_settings.CACHE_ENABLED = True
+                mock_settings.REDIS_HOST = "localhost"
+                mock_settings.REDIS_PORT = 6379
+                mock_settings.REDIS_PASSWORD = None
+                mock_settings.REDIS_DB = 0
+                
+                mock_client = AsyncMock()
+                mock_client.ping = AsyncMock(side_effect=Exception("Connection failed"))
+                mock_redis.Redis.return_value = mock_client
+                
+                result = await cache_module.get_cache_service()
+                
+                # Should return service with client=None
+                assert result is not None
+                assert result._client is None
+        finally:
+            cache_module._cache_service = original
+
+
+class TestCachedDecoratorCoverage:
+    """Tests for cached decorator coverage."""
+
+    @pytest.mark.asyncio
+    async def test_cached_decorator_cache_disabled(self) -> None:
+        """Test cached decorator when cache is disabled (line 395)."""
+        from unittest.mock import patch
+        from app.infrastructure.cache.cache_service import cached, CacheService
+        
+        with patch("app.infrastructure.cache.cache_service.get_cache_service") as mock_get:
+            mock_cache = MagicMock(spec=CacheService)
+            mock_cache.is_enabled = False  # Cache disabled
+            mock_get.return_value = mock_cache
+            
+            @cached("test")
+            async def get_data(id: str) -> dict:
+                return {"id": id, "value": "test"}
+            
+            result = await get_data("123")
+            
+            assert result == {"id": "123", "value": "test"}
+
+    @pytest.mark.asyncio
+    async def test_cached_decorator_cache_hit(self) -> None:
+        """Test cached decorator with cache hit (line 402)."""
+        from unittest.mock import patch
+        from app.infrastructure.cache.cache_service import cached, CacheService
+        
+        with patch("app.infrastructure.cache.cache_service.get_cache_service") as mock_get:
+            mock_cache = MagicMock(spec=CacheService)
+            mock_cache.is_enabled = True
+            mock_cache.get = AsyncMock(return_value={"cached": True})
+            mock_get.return_value = mock_cache
+            
+            call_count = 0
+            
+            @cached("test")
+            async def get_data(id: str) -> dict:
+                nonlocal call_count
+                call_count += 1
+                return {"id": id}
+            
+            result = await get_data("123")
+            
+            assert result == {"cached": True}
+            assert call_count == 0  # Function was not called
+
+    @pytest.mark.asyncio
+    async def test_cached_decorator_cache_miss(self) -> None:
+        """Test cached decorator with cache miss (lines 405-410)."""
+        from unittest.mock import patch
+        from app.infrastructure.cache.cache_service import cached, CacheService
+        
+        with patch("app.infrastructure.cache.cache_service.get_cache_service") as mock_get:
+            mock_cache = MagicMock(spec=CacheService)
+            mock_cache.is_enabled = True
+            mock_cache.get = AsyncMock(return_value=None)  # Cache miss
+            mock_cache.set = AsyncMock()
+            mock_get.return_value = mock_cache
+            
+            @cached("test", ttl=300)
+            async def get_data(id: str) -> dict:
+                return {"id": id}
+            
+            result = await get_data("123")
+            
+            assert result == {"id": "123"}
+            mock_cache.set.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_cached_decorator_with_custom_key_builder(self) -> None:
+        """Test cached decorator with custom key builder (line 398)."""
+        from unittest.mock import patch
+        from app.infrastructure.cache.cache_service import cached, CacheService
+        
+        with patch("app.infrastructure.cache.cache_service.get_cache_service") as mock_get:
+            mock_cache = MagicMock(spec=CacheService)
+            mock_cache.is_enabled = True
+            mock_cache.get = AsyncMock(return_value=None)
+            mock_cache.set = AsyncMock()
+            mock_get.return_value = mock_cache
+            
+            custom_key_builder = lambda tenant_id, **kw: f"tenant:{tenant_id}"
+            
+            @cached("roles", key_builder=custom_key_builder)
+            async def get_roles(tenant_id: str) -> list:
+                return ["admin", "user"]
+            
+            result = await get_roles("tenant123")
+            
+            assert result == ["admin", "user"]

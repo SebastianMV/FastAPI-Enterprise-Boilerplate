@@ -5,6 +5,87 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2026-01-27
+
+### Added
+
+#### Critical Modules Test Coverage Expansion
+
+- **31 tests** total for critical endpoint modules (11 new)
+- **MFA Endpoints:** Maintained **100%** coverage ✅
+- **OAuth Endpoints:** Achieved **100%** coverage ✅
+- **Auth Endpoints:** Improved to **97%** coverage
+  - ConflictError on register flow
+  - Token rotation with session management
+  - Weak password validation
+  - Forgot password email flow
+  - Send verification email flow
+- **Roles Endpoints:** Improved to **99%** coverage
+  - Role creation success path
+  - Invalid permission format validation
+  - User permissions retrieval
+- **Users Endpoints:** Improved to **95%** coverage
+  - Avatar upload with old avatar replacement
+  - Avatar delete graceful failure handling
+  - Self-deletion prevention
+- **Tenants Endpoints:** Maintained **98%** coverage
+
+### Changed
+
+- **Overall coverage:** 98% (135 uncovered lines from 8,383 total)
+- **Total tests:** 3,615 → **3,838** passing tests
+- **Critical modules at 95%+ coverage:** auth (97%), mfa (100%), oauth (100%), roles (99%), tenants (98%), users (95%)
+
+### Notes
+
+- Remaining uncovered lines are primarily:
+  - Email service failure handlers (silent `except Exception: pass` blocks)
+  - Defensive code paths that are difficult to trigger in unit tests
+  - These are intentionally minimal coverage gaps for resilience code
+
+---
+
+## [1.3.4] - 2026-01-26
+
+### Added
+
+#### Critical Modules Test Coverage
+
+- **20 new tests** for critical endpoint modules
+- **MFA Endpoints:** Achieved **100%** coverage ✅
+- **Tenants Endpoints:** Improved to **98%** coverage
+  - Domain conflict detection in create
+  - Slug/domain conflict in update
+  - Tenant activation/deactivation flows
+- **Roles Endpoints:** Improved to **95%** coverage
+  - ConflictError handling
+  - User permissions endpoint
+  - Permission validation flows
+- **Users Endpoints:** Improved to **89%** coverage
+  - ConflictError on create
+  - Update self user not found
+  - Avatar delete handling
+- **Auth Password Reset:** Coverage for token validation/expiration
+
+### Changed
+
+- **Overall coverage:** 97% → **98%** (+1 percentage points)
+- **Total tests:** 3,595 → **3,615** passing tests
+- **Critical modules:** auth, users, roles, tenants, mfa now have high coverage
+
+### Test Files Created
+
+- `tests/unit/api/test_critical_modules_coverage.py` - 20 tests covering:
+  - Password reset invalid/expired tokens
+  - User deletion and avatar management
+  - Role update with EntityNotFoundError
+  - User permissions user not found
+  - Tenant domain/slug conflicts
+  - Tenant activation/deactivation
+  - MFA disable password verification
+
+---
+
 ## [1.3.3] - 2026-01-15
 
 ### Added

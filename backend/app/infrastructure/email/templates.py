@@ -175,8 +175,9 @@ class EmailTemplateEngine:
         text_template = self._env.get_template(f"{template_type.value}/text.jinja2")
         text_body = text_template.render(**context)
         
-        # Get subject from translations
-        subject = self._i18n.t(f"email.{template_type.value}.subject", locale=locale, **context)
+        # Get subject from translations (exclude locale from context to avoid duplicate kwarg)
+        i18n_context = {k: v for k, v in context.items() if k != "locale"}
+        subject = self._i18n.t(f"email.{template_type.value}.subject", locale=locale, **i18n_context)
         
         return EmailTemplate(
             subject=subject,

@@ -215,3 +215,23 @@ class TestRole:
         strings = role.permission_strings
         assert "users:read" in strings
         assert "roles:create" in strings
+
+    def test_permission_equality_with_invalid_type(self):
+        """Test permission equality returns False for invalid types."""
+        perm = Permission(resource="users", action="read")
+        
+        # Comparing with non-Permission, non-string types returns False
+        assert (perm == 123) is False
+        assert (perm == None) is False
+        assert (perm == ["users", "read"]) is False
+        assert (perm == {"resource": "users"}) is False
+
+    def test_permission_equality_with_invalid_string_format(self):
+        """Test permission equality with malformed string returns False."""
+        perm = Permission(resource="users", action="read")
+        
+        # String without colon doesn't match
+        assert (perm == "users-read") is False
+        # String with one colon but empty parts
+        assert (perm == ":read") is False
+        assert (perm == "users:") is False

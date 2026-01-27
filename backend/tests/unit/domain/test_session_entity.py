@@ -174,3 +174,13 @@ class TestUserSession:
         assert "device_type" in info
         assert "browser" in info
         assert "os" in info
+
+    def test_parse_user_agent_linux_firefox(self):
+        """Test parsing Linux Firefox user agent."""
+        ua = "Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0"
+        
+        info = UserSession.parse_user_agent(ua)
+        
+        assert info["os"] == "Linux"
+        assert info["browser"] == "Firefox"
+        assert info["device_type"] == "desktop"

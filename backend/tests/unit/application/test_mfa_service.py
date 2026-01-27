@@ -413,3 +413,57 @@ class TestSingletons:
         service2 = get_mfa_service()
         
         assert service1 is service2
+
+
+class TestMFAServiceMissingCoverage:
+    """Tests for MFAService methods with missing coverage."""
+
+    @pytest.fixture
+    def mock_totp_handler(self) -> MagicMock:
+        """Create mock TOTP handler."""
+        handler = MagicMock(spec=TOTPHandler)
+        handler.generate_secret.return_value = "TESTSECRET123456"
+        handler.verify.return_value = True
+        return handler
+
+    @pytest.fixture
+    def mfa_service(self, mock_totp_handler: MagicMock) -> MFAService:
+        """Create MFA service with mock handler."""
+        return MFAService(totp_handler=mock_totp_handler)
+
+    def test_verify_setup_code_returns_false_when_already_enabled(
+        self, mfa_service: MFAService, mock_totp_handler: MagicMock
+    ) -> None:
+        """Test that verify_setup_code returns False when MFA is already enabled."""
+        config = MFAConfig(
+            user_id=uuid4(),
+            secret="TESTSECRET",
+            is_enabled=True,  # Already enabled
+        )
+        
+        result = mfa_service.verify_setup_code(config, "123456")
+        
+        assert result is False
+        # Verify method wasn't even called since is_enabled check fails first
+        mock_totp_handler.verify.assert_not_called()
+
+    def test_regenerate_backup_codes_returns_new_codes(
+        self, mfa_service: MFAService
+    ) -> None:
+        """Test that regenerate_backup_codes returns new backup codes."""
+        old_codes = ["OLD12345", "OLD67890"]
+        config = MFAConfig(
+            user_id=uuid4(),
+            secret="TESTSECRET",
+            is_enabled=True,
+            backup_codes=old_codes.copy(),
+        )
+        
+        new_codes = mfa_service.regenerate_backup_codes(config)
+        
+        assert len(new_codes) == 10
+        # New codes should be different from old ones
+        for old_code in old_codes:
+            assert old_code not in new_codes
+        # Config should have the new codes
+        assert config.backup_codes == new_codes

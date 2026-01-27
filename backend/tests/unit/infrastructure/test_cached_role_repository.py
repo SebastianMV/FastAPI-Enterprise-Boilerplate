@@ -372,3 +372,127 @@ class TestGetCachedRoleRepository:
         
         assert isinstance(result, CachedRoleRepository)
         assert result._repo is mock_repo
+
+
+class TestDictToRole:
+    """Tests for _dict_to_role static method (lines 216-223)."""
+    
+    def test_dict_to_role_basic(self):
+        """Test converting dict to Role."""
+        role_id = uuid4()
+        tenant_id = uuid4()
+        
+        data = {
+            "id": str(role_id),
+            "tenant_id": str(tenant_id),
+            "name": "Admin",
+            "description": "Admin role",
+            "permissions": ["users:read", "users:write"],
+            "is_system": False,
+            "is_default": False,
+            "created_at": "2025-01-01T00:00:00",
+            "updated_at": "2025-01-01T00:00:00",
+            "created_by": str(uuid4()),
+        }
+        
+        result = CachedRoleRepository._dict_to_role(data)
+        
+        assert result.id == role_id
+        assert result.tenant_id == tenant_id
+        assert result.name == "Admin"
+        assert result.description == "Admin role"
+        assert len(result.permissions) == 2
+
+    def test_dict_to_role_no_permissions(self):
+        """Test converting dict with no permissions."""
+        role_id = uuid4()
+        tenant_id = uuid4()
+        
+        data = {
+            "id": str(role_id),
+            "tenant_id": str(tenant_id),
+            "name": "Basic",
+            "description": "",
+            "permissions": None,
+            "is_system": False,
+            "created_at": "2025-01-01T00:00:00",
+            "updated_at": "2025-01-01T00:00:00",
+        }
+        
+        result = CachedRoleRepository._dict_to_role(data)
+        
+        assert result.permissions == []
+        assert result.name == "Basic"
+
+    def test_dict_to_role_empty_permissions_list(self):
+        """Test converting dict with empty permissions list."""
+        role_id = uuid4()
+        tenant_id = uuid4()
+        
+        data = {
+            "id": str(role_id),
+            "tenant_id": str(tenant_id),
+            "name": "Empty",
+            "permissions": [],
+            "is_system": True,
+            "is_default": False,
+            "created_at": "2025-01-01T00:00:00",
+            "updated_at": "2025-01-01T00:00:00",
+        }
+        
+        result = CachedRoleRepository._dict_to_role(data)
+        
+        assert result.permissions == []
+        assert result.is_system is True
+
+
+class TestListByIdsCacheHit:
+    """Tests for list_by_ids with cache hits (line 137)."""
+    
+    @pytest.mark.asyncio
+    async def test_list_by_ids_all_cached(self):
+        """Test list_by_ids when all roles are in cache (line 137)."""
+        mock_repo = Mock()
+        role_id1 = uuid4()
+        role_id2 = uuid4()
+        tenant_id = uuid4()
+        
+        cached_data1 = {
+            "id": str(role_id1),
+            "tenant_id": str(tenant_id),
+            "name": "Role1",
+            "description": "Desc1",
+            "permissions": [],
+            "is_system": False,
+            "is_default": False,
+            "created_at": "2025-01-01T00:00:00",
+            "updated_at": "2025-01-01T00:00:00",
+        }
+        
+        cached_data2 = {
+            "id": str(role_id2),
+            "tenant_id": str(tenant_id),
+            "name": "Role2",
+            "description": "Desc2",
+            "permissions": ["users:read"],
+            "is_system": False,
+            "is_default": False,
+            "created_at": "2025-01-01T00:00:00",
+            "updated_at": "2025-01-01T00:00:00",
+        }
+        
+        mock_cache = AsyncMock()
+        # Return cached data for both roles
+        mock_cache.get = AsyncMock(side_effect=[cached_data1, cached_data2])
+        
+        with patch("app.infrastructure.database.repositories.cached_role_repository.settings") as mock_settings:
+            mock_settings.CACHE_ROLE_TTL = 300
+            with patch("app.infrastructure.database.repositories.cached_role_repository.get_cache_service", return_value=mock_cache):
+                cached_repo = CachedRoleRepository(mock_repo)
+                result = await cached_repo.list_by_ids([role_id1, role_id2])
+        
+        assert len(result) == 2
+        assert result[0].id == role_id1
+        assert result[1].id == role_id2
+        # DB should not be called since all were cached
+        mock_repo.list_by_ids.assert_not_called()

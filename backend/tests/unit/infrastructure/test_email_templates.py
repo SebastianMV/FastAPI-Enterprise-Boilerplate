@@ -412,3 +412,151 @@ class TestEmailTemplateEngineRender:
                 
                 assert support_email == "support@test.com"
 
+    def test_render_full_flow(self) -> None:
+        """Test render method full flow (lines 155-181)."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            
+            engine = EmailTemplateEngine()
+            
+            # Mock the Jinja environment and templates
+            mock_html_template = MagicMock()
+            mock_html_template.render.return_value = "<p>HTML Body</p>"
+            
+            mock_text_template = MagicMock()
+            mock_text_template.render.return_value = "Text Body"
+            
+            def mock_get_template(name: str):
+                if "html" in name:
+                    return mock_html_template
+                return mock_text_template
+            
+            engine._env.get_template = mock_get_template
+            
+            # Mock i18n to avoid the locale conflict
+            engine._i18n.t = MagicMock(return_value="Test Subject")
+            
+            result = engine.render(
+                template_type=EmailTemplateType.REGISTRATION,
+                context={"user_name": "Test User"},
+                locale="en",
+            )
+            
+            assert result.subject == "Test Subject"
+            assert result.html_body == "<p>HTML Body</p>"
+            assert result.text_body == "Text Body"
+            assert result.template_type == EmailTemplateType.REGISTRATION
+            mock_html_template.render.assert_called_once()
+            mock_text_template.render.assert_called_once()
+
+    def test_render_with_es_locale(self) -> None:
+        """Test render with Spanish locale (line 156-157)."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            
+            engine = EmailTemplateEngine()
+            
+            mock_html_template = MagicMock()
+            mock_html_template.render.return_value = "<p>Cuerpo HTML</p>"
+            
+            mock_text_template = MagicMock()
+            mock_text_template.render.return_value = "Cuerpo Texto"
+            
+            engine._env.get_template = lambda name: mock_html_template if "html" in name else mock_text_template
+            engine._i18n.t = MagicMock(return_value="Asunto de Prueba")
+            
+            result = engine.render(
+                template_type=EmailTemplateType.PASSWORD_RESET,
+                context={"reset_link": "http://test.com/reset"},
+                locale="es",
+            )
+            
+            assert result.subject == "Asunto de Prueba"
+            assert result.locale == "es"
+
+    def test_render_with_invalid_locale_falls_back(self) -> None:
+        """Test render with invalid locale falls back to English (line 157-158)."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            
+            engine = EmailTemplateEngine()
+            
+            mock_html_template = MagicMock()
+            mock_html_template.render.return_value = "<p>Body</p>"
+            
+            mock_text_template = MagicMock()
+            mock_text_template.render.return_value = "Body"
+            
+            engine._env.get_template = lambda name: mock_html_template if "html" in name else mock_text_template
+            engine._i18n.t = MagicMock(return_value="Subject")
+            
+            result = engine.render(
+                template_type=EmailTemplateType.WELCOME,
+                context={},
+                locale="invalid_locale",  # Should fall back to "en"
+            )
+            
+            # Verify it fell back to default locale
+            assert result.locale == "en"
+
+    def test_render_with_none_locale(self) -> None:
+        """Test render with None locale uses default (line 155)."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            
+            engine = EmailTemplateEngine()
+            
+            mock_html_template = MagicMock()
+            mock_html_template.render.return_value = "<p>Body</p>"
+            
+            mock_text_template = MagicMock()
+            mock_text_template.render.return_value = "Body"
+            
+            engine._env.get_template = lambda name: mock_html_template if "html" in name else mock_text_template
+            engine._i18n.t = MagicMock(return_value="Subject")
+            
+            result = engine.render(
+                template_type=EmailTemplateType.MFA_ENABLED,
+                context={"user_name": "User"},
+                locale=None,  # Should use default "en"
+            )
+            
+            assert result.locale == "en"
+
+    def test_render_adds_common_context(self) -> None:
+        """Test render adds year, app_name, support_email to context (lines 163-168)."""
+        with patch("app.infrastructure.email.templates.Path") as mock_path:
+            mock_path.return_value.exists.return_value = True
+            with patch("app.config.settings") as mock_settings:
+                mock_settings.APP_NAME = "TestApp"
+                mock_settings.SUPPORT_EMAIL = "support@test.com"
+                
+                engine = EmailTemplateEngine()
+                
+                captured_context = {}
+                
+                def capture_html_render(**context):
+                    captured_context.update(context)
+                    return "<p>Body</p>"
+                
+                mock_html_template = MagicMock()
+                mock_html_template.render = capture_html_render
+                
+                mock_text_template = MagicMock()
+                mock_text_template.render.return_value = "Body"
+                
+                engine._env.get_template = lambda name: mock_html_template if "html" in name else mock_text_template
+                engine._i18n.t = MagicMock(return_value="Subject")
+                
+                engine.render(
+                    template_type=EmailTemplateType.REGISTRATION,
+                    context={"user_name": "Test"},
+                    locale="en",
+                )
+                
+                # Verify common context was added
+                assert "year" in captured_context
+                assert "app_name" in captured_context
+                assert "support_email" in captured_context
+                assert "locale" in captured_context
+                assert captured_context["user_name"] == "Test"

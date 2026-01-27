@@ -238,15 +238,27 @@ class TestInitDatabase:
     @pytest.mark.asyncio
     async def test_handles_alembic_error(self):
         """Test that init_database handles alembic errors gracefully."""
-        with patch("subprocess.run") as mock_run:
+        # Mock the async engine.begin() context manager
+        mock_conn = AsyncMock()
+        mock_begin_ctx = AsyncMock()
+        mock_begin_ctx.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_begin_ctx.__aexit__ = AsyncMock(return_value=None)
+        
+        with patch("subprocess.run") as mock_run, \
+             patch("app.infrastructure.database.connection.engine") as mock_engine:
+            
             mock_run.return_value = MagicMock(
                 returncode=1, 
                 stdout="", 
                 stderr="Migration error"
             )
+            mock_engine.begin.return_value = mock_begin_ctx
             
-            # Should not raise, just log warning
+            # Should not raise, just log warning and fallback to create_all
             await init_database()
+            
+            # Verify fallback was called
+            mock_conn.run_sync.assert_called_once()
 
 
 class TestCloseDatabase:

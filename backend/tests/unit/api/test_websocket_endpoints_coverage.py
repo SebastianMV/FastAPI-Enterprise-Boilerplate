@@ -433,3 +433,253 @@ class TestConnectionInfo:
         )
         
         assert info.tenant_id is None
+
+
+class TestWebSocketManagerInitialization:
+    """Tests for WebSocket manager initialization with different backends."""
+
+    def test_get_ws_manager_with_redis_backend(self) -> None:
+        """Test manager initialization with Redis backend."""
+        # Reset global manager
+        import app.api.v1.endpoints.websocket as ws_module
+        ws_module._ws_manager = None
+        
+        # Create a mock settings object with the required attributes
+        mock_settings = MagicMock()
+        mock_settings.WEBSOCKET_BACKEND = "redis"
+        mock_settings.REDIS_URL = "redis://localhost:6379"
+        
+        # Mock both the settings object and the Redis manager
+        with patch('app.api.v1.endpoints.websocket.settings', mock_settings), \
+             patch('app.infrastructure.websocket.redis_manager.RedisWebSocketManager') as mock_redis:
+            
+            mock_redis_instance = MagicMock()
+            mock_redis.return_value = mock_redis_instance
+            
+            manager = get_ws_manager()
+            
+            # Should create Redis manager
+            mock_redis.assert_called_once_with(redis_url="redis://localhost:6379")
+            assert manager == mock_redis_instance
+        
+        # Reset for other tests
+        ws_module._ws_manager = None
+
+    def test_get_ws_manager_with_memory_backend(self) -> None:
+        """Test manager initialization with Memory backend (default)."""
+        import app.api.v1.endpoints.websocket as ws_module
+        ws_module._ws_manager = None
+        
+        # Mock settings to use memory backend
+        mock_settings = MagicMock()
+        mock_settings.WEBSOCKET_BACKEND = "memory"
+        
+        with patch('app.api.v1.endpoints.websocket.settings', mock_settings):
+            manager = get_ws_manager()
+            
+            # Should create Memory manager
+            assert isinstance(manager, MemoryWebSocketManager)
+        
+        ws_module._ws_manager = None
+
+
+class TestWebSocketEndpointErrorHandling:
+    """Tests for WebSocket endpoint error handling paths."""
+
+    @pytest.mark.asyncio
+    async def test_websocket_message_processing_error(self) -> None:
+        """Test error handling when message processing fails."""
+        from app.api.v1.endpoints.websocket import websocket_endpoint
+        
+        mock_websocket = AsyncMock(spec=WebSocket)
+        mock_manager = AsyncMock()
+        user_id = uuid4()
+        tenant_id = uuid4()
+        connection_id = "test-conn-123"
+        
+        # Mock successful connection and authentication
+        mock_websocket.accept.return_value = None
+        mock_manager.connect.return_value = connection_id
+        mock_manager.get_user_connections.return_value = [
+            MagicMock(connection_id=connection_id, user_id=user_id)
+        ]
+        
+        # First receive: valid message that causes processing error
+        # Second receive: WebSocketDisconnect to exit loop gracefully
+        from fastapi import WebSocketDisconnect
+        mock_websocket.receive_json.side_effect = [
+            {"type": "chat_message", "payload": {}},
+            WebSocketDisconnect()
+        ]
+        
+        # Make handle_message raise an error (line 225-235 coverage)
+        mock_manager.handle_message.side_effect = Exception("Processing failed")
+        
+        with patch('app.api.v1.endpoints.websocket.get_ws_manager', return_value=mock_manager), \
+             patch('app.api.v1.endpoints.websocket.authenticate_websocket') as mock_auth:
+            
+            # Mock successful authentication - returns (user_id, tenant_id)
+            mock_auth.return_value = (user_id, tenant_id)
+            
+            # Should handle error gracefully and exit on disconnect
+            await websocket_endpoint(mock_websocket, None)
+        
+        # Should have sent error message to client (lines 229-232)
+        assert mock_websocket.send_json.call_count >= 1
+        error_call = mock_websocket.send_json.call_args_list[0][0][0]
+        assert error_call["type"] == "error"
+        assert "Processing failed" in error_call["payload"]["message"]
+        
+        # Should disconnect in finally block
+        mock_manager.disconnect.assert_called_once_with(connection_id)
+
+    @pytest.mark.asyncio
+    async def test_websocket_receive_json_error(self) -> None:
+        """Test error handling when receiving invalid JSON."""
+        from app.api.v1.endpoints.websocket import websocket_endpoint
+        
+        mock_websocket = AsyncMock(spec=WebSocket)
+        mock_manager = AsyncMock()
+        user_id = uuid4()
+        tenant_id = uuid4()
+        connection_id = "test-conn-456"
+        
+        mock_websocket.accept.return_value = None
+        mock_manager.connect.return_value = connection_id
+        
+        # receive_json raises error (line 247-248 coverage)
+        mock_websocket.receive_json.side_effect = ValueError("Invalid JSON")
+        
+        with patch('app.api.v1.endpoints.websocket.get_ws_manager', return_value=mock_manager), \
+             patch('app.api.v1.endpoints.websocket.authenticate_websocket') as mock_auth:
+            
+            # Mock successful authentication
+            mock_auth.return_value = (user_id, tenant_id)
+            
+            # Should handle error gracefully (line 247-248)
+            await websocket_endpoint(mock_websocket, None)
+        
+        # Should disconnect in finally block
+        mock_manager.disconnect.assert_called_once_with(connection_id)
+
+    @pytest.mark.asyncio
+    async def test_websocket_disconnect_cleanup(self) -> None:
+        """Test cleanup on WebSocketDisconnect."""
+        from fastapi import WebSocketDisconnect
+        from app.api.v1.endpoints.websocket import websocket_endpoint
+        
+        mock_websocket = AsyncMock(spec=WebSocket)
+        mock_manager = AsyncMock()
+        user_id = uuid4()
+        tenant_id = uuid4()
+        connection_id = "test-conn-789"
+        
+        mock_websocket.accept.return_value = None
+        mock_manager.connect.return_value = connection_id
+        
+        # Simulate WebSocketDisconnect
+        mock_websocket.receive_json.side_effect = WebSocketDisconnect()
+        
+        with patch('app.api.v1.endpoints.websocket.get_ws_manager', return_value=mock_manager), \
+             patch('app.api.v1.endpoints.websocket.authenticate_websocket') as mock_auth:
+            
+            # Mock successful authentication
+            mock_auth.return_value = (user_id, tenant_id)
+            
+            # Should not raise, should cleanup gracefully
+            await websocket_endpoint(mock_websocket, None)
+        
+        # Should disconnect
+        mock_manager.disconnect.assert_called_once_with(connection_id)
+
+
+class TestJoinRoomEndpointErrorHandling:
+    """Tests for chat_room_endpoint error handling paths."""
+
+    @pytest.mark.asyncio
+    async def test_join_room_message_error_handling(self) -> None:
+        """Test error handling in chat_room_endpoint message processing."""
+        from fastapi import WebSocketDisconnect
+        from app.api.v1.endpoints.websocket import chat_room_endpoint
+        
+        mock_websocket = AsyncMock(spec=WebSocket)
+        mock_manager = AsyncMock()
+        user_id = uuid4()
+        tenant_id = uuid4()
+        room_id = "test-room"
+        connection_id = "test-conn-room"
+        
+        mock_websocket.accept.return_value = None
+        mock_manager.connect.return_value = connection_id
+        mock_manager.join_room.return_value = None
+        mock_manager.get_user_connections.return_value = [
+            MagicMock(connection_id=connection_id, user_id=user_id)
+        ]
+        
+        # First receive causes error, second disconnects
+        mock_websocket.receive_json.side_effect = [
+            {"type": "invalid", "payload": {}},
+            WebSocketDisconnect()
+        ]
+        
+        # Make handle_message fail
+        mock_manager.handle_message.side_effect = ValueError("Invalid message type")
+        
+        # Mock settings
+        mock_settings = MagicMock()
+        mock_settings.WEBSOCKET_ENABLED = True
+        mock_settings.WEBSOCKET_CHAT = True
+        
+        with patch('app.api.v1.endpoints.websocket.settings', mock_settings), \
+             patch('app.api.v1.endpoints.websocket.get_ws_manager', return_value=mock_manager), \
+             patch('app.api.v1.endpoints.websocket.authenticate_websocket') as mock_auth:
+            
+            mock_auth.return_value = (user_id, tenant_id)
+            
+            # Should handle error and cleanup
+            await chat_room_endpoint(mock_websocket, room_id, None)
+        
+        # Should send error
+        assert mock_websocket.send_json.call_count >= 1
+        
+        # Should cleanup: leave room and disconnect (lines 366-368)
+        mock_manager.leave_room.assert_called_once_with(connection_id, room_id)
+        mock_manager.disconnect.assert_called_once_with(connection_id)
+
+    @pytest.mark.asyncio
+    async def test_join_room_websocket_disconnect(self) -> None:
+        """Test chat_room_endpoint handles WebSocketDisconnect gracefully."""
+        from fastapi import WebSocketDisconnect
+        from app.api.v1.endpoints.websocket import chat_room_endpoint
+        
+        mock_websocket = AsyncMock(spec=WebSocket)
+        mock_manager = AsyncMock()
+        user_id = uuid4()
+        tenant_id = uuid4()
+        room_id = "test-room-disconnect"
+        connection_id = "test-conn-disconnect"
+        
+        mock_websocket.accept.return_value = None
+        mock_manager.connect.return_value = connection_id
+        mock_manager.join_room.return_value = None
+        
+        # Immediate disconnect
+        mock_websocket.receive_json.side_effect = WebSocketDisconnect()
+        
+        # Mock settings
+        mock_settings = MagicMock()
+        mock_settings.WEBSOCKET_ENABLED = True
+        mock_settings.WEBSOCKET_CHAT = True
+        
+        with patch('app.api.v1.endpoints.websocket.settings', mock_settings), \
+             patch('app.api.v1.endpoints.websocket.get_ws_manager', return_value=mock_manager), \
+             patch('app.api.v1.endpoints.websocket.authenticate_websocket') as mock_auth:
+            
+            mock_auth.return_value = (user_id, tenant_id)
+            
+            # Should handle disconnect gracefully (no error)
+            await chat_room_endpoint(mock_websocket, room_id, None)
+        
+        # Should cleanup (lines 366-368)
+        mock_manager.leave_room.assert_called_once()
+        mock_manager.disconnect.assert_called_once()

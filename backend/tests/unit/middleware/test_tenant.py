@@ -169,3 +169,82 @@ class TestRequireTenantContext:
         
         assert exc_info.value.status_code == 400
         assert "Tenant context required" in str(exc_info.value.detail)
+
+
+class TestTenantMiddlewareDispatch:
+    """Tests for TenantMiddleware dispatch method."""
+    
+    @pytest.mark.asyncio
+    async def test_dispatch_exempt_path_bypasses_tenant_extraction(self):
+        """Test dispatch skips tenant extraction for exempt paths."""
+        mock_app = MagicMock()
+        middleware = TenantMiddleware(mock_app)
+        
+        # Create mock request for exempt path
+        request = MagicMock()
+        request.url.path = "/health"
+        
+        # Create mock response
+        expected_response = MagicMock(spec=Response)
+        
+        # Create async call_next
+        async def call_next(req):
+            return expected_response
+        
+        result = await middleware.dispatch(request, call_next)
+        
+        assert result == expected_response
+    
+    @pytest.mark.asyncio
+    @patch("app.middleware.tenant.decode_token")
+    async def test_dispatch_sets_tenant_context(self, mock_decode):
+        """Test dispatch sets tenant context for non-exempt paths."""
+        tenant_id = uuid4()
+        mock_decode.return_value = {"tenant_id": str(tenant_id)}
+        
+        mock_app = MagicMock()
+        middleware = TenantMiddleware(mock_app)
+        
+        # Create mock request
+        request = MagicMock()
+        request.url.path = "/api/v1/users"
+        request.headers = {"Authorization": "Bearer valid_token"}
+        request.state = MagicMock()
+        
+        # Create mock response
+        expected_response = MagicMock(spec=Response)
+        
+        # Track tenant_id during request
+        tenant_during_request = None
+        
+        async def call_next(req):
+            nonlocal tenant_during_request
+            tenant_during_request = req.state.tenant_id
+            return expected_response
+        
+        result = await middleware.dispatch(request, call_next)
+        
+        assert result == expected_response
+        assert tenant_during_request == tenant_id
+    
+    @pytest.mark.asyncio
+    async def test_dispatch_no_auth_header_sets_none_tenant(self):
+        """Test dispatch sets None tenant when no auth header."""
+        mock_app = MagicMock()
+        middleware = TenantMiddleware(mock_app)
+        
+        # Create mock request without auth
+        request = MagicMock()
+        request.url.path = "/api/v1/users"
+        request.headers = {}
+        request.state = MagicMock()
+        
+        expected_response = MagicMock(spec=Response)
+        
+        async def call_next(req):
+            return expected_response
+        
+        result = await middleware.dispatch(request, call_next)
+        
+        assert result == expected_response
+        assert request.state.tenant_id is None

@@ -49,6 +49,17 @@ class TestBaseEntity:
         entities = {entity1, entity2, entity3}
         assert len(entities) == 2
 
+    def test_entity_equality_with_non_entity(self):
+        """Test entity is not equal to non-entity types."""
+        entity = BaseEntity()
+        
+        # Comparing with non-BaseEntity types returns False
+        assert (entity == "string") is False
+        assert (entity == 123) is False
+        assert (entity == None) is False
+        assert (entity == {"id": str(entity.id)}) is False
+        assert (entity == [entity.id]) is False
+
 
 class TestAuditableEntity:
     """Tests for AuditableEntity."""
