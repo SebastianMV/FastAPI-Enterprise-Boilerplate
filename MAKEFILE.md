@@ -1,195 +1,195 @@
-# Makefile - Instrucciones de Uso
+# Makefile - Usage Instructions
 
-## 🪟 Windows
+##  Windows
 
-El `Makefile` está diseñado para sistemas Unix (Linux/macOS) y requiere la herramienta `make` que **NO está disponible nativamente en Windows**.
+The `Makefile` is designed for Unix systems (Linux/macOS) and requires the `make` tool which **is NOT natively available on Windows**.
 
-### ✅ Opción 1: Script PowerShell (Recomendado)
+###  Option 1: PowerShell Script (Recommended)
 
-Hemos creado `make.ps1` con comandos equivalentes para Windows:
+We've created `make.ps1` with equivalent commands for Windows:
 
 ```powershell
-# 1. Cargar el script (dot-sourcing)
+# 1. Load the script (dot-sourcing)
 . .\make.ps1
 
-# 2. Ver comandos disponibles
+# 2. View available commands
 Show-Help
 
-# 3. Usar funciones
-Start-DevEnvironment      # Igual a: make docker-dev
-Run-AllTests              # Igual a: make test
-Run-Migrations            # Igual a: make migrate
+# 3. Use functions
+Start-DevEnvironment      # Equivalent to: make docker-dev
+Run-AllTests              # Equivalent to: make test
+Run-Migrations            # Equivalent to: make migrate
 ```
 
-#### Comandos Comunes
+#### Common Commands
 
-| Makefile (Unix) | PowerShell (Windows) | Descripción |
+| Makefile (Unix) | PowerShell (Windows) | Description |
 | --------------- | -------------------- | ----------- |
-| `make docker-dev` | `Start-DevEnvironment` | Iniciar desarrollo |
-| `make test` | `Run-AllTests` | Ejecutar tests |
-| `make migrate` | `Run-Migrations` | Aplicar migraciones |
+| `make docker-dev` | `Start-DevEnvironment` | Start development |
+| `make test` | `Run-AllTests` | Run tests |
+| `make migrate` | `Run-Migrations` | Apply migrations |
 | `make lint` | `Run-Lint` | Linting |
-| `make clean` | `Clean-Artifacts` | Limpiar artefactos |
+| `make clean` | `Clean-Artifacts` | Clean artifacts |
 
-### Opción 2: Instalar `make` en Windows
+### Option 2: Install `make` on Windows
 
-**Con Chocolatey:**
+**With Chocolatey:**
 
 ```powershell
 choco install make
 ```
 
-**Con Scoop:**
+**With Scoop:**
 
 ```powershell
 scoop install make
 ```
 
-**Con WSL (Windows Subsystem for Linux):**
+**With WSL (Windows Subsystem for Linux):**
 
 ```bash
-# Usar Ubuntu/Debian en WSL
+# Use Ubuntu/Debian in WSL
 wsl
 make help
 ```
 
-## 🐧 Linux / 🍎 macOS
+##  Linux /  macOS
 
-El Makefile funciona nativamente:
+The Makefile works natively:
 
 ```bash
-# Ver comandos disponibles
+# View available commands
 make help
 
-# Iniciar desarrollo
+# Start development
 make docker-dev
 
-# Ejecutar tests
+# Run tests
 make test
 
-# Aplicar migraciones
+# Apply migrations
 make migrate
 ```
 
-## 📋 Comandos Principales
+##  Main Commands
 
 ### Docker Development
 
 ```bash
-make docker-dev              # Iniciar ambiente dev
-make docker-dev-build        # Rebuild e iniciar
-make docker-down             # Detener servicios
-make docker-logs             # Ver logs
-make docker-clean            # Limpiar volúmenes
+make docker-dev              # Start dev environment
+make docker-dev-build        # Rebuild and start
+make docker-down             # Stop services
+make docker-logs             # View logs
+make docker-clean            # Clean volumes
 ```
 
 ### Docker Production
 
 ```bash
-make docker-prod             # Iniciar producción
-make docker-prod-build       # Rebuild producción
-make docker-prod-down        # Detener producción
+make docker-prod             # Start production
+make docker-prod-build       # Rebuild production
+make docker-prod-down        # Stop production
 ```
 
 ### Testing
 
 ```bash
-make test                    # Tests completos con cobertura
-make test-unit               # Solo tests unitarios
-make test-integration        # Solo tests integración
-make test-frontend           # Tests frontend
+make test                    # Complete tests with coverage
+make test-unit               # Unit tests only
+make test-integration        # Integration tests only
+make test-frontend           # Frontend tests
 ```
 
 ### Code Quality
 
 ```bash
 make lint                    # Linting (ruff + eslint)
-make format                  # Formatear código
+make format                  # Format code
 make type-check              # Type checking (mypy)
-make check                   # Todos los checks
+make check                   # All checks
 ```
 
 ### Database
 
 ```bash
-make migrate                 # Aplicar migraciones
-make migrate-create msg="nombre"  # Crear migración
-make migrate-down            # Revertir 1 migración
+make migrate                 # Apply migrations
+make migrate-create msg="name"  # Create migration
+make migrate-down            # Revert 1 migration
 make seed                    # Seed database
 ```
 
 ### CLI
 
 ```bash
-make create-superuser        # Crear superusuario
-make create-apikey           # Crear API key
+make create-superuser        # Create superuser
+make create-apikey           # Create API key
 make health                  # Health check
 ```
 
 ### Cleanup
 
 ```bash
-make clean                   # Limpiar artefactos build
+make clean                   # Clean build artifacts
 ```
 
-## 🔧 Comandos Directos (sin Makefile)
+##  Direct Commands (without Makefile)
 
-Si prefieres no usar Makefile/script, puedes ejecutar comandos directamente:
+If you prefer not to use Makefile/script, you can run commands directly:
 
 ### Docker
 
 ```bash
-docker compose up -d                              # Iniciar dev
-docker compose -f docker-compose.prod.yml up -d   # Iniciar prod
-docker compose down                               # Detener
+docker compose up -d                              # Start dev
+docker compose -f docker-compose.prod.yml up -d   # Start prod
+docker compose down                               # Stop
 ```
 
 ### Backend
 
 ```bash
 cd backend
-pip install -e ".[dev]"                           # Instalar
-uvicorn app.main:app --reload --port 8000         # Ejecutar
+pip install -e ".[dev]"                           # Install
+uvicorn app.main:app --reload --port 8000         # Run
 pytest tests/ -v --cov=app                        # Tests
-alembic upgrade head                              # Migraciones
+alembic upgrade head                              # Migrations
 ```
 
 ### Frontend
 
 ```bash
 cd frontend
-npm install                                       # Instalar
-npm run dev                                       # Ejecutar
+npm install                                       # Install
+npm run dev                                       # Run
 npm test                                          # Tests
-npm run build                                     # Build producción
+npm run build                                     # Production build
 ```
 
-## ⚙️ Configuración de Entorno
+##  Environment Configuration
 
-Antes de ejecutar comandos, asegúrate de tener configuradas las variables de entorno:
+Before running commands, make sure to configure environment variables:
 
 ```bash
-# Copiar ejemplo
+# Copy example
 cp .env.example .env
 
-# Editar con tus valores
-# - JWT_SECRET_KEY (mínimo 32 caracteres)
-# - DATABASE_URL (app_user en producción)
-# - REDIS_PASSWORD (producción)
+# Edit with your values
+# - JWT_SECRET_KEY (minimum 32 characters)
+# - DATABASE_URL (app_user for production)
+# - REDIS_PASSWORD (production)
 ```
 
-## 🆘 Troubleshooting
+##  Troubleshooting
 
 ### "make: command not found" (Windows)
 
-- Usar `make.ps1` (PowerShell script)
-- Instalar make con Chocolatey/Scoop
-- Usar WSL (Linux subsystem)
+- Use `make.ps1` (PowerShell script)
+- Install make with Chocolatey/Scoop
+- Use WSL (Linux subsystem)
 
 ### "docker compose: command not found"
 
-- Instalar Docker Desktop
-- Verificar que Docker está en PATH
+- Install Docker Desktop
+- Verify Docker is in PATH
 
 ### "Permission denied" (Linux/macOS)
 
@@ -204,8 +204,8 @@ cd backend
 pip install -e ".[dev]"
 ```
 
-## 📚 Más Información
+##  More Information
 
-- [GETTING_STARTED.md](docs/GETTING_STARTED.md) - Guía de inicio
-- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment en producción
-- [DOCKER.md](docs/DOCKER.md) - Documentación Docker
+- [GETTING_STARTED.md](docs/GETTING_STARTED.md) - Getting started guide
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Production deployment
+- [DOCKER.md](docs/DOCKER.md) - Docker documentation

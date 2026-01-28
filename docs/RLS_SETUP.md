@@ -1,29 +1,29 @@
 # Row-Level Security (RLS) - Multi-Tenant Isolation
 
-## 🛡️ Defense in Depth Architecture
+##  Defense in Depth Architecture
 
-Esta aplicación implementa **defensa en profundidad** para aislamiento multi-tenant, combinando:
+This application implements **defense in depth** for multi-tenant isolation, combining:
 
 ### 1. **SQLAlchemy Events** (Application Layer)
 
-- Configuración automática de `app.current_tenant_id` en cada transacción
-- Se ejecuta ANTES de cualquier consulta SQL
-- Implementado en `backend/app/infrastructure/database/connection.py`
+- Automatic configuration of `app.current_tenant_id` on each transaction
+- Executes BEFORE any SQL query
+- Implemented in `backend/app/infrastructure/database/connection.py`
 
 ```python
 @event.listens_for(Session, "after_begin")
 def receive_after_begin(session, transaction, connection):
-    tenant_id = get_current_tenant_id()  # Del JWT vía TenantMiddleware
+    tenant_id = get_current_tenant_id()  # From JWT via TenantMiddleware
     if tenant_id:
         connection.execute(text(f"SET LOCAL app.current_tenant_id = '{tenant_id}'"))
 ```
 
 ### 2. **PostgreSQL Row-Level Security** (Database Layer)
 
-- 9 políticas RLS activas en tablas core
-- Aplican **incluso si la capa de aplicación falla**
-- `FORCE ROW LEVEL SECURITY` activado
-- Políticas con `USING` (SELECT) y `WITH CHECK` (INSERT/UPDATE/DELETE)
+- 9 active RLS policies on core tables
+- Apply **even if application layer fails**
+- `FORCE ROW LEVEL SECURITY` enabled
+- Policies with `USING` (SELECT) and `WITH CHECK` (INSERT/UPDATE/DELETE)
 
 ```sql
 CREATE POLICY users_tenant_isolation ON users
@@ -32,191 +32,191 @@ USING (tenant_id::text = COALESCE(current_setting('app.current_tenant_id', true)
 WITH CHECK (tenant_id::text = COALESCE(current_setting('app.current_tenant_id', true), ''));
 ```
 
-## 📋 Estado de Implementación
+##  Implementation Status
 
-### ✅ Completado
+###  Completed
 
-1. **Migración 006**: Habilitación de RLS en 7 tablas core
+1. **Migration 006**: Enable RLS on 7 core tables
    - `users`, `roles`, `api_keys`, `conversations`, `chat_messages`, `notifications`, `audit_logs`
-   - Políticas para `oauth_connections` y `sso_configurations` (migración 004)
+   - Policies for `oauth_connections` and `sso_configurations` (migration 004)
 
-2. **Migración 007**: Creación del usuario `app_user`
-   - Usuario NO-owner para que RLS se aplique correctamente
-   - Permisos SELECT, INSERT, UPDATE, DELETE en todas las tablas
-   - **NO tiene** privilegio `BYPASSRLS`
+2. **Migration 007**: Create `app_user` database user
+   - Non-owner user so RLS applies correctly
+   - Permissions: SELECT, INSERT, UPDATE, DELETE on all tables
+   - **Does NOT have** `BYPASSRLS` privilege
 
-3. **Migración 008**: Políticas CRUD completas
-   - `FOR ALL` con `USING` + `WITH CHECK`
-   - Soporta SELECT, INSERT, UPDATE, DELETE
-   - Chat messages usa FK lookup a conversations
+3. **Migration 008**: Complete CRUD policies
+   - `FOR ALL` with `USING` + `WITH CHECK`
+   - Supports SELECT, INSERT, UPDATE, DELETE
+   - Chat messages use FK lookup to conversations
 
-4. **SQLAlchemy Event Listener**: Configuración automática de contexto
-   - Se ejecuta en `after_begin` de cada sesión
-   - Obtiene `tenant_id` de `ContextVar` (configurado por `TenantMiddleware`)
-   - Ejecuta `SET LOCAL app.current_tenant_id`
+4. **SQLAlchemy Event Listener**: Automatic context configuration
+   - Executes on `after_begin` of each session
+   - Gets `tenant_id` from `ContextVar` (set by `TenantMiddleware`)
+   - Executes `SET LOCAL app.current_tenant_id`
 
-5. **TenantMiddleware**: Extracción y configuración de tenant
-   - Lee `tenant_id` del JWT
-   - Almacena en `ContextVar` thread-safe
-   - Disponible para todo el request lifecycle
+5. **TenantMiddleware**: Tenant extraction and configuration
+   - Reads `tenant_id` from JWT
+   - Stores in thread-safe `ContextVar`
+   - Available for entire request lifecycle
 
-### 📝 Tablas Protegidas
+###  Protected Tables
 
-| Tabla | Política | Tipo | Estado |
-| ----- | -------- | ---- | ------ |
-| `users` | users_tenant_isolation | FOR ALL | ✅ Activa |
-| `roles` | roles_tenant_isolation | FOR ALL | ✅ Activa |
-| `api_keys` | api_keys_tenant_isolation | FOR ALL | ✅ Activa |
-| `conversations` | conversations_tenant_isolation | FOR ALL | ✅ Activa |
-| `chat_messages` | chat_messages_tenant_isolation | FOR ALL (FK) | ✅ Activa |
-| `notifications` | notifications_tenant_isolation | FOR ALL | ✅ Activa |
-| `audit_logs` | audit_logs_tenant_isolation | FOR ALL | ✅ Activa |
-| `oauth_connections` | oauth_connections_tenant_isolation | FOR SELECT | ✅ Activa |
-| `sso_configurations` | sso_configurations_tenant_isolation | FOR SELECT | ✅ Activa |
+| Table | Policy | Type | Status |
+| ----- | ------ | ---- | ------ |
+| `users` | users_tenant_isolation | FOR ALL |  Active |
+| `roles` | roles_tenant_isolation | FOR ALL |  Active |
+| `api_keys` | api_keys_tenant_isolation | FOR ALL |  Active |
+| `conversations` | conversations_tenant_isolation | FOR ALL |  Active |
+| `chat_messages` | chat_messages_tenant_isolation | FOR ALL (FK) |  Active |
+| `notifications` | notifications_tenant_isolation | FOR ALL |  Active |
+| `audit_logs` | audit_logs_tenant_isolation | FOR ALL |  Active |
+| `oauth_connections` | oauth_connections_tenant_isolation | FOR SELECT |  Active |
+| `sso_configurations` | sso_configurations_tenant_isolation | FOR SELECT |  Active |
 
-## 🔑 Configuración de Usuarios
+##  User Configuration
 
-### Desarrollo (RLS Bypassed)
+### Development (RLS Bypassed)
 
 ```env
 DATABASE_URL=postgresql+asyncpg://boilerplate:boilerplate@localhost:5432/boilerplate
 ```
 
-- Usuario: `boilerplate` (owner de tablas)
-- RLS: **Bypassed** (FORCE RLS no aplica a owners con prepared statements)
-- Uso: Desarrollo local, migraciones, admin tasks
+- User: `boilerplate` (table owner)
+- RLS: **Bypassed** (FORCE RLS doesn't apply to owners with prepared statements)
+- Use: Local development, migrations, admin tasks
 
-### Producción (RLS Enforced) ⭐ **RECOMENDADO**
+### Production (RLS Enforced)  **RECOMMENDED**
 
 ```env
 DATABASE_URL=postgresql+asyncpg://app_user:app_password@localhost:5432/boilerplate
 ```
 
-- Usuario: `app_user` (NO owner)
-- RLS: **Enforced** (políticas aplican correctamente)
-- Uso: Producción, staging, testing
+- User: `app_user` (NOT owner)
+- RLS: **Enforced** (policies apply correctly)
+- Use: Production, staging, testing
 
-## ✅ Verificación de RLS
+##  RLS Verification
 
-### Test Automatizado
+### Automated Test
 
 ```bash
 cd backend
 python test_rls_isolation.py
 ```
 
-**Output esperado**:
+**Expected output**:
 
 ```text
-✅ BD Direct: Tenant A solo ve sus usuarios (N usuarios)
-✅ BD Direct: Tenant B solo ve sus usuarios (M usuarios)
-✅ Políticas RLS activas: 9
+ DB Direct: Tenant A only sees its users (N users)
+ DB Direct: Tenant B only sees its users (M users)
+ Active RLS policies: 9
 ```
 
-### Test Manual (PostgreSQL)
+### Manual Test (PostgreSQL)
 
 ```sql
--- Conectar como app_user
+-- Connect as app_user
 \c boilerplate app_user
 
--- Configurar tenant A
+-- Set tenant A
 BEGIN;
 SET LOCAL app.current_tenant_id = '<tenant-a-uuid>';
-SELECT COUNT(*) FROM users;  -- Solo ve usuarios de tenant A
+SELECT COUNT(*) FROM users;  -- Only sees tenant A users
 COMMIT;
 
--- Configurar tenant B
+-- Set tenant B
 BEGIN;
 SET LOCAL app.current_tenant_id = '<tenant-b-uuid>';
-SELECT COUNT(*) FROM users;  -- Solo ve usuarios de tenant B
+SELECT COUNT(*) FROM users;  -- Only sees tenant B users
 COMMIT;
 ```
 
-## 🚨 Limitaciones Conocidas
+##  Known Limitations
 
 ### asyncpg + FORCE RLS + Table Owners
 
-PostgreSQL tiene una limitación: `FORCE ROW LEVEL SECURITY` **NO se aplica completamente** a table owners cuando se usan prepared statements (que es como funciona asyncpg y SQLAlchemy).
+PostgreSQL has a limitation: `FORCE ROW LEVEL SECURITY` **does NOT fully apply** to table owners when using prepared statements (which is how asyncpg and SQLAlchemy work).
 
-**Solución implementada**:
+**Implemented solution**:
 
-1. Usuario `app_user` (NO owner) para la aplicación
-2. Usuario `boilerplate` (owner) solo para migraciones
+1. `app_user` (NOT owner) for the application
+2. `boilerplate` user (owner) only for migrations
 
 ### OAuthConnectionModel Mapping Error
 
-El modelo `OAuthConnectionModel` tiene un error de mapping circular con `UserModel`. Este error **NO afecta** el funcionamiento de RLS en base de datos.
+The `OAuthConnectionModel` has a circular mapping error with `UserModel`. This error **does NOT affect** RLS functionality in the database.
 
-**Solución temporal**: Comentar relación en desarrollo si causa problemas
-**Solución definitiva**: Resolver import circular (pendiente)
+**Temporary solution**: Comment out relationship in development if causing issues
+**Definitive solution**: Resolve circular import (pending)
 
-## 🔐 Flujo de Seguridad
+##  Security Flow
 
 ```text
 HTTP Request
-    ↓
-TenantMiddleware (extrae tenant_id del JWT)
-    ↓
+    
+TenantMiddleware (extracts tenant_id from JWT)
+    
 ContextVar.set(tenant_id)
-    ↓
+    
 SQLAlchemy Session.begin() 
-    ↓
+    
 Event Listener "after_begin" 
-    ↓
+    
 SET LOCAL app.current_tenant_id = '<tenant_id>'
-    ↓
-SQL Query (con RLS automático)
-    ↓
-PostgreSQL filtra por tenant_id
-    ↓
-Response (solo datos del tenant)
+    
+SQL Query (with automatic RLS)
+    
+PostgreSQL filters by tenant_id
+    
+Response (only tenant's data)
 ```
 
-## 📊 Validación de Seguridad
+##  Security Validation
 
-### Escenarios Testeados
+### Tested Scenarios
 
-1. ✅ **SELECT Isolation**: Cada tenant solo ve sus propios registros
-2. ✅ **INSERT Protection**: No se puede insertar en otro tenant
-3. ✅ **UPDATE Protection**: No se puede modificar datos de otro tenant  
-4. ✅ **DELETE Protection**: No se puede eliminar datos de otro tenant
-5. ✅ **FK Consistency**: Chat messages respetan tenant via conversation FK
-6. ✅ **Policy Active**: 9 políticas confirmadas en `pg_policies`
+1.  **SELECT Isolation**: Each tenant only sees their own records
+2.  **INSERT Protection**: Cannot insert into another tenant
+3.  **UPDATE Protection**: Cannot modify another tenant's data
+4.  **DELETE Protection**: Cannot delete another tenant's data
+5.  **FK Consistency**: Chat messages respect tenant via conversation FK
+6.  **Policy Active**: 9 policies confirmed in `pg_policies`
 
-### Casos de Uso Críticos
+### Critical Use Cases
 
-| Caso | Estado | Protección |
-| ---- | ------ | --------- |
-| Usuario A intenta leer datos de B | ✅ Bloqueado | RLS BD |
-| App olvida configurar tenant_id | ✅ Datos vacíos | RLS BD (current_setting = '') |
-| SQL Injection intenta bypass | ✅ Bloqueado | RLS BD + parametrización |
-| Owner hace SELECT sin tenant | ⚠️ Ve todo | Solo con boilerplate user |
-| app_user hace SELECT sin tenant | ✅ Datos vacíos | RLS BD activo |
+| Case | Status | Protection |
+| ---- | ------ | ---------- |
+| User A tries to read B's data |  Blocked | DB RLS |
+| App forgets to set tenant_id |  Empty data | DB RLS (current_setting = '') |
+| SQL Injection attempts bypass |  Blocked | DB RLS + parameterization |
+| Owner does SELECT without tenant |  Sees all | Only with boilerplate user |
+| app_user does SELECT without tenant |  Empty data | DB RLS active |
 
-## 🔄 Migraciones Relacionadas
+##  Related Migrations
 
-1. **001-005**: Schema base
-2. **006** (`9446ce57e027`): Habilitar RLS + políticas SELECT
-3. **007** (`007_change_owners`): Crear usuario app_user
-4. **008** (`008_rls_write_pol`): Políticas INSERT/UPDATE/DELETE
+1. **001-005**: Base schema
+2. **006** (`9446ce57e027`): Enable RLS + SELECT policies
+3. **007** (`007_change_owners`): Create app_user
+4. **008** (`008_rls_write_pol`): INSERT/UPDATE/DELETE policies
 
-## 📚 Referencias
+##  References
 
 - [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
 - [SQLAlchemy Events](https://docs.sqlalchemy.org/en/20/orm/events.html)
 - [FastAPI Security Best Practices](https://fastapi.tiangolo.com/advanced/security/)
 
-## ⚡ Performance Notes
+##  Performance Notes
 
-- Event listener ejecuta `SET LOCAL` una vez por transacción (overhead mínimo)
-- RLS policies usan índices existentes en `tenant_id`
-- Prepared statements mantienen rendimiento óptimo
-- `COALESCE` evita errores si current_setting no existe
+- Event listener executes `SET LOCAL` once per transaction (minimal overhead)
+- RLS policies use existing indexes on `tenant_id`
+- Prepared statements maintain optimal performance
+- `COALESCE` prevents errors if current_setting doesn't exist
 
-## 🎯 Próximos Pasos
+##  Future Improvements
 
-- [ ] Resolver OAuthConnectionModel mapping error
-- [ ] Agregar RLS a `tenants` table (para super-admin scenarios)
-- [ ] Implementar audit logging de intentos de acceso cross-tenant
-- [ ] Configurar alertas de seguridad para RLS violations
-- [ ] Tests de carga con RLS activo (performance validation)
+- [ ] Resolve OAuthConnectionModel mapping error
+- [ ] Add RLS to `tenants` table (for super-admin scenarios)
+- [ ] Implement audit logging for cross-tenant access attempts
+- [ ] Configure security alerts for RLS violations
+- [ ] Load testing with RLS active (performance validation)

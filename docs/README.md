@@ -50,10 +50,7 @@
 | [CHANGELOG.md](../CHANGELOG.md) | Version history and release notes |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Contribution guidelines |
 | [PROJECT_STATUS.md](../PROJECT_STATUS.md) | Current status, metrics, and roadmap |
-| [ROADMAP.md](../ROADMAP.md) | Future plans and features |
-| [MAKEFILE.md](../MAKEFILE.md) | PowerShell commands for Windows |
-| [GITHUB_SETUP.md](../GITHUB_SETUP.md) | GitHub Actions and CI/CD setup |
-| [AGENTS.md](../AGENTS.md) | Context for AI agents (private) |
+| [MAKEFILE.md](../MAKEFILE.md) | PowerShell/Makefile commands (Windows & Unix) |
 
 ---
 
@@ -80,7 +77,6 @@
 1. **Guidelines:** [CONTRIBUTING.md](../CONTRIBUTING.md)
 2. **Status:** [PROJECT_STATUS.md](../PROJECT_STATUS.md)
 3. **Changes:** [CHANGELOG.md](../CHANGELOG.md)
-4. **Roadmap:** [ROADMAP.md](../ROADMAP.md)
 
 ## 🚨 Important Security Notes
 
