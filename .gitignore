@@ -137,3 +137,5 @@ alembic/versions/*.pyc
 
 # AI Agent context files (private)
 AGENTS.md
+# Internal analysis documents (team only, not for public repo)
+docs/analisis_interno/
