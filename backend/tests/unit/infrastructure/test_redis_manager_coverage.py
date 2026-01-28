@@ -126,7 +126,7 @@ class TestRedisWebSocketManagerCoverage:
         })
         
         # Should return early without processing
-        await manager._handle_pubsub_message(b"channel", data)
+        await manager._handle_pubsub_message("channel", data)
         
         # Verify no error occurred
         assert True
@@ -140,7 +140,7 @@ class TestRedisWebSocketManagerCoverage:
         manager._instance_id = "test-instance"
         
         # Invalid JSON data
-        await manager._handle_pubsub_message(b"channel", "invalid json")
+        await manager._handle_pubsub_message("channel", "invalid json")
         
         # Should log error but not raise
         assert True
@@ -163,7 +163,7 @@ class TestRedisWebSocketManagerCoverage:
             "target_id": str(user_id),
         })
         
-        await manager._handle_pubsub_message(b"channel", data)
+        await manager._handle_pubsub_message("channel", data)
         
         manager._local_send_to_user.assert_called_once()
 
@@ -184,6 +184,6 @@ class TestRedisWebSocketManagerCoverage:
             "target_id": "room-123",
         })
         
-        await manager._handle_pubsub_message(b"channel", data)
+        await manager._handle_pubsub_message("channel", data)
         
         manager._local_send_to_room.assert_called_once()
