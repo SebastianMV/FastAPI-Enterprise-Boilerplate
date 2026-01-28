@@ -127,10 +127,11 @@ class TestMemoryManagerCoverage:
     async def test_broadcast_to_tenant_no_connections(self):
         """Test broadcast to tenant with no connections."""
         from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
+        from app.domain.ports.websocket import WebSocketMessage, MessageType
         
         manager = MemoryWebSocketManager()
         tenant_id = uuid4()
         
         # Broadcast to tenant with no connections should not raise
-        await manager.broadcast_to_tenant(tenant_id, {"type": "test"})
+        await manager.broadcast_to_tenant(tenant_id, WebSocketMessage(type=MessageType.BROADCAST))
         # If we get here without error, test passes

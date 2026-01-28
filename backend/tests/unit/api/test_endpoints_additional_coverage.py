@@ -559,7 +559,7 @@ class TestEmailTemplatesAdditionalCoverage:
         from app.infrastructure.email.templates import EmailTemplateEngine
         
         engine = EmailTemplateEngine.__new__(EmailTemplateEngine)
-        engine.SUPPORTED_LOCALES = {"en", "es"}
+        engine.SUPPORTED_LOCALES = ["en", "es"]
         engine.DEFAULT_LOCALE = "en"
         
         # Test unsupported locale fallback logic
