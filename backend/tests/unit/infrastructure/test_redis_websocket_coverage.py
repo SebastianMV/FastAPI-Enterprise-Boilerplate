@@ -309,7 +309,7 @@ class TestRedisWebSocketPubSub:
                 manager._redis = mock_redis
                 
                 message = WebSocketMessage(
-                    type=MessageType.CHAT_MESSAGE,
+                    type=MessageType.NOTIFICATION,
                     payload={"text": "Hello"},
                 )
                 
@@ -426,3 +426,4 @@ class TestRedisWebSocketPubSub:
                 await manager._subscriber_loop()
                 
                 assert call_count == 2  # Error + recovery
+

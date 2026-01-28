@@ -22,9 +22,6 @@ class SearchIndex(str, Enum):
     """Available search indices."""
     
     USERS = "users"
-    POSTS = "posts"
-    MESSAGES = "messages"
-    DOCUMENTS = "documents"
     AUDIT_LOGS = "audit_logs"
 
 
@@ -89,12 +86,7 @@ class SearchQuery:
     page_size: int = 20
     tenant_id: UUID | None = None
     include_deleted: bool = False
-    
-    # Advanced options
     fuzzy: bool = True
-    fuzzy_max_edits: int = 2
-    minimum_should_match: str | None = None
-    boost_fields: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass

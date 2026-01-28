@@ -6,7 +6,6 @@ WebSocket endpoint for real-time communication.
 
 Handles WebSocket connections for:
 - Real-time notifications
-- Chat messaging
 - Presence (online status)
 """
 
@@ -68,76 +67,8 @@ def _register_default_handlers(manager: WebSocketPort) -> None:
             ),
         )
     
-    async def handle_chat_message(message: WebSocketMessage, connection: ConnectionInfo) -> None:
-        """Handle chat messages - forward to recipient or room."""
-        if message.room_id:
-            # Group message
-            await manager.send_to_room(
-                message.room_id,
-                message,
-                exclude_connection=connection.connection_id,
-            )
-        elif message.recipient_id:
-            # Direct message
-            await manager.send_to_user(message.recipient_id, message)
-            
-            # Send delivery confirmation back to sender
-            await manager.send_to_connection(
-                connection.connection_id,
-                WebSocketMessage(
-                    type=MessageType.CHAT_DELIVERED,
-                    payload={"message_id": str(message.message_id)},
-                ),
-            )
-    
-    async def handle_typing(message: WebSocketMessage, connection: ConnectionInfo) -> None:
-        """Handle typing indicator."""
-        if message.room_id:
-            await manager.send_to_room(
-                message.room_id,
-                WebSocketMessage(
-                    type=MessageType.CHAT_TYPING,
-                    payload={
-                        "user_id": str(connection.user_id),
-                        "is_typing": message.payload.get("is_typing", True),
-                    },
-                    sender_id=connection.user_id,
-                    room_id=message.room_id,
-                ),
-                exclude_connection=connection.connection_id,
-            )
-        elif message.recipient_id:
-            await manager.send_to_user(
-                message.recipient_id,
-                WebSocketMessage(
-                    type=MessageType.CHAT_TYPING,
-                    payload={
-                        "user_id": str(connection.user_id),
-                        "is_typing": message.payload.get("is_typing", True),
-                    },
-                    sender_id=connection.user_id,
-                ),
-            )
-    
-    async def handle_read_receipt(message: WebSocketMessage, connection: ConnectionInfo) -> None:
-        """Handle read receipts."""
-        if message.sender_id:
-            await manager.send_to_user(
-                message.sender_id,
-                WebSocketMessage(
-                    type=MessageType.CHAT_READ,
-                    payload={
-                        "message_ids": message.payload.get("message_ids", []),
-                        "reader_id": str(connection.user_id),
-                    },
-                ),
-            )
-    
     # Register handlers
     manager.register_handler(MessageType.PING, handle_ping)
-    manager.register_handler(MessageType.CHAT_MESSAGE, handle_chat_message)
-    manager.register_handler(MessageType.CHAT_TYPING, handle_typing)
-    manager.register_handler(MessageType.CHAT_READ, handle_read_receipt)
 
 
 async def authenticate_websocket(

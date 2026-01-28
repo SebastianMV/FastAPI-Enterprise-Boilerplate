@@ -155,10 +155,10 @@ class TestSearchEndpoint:
         """Test search with sorting."""
         request = SearchRequest(  # type: ignore[call-arg]
             query="test",
-            index="posts",
+            index="users",
             sort=[
                 SearchSortRequest(field="created_at", order="desc"),
-                SearchSortRequest(field="title", order="asc"),
+                SearchSortRequest(field="email", order="asc"),
             ],
         )
         
@@ -185,8 +185,8 @@ class TestSearchEndpoint:
         """Test search with highlight fields."""
         request = SearchRequest(  # type: ignore[call-arg]
             query="test",
-            index="documents",
-            highlight_fields=["title", "content", "summary"],
+            index="users",
+            highlight_fields=["email", "first_name", "last_name"],
         )
         
         mock_result = MockSearchResult(total=3)
@@ -251,7 +251,7 @@ class TestSimpleSearchEndpoint:
                 current_user=mock_user,
                 tenant_id=None,
                 q="test query",
-                index="posts",
+                index="users",
                 page=1,
                 page_size=10,
             )
@@ -324,8 +324,8 @@ class TestSuggestEndpoint:
                 current_user=mock_user,
                 tenant_id=uuid4(),
                 q="tes",
-                index="posts",
-                field="title",
+                index="users",
+                field="email",
                 size=5,
             )
             
@@ -346,8 +346,8 @@ class TestSuggestEndpoint:
                     current_user=mock_user,
                     tenant_id=None,
                     q="test",
-                    index="posts",
-                    field="title",
+                    index="users",
+                    field="email",
                     size=5,
                 )
             
@@ -448,10 +448,10 @@ class TestSearchSchemas:
         """Test SearchRequest with all fields."""
         request = SearchRequest(
             query="test query",
-            index="posts",
-            filters=[SearchFilterRequest(field="status", value="published", operator="eq")],
+            index="audit_logs",
+            filters=[SearchFilterRequest(field="action", value="login", operator="eq")],
             sort=[SearchSortRequest(field="created_at", order="desc")],
-            highlight_fields=["title", "content"],
+            highlight_fields=["action", "details"],
             page=2,
             page_size=50,
             fuzzy=False,

@@ -289,31 +289,14 @@ Each search index has predefined mappings optimized for search:
 }
 ```
 
-### Boosting Fields
-
-Customize field importance:
-
-```json
-{
-  "query": "search terms",
-  "index": "posts",
-  "boost_fields": {
-    "title": 3.0,
-    "content": 1.0,
-    "tags": 2.0
-  }
-}
-```
-
 ### Fuzzy Matching
 
-Configure fuzzy parameters:
+PostgreSQL FTS supports fuzzy matching through trigram similarity:
 
 ```json
 {
   "query": "introdution",
-  "fuzzy": true,
-  "fuzzy_max_edits": 2
+  "fuzzy": true
 }
 ```
 

@@ -173,7 +173,7 @@ class TestWebSocketMessageSerialization:
 
         user_id = uuid4()
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Hello"},
             sender_id=user_id,
             room_id="room-1",
@@ -183,7 +183,7 @@ class TestWebSocketMessageSerialization:
         serialized = json.dumps(data)
         
         deserialized = json.loads(serialized)
-        assert deserialized["type"] == "chat_message"
+        assert deserialized["type"] == "notification"
         assert deserialized["payload"]["content"] == "Hello"
 
     def test_message_from_dict_for_redis(self) -> None:

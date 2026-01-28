@@ -258,7 +258,7 @@ class TestRedisWebSocketManagerMessaging:
         from app.domain.ports.websocket import WebSocketMessage, MessageType
         
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Hello"}
         )
         
@@ -280,7 +280,7 @@ class TestRedisWebSocketManagerMessaging:
         manager._redis = None
         
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Hello"}
         )
         
@@ -343,7 +343,7 @@ class TestRedisWebSocketManagerPubSubHandler:
         data = json.dumps({
             "_instance": "test-instance",  # Same as manager's instance
             "message": WebSocketMessage(
-                type=MessageType.CHAT_MESSAGE,
+                type=MessageType.NOTIFICATION,
                 payload={"content": "Hello"}
             ).to_dict(),
             "target_type": "broadcast"
@@ -363,7 +363,7 @@ class TestRedisWebSocketManagerPubSubHandler:
         data = json.dumps({
             "_instance": "other-instance",
             "message": WebSocketMessage(
-                type=MessageType.CHAT_MESSAGE,
+                type=MessageType.NOTIFICATION,
                 payload={"content": "Hello"}
             ).to_dict(),
             "target_type": "broadcast"
@@ -402,7 +402,7 @@ class TestRedisWebSocketManagerPubSubHandler:
         data = json.dumps({
             "_instance": "other-instance",
             "message": WebSocketMessage(
-                type=MessageType.CHAT_MESSAGE,
+                type=MessageType.NOTIFICATION,
                 payload={"content": "Hello"}
             ).to_dict(),
             "target_type": "tenant",
@@ -421,7 +421,7 @@ class TestRedisWebSocketManagerPubSubHandler:
         data = json.dumps({
             "_instance": "other-instance",
             "message": WebSocketMessage(
-                type=MessageType.CHAT_MESSAGE,
+                type=MessageType.NOTIFICATION,
                 payload={"content": "Hello room"}
             ).to_dict(),
             "target_type": "room",
@@ -683,3 +683,4 @@ class TestRedisWebSocketManagerSubscriberLoop:
         
         # Should exit cleanly on CancelledError
         await manager._subscriber_loop()
+

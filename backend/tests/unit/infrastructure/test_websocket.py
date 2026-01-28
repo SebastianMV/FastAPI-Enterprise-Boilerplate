@@ -150,17 +150,14 @@ class TestRegisterDefaultHandlers:
 
         _register_default_handlers(mock_manager)
 
-        # Should register handlers for PING, CHAT_MESSAGE, CHAT_TYPING, CHAT_READ
-        assert mock_manager.register_handler.call_count == 4
+        # Should register handler for PING only (chat removed)
+        assert mock_manager.register_handler.call_count == 1
 
         # Check registered message types
         registered_types = [
             call[0][0] for call in mock_manager.register_handler.call_args_list
         ]
         assert MessageType.PING in registered_types
-        assert MessageType.CHAT_MESSAGE in registered_types
-        assert MessageType.CHAT_TYPING in registered_types
-        assert MessageType.CHAT_READ in registered_types
 
 
 class TestDefaultMessageHandlers:
@@ -206,86 +203,6 @@ class TestDefaultMessageHandlers:
         assert call_args[0][0] == "conn-1"
         assert call_args[0][1].type == MessageType.PONG
 
-    @pytest.mark.asyncio
-    async def test_handle_chat_message_to_room(self) -> None:
-        """Test chat message handler for room messages."""
-        from app.api.v1.endpoints.websocket import _register_default_handlers
-        from app.domain.ports.websocket import (
-            ConnectionInfo,
-            MessageType,
-            WebSocketMessage,
-        )
-
-        handlers = {}
-        
-        def mock_register(msg_type, handler):
-            handlers[msg_type] = handler
-
-        mock_manager = MagicMock()
-        mock_manager.register_handler = mock_register
-        mock_manager.send_to_room = AsyncMock()
-
-        _register_default_handlers(mock_manager)
-
-        # Chat message to room
-        chat_message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
-            payload={"text": "Hello room!"},
-            room_id="room-123",
-        )
-        connection = ConnectionInfo(
-            connection_id="conn-1",
-            user_id=uuid4(),
-            tenant_id=uuid4(),
-        )
-
-        await handlers[MessageType.CHAT_MESSAGE](chat_message, connection)
-
-        mock_manager.send_to_room.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_handle_chat_message_direct(self) -> None:
-        """Test chat message handler for direct messages."""
-        from app.api.v1.endpoints.websocket import _register_default_handlers
-        from app.domain.ports.websocket import (
-            ConnectionInfo,
-            MessageType,
-            WebSocketMessage,
-        )
-
-        handlers = {}
-        
-        def mock_register(msg_type, handler):
-            handlers[msg_type] = handler
-
-        mock_manager = MagicMock()
-        mock_manager.register_handler = mock_register
-        mock_manager.send_to_user = AsyncMock()
-        mock_manager.send_to_connection = AsyncMock()
-
-        _register_default_handlers(mock_manager)
-
-        recipient_id = uuid4()
-        message_id = uuid4()
-        
-        chat_message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
-            payload={"text": "Hello!"},
-            recipient_id=recipient_id,
-            message_id=message_id,
-        )
-        connection = ConnectionInfo(
-            connection_id="conn-1",
-            user_id=uuid4(),
-            tenant_id=uuid4(),
-        )
-
-        await handlers[MessageType.CHAT_MESSAGE](chat_message, connection)
-
-        # Should send to recipient and confirmation to sender
-        mock_manager.send_to_user.assert_called_once()
-        mock_manager.send_to_connection.assert_called_once()
-
 
 class TestWebSocketMessageTypes:
     """Tests for WebSocket message types."""
@@ -296,24 +213,21 @@ class TestWebSocketMessageTypes:
 
         assert MessageType.PING.value == "ping"
         assert MessageType.PONG.value == "pong"
-        assert MessageType.CHAT_MESSAGE.value == "chat_message"
-        assert MessageType.CHAT_TYPING.value == "chat_typing"
-        assert MessageType.CHAT_READ.value == "chat_read"
-        assert MessageType.CHAT_DELIVERED.value == "chat_delivered"
         assert MessageType.NOTIFICATION.value == "notification"
+        assert MessageType.NOTIFICATION_READ.value == "notification_read"
+        assert MessageType.BROADCAST.value == "broadcast"
 
     def test_websocket_message_creation(self) -> None:
         """Test creating WebSocketMessage."""
         from app.domain.ports.websocket import MessageType, WebSocketMessage
 
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"text": "Hello"},
         )
 
-        assert message.type == MessageType.CHAT_MESSAGE
+        assert message.type == MessageType.NOTIFICATION
         assert message.payload == {"text": "Hello"}
-        # message_id is optional and None by default
         assert message.timestamp is not None
 
     def test_websocket_message_with_recipient(self) -> None:
@@ -324,7 +238,7 @@ class TestWebSocketMessageTypes:
         sender_id = uuid4()
         
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"text": "DM"},
             recipient_id=recipient_id,
             sender_id=sender_id,
@@ -338,7 +252,7 @@ class TestWebSocketMessageTypes:
         from app.domain.ports.websocket import MessageType, WebSocketMessage
 
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.BROADCAST,
             payload={"text": "Room message"},
             room_id="general",
         )
@@ -350,7 +264,7 @@ class TestWebSocketMessageTypes:
         from app.domain.ports.websocket import WebSocketMessage
 
         data = {
-            "type": "chat_message",
+            "type": "notification",
             "payload": {"text": "Hello from dict"},
         }
 
@@ -477,3 +391,4 @@ class TestWebSocketModuleImports:
         """Test get_redis_manager function exists."""
         from app.infrastructure.websocket import get_redis_manager
         assert callable(get_redis_manager)
+

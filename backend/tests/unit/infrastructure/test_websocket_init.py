@@ -101,12 +101,6 @@ class TestMessageTypeEnum:
         
         assert MessageType.DISCONNECTED.value == "disconnected"
 
-    def test_chat_message_type(self) -> None:
-        """Test CHAT_MESSAGE message type."""
-        from app.infrastructure.websocket import MessageType
-        
-        assert MessageType.CHAT_MESSAGE.value == "chat_message"
-
     def test_notification_type(self) -> None:
         """Test NOTIFICATION message type."""
         from app.infrastructure.websocket import MessageType
@@ -140,7 +134,7 @@ class TestWebSocketMessage:
         from app.infrastructure.websocket import WebSocketMessage, MessageType
         
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Hello"}
         )
         

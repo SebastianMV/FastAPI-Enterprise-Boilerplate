@@ -33,15 +33,15 @@ class TestSearchEndpointStructure:
 class TestSearchInfrastructure:
     """Tests for search infrastructure."""
 
-    def test_elasticsearch_module_import(self) -> None:
-        """Test elasticsearch module can be imported."""
-        from app.infrastructure.search import elasticsearch
-        assert elasticsearch is not None
-
     def test_postgres_fts_module_import(self) -> None:
         """Test postgres_fts module can be imported."""
         from app.infrastructure.search import postgres_fts
         assert postgres_fts is not None
+
+    def test_get_postgres_search_export(self) -> None:
+        """Test get_postgres_search is exported."""
+        from app.infrastructure.search import get_postgres_search
+        assert callable(get_postgres_search)
 
 
 class TestSearchRoutes:

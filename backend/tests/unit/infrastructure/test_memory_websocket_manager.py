@@ -317,10 +317,10 @@ class TestMemoryWebSocketManagerMessageHandlers:
         async def handler2(msg, conn):
             pass
 
-        manager.register_handler(MessageType.CHAT_MESSAGE, handler1)
-        manager.register_handler(MessageType.CHAT_MESSAGE, handler2)
+        manager.register_handler(MessageType.NOTIFICATION, handler1)
+        manager.register_handler(MessageType.NOTIFICATION, handler2)
 
-        assert len(manager._handlers[MessageType.CHAT_MESSAGE]) == 2
+        assert len(manager._handlers[MessageType.NOTIFICATION]) == 2
 
 
 class TestMemoryWebSocketManagerSendMethods:
@@ -482,3 +482,4 @@ class TestMemoryWebSocketManagerEdgeCases:
 
         # Should not raise
         await manager.send_to_user(uuid4(), message)
+

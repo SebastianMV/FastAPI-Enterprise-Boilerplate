@@ -153,7 +153,7 @@ class TestDefaultHandlers:
         assert call_args["type"] == "pong"
 
     @pytest.mark.asyncio
-    async def test_handle_chat_message_to_room(self) -> None:
+    async def test_handle_NOTIFICATION_to_room(self) -> None:
         """Test chat message handler for room messages."""
         manager = MemoryWebSocketManager()
         _register_default_handlers(manager)
@@ -185,7 +185,7 @@ class TestDefaultHandlers:
         
         # Create chat message
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"text": "Hello room!"},
             room_id=room_id,
         )
@@ -197,7 +197,7 @@ class TestDefaultHandlers:
         recipient_ws.send_json.assert_called()
 
     @pytest.mark.asyncio
-    async def test_handle_chat_message_direct(self) -> None:
+    async def test_handle_NOTIFICATION_direct(self) -> None:
         """Test chat message handler for direct messages."""
         manager = MemoryWebSocketManager()
         _register_default_handlers(manager)
@@ -224,7 +224,7 @@ class TestDefaultHandlers:
         
         # Create direct message
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"text": "Hello directly!"},
             recipient_id=recipient_user_id,
             message_id=uuid4(),
@@ -269,7 +269,7 @@ class TestDefaultHandlers:
         
         # Create typing message
         message = WebSocketMessage(
-            type=MessageType.CHAT_TYPING,
+            type=MessageType.NOTIFICATION,
             payload={"is_typing": True},
             room_id=room_id,
         )
@@ -308,7 +308,7 @@ class TestDefaultHandlers:
         
         # Create typing message
         message = WebSocketMessage(
-            type=MessageType.CHAT_TYPING,
+            type=MessageType.NOTIFICATION,
             payload={"is_typing": True},
             recipient_id=recipient_user_id,
         )
@@ -347,7 +347,7 @@ class TestDefaultHandlers:
         
         # Create read receipt message
         message = WebSocketMessage(
-            type=MessageType.CHAT_READ,
+            type=MessageType.NOTIFICATION_READ,
             payload={"message_ids": [str(uuid4()), str(uuid4())]},
             sender_id=sender_user_id,  # Original sender should be notified
         )
@@ -365,14 +365,14 @@ class TestWebSocketMessage:
     def test_from_dict(self) -> None:
         """Test creating message from dict."""
         data = {
-            "type": "chat_message",
+            "type": "notification",
             "payload": {"text": "Hello"},
             "room_id": "test-room",
         }
         
         message = WebSocketMessage.from_dict(data)
         
-        assert message.type == MessageType.CHAT_MESSAGE
+        assert message.type == MessageType.NOTIFICATION
         assert message.payload["text"] == "Hello"
         assert message.room_id == "test-room"
 
@@ -380,14 +380,14 @@ class TestWebSocketMessage:
         """Test creating message with recipient."""
         recipient_id = uuid4()
         data = {
-            "type": "chat_message",
+            "type": "notification",
             "payload": {"text": "Direct message"},
             "recipient_id": str(recipient_id),
         }
         
         message = WebSocketMessage.from_dict(data)
         
-        assert message.type == MessageType.CHAT_MESSAGE
+        assert message.type == MessageType.NOTIFICATION
         assert message.recipient_id == recipient_id
 
     def test_to_dict(self) -> None:
@@ -508,7 +508,7 @@ class TestWebSocketEndpointErrorHandling:
         # Second receive: WebSocketDisconnect to exit loop gracefully
         from fastapi import WebSocketDisconnect
         mock_websocket.receive_json.side_effect = [
-            {"type": "chat_message", "payload": {}},
+            {"type": "notification", "payload": {}},
             WebSocketDisconnect()
         ]
         
@@ -683,3 +683,4 @@ class TestJoinRoomEndpointErrorHandling:
         # Should cleanup (lines 366-368)
         mock_manager.leave_room.assert_called_once()
         mock_manager.disconnect.assert_called_once()
+

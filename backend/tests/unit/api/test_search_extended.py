@@ -302,7 +302,7 @@ class TestSearchIndex:
         from app.domain.ports.search import SearchIndex
 
         assert SearchIndex.USERS.value == "users"
-        assert SearchIndex.POSTS.value == "posts"
+        assert SearchIndex.AUDIT_LOGS.value == "audit_logs"
 
     def test_search_index_list(self) -> None:
         """Test listing search indexes."""
@@ -311,6 +311,7 @@ class TestSearchIndex:
         indexes = [i.value for i in SearchIndex]
         
         assert "users" in indexes
+        assert "audit_logs" in indexes
 
 
 class TestSearchQuery:
@@ -336,7 +337,7 @@ class TestSearchQuery:
 
         query = SearchQuery(
             query="test",
-            index=SearchIndex.POSTS,
+            index=SearchIndex.USERS,
             filters=[
                 SearchFilter(field="status", value="published"),
             ],

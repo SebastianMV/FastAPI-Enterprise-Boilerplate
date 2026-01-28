@@ -39,7 +39,7 @@ class TestSearchQuery:
         """Test SearchQuery with custom pagination."""
         query = SearchQuery(
             query="test",
-            index=SearchIndex.DOCUMENTS,
+            index=SearchIndex.USERS,
             page=3,
             page_size=50,
         )
@@ -53,11 +53,9 @@ class TestSearchQuery:
             query="test",
             index=SearchIndex.USERS,
             fuzzy=True,
-            fuzzy_max_edits=2,
         )
         
         assert query.fuzzy is True
-        assert query.fuzzy_max_edits == 2
 
 
 class TestSearchResult:
@@ -234,9 +232,6 @@ class TestSearchIndex:
     def test_index_values(self) -> None:
         """Test search index enum values."""
         assert SearchIndex.USERS.value == "users"
-        assert SearchIndex.POSTS.value == "posts"
-        assert SearchIndex.MESSAGES.value == "messages"
-        assert SearchIndex.DOCUMENTS.value == "documents"
         assert SearchIndex.AUDIT_LOGS.value == "audit_logs"
 
 
@@ -312,13 +307,6 @@ class TestSearchHighlight:
 class TestSearchModule:
     """Tests for search module initialization."""
 
-    def test_elasticsearch_available_flag(self) -> None:
-        """Test ELASTICSEARCH_AVAILABLE flag exists."""
-        from app.infrastructure.search import ELASTICSEARCH_AVAILABLE
-        
-        # Should be a boolean
-        assert isinstance(ELASTICSEARCH_AVAILABLE, bool)
-
     def test_postgres_search_export(self) -> None:
         """Test PostgresFullTextSearch is exported."""
         from app.infrastructure.search import PostgresFullTextSearch
@@ -336,14 +324,6 @@ class TestGetSearchBackend:
     """Tests for get_search_backend factory function."""
 
     @pytest.mark.asyncio
-    async def test_postgres_backend_requires_session(self) -> None:
-        """Test postgres backend raises without session."""
-        from app.infrastructure.search import get_search_backend
-        
-        with pytest.raises(ValueError, match="SQLAlchemy session required"):
-            await get_search_backend(backend="postgres", session=None)
-
-    @pytest.mark.asyncio
     async def test_postgres_backend_with_session(self) -> None:
         """Test postgres backend returns search port."""
         from unittest.mock import MagicMock
@@ -353,27 +333,8 @@ class TestGetSearchBackend:
         mock_session = MagicMock()
         
         result = await get_search_backend(
-            backend="postgres",
             session=mock_session,
             language="spanish"
         )
         
         assert isinstance(result, SearchPort)
-
-    @pytest.mark.asyncio
-    async def test_unknown_backend_raises(self) -> None:
-        """Test unknown backend raises ValueError."""
-        from app.infrastructure.search import get_search_backend
-        
-        with pytest.raises(ValueError, match="Unknown search backend"):
-            await get_search_backend(backend="unknown", session=None)
-
-    @pytest.mark.asyncio
-    async def test_elasticsearch_unavailable_raises(self) -> None:
-        """Test elasticsearch raises when not installed."""
-        from unittest.mock import patch
-        from app.infrastructure.search import get_search_backend
-        
-        with patch("app.infrastructure.search.ELASTICSEARCH_AVAILABLE", False):
-            with pytest.raises(ValueError, match="Elasticsearch not available"):
-                await get_search_backend(backend="elasticsearch")

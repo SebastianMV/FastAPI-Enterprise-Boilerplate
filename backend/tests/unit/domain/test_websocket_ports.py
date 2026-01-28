@@ -35,13 +35,6 @@ class TestMessageType:
         assert MessageType.NOTIFICATION.value == "notification"
         assert MessageType.NOTIFICATION_READ.value == "notification_read"
 
-    def test_chat_messages(self) -> None:
-        """Test chat message types."""
-        assert MessageType.CHAT_MESSAGE.value == "chat_message"
-        assert MessageType.CHAT_TYPING.value == "chat_typing"
-        assert MessageType.CHAT_READ.value == "chat_read"
-        assert MessageType.CHAT_DELIVERED.value == "chat_delivered"
-
     def test_presence_messages(self) -> None:
         """Test presence message types."""
         assert MessageType.PRESENCE_ONLINE.value == "presence_online"
@@ -69,21 +62,21 @@ class TestWebSocketMessage:
         assert message.timestamp is not None
         assert message.message_id is None
 
-    def test_create_chat_message(self) -> None:
+    def test_create_NOTIFICATION(self) -> None:
         """Test creating chat message."""
         sender_id = uuid4()
         recipient_id = uuid4()
         message_id = uuid4()
         
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Hello!"},
             sender_id=sender_id,
             recipient_id=recipient_id,
             message_id=message_id,
         )
         
-        assert message.type == MessageType.CHAT_MESSAGE
+        assert message.type == MessageType.NOTIFICATION
         assert message.payload["content"] == "Hello!"
         assert message.sender_id == sender_id
         assert message.recipient_id == recipient_id
@@ -92,7 +85,7 @@ class TestWebSocketMessage:
     def test_create_room_message(self) -> None:
         """Test creating room message."""
         message = WebSocketMessage(
-            type=MessageType.CHAT_TYPING,
+            type=MessageType.NOTIFICATION,
             room_id="room_123",
         )
         
@@ -139,7 +132,7 @@ class TestWebSocketMessageToDict:
         msg_id = uuid4()
         
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             sender_id=sender,
             recipient_id=recipient,
             message_id=msg_id,
@@ -201,7 +194,7 @@ class TestWebSocketMessageFromDict:
         msg_id = uuid4()
         
         data = {
-            "type": "chat_message",
+            "type": "notification",
             "payload": {"content": "Hello"},
             "sender_id": str(sender),
             "recipient_id": str(recipient),
@@ -256,7 +249,7 @@ class TestWebSocketMessageFromDict:
     def test_roundtrip_conversion(self) -> None:
         """Test converting to dict and back."""
         original = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Hello world"},
             sender_id=uuid4(),
             recipient_id=uuid4(),
@@ -367,3 +360,4 @@ class TestConnectionInfo:
         )
         
         assert info.tenant_id is None
+

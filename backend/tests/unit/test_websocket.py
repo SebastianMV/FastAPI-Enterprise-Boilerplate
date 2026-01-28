@@ -28,14 +28,14 @@ class TestWebSocketMessage:
         """Test message serialization to dict."""
         user_id = uuid4()
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"text": "Hello"},
             sender_id=user_id,
         )
         
         data = message.to_dict()
         
-        assert data["type"] == "chat_message"
+        assert data["type"] == "notification"
         assert data["payload"]["text"] == "Hello"
         assert data["sender_id"] == str(user_id)
         assert "timestamp" in data
@@ -75,8 +75,6 @@ class TestWebSocketMessage:
             MessageType.PING,
             MessageType.PONG,
             MessageType.NOTIFICATION,
-            MessageType.CHAT_MESSAGE,
-            MessageType.CHAT_TYPING,
             MessageType.PRESENCE_ONLINE,
             MessageType.PRESENCE_OFFLINE,
         ]
@@ -296,7 +294,7 @@ class TestMemoryWebSocketManager:
         await manager.join_room(conn2, room_id)
         
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.BROADCAST,
             payload={"text": "Hello room!"},
             sender_id=user1,
             room_id=room_id,
@@ -333,7 +331,7 @@ class TestMemoryWebSocketManager:
         ws2.send_json.reset_mock()
         
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.BROADCAST,
             payload={"text": "Hello room!"},
         )
         

@@ -313,9 +313,9 @@ class TestGetLocaleFromHeader:
 
     def test_quality_default_is_one(self, i18n: I18n) -> None:
         """Test locale without quality has implicit q=1.0."""
-        header = "de,es;q=0.9"
+        header = "pt,es;q=0.9"
         result = i18n.get_locale_from_header(header)
-        assert result == "de"  # Implicit q=1.0 > explicit q=0.9
+        assert result == "pt"  # Implicit q=1.0 > explicit q=0.9
 
     def test_invalid_quality_uses_default(self, i18n: I18n) -> None:
         """Test invalid quality value is ignored."""

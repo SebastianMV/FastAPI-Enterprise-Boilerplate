@@ -199,7 +199,7 @@ class TestHealthResponse:
         """Test healthy response."""
         data = HealthResponse(
             status="healthy",
-            backend="elasticsearch",
+            backend="postgres",
         )
         assert data.status == "healthy"
 
@@ -207,10 +207,10 @@ class TestHealthResponse:
         """Test health response with details."""
         data = HealthResponse(
             status="healthy",
-            backend="elasticsearch",
-            details={"cluster": "main", "shards": 5},
+            backend="postgres",
+            details={"language": "english"},
         )
-        assert "cluster" in data.details
+        assert "language" in data.details
 
 
 class TestSearchRouter:

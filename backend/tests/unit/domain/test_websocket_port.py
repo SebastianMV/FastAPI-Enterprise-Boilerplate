@@ -75,11 +75,11 @@ class TestWebSocketMessage:
     def test_message_creation_chat(self) -> None:
         """Test WebSocketMessage creation with chat type."""
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Hello"},
         )
         
-        assert message.type == MessageType.CHAT_MESSAGE
+        assert message.type == MessageType.NOTIFICATION
         assert message.payload["content"] == "Hello"
 
     def test_message_creation_notification(self) -> None:
@@ -95,7 +95,7 @@ class TestWebSocketMessage:
         """Test WebSocketMessage with room."""
         room_id = uuid4()
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"text": "Hi"},
             room_id=room_id,
         )
@@ -116,7 +116,7 @@ class TestWebSocketMessage:
     def test_message_to_dict(self) -> None:
         """Test WebSocketMessage to_dict method."""
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Test"},
         )
         
@@ -129,10 +129,10 @@ class TestWebSocketMessage:
 class TestMessageType:
     """Tests for MessageType enum."""
 
-    def test_chat_message_type(self) -> None:
-        """Test CHAT_MESSAGE message type."""
-        assert MessageType.CHAT_MESSAGE is not None
-        assert MessageType.CHAT_MESSAGE.value == "chat_message"
+    def test_NOTIFICATION_type(self) -> None:
+        """Test NOTIFICATION message type."""
+        assert MessageType.NOTIFICATION is not None
+        assert MessageType.NOTIFICATION.value == "NOTIFICATION"
 
     def test_notification_type(self) -> None:
         """Test NOTIFICATION message type."""
@@ -142,9 +142,9 @@ class TestMessageType:
         """Test PRESENCE_ONLINE message type."""
         assert MessageType.PRESENCE_ONLINE is not None
 
-    def test_chat_typing_type(self) -> None:
-        """Test CHAT_TYPING message type."""
-        assert MessageType.CHAT_TYPING is not None
+    def test_NOTIFICATION_type(self) -> None:
+        """Test NOTIFICATION message type."""
+        assert MessageType.NOTIFICATION is not None
 
     def test_error_type(self) -> None:
         """Test ERROR message type."""

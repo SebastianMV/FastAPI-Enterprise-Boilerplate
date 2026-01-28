@@ -57,23 +57,6 @@ class TestIndexConfigs:
         assert config["id_column"] == "id"
         assert "email" in config["search_columns"]
 
-    def test_posts_config_exists(self):
-        """Test that posts config exists."""
-        assert SearchIndex.POSTS in INDEX_CONFIGS
-        config = INDEX_CONFIGS[SearchIndex.POSTS]
-        assert config["table"] == "posts"
-        assert "title" in config["search_columns"]
-
-    def test_messages_config_exists(self):
-        """Test that messages config exists."""
-        assert SearchIndex.MESSAGES in INDEX_CONFIGS
-        config = INDEX_CONFIGS[SearchIndex.MESSAGES]
-        assert config["table"] == "messages"
-
-    def test_documents_config_exists(self):
-        """Test that documents config exists."""
-        assert SearchIndex.DOCUMENTS in INDEX_CONFIGS
-
     def test_audit_logs_config_exists(self):
         """Test that audit_logs config exists."""
         assert SearchIndex.AUDIT_LOGS in INDEX_CONFIGS

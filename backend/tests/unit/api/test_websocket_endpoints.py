@@ -117,13 +117,10 @@ class TestRegisterDefaultHandlers:
         mock_manager = MagicMock()
         _register_default_handlers(mock_manager)
 
-        # Verify handlers were registered
-        assert mock_manager.register_handler.call_count >= 4
+        # Verify handlers were registered (only PING after chat removal)
+        assert mock_manager.register_handler.call_count >= 1
         registered_types = [call[0][0] for call in mock_manager.register_handler.call_args_list]
         assert MessageType.PING in registered_types
-        assert MessageType.CHAT_MESSAGE in registered_types
-        assert MessageType.CHAT_TYPING in registered_types
-        assert MessageType.CHAT_READ in registered_types
 
 
 class TestDefaultMessageHandlers:
@@ -165,165 +162,6 @@ class TestDefaultMessageHandlers:
         assert call_args[0][0] == "conn-123"
         assert call_args[0][1].type == MessageType.PONG
 
-    @pytest.mark.asyncio
-    async def test_handle_chat_message_to_room(self) -> None:
-        """Test chat message handler sends to room."""
-        from app.api.v1.endpoints.websocket import _register_default_handlers
-        from app.domain.ports.websocket import MessageType, WebSocketMessage
-        from app.infrastructure.websocket import ConnectionInfo
-
-        mock_manager = MagicMock()
-        mock_manager.send_to_room = AsyncMock()
-
-        handlers = {}
-        mock_manager.register_handler = lambda t, h: handlers.update({t: h})
-
-        _register_default_handlers(mock_manager)
-
-        connection = ConnectionInfo(
-            connection_id="conn-123",
-            user_id=uuid4(),
-            tenant_id=uuid4(),
-        )
-        message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
-            payload={"content": "Hello"},
-            room_id="room-1",
-        )
-
-        await handlers[MessageType.CHAT_MESSAGE](message, connection)
-
-        mock_manager.send_to_room.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_handle_chat_message_to_user(self) -> None:
-        """Test chat message handler sends direct message."""
-        from app.api.v1.endpoints.websocket import _register_default_handlers
-        from app.domain.ports.websocket import MessageType, WebSocketMessage
-        from app.infrastructure.websocket import ConnectionInfo
-
-        mock_manager = MagicMock()
-        mock_manager.send_to_user = AsyncMock()
-        mock_manager.send_to_connection = AsyncMock()
-
-        handlers = {}
-        mock_manager.register_handler = lambda t, h: handlers.update({t: h})
-
-        _register_default_handlers(mock_manager)
-
-        recipient_id = uuid4()
-        connection = ConnectionInfo(
-            connection_id="conn-123",
-            user_id=uuid4(),
-            tenant_id=uuid4(),
-        )
-        message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
-            payload={"content": "Hello"},
-            recipient_id=recipient_id,
-            message_id=uuid4(),
-        )
-
-        await handlers[MessageType.CHAT_MESSAGE](message, connection)
-
-        mock_manager.send_to_user.assert_called_once()
-        mock_manager.send_to_connection.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_handle_typing_to_room(self) -> None:
-        """Test typing indicator to room."""
-        from app.api.v1.endpoints.websocket import _register_default_handlers
-        from app.domain.ports.websocket import MessageType, WebSocketMessage
-        from app.infrastructure.websocket import ConnectionInfo
-
-        mock_manager = MagicMock()
-        mock_manager.send_to_room = AsyncMock()
-
-        handlers = {}
-        mock_manager.register_handler = lambda t, h: handlers.update({t: h})
-
-        _register_default_handlers(mock_manager)
-
-        connection = ConnectionInfo(
-            connection_id="conn-123",
-            user_id=uuid4(),
-            tenant_id=uuid4(),
-        )
-        message = WebSocketMessage(
-            type=MessageType.CHAT_TYPING,
-            payload={"is_typing": True},
-            room_id="room-1",
-        )
-
-        await handlers[MessageType.CHAT_TYPING](message, connection)
-
-        mock_manager.send_to_room.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_handle_typing_to_user(self) -> None:
-        """Test typing indicator to direct message recipient."""
-        from app.api.v1.endpoints.websocket import _register_default_handlers
-        from app.domain.ports.websocket import MessageType, WebSocketMessage
-        from app.infrastructure.websocket import ConnectionInfo
-
-        mock_manager = MagicMock()
-        mock_manager.send_to_user = AsyncMock()
-
-        handlers = {}
-        mock_manager.register_handler = lambda t, h: handlers.update({t: h})
-
-        _register_default_handlers(mock_manager)
-
-        recipient_id = uuid4()
-        connection = ConnectionInfo(
-            connection_id="conn-123",
-            user_id=uuid4(),
-            tenant_id=uuid4(),
-        )
-        message = WebSocketMessage(
-            type=MessageType.CHAT_TYPING,
-            payload={"is_typing": True},
-            recipient_id=recipient_id,
-        )
-
-        await handlers[MessageType.CHAT_TYPING](message, connection)
-
-        mock_manager.send_to_user.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_handle_read_receipt(self) -> None:
-        """Test read receipt handler."""
-        from app.api.v1.endpoints.websocket import _register_default_handlers
-        from app.domain.ports.websocket import MessageType, WebSocketMessage
-        from app.infrastructure.websocket import ConnectionInfo
-
-        mock_manager = MagicMock()
-        mock_manager.send_to_user = AsyncMock()
-
-        handlers = {}
-        mock_manager.register_handler = lambda t, h: handlers.update({t: h})
-
-        _register_default_handlers(mock_manager)
-
-        sender_id = uuid4()
-        connection = ConnectionInfo(
-            connection_id="conn-123",
-            user_id=uuid4(),
-            tenant_id=uuid4(),
-        )
-        message = WebSocketMessage(
-            type=MessageType.CHAT_READ,
-            payload={"message_ids": ["msg-1", "msg-2"]},
-            sender_id=sender_id,
-        )
-
-        await handlers[MessageType.CHAT_READ](message, connection)
-
-        mock_manager.send_to_user.assert_called_once_with(
-            sender_id,
-            mock_manager.send_to_user.call_args[0][1],
-        )
-
 
 class TestWebSocketMessage:
     """Tests for WebSocketMessage dataclass."""
@@ -346,13 +184,13 @@ class TestWebSocketMessage:
         from app.domain.ports.websocket import WebSocketMessage, MessageType
 
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={"content": "Hello"},
             room_id="room-1",
         )
         data = message.to_dict()
 
-        assert data["type"] == "chat_message"
+        assert data["type"] == "notification"
         assert data["payload"] == {"content": "Hello"}
         assert data["room_id"] == "room-1"
 
@@ -362,7 +200,7 @@ class TestWebSocketMessage:
 
         recipient = uuid4()
         message = WebSocketMessage(
-            type=MessageType.CHAT_MESSAGE,
+            type=MessageType.NOTIFICATION,
             payload={},
             recipient_id=recipient,
         )
@@ -429,12 +267,12 @@ class TestMessageType:
 
         assert MessageType.PING.value == "ping"
         assert MessageType.PONG.value == "pong"
-        assert MessageType.CHAT_MESSAGE.value == "chat_message"
         assert MessageType.NOTIFICATION.value == "notification"
+        assert MessageType.BROADCAST.value == "broadcast"
 
     def test_message_type_from_string(self) -> None:
         """Test creating MessageType from string."""
         from app.domain.ports.websocket import MessageType
 
         assert MessageType("ping") == MessageType.PING
-        assert MessageType("chat_message") == MessageType.CHAT_MESSAGE
+        assert MessageType("notification") == MessageType.NOTIFICATION
