@@ -30,12 +30,6 @@ class MessageType(str, Enum):
     NOTIFICATION = "notification"
     NOTIFICATION_READ = "notification_read"
     
-    # Chat messages
-    CHAT_MESSAGE = "chat_message"
-    CHAT_TYPING = "chat_typing"
-    CHAT_READ = "chat_read"
-    CHAT_DELIVERED = "chat_delivered"
-    
     # Presence messages
     PRESENCE_ONLINE = "presence_online"
     PRESENCE_OFFLINE = "presence_offline"

@@ -4,36 +4,22 @@ This document describes the Full-Text Search capabilities available in the FastA
 
 ## Overview
 
-The boilerplate provides a pluggable search architecture with two backend options:
+The boilerplate uses **PostgreSQL Full-Text Search** (FTS), which provides powerful search capabilities without additional infrastructure.
 
-| Backend | Best For | Features |
-| --- | --- | --- |
-| PostgreSQL FTS | Simple deployments, existing PostgreSQL | Built-in, no extra infrastructure, GIN indexes |
-| Elasticsearch | High volume, complex queries | Distributed, aggregations, fuzzy matching |
+| Feature | Description |
+| --- | --- |
+| Built-in | No extra services required |
+| GIN Indexes | Fast indexed searches |
+| Multi-language | Configurable stemming and stop words |
+| Ranking | Relevance scoring |
 
 ## Quick Start
-
-### PostgreSQL FTS (Default)
 
 No additional setup required. PostgreSQL's built-in full-text search is used by default.
 
 ```bash
-# Configuration in .env
-SEARCH_BACKEND=postgres
+# Configuration in .env (optional)
 SEARCH_PG_LANGUAGE=english
-```
-
-### Elasticsearch (Optional)
-
-```bash
-# Start Elasticsearch
-docker-compose -f docker-compose.yml up -d elasticsearch
-
-# Configuration in .env
-SEARCH_BACKEND=elasticsearch
-ELASTICSEARCH_URL=http://localhost:9200
-ELASTICSEARCH_USERNAME=elastic
-ELASTICSEARCH_PASSWORD=changeme
 ```
 
 ## API Reference

@@ -3,14 +3,11 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpBackend from 'i18next-http-backend';
 
-// Supported languages (Active: EN, ES, PT)
+// Supported languages
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
   { code: 'es', name: 'Español', flag: '🇪🇸' },
   { code: 'pt', name: 'Português', flag: '🇧🇷' },
-  // Disabled languages (translations available but not active):
-  // { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  // { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
 ] as const;
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]['code'];

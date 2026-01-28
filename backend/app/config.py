@@ -133,12 +133,12 @@ class Settings(BaseSettings):
     # ===========================================
     # Internationalization (i18n)
     # ===========================================
-    DEFAULT_LOCALE: Literal["en", "es", "pt", "fr", "de"] = Field(
+    DEFAULT_LOCALE: Literal["en", "es", "pt"] = Field(
         default="en",
         description="Default locale for the application"
     )
     SUPPORTED_LOCALES: list[str] = Field(
-        default=["en", "es", "pt", "fr", "de"],
+        default=["en", "es", "pt"],
         description="List of supported locales"
     )
 
