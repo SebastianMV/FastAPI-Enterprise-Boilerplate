@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,16 +24,16 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
     """
     SQLAlchemy implementation of role repository.
     """
-    
+
     def __init__(self, session: AsyncSession) -> None:
         """
         Initialize repository.
-        
+
         Args:
             session: Async database session
         """
         self._session = session
-    
+
     async def get_by_id(self, role_id: UUID) -> Role | None:
         """Get role by ID."""
         stmt = select(RoleModel).where(
@@ -42,92 +42,93 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._to_entity(model) if model else None
-    
+
     async def get_by_name(self, name: str, tenant_id: UUID) -> Role | None:
         """Get role by name within a tenant."""
         stmt = select(RoleModel).where(
             RoleModel.name == name,
             RoleModel.tenant_id == tenant_id,
-            RoleModel.is_deleted == False,
+            RoleModel.is_deleted.is_(False),
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._to_entity(model) if model else None
-    
+
     async def create(self, role: Role) -> Role:
         """Create a new role."""
         model = self._to_model(role)
-        
+
         try:
             self._session.add(model)
             await self._session.flush()
             await self._session.refresh(model)
             return self._to_entity(model)
-        
-        except IntegrityError as e:
+
+        except IntegrityError:
             await self._session.rollback()
             raise ConflictError(
-                message=f"Role with name '{role.name}' already exists",
+                message="A role with this name already exists",
                 conflicting_field="name",
             )
-    
+
     async def update(self, role: Role) -> Role:
         """Update existing role."""
         stmt = select(RoleModel).where(
             RoleModel.id == role.id,
-            RoleModel.is_deleted == False,
+            RoleModel.is_deleted.is_(False),
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         if not model:
             raise EntityNotFoundError(
                 entity_type="Role",
                 entity_id=str(role.id),
             )
-        
+
         # Update fields
         model.name = role.name
         model.description = role.description
         model.permissions = role.permission_strings
         model.updated_at = role.updated_at
         model.updated_by = role.updated_by
-        
+
         await self._session.flush()
         await self._session.refresh(model)
-        
+
         return self._to_entity(model)
-    
+
     async def delete(self, role_id: UUID) -> None:
         """Soft delete role by ID."""
         stmt = select(RoleModel).where(
             RoleModel.id == role_id,
-            RoleModel.is_deleted == False,
+            RoleModel.is_deleted.is_(False),
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         if not model:
             raise EntityNotFoundError(
                 entity_type="Role",
                 entity_id=str(role_id),
             )
-        
+
         if model.is_system:
             raise ConflictError(
                 message="Cannot delete system role",
                 conflicting_field="is_system",
             )
-        
-        from datetime import datetime, UTC
+
+        from datetime import UTC, datetime
+
         model.is_deleted = True
         model.deleted_at = datetime.now(UTC)
-        
+
         await self._session.flush()
-    
+
     async def list(
         self,
         *,
@@ -140,55 +141,53 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
             select(RoleModel)
             .where(
                 RoleModel.tenant_id == tenant_id,
-                RoleModel.is_deleted == False,
+                RoleModel.is_deleted.is_(False),
             )
             .offset(skip)
             .limit(limit)
             .order_by(RoleModel.name)
         )
-        
+
         result = await self._session.execute(stmt)
         models = result.scalars().all()
-        
+
         return [self._to_entity(m) for m in models]
-    
+
     async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:
         """Get multiple roles by IDs."""
         if not role_ids:
             return []
-        
+
         stmt = select(RoleModel).where(
             RoleModel.id.in_(role_ids),
-            RoleModel.is_deleted == False,
+            RoleModel.is_deleted.is_(False),
         )
-        
+
         result = await self._session.execute(stmt)
         models = result.scalars().all()
-        
+
         return [self._to_entity(m) for m in models]
-    
+
     async def get_user_roles(self, user_id: UUID) -> list[Role]:
         """Get all roles assigned to a user."""
         # First get user's role IDs
         user_stmt = select(UserModel.roles).where(
             UserModel.id == user_id,
-            UserModel.is_deleted == False,
+            UserModel.is_deleted.is_(False),
         )
-        
+
         result = await self._session.execute(user_stmt)
         role_ids = result.scalar_one_or_none()
-        
+
         if not role_ids:
             return []
-        
+
         return await self.list_by_ids(role_ids)
-    
+
     def _to_entity(self, model: RoleModel) -> Role:
         """Convert SQLAlchemy model to domain entity."""
-        permissions = [
-            Permission.from_string(p) for p in (model.permissions or [])
-        ]
-        
+        permissions = [Permission.from_string(p) for p in (model.permissions or [])]
+
         return Role(
             id=model.id,
             tenant_id=model.tenant_id,
@@ -201,7 +200,7 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
             created_by=model.created_by,
             updated_by=model.updated_by,
         )
-    
+
     def _to_model(self, entity: Role) -> RoleModel:
         """Convert domain entity to SQLAlchemy model."""
         return RoleModel(

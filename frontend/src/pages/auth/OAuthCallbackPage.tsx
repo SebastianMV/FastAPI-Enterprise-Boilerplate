@@ -3,14 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import api from '@/services/api';
+import api, { OAUTH_PROVIDERS } from '@/services/api';
 
 interface OAuthCallbackResult {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
-  user_id: string;
   is_new_user: boolean;
 }
 
@@ -23,24 +18,25 @@ export default function OAuthCallbackPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setTokens, fetchUser } = useAuthStore();
+  const { fetchUser } = useAuthStore();
   
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState(t('oauth.processing'));
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    
     const handleCallback = async () => {
       // Get params from URL
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const error = searchParams.get('error');
-      const errorDescription = searchParams.get('error_description');
 
-      // Handle OAuth error
+      // Handle OAuth error (don't trust error_description from URL)
       if (error) {
         setStatus('error');
-        setMessage(errorDescription || t('oauth.authError', { error }));
+        setMessage(t('oauth.authFailedGeneric'));
         return;
       }
 
@@ -55,7 +51,8 @@ export default function OAuthCallbackPage() {
         // Extract provider from state (format: provider_randomstring)
         const provider = state.split('_')[0];
         
-        if (!provider) {
+        // Validate provider against known allowlist to prevent path traversal
+        if (!provider || !OAUTH_PROVIDERS.map(p => p.id).includes(provider)) {
           throw new Error(t('oauth.invalidState'));
         }
 
@@ -67,12 +64,10 @@ export default function OAuthCallbackPage() {
           }
         );
 
-        const { access_token, refresh_token, is_new_user } = response.data;
+        const { is_new_user } = response.data;
 
-        // Store tokens
-        setTokens(access_token, refresh_token);
-        
-        // Fetch user data
+        // Tokens are set as HttpOnly cookies by the backend.
+        // Fetch user profile to confirm authentication.
         await fetchUser();
 
         setIsNewUser(is_new_user);
@@ -84,24 +79,25 @@ export default function OAuthCallbackPage() {
         );
 
         // Redirect after short delay
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           navigate(is_new_user ? '/profile' : '/dashboard', { replace: true });
         }, 1500);
 
       } catch (error) {
-        console.error('OAuth callback error:', error);
-        setStatus('error');
-        
-        if (error instanceof Error) {
-          setMessage(error.message);
-        } else {
-          setMessage(t('oauth.authFailedGeneric'));
+        if (import.meta.env.DEV) {
+          console.error('OAuth callback failed');
         }
+        setStatus('error');
+        setMessage(t('oauth.authFailedGeneric'));
       }
     };
 
     handleCallback();
-  }, [searchParams, navigate, setTokens, fetchUser]);
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [searchParams, navigate, fetchUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">

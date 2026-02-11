@@ -7,10 +7,8 @@ Unit tests for APIKey domain entity.
 Tests for API key functionality including scopes and usage tracking.
 """
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
-
-import pytest
 
 from app.domain.entities.api_key import APIKey
 
@@ -22,7 +20,7 @@ class TestAPIKey:
         """Test creating basic API key."""
         tenant_id = uuid4()
         user_id = uuid4()
-        
+
         api_key = APIKey(
             tenant_id=tenant_id,
             user_id=user_id,
@@ -30,7 +28,7 @@ class TestAPIKey:
             prefix="test1234",
             key_hash="hashed_key_value",
         )
-        
+
         assert api_key.tenant_id == tenant_id
         assert api_key.user_id == user_id
         assert api_key.name == "Test API Key"
@@ -39,7 +37,7 @@ class TestAPIKey:
     def test_default_values(self) -> None:
         """Test default values."""
         api_key = APIKey(tenant_id=uuid4())
-        
+
         assert api_key.name == ""
         assert api_key.prefix == ""
         assert api_key.key_hash == ""
@@ -58,7 +56,7 @@ class TestAPIKey:
             tenant_id=uuid4(),
             scopes=["users:read", "users:write", "roles:read"],
         )
-        
+
         assert len(api_key.scopes) == 3
         assert "users:read" in api_key.scopes
 
@@ -69,7 +67,7 @@ class TestAPIKey:
             tenant_id=uuid4(),
             expires_at=expires,
         )
-        
+
         assert api_key.expires_at == expires
 
 
@@ -79,7 +77,7 @@ class TestAPIKeyIsExpired:
     def test_not_expired_when_no_expiration(self) -> None:
         """Test key is not expired when no expiration set."""
         api_key = APIKey(tenant_id=uuid4(), expires_at=None)
-        
+
         assert api_key.is_expired is False
 
     def test_not_expired_when_future_expiration(self) -> None:
@@ -88,7 +86,7 @@ class TestAPIKeyIsExpired:
             tenant_id=uuid4(),
             expires_at=datetime.now(UTC) + timedelta(days=1),
         )
-        
+
         assert api_key.is_expired is False
 
     def test_expired_when_past_expiration(self) -> None:
@@ -97,7 +95,7 @@ class TestAPIKeyIsExpired:
             tenant_id=uuid4(),
             expires_at=datetime.now(UTC) - timedelta(days=1),
         )
-        
+
         assert api_key.is_expired is True
 
 
@@ -111,7 +109,7 @@ class TestAPIKeyIsValid:
             is_active=True,
             expires_at=datetime.now(UTC) + timedelta(days=1),
         )
-        
+
         assert api_key.is_valid is True
 
     def test_invalid_when_inactive(self) -> None:
@@ -120,7 +118,7 @@ class TestAPIKeyIsValid:
             tenant_id=uuid4(),
             is_active=False,
         )
-        
+
         assert api_key.is_valid is False
 
     def test_invalid_when_expired(self) -> None:
@@ -130,7 +128,7 @@ class TestAPIKeyIsValid:
             is_active=True,
             expires_at=datetime.now(UTC) - timedelta(days=1),
         )
-        
+
         assert api_key.is_valid is False
 
     def test_invalid_when_inactive_and_expired(self) -> None:
@@ -140,7 +138,7 @@ class TestAPIKeyIsValid:
             is_active=False,
             expires_at=datetime.now(UTC) - timedelta(days=1),
         )
-        
+
         assert api_key.is_valid is False
 
 
@@ -150,38 +148,38 @@ class TestAPIKeyRecordUsage:
     def test_record_usage_updates_timestamp(self) -> None:
         """Test record_usage updates last_used_at."""
         api_key = APIKey(tenant_id=uuid4())
-        
+
         before = datetime.now(UTC)
         api_key.record_usage()
         after = datetime.now(UTC)
-        
+
         assert api_key.last_used_at is not None
         assert before <= api_key.last_used_at <= after
 
     def test_record_usage_stores_ip(self) -> None:
         """Test record_usage stores IP address."""
         api_key = APIKey(tenant_id=uuid4())
-        
+
         api_key.record_usage(ip_address="192.168.1.100")
-        
+
         assert api_key.last_used_ip == "192.168.1.100"
 
     def test_record_usage_increments_count(self) -> None:
         """Test record_usage increments usage count."""
         api_key = APIKey(tenant_id=uuid4())
-        
+
         api_key.record_usage()
         api_key.record_usage()
         api_key.record_usage()
-        
+
         assert api_key.usage_count == 3
 
     def test_record_usage_without_ip(self) -> None:
         """Test record_usage without IP address."""
         api_key = APIKey(tenant_id=uuid4())
-        
+
         api_key.record_usage()
-        
+
         assert api_key.last_used_ip is None
         assert api_key.usage_count == 1
 
@@ -195,7 +193,7 @@ class TestAPIKeyHasScope:
             tenant_id=uuid4(),
             scopes=["users:read", "users:write"],
         )
-        
+
         assert api_key.has_scope("users:read") is True
         assert api_key.has_scope("users:delete") is False
 
@@ -205,7 +203,7 @@ class TestAPIKeyHasScope:
             tenant_id=uuid4(),
             scopes=["*"],
         )
-        
+
         assert api_key.has_scope("users:read") is True
         assert api_key.has_scope("roles:write") is True
         assert api_key.has_scope("anything:whatsoever") is True
@@ -216,7 +214,7 @@ class TestAPIKeyHasScope:
             tenant_id=uuid4(),
             scopes=["users:*"],
         )
-        
+
         assert api_key.has_scope("users:read") is True
         assert api_key.has_scope("users:write") is True
         assert api_key.has_scope("users:delete") is True
@@ -228,7 +226,7 @@ class TestAPIKeyHasScope:
             tenant_id=uuid4(),
             scopes=["roles:read"],
         )
-        
+
         assert api_key.has_scope("users:read") is False
 
     def test_empty_scopes(self) -> None:
@@ -237,7 +235,7 @@ class TestAPIKeyHasScope:
             tenant_id=uuid4(),
             scopes=[],
         )
-        
+
         assert api_key.has_scope("users:read") is False
 
     def test_single_part_scope(self) -> None:
@@ -246,7 +244,7 @@ class TestAPIKeyHasScope:
             tenant_id=uuid4(),
             scopes=["admin"],
         )
-        
+
         assert api_key.has_scope("admin") is True
         assert api_key.has_scope("user") is False
 
@@ -260,9 +258,9 @@ class TestAPIKeyHasAnyScope:
             tenant_id=uuid4(),
             scopes=["users:read"],
         )
-        
+
         result = api_key.has_any_scope(["users:read", "users:write"])
-        
+
         assert result is True
 
     def test_has_any_scope_no_match(self) -> None:
@@ -271,9 +269,9 @@ class TestAPIKeyHasAnyScope:
             tenant_id=uuid4(),
             scopes=["roles:read"],
         )
-        
+
         result = api_key.has_any_scope(["users:read", "users:write"])
-        
+
         assert result is False
 
     def test_has_any_scope_empty_list(self) -> None:
@@ -282,9 +280,9 @@ class TestAPIKeyHasAnyScope:
             tenant_id=uuid4(),
             scopes=["users:read"],
         )
-        
+
         result = api_key.has_any_scope([])
-        
+
         assert result is False
 
 
@@ -297,9 +295,9 @@ class TestAPIKeyHasAllScopes:
             tenant_id=uuid4(),
             scopes=["users:read", "users:write", "roles:read"],
         )
-        
+
         result = api_key.has_all_scopes(["users:read", "users:write"])
-        
+
         assert result is True
 
     def test_has_all_scopes_partial_match(self) -> None:
@@ -308,9 +306,9 @@ class TestAPIKeyHasAllScopes:
             tenant_id=uuid4(),
             scopes=["users:read"],
         )
-        
+
         result = api_key.has_all_scopes(["users:read", "users:write"])
-        
+
         assert result is False
 
     def test_has_all_scopes_empty_list(self) -> None:
@@ -319,9 +317,9 @@ class TestAPIKeyHasAllScopes:
             tenant_id=uuid4(),
             scopes=["users:read"],
         )
-        
+
         result = api_key.has_all_scopes([])
-        
+
         assert result is True
 
     def test_has_all_scopes_with_wildcard(self) -> None:
@@ -330,9 +328,9 @@ class TestAPIKeyHasAllScopes:
             tenant_id=uuid4(),
             scopes=["*"],
         )
-        
+
         result = api_key.has_all_scopes(["users:read", "roles:write", "admin"])
-        
+
         assert result is True
 
 
@@ -345,9 +343,9 @@ class TestAPIKeyRevoke:
             tenant_id=uuid4(),
             is_active=True,
         )
-        
+
         api_key.revoke()
-        
+
         assert api_key.is_active is False
 
     def test_revoke_makes_key_invalid(self) -> None:
@@ -356,11 +354,11 @@ class TestAPIKeyRevoke:
             tenant_id=uuid4(),
             is_active=True,
         )
-        
+
         assert api_key.is_valid is True
-        
+
         api_key.revoke()
-        
+
         assert api_key.is_valid is False
 
     def test_revoke_already_revoked(self) -> None:
@@ -369,8 +367,8 @@ class TestAPIKeyRevoke:
             tenant_id=uuid4(),
             is_active=False,
         )
-        
+
         # Should not raise error
         api_key.revoke()
-        
+
         assert api_key.is_active is False

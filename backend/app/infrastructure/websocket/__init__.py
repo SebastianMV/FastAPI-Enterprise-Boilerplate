@@ -4,9 +4,10 @@
 """
 WebSocket infrastructure module.
 
-Pluggable WebSocket management with support for:
-- Memory backend (development, single instance)
-- Redis backend (production, horizontal scaling)
+Simple in-memory WebSocket management for:
+- Real-time notifications
+- Presence tracking (online/offline)
+- PING/PONG keepalive
 """
 
 from app.domain.ports.websocket import (
@@ -18,19 +19,6 @@ from app.domain.ports.websocket import (
 )
 from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
 
-# Lazy import for Redis manager (optional dependency)
-_redis_manager: type | None = None
-
-
-def get_redis_manager():
-    """Lazy load Redis manager."""
-    global _redis_manager
-    if _redis_manager is None:
-        from app.infrastructure.websocket.redis_manager import RedisWebSocketManager
-        _redis_manager = RedisWebSocketManager
-    return _redis_manager
-
-
 __all__ = [
     "ConnectionInfo",
     "MessageHandler",
@@ -38,5 +26,4 @@ __all__ = [
     "WebSocketMessage",
     "WebSocketPort",
     "MemoryWebSocketManager",
-    "get_redis_manager",
 ]

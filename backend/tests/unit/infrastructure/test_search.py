@@ -10,16 +10,16 @@ Tests for search module initialization and data structures.
 import pytest
 
 from app.domain.ports.search import (
+    BulkIndexResult,
+    IndexDocument,
+    SearchFilter,
+    SearchHighlight,
+    SearchHit,
+    SearchIndex,
     SearchQuery,
     SearchResult,
-    SearchHit,
-    SearchFilter,
     SearchSort,
-    SearchHighlight,
-    SearchIndex,
     SortOrder,
-    IndexDocument,
-    BulkIndexResult,
 )
 
 
@@ -29,7 +29,7 @@ class TestSearchQuery:
     def test_default_values(self) -> None:
         """Test SearchQuery default values."""
         query = SearchQuery(query="test", index=SearchIndex.USERS)
-        
+
         assert query.query == "test"
         assert query.index == SearchIndex.USERS
         assert query.page == 1
@@ -43,7 +43,7 @@ class TestSearchQuery:
             page=3,
             page_size=50,
         )
-        
+
         assert query.page == 3
         assert query.page_size == 50
 
@@ -54,7 +54,7 @@ class TestSearchQuery:
             index=SearchIndex.USERS,
             fuzzy=True,
         )
-        
+
         assert query.fuzzy is True
 
 
@@ -69,7 +69,7 @@ class TestSearchResult:
             page=1,
             page_size=20,
         )
-        
+
         assert result.hits == []
         assert result.total == 0
         assert result.has_next is False
@@ -80,14 +80,14 @@ class TestSearchResult:
             SearchHit(id="1", score=1.0, source={"name": "Test"}),
             SearchHit(id="2", score=0.9, source={"name": "Test 2"}),
         ]
-        
+
         result = SearchResult(
             hits=hits,
             total=2,
             page=1,
             page_size=20,
         )
-        
+
         assert len(result.hits) == 2
         assert result.total == 2
 
@@ -99,7 +99,7 @@ class TestSearchResult:
             page=1,
             page_size=20,
         )
-        
+
         assert result.has_next is True
 
     def test_has_next_false(self) -> None:
@@ -110,7 +110,7 @@ class TestSearchResult:
             page=1,
             page_size=20,
         )
-        
+
         assert result.has_next is False
 
     def test_has_previous_false_on_first_page(self) -> None:
@@ -121,7 +121,7 @@ class TestSearchResult:
             page=1,
             page_size=20,
         )
-        
+
         assert result.has_previous is False
 
     def test_has_previous_true_on_later_page(self) -> None:
@@ -132,7 +132,7 @@ class TestSearchResult:
             page=2,
             page_size=20,
         )
-        
+
         assert result.has_previous is True
 
     def test_total_pages_calculation(self) -> None:
@@ -143,7 +143,7 @@ class TestSearchResult:
             page=1,
             page_size=20,
         )
-        
+
         assert result.total_pages == 3  # 45/20 = 3 pages
 
 
@@ -157,7 +157,7 @@ class TestSearchHit:
             score=0.95,
             source={"name": "Test User"},
         )
-        
+
         assert hit.id == "123"
         assert hit.score == 0.95
         assert hit.source["name"] == "Test User"
@@ -170,7 +170,7 @@ class TestSearchHit:
             source={"name": "Test User"},
             highlights={"name": ["<mark>Test</mark> User"]},
         )
-        
+
         assert hit.highlights is not None
         assert "name" in hit.highlights
 
@@ -185,7 +185,7 @@ class TestSearchFilter:
             value="active",
             operator="eq",
         )
-        
+
         assert filter.field == "status"
         assert filter.value == "active"
         assert filter.operator == "eq"
@@ -193,7 +193,7 @@ class TestSearchFilter:
     def test_default_operator(self) -> None:
         """Test default operator is eq."""
         filter = SearchFilter(field="status", value="active")
-        
+
         assert filter.operator == "eq"
 
 
@@ -206,14 +206,14 @@ class TestSearchSort:
             field="name",
             order=SortOrder.ASC,
         )
-        
+
         assert sort.field == "name"
         assert sort.order == SortOrder.ASC
 
     def test_default_order_is_desc(self) -> None:
         """Test default order is descending."""
         sort = SearchSort(field="created_at")
-        
+
         assert sort.order == SortOrder.DESC
 
 
@@ -245,7 +245,7 @@ class TestIndexDocument:
             index=SearchIndex.USERS,
             data={"name": "Test User", "email": "test@example.com"},
         )
-        
+
         assert doc.id == "123"
         assert doc.index == SearchIndex.USERS
         assert doc.data["name"] == "Test User"
@@ -261,7 +261,7 @@ class TestBulkIndexResult:
             failed=0,
             errors=[],
         )
-        
+
         assert result.indexed == 100
         assert result.failed == 0
         assert result.errors == []
@@ -273,7 +273,7 @@ class TestBulkIndexResult:
             failed=5,
             errors=["Document 1 failed", "Document 2 failed"],
         )
-        
+
         assert result.indexed == 95
         assert result.failed == 5
         assert len(result.errors) == 2
@@ -285,7 +285,7 @@ class TestSearchHighlight:
     def test_default_values(self) -> None:
         """Test default highlight values."""
         highlight = SearchHighlight(fields=["name", "content"])
-        
+
         assert highlight.fields == ["name", "content"]
         assert highlight.pre_tag == "<mark>"
         assert highlight.post_tag == "</mark>"
@@ -299,7 +299,7 @@ class TestSearchHighlight:
             pre_tag="<em>",
             post_tag="</em>",
         )
-        
+
         assert highlight.pre_tag == "<em>"
         assert highlight.post_tag == "</em>"
 
@@ -310,13 +310,13 @@ class TestSearchModule:
     def test_postgres_search_export(self) -> None:
         """Test PostgresFullTextSearch is exported."""
         from app.infrastructure.search import PostgresFullTextSearch
-        
+
         assert PostgresFullTextSearch is not None
 
     def test_get_postgres_search_export(self) -> None:
         """Test get_postgres_search is exported."""
         from app.infrastructure.search import get_postgres_search
-        
+
         assert callable(get_postgres_search)
 
 
@@ -327,14 +327,12 @@ class TestGetSearchBackend:
     async def test_postgres_backend_with_session(self) -> None:
         """Test postgres backend returns search port."""
         from unittest.mock import MagicMock
-        from app.infrastructure.search import get_search_backend
+
         from app.domain.ports.search import SearchPort
-        
+        from app.infrastructure.search import get_search_backend
+
         mock_session = MagicMock()
-        
-        result = await get_search_backend(
-            session=mock_session,
-            language="spanish"
-        )
-        
+
+        result = await get_search_backend(session=mock_session, language="spanish")
+
         assert isinstance(result, SearchPort)

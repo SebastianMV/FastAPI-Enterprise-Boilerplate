@@ -59,17 +59,10 @@ export default function RegisterPage() {
       setIsSuccess(true);
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data?: { detail?: { message?: string } | string } } };
-        const detail = axiosError.response?.data?.detail;
-        if (typeof detail === 'object' && detail?.message) {
-          setErrorMessage(detail.message);
-        } else if (typeof detail === 'string') {
-          setErrorMessage(detail);
-        } else {
-          setErrorMessage('Registration failed. Please try again.');
-        }
+        // Use generic error message — never expose backend detail to user
+        setErrorMessage(t('auth.registrationFailed'));
       } else {
-        setErrorMessage('Registration failed. Please try again.');
+        setErrorMessage(t('auth.registrationFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -110,7 +103,7 @@ export default function RegisterPage() {
           {/* Logo */}
           <div className="relative text-center mb-6">
             <div className="relative inline-flex items-center justify-center mb-6">
-              <img src="/logo.png" alt="Boilerplate" className="relative w-24 h-24 drop-shadow-lg" />
+              <img src="/logo.png" alt={t('common.brandLogoAlt')} className="relative w-24 h-24 drop-shadow-lg" />
             </div>
             <h1 className="text-3xl font-bold text-slate-900">
               {t('auth.createAccount')}
@@ -153,7 +146,7 @@ export default function RegisterPage() {
                 autoComplete="given-name"
                 autoFocus
                 className="input pl-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
-                placeholder="John"
+                placeholder={t('common.placeholderFirstName')}
                 {...register('first_name', {
                   required: t('validation.required'),
                   minLength: { value: 1, message: t('validation.required') },
@@ -181,7 +174,7 @@ export default function RegisterPage() {
                 type="text"
                 autoComplete="family-name"
                 className="input pl-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
-                placeholder="Doe"
+                placeholder={t('common.placeholderLastName')}
                 {...register('last_name', {
                   required: t('validation.required'),
                   minLength: { value: 1, message: t('validation.required') },
@@ -211,7 +204,7 @@ export default function RegisterPage() {
               type="email"
               autoComplete="email"
               className="input pl-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
-              placeholder="you@example.com"
+              placeholder={t('common.placeholderEmail')}
               {...register('email', {
                 required: t('validation.required'),
                 pattern: {
@@ -251,7 +244,7 @@ export default function RegisterPage() {
                   message: t('validation.passwordMin', { min: 8 }),
                 },
                 pattern: {
-                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
                   message: t('validation.passwordStrength'),
                 },
               })}
@@ -259,6 +252,7 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
               className="absolute inset-y-0 right-0 pr-3 flex items-center"
             >
               {showPassword ? (
@@ -300,6 +294,7 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
               className="absolute inset-y-0 right-0 pr-3 flex items-center"
             >
               {showConfirmPassword ? (
@@ -317,20 +312,23 @@ export default function RegisterPage() {
         {/* Password requirements */}
         <div className="p-3 bg-slate-50 rounded-lg">
           <p className="text-xs font-medium text-slate-600 mb-2">
-            Password requirements:
+            {t('auth.passwordRequirements')}
           </p>
           <ul className="text-xs text-slate-500 space-y-1">
             <li className={password?.length >= 8 ? 'text-green-600' : ''}>
-              • At least 8 characters
+              • {t('auth.passwordReqMinChars')}
             </li>
             <li className={password && /[A-Z]/.test(password) ? 'text-green-600' : ''}>
-              • One uppercase letter
+              • {t('auth.passwordReqUppercase')}
             </li>
             <li className={password && /[a-z]/.test(password) ? 'text-green-600' : ''}>
-              • One lowercase letter
+              • {t('auth.passwordReqLowercase')}
             </li>
             <li className={password && /\d/.test(password) ? 'text-green-600' : ''}>
-              • One number
+              • {t('auth.passwordReqNumber')}
+            </li>
+            <li className={password && /[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-600' : ''}>
+              • {t('auth.passwordReqSpecial')}
             </li>
           </ul>
         </div>

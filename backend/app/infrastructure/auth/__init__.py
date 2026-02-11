@@ -10,16 +10,14 @@ from app.infrastructure.auth.jwt_handler import (
     hash_password,
     verify_password,
 )
-
 from app.infrastructure.auth.oauth_providers import (
-    OAuthProviderBase,
-    GoogleOAuthProvider,
-    GitHubOAuthProvider,
-    MicrosoftOAuthProvider,
-    get_oauth_provider,
     OAUTH_PROVIDERS,
+    GitHubOAuthProvider,
+    GoogleOAuthProvider,
+    MicrosoftOAuthProvider,
+    OAuthProviderBase,
+    get_oauth_provider,
 )
-
 
 __all__ = [
     # JWT

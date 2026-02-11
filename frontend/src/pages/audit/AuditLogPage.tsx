@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { auditLogsService, type AuditLog, type AuditLogFilters } from '@/services/api';
 import {
   Shield,
-  Search,
   Filter,
   RefreshCw,
   Loader2,
@@ -62,7 +61,6 @@ export default function AuditLogPage() {
     skip: 0,
     limit: 25,
   });
-  const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -124,13 +122,13 @@ export default function AuditLogPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-500 mb-4">Failed to load audit logs</p>
+          <p className="text-red-500 mb-4">{t('audit.loadError')}</p>
           <button
             onClick={() => refetch()}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       </div>
@@ -146,7 +144,7 @@ export default function AuditLogPage() {
           {t('audit.title')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Security and compliance activity log
+          {t('audit.subtitle')}
         </p>
       </div>
 
@@ -154,16 +152,6 @@ export default function AuditLogPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         {/* Search and filters */}
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-72">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={t('audit.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`inline-flex items-center px-3 py-2 border rounded-md transition-colors ${
@@ -204,7 +192,7 @@ export default function AuditLogPage() {
                 <option value="">{t('audit.filter.allActions')}</option>
                 {actions?.map((action) => (
                   <option key={action} value={action}>
-                    {action.replace(/_/g, ' ')}
+                    {t(`audit.actions.${action}`, { defaultValue: action.replace(/_/g, ' ') })}
                   </option>
                 ))}
               </select>
@@ -222,7 +210,7 @@ export default function AuditLogPage() {
                 <option value="">{t('audit.filter.allTypes')}</option>
                 {resourceTypes?.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {t(`audit.resourceTypes.${type}`, { defaultValue: type })}
                   </option>
                 ))}
               </select>
@@ -309,21 +297,21 @@ export default function AuditLogPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionColor(log.action)}`}>
                           <ActionIcon className="h-3 w-3 mr-1" />
-                          {log.action.replace(/_/g, ' ')}
+                          {t(`audit.actions.${log.action}`, { defaultValue: log.action.replace(/_/g, ' ') })}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <User className="h-4 w-4 mr-2 text-gray-400" />
                           <span className="text-sm text-gray-900 dark:text-white">
-                            {log.actor_email || 'System'}
+                            {log.actor_email || t('audit.detailsModal.system')}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm">
                           <span className="text-gray-500 dark:text-gray-400">
-                            {log.resource_type}
+                            {t(`audit.resourceTypes.${log.resource_type}`, { defaultValue: log.resource_type })}
                           </span>
                           {log.resource_name && (
                             <span className="ml-2 text-gray-900 dark:text-white">
@@ -335,14 +323,14 @@ export default function AuditLogPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                           <Globe className="h-4 w-4 mr-2" />
-                          {log.actor_ip || 'N/A'}
+                          {log.actor_ip || t('common.na')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <button
                           onClick={() => viewLogDetails(log)}
                           className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                          title="View details"
+                          title={t('audit.viewDetails')}
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -402,65 +390,65 @@ export default function AuditLogPage() {
           setShowDetailModal(false);
           setSelectedLog(null);
         }}
-        title="Audit Log Details"
+        title={t('audit.detailsModal.title')}
       >
         {selectedLog && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">ID</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.id')}</label>
                 <p className="text-sm text-gray-900 dark:text-white font-mono">{selectedLog.id}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">Timestamp</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.timestamp')}</label>
                 <p className="text-sm text-gray-900 dark:text-white">{formatTimestamp(selectedLog.timestamp)}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">Action</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.action')}</label>
                 <p className="text-sm text-gray-900 dark:text-white">{selectedLog.action}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">Resource Type</label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.resource_type}</p>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.resourceType')}</label>
+                <p className="text-sm text-gray-900 dark:text-white">{t(`audit.resourceTypes.${selectedLog.resource_type}`, { defaultValue: selectedLog.resource_type })}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">Actor Email</label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.actor_email || 'System'}</p>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.actorEmail')}</label>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.actor_email || t('audit.detailsModal.system')}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">IP Address</label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.actor_ip || 'N/A'}</p>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.ipAddress')}</label>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.actor_ip || t('common.na')}</p>
               </div>
             </div>
 
             {selectedLog.resource_name && (
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">Resource Name</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.resourceName')}</label>
                 <p className="text-sm text-gray-900 dark:text-white">{selectedLog.resource_name}</p>
               </div>
             )}
 
             {selectedLog.reason && (
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">Reason</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.reason')}</label>
                 <p className="text-sm text-gray-900 dark:text-white">{selectedLog.reason}</p>
               </div>
             )}
 
             {selectedLog.actor_user_agent && (
               <div>
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">User Agent</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.userAgent')}</label>
                 <p className="text-sm text-gray-900 dark:text-white break-all">{selectedLog.actor_user_agent}</p>
               </div>
             )}
 
             {(selectedLog.old_value || selectedLog.new_value) && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Changes</h4>
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">{t('audit.detailsModal.changes')}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   {selectedLog.old_value && (
                     <div>
-                      <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">Before</label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.before')}</label>
                       <pre className="mt-1 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs overflow-auto max-h-40">
                         {JSON.stringify(selectedLog.old_value, null, 2)}
                       </pre>
@@ -468,7 +456,7 @@ export default function AuditLogPage() {
                   )}
                   {selectedLog.new_value && (
                     <div>
-                      <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">After</label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.after')}</label>
                       <pre className="mt-1 p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs overflow-auto max-h-40">
                         {JSON.stringify(selectedLog.new_value, null, 2)}
                       </pre>
@@ -480,7 +468,7 @@ export default function AuditLogPage() {
 
             {Object.keys(selectedLog.metadata).length > 0 && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">Metadata</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.metadata')}</label>
                 <pre className="mt-1 p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-40">
                   {JSON.stringify(selectedLog.metadata, null, 2)}
                 </pre>

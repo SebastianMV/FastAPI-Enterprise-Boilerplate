@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from datetime import datetime, timedelta, UTC
+
 import pytest
 
 from app.application.services.oauth_service import OAuthService

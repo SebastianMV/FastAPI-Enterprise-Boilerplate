@@ -7,53 +7,24 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Bell, Check, CheckCheck, X, Info, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 import { useNotificationsStore, type Notification } from '@/stores/notificationsStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { formatRelativeTime } from '@/utils/formatRelativeTime';
+import { notificationsService } from '@/services/api';
 
 /**
- * Format a timestamp as relative time (e.g., "5 minutes ago").
+ * Validate that an action URL is a safe relative path (not an external redirect).
  */
-function formatRelativeTime(timestamp: string): string {
-  try {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    if (diffInSeconds < 60) {
-      return 'Just now';
-    }
-    
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-    }
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    }
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) {
-      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-    }
-    
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    if (diffInWeeks < 4) {
-      return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
-    }
-    
-    const diffInMonths = Math.floor(diffInDays / 30);
-    if (diffInMonths < 12) {
-      return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
-    }
-    
-    const diffInYears = Math.floor(diffInDays / 365);
-    return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
-  } catch {
-    return 'Just now';
-  }
+function isSafeActionUrl(url: string): boolean {
+  // Only allow relative paths starting with /
+  if (!url.startsWith('/')) return false;
+  // Block protocol-relative URLs (//evil.com)
+  if (url.startsWith('//')) return false;
+  // Block URLs with protocol schemes
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url)) return false;
+  return true;
 }
 
 /**
@@ -76,18 +47,27 @@ interface NotificationItemProps {
   notification: Notification;
   onMarkAsRead: (id: string) => void;
   onClick?: () => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }
 
 /**
  * Single notification item in the dropdown.
  */
-function NotificationItem({ notification, onMarkAsRead, onClick }: NotificationItemProps) {
+function NotificationItem({ notification, onMarkAsRead, onClick, t }: NotificationItemProps) {
   return (
     <div
       className={`flex items-start gap-3 p-3 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 ${
         !notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
       }`}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
     >
       <div className="flex-shrink-0 mt-0.5">
         {getNotificationIcon(notification.type)}
@@ -102,17 +82,23 @@ function NotificationItem({ notification, onMarkAsRead, onClick }: NotificationI
           </p>
         )}
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-          {formatRelativeTime(notification.created_at)}
+          {formatRelativeTime(notification.created_at, {
+            justNow: t('notificationsDropdown.justNow'),
+            minutesAgo: (count) => t(count === 1 ? 'notificationsDropdown.minuteAgo' : 'notificationsDropdown.minutesAgo', { count }),
+            hoursAgo: (count) => t(count === 1 ? 'notificationsDropdown.hourAgo' : 'notificationsDropdown.hoursAgo', { count }),
+            daysAgo: (count) => t(count === 1 ? 'notificationsDropdown.dayAgo' : 'notificationsDropdown.daysAgo', { count }),
+          })}
         </p>
       </div>
       {!notification.read && (
         <button
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation();
+            try { await notificationsService.markAsRead(notification.id); } catch { /* non-critical */ }
             onMarkAsRead(notification.id);
           }}
           className="flex-shrink-0 p-1 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 rounded"
-          title="Mark as read"
+          title={t('notificationsDropdown.markAsRead')}
         >
           <Check className="w-4 h-4" />
         </button>
@@ -125,6 +111,7 @@ function NotificationItem({ notification, onMarkAsRead, onClick }: NotificationI
  * Notifications dropdown with bell icon and unread badge.
  */
 export default function NotificationsDropdown() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -145,15 +132,24 @@ export default function NotificationsDropdown() {
     onConnected: () => setConnected(true),
     onDisconnected: () => setConnected(false),
     onNotification: (payload) => {
-      // Add new notification from WebSocket
+      // Runtime payload validation (F-03)
+      if (typeof payload !== 'object' || payload === null) return;
+      
+      const id = typeof payload.id === 'string' ? payload.id : crypto.randomUUID();
+      const type = typeof payload.type === 'string' ? (payload.type as Notification['type']) : 'info';
+      const title = typeof payload.title === 'string' ? payload.title : t('notificationsDropdown.defaultTitle');
+      const message = typeof payload.message === 'string' ? payload.message : undefined;
+      const created_at = typeof payload.timestamp === 'string' ? payload.timestamp : new Date().toISOString();
+      const action_url = typeof payload.action_url === 'string' ? payload.action_url : undefined;
+      
       const notification: Notification = {
-        id: payload.id as string || crypto.randomUUID(),
-        type: (payload.type as Notification['type']) || 'info',
-        title: payload.title as string || 'Notification',
-        message: payload.message as string,
+        id,
+        type,
+        title,
+        message,
         read: false,
-        created_at: payload.timestamp as string || new Date().toISOString(),
-        action_url: payload.action_url as string,
+        created_at,
+        action_url,
       };
       addNotification(notification);
     },
@@ -172,11 +168,12 @@ export default function NotificationsDropdown() {
   }, []);
   
   // Handle notification click
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
+      try { await notificationsService.markAsRead(notification.id); } catch { /* non-critical */ }
       markAsRead(notification.id);
     }
-    if (notification.action_url) {
+    if (notification.action_url && isSafeActionUrl(notification.action_url)) {
       navigate(notification.action_url);
       setIsOpen(false);
     }
@@ -188,7 +185,8 @@ export default function NotificationsDropdown() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-        aria-label="Notifications"
+        aria-label={t('notificationsDropdown.title')}
+        aria-expanded={isOpen}
       >
         <Bell className="w-5 h-5" />
         
@@ -204,26 +202,26 @@ export default function NotificationsDropdown() {
           className={`absolute bottom-1 right-1 w-2 h-2 rounded-full border border-white dark:border-slate-800 ${
             isConnected ? 'bg-green-500' : 'bg-slate-400'
           }`}
-          title={isConnected ? 'Connected' : 'Disconnected'}
+          title={isConnected ? t('notificationsDropdown.connected') : t('notificationsDropdown.disconnected')}
         />
       </button>
       
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 max-h-[480px] bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
+        <div role="region" aria-live="polite" aria-label={t('notificationsDropdown.title')} className="absolute right-0 mt-2 w-80 max-h-[480px] bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              Notifications
+              {t('notificationsDropdown.title')}
             </h3>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
-                  onClick={markAllAsRead}
+                  onClick={async () => { try { await notificationsService.markAllAsRead(); } catch { /* non-critical */ } markAllAsRead(); }}
                   className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 flex items-center gap-1"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
-                  Mark all read
+                  {t('notificationsDropdown.markAllRead')}
                 </button>
               )}
               <button
@@ -241,10 +239,10 @@ export default function NotificationsDropdown() {
               <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
                 <Bell className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  No notifications yet
+                  {t('notificationsDropdown.noNotifications')}
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                  We'll notify you when something arrives
+                  {t('notificationsDropdown.emptyDescription')}
                 </p>
               </div>
             ) : (
@@ -254,6 +252,7 @@ export default function NotificationsDropdown() {
                   notification={notification}
                   onMarkAsRead={markAsRead}
                   onClick={() => handleNotificationClick(notification)}
+                  t={t}
                 />
               ))
             )}
@@ -269,7 +268,7 @@ export default function NotificationsDropdown() {
                 }}
                 className="w-full text-center text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 py-1"
               >
-                View all notifications
+                {t('notificationsDropdown.viewAll')}
               </button>
             </div>
           )}

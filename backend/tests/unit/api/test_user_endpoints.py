@@ -3,7 +3,7 @@
 
 """Tests for user endpoints module."""
 
-from datetime import datetime, timezone as tz
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -139,7 +139,7 @@ class TestUserResponseSchema:
     def test_user_response_creation(self) -> None:
         """Test user response creation."""
         user_id = uuid4()
-        now = datetime.now(tz.utc)
+        now = datetime.now(UTC)
         response = UserResponse(
             id=user_id,
             email="test@example.com",
@@ -157,7 +157,7 @@ class TestUserResponseSchema:
 
     def test_user_response_with_last_login(self) -> None:
         """Test user response with last login."""
-        now = datetime.now(tz.utc)
+        now = datetime.now(UTC)
         response = UserResponse(
             id=uuid4(),
             email="test@example.com",
@@ -180,7 +180,7 @@ class TestUserDetailResponseSchema:
         user_id = uuid4()
         tenant_id = uuid4()
         role_id = uuid4()
-        now = datetime.now(tz.utc)
+        now = datetime.now(UTC)
         response = UserDetailResponse(
             id=user_id,
             email="test@example.com",
@@ -199,7 +199,7 @@ class TestUserDetailResponseSchema:
 
     def test_user_detail_response_no_roles(self) -> None:
         """Test user detail response without roles."""
-        now = datetime.now(tz.utc)
+        now = datetime.now(UTC)
         response = UserDetailResponse(
             id=uuid4(),
             email="test@example.com",
@@ -219,7 +219,7 @@ class TestUserListResponseSchema:
 
     def test_user_list_response(self) -> None:
         """Test user list response."""
-        now = datetime.now(tz.utc)
+        now = datetime.now(UTC)
         items = [
             UserResponse(
                 id=uuid4(),
@@ -272,8 +272,8 @@ def create_mock_user(user_id=None, tenant_id=None):
     mock_user.avatar_url = None
     mock_user.is_active = True
     mock_user.is_superuser = False
-    mock_user.created_at = datetime.now(tz.utc)
-    mock_user.updated_at = datetime.now(tz.utc)
+    mock_user.created_at = datetime.now(UTC)
+    mock_user.updated_at = datetime.now(UTC)
     mock_user.last_login = None
     mock_user.roles = []
     return mock_user
@@ -289,7 +289,9 @@ class TestListUsersEndpoint:
 
         mock_user = create_mock_user()
 
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_class:
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.list.return_value = [mock_user]
             mock_repo.count.return_value = 1
@@ -321,7 +323,9 @@ class TestGetUserEndpoint:
         user_id = uuid4()
         mock_user = create_mock_user(user_id)
 
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_class:
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_user
             mock_repo_class.return_value = mock_repo
@@ -340,9 +344,12 @@ class TestGetUserEndpoint:
     async def test_get_user_not_found(self) -> None:
         """Test getting non-existent user."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.users import get_user
 
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_class:
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_class.return_value = mock_repo
@@ -390,12 +397,12 @@ class TestUserEdgeCases:
 
     def test_user_response_email_value_object(self) -> None:
         """Test user response handles email value object."""
-        now = datetime.now(tz.utc)
-        
+        now = datetime.now(UTC)
+
         # Mock email value object
         class MockEmail:
             value = "test@example.com"
-        
+
         # This tests the validator
         response = UserResponse(
             id=uuid4(),
@@ -411,7 +418,7 @@ class TestUserEdgeCases:
 
     def test_user_list_pagination_calculation(self) -> None:
         """Test pagination pages calculation."""
-        now = datetime.now(tz.utc)
+        now = datetime.now(UTC)
         # 45 items with page_size 20 = 3 pages
         response = UserListResponse(
             items=[],

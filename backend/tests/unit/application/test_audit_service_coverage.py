@@ -8,7 +8,7 @@ Tests the high-level audit logging service that provides
 convenience methods for common audit operations.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
@@ -85,7 +85,9 @@ class TestAuditServiceLog:
         assert created_log.actor_email == "admin@example.com"
 
     @pytest.mark.asyncio
-    async def test_log_minimal_params(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_minimal_params(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test log with only required parameters."""
         mock_repository.create.return_value = mock_audit_log
 
@@ -106,7 +108,9 @@ class TestAuditServiceLogCreate:
     """Tests for log_create convenience method."""
 
     @pytest.mark.asyncio
-    async def test_log_create_success(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_create_success(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test CREATE action logging."""
         mock_repository.create.return_value = mock_audit_log
 
@@ -123,7 +127,10 @@ class TestAuditServiceLogCreate:
         mock_repository.create.assert_called_once()
         created_log = mock_repository.create.call_args[0][0]
         assert created_log.action == AuditAction.CREATE
-        assert created_log.new_value == {"email": "newuser@example.com", "name": "New User"}
+        assert created_log.new_value == {
+            "email": "newuser@example.com",
+            "name": "New User",
+        }
         assert created_log.old_value is None
 
 
@@ -131,7 +138,9 @@ class TestAuditServiceLogUpdate:
     """Tests for log_update convenience method."""
 
     @pytest.mark.asyncio
-    async def test_log_update_success(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_update_success(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test UPDATE action logging."""
         mock_repository.create.return_value = mock_audit_log
 
@@ -156,7 +165,9 @@ class TestAuditServiceLogDelete:
     """Tests for log_delete convenience method."""
 
     @pytest.mark.asyncio
-    async def test_log_delete_success(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_delete_success(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test DELETE action logging."""
         mock_repository.create.return_value = mock_audit_log
 
@@ -181,7 +192,9 @@ class TestAuditServiceLogLogin:
     """Tests for log_login convenience method."""
 
     @pytest.mark.asyncio
-    async def test_log_login_success(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_login_success(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test successful login logging."""
         mock_repository.create.return_value = mock_audit_log
         actor_id = UUID("87654321-4321-8765-4321-876543218765")
@@ -201,7 +214,9 @@ class TestAuditServiceLogLogin:
         assert created_log.actor_email == "user@example.com"
 
     @pytest.mark.asyncio
-    async def test_log_login_failed(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_login_failed(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test failed login logging."""
         mock_repository.create.return_value = mock_audit_log
 
@@ -222,7 +237,9 @@ class TestAuditServiceLogLogout:
     """Tests for log_logout convenience method."""
 
     @pytest.mark.asyncio
-    async def test_log_logout_success(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_logout_success(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test logout logging."""
         mock_repository.create.return_value = mock_audit_log
         actor_id = UUID("87654321-4321-8765-4321-876543218765")
@@ -243,7 +260,9 @@ class TestAuditServiceLogPasswordChange:
     """Tests for log_password_change convenience method."""
 
     @pytest.mark.asyncio
-    async def test_log_password_change_success(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_password_change_success(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test password change logging."""
         mock_repository.create.return_value = mock_audit_log
         actor_id = UUID("87654321-4321-8765-4321-876543218765")
@@ -264,7 +283,9 @@ class TestAuditServiceLogMFAChange:
     """Tests for log_mfa_change convenience method."""
 
     @pytest.mark.asyncio
-    async def test_log_mfa_enabled(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_mfa_enabled(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test MFA enabled logging."""
         mock_repository.create.return_value = mock_audit_log
         actor_id = UUID("87654321-4321-8765-4321-876543218765")
@@ -280,7 +301,9 @@ class TestAuditServiceLogMFAChange:
         assert created_log.action == AuditAction.MFA_ENABLED
 
     @pytest.mark.asyncio
-    async def test_log_mfa_disabled(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_mfa_disabled(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test MFA disabled logging."""
         mock_repository.create.return_value = mock_audit_log
         actor_id = UUID("87654321-4321-8765-4321-876543218765")
@@ -300,7 +323,9 @@ class TestAuditServiceLogAPIKey:
     """Tests for API key logging methods."""
 
     @pytest.mark.asyncio
-    async def test_log_api_key_created(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_api_key_created(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test API key creation logging."""
         mock_repository.create.return_value = mock_audit_log
 
@@ -319,7 +344,9 @@ class TestAuditServiceLogAPIKey:
         assert created_log.new_value == {"scopes": ["read:users", "write:users"]}
 
     @pytest.mark.asyncio
-    async def test_log_api_key_revoked(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_api_key_revoked(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test API key revocation logging."""
         mock_repository.create.return_value = mock_audit_log
 
@@ -341,7 +368,9 @@ class TestAuditServiceLogRoleAssignment:
     """Tests for role assignment logging."""
 
     @pytest.mark.asyncio
-    async def test_log_role_assigned(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_role_assigned(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test role assignment logging."""
         mock_repository.create.return_value = mock_audit_log
         user_id = UUID("12345678-1234-5678-1234-567812345678")
@@ -362,7 +391,9 @@ class TestAuditServiceLogRoleAssignment:
         assert created_log.new_value == {"role_id": str(role_id), "role_name": "admin"}
 
     @pytest.mark.asyncio
-    async def test_log_role_removed(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_role_removed(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test role removal logging."""
         mock_repository.create.return_value = mock_audit_log
         user_id = UUID("12345678-1234-5678-1234-567812345678")
@@ -386,7 +417,9 @@ class TestAuditServiceLogExport:
     """Tests for export logging."""
 
     @pytest.mark.asyncio
-    async def test_log_export_success(self, audit_service, mock_repository, mock_audit_log):
+    async def test_log_export_success(
+        self, audit_service, mock_repository, mock_audit_log
+    ):
         """Test data export logging."""
         mock_repository.create.return_value = mock_audit_log
 

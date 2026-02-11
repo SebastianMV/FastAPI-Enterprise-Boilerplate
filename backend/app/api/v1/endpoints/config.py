@@ -5,31 +5,30 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.config import settings
 from app.api.deps import get_current_user
+from app.config import settings
+from app.domain.entities.user import User
 
 router = APIRouter()
 
 
 class FeatureConfigResponse(BaseModel):
     """Feature configuration response."""
-    
+
     websocket_enabled: bool
     websocket_notifications: bool
 
 
 @router.get("/features", response_model=FeatureConfigResponse)
 async def get_feature_config(
-    current_user: Any = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> FeatureConfigResponse:
     """
     Get current feature configuration.
-    
+
     Returns the status of optional features like chat, websocket, etc.
     """
     return FeatureConfigResponse(

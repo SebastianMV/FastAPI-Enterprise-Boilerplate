@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, AsyncMock
-from uuid import uuid4
+from unittest.mock import MagicMock
 
 import pytest
 

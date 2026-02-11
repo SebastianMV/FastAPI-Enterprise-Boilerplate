@@ -1,6 +1,6 @@
 # Frontend
 
-React 19 + TypeScript + Tailwind CSS frontend for FastAPI Enterprise Boilerplate.
+React 18.3.1 LTS + TypeScript + Tailwind CSS frontend for FastAPI Enterprise Boilerplate.
 
 ## Quick Start
 

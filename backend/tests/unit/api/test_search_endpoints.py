@@ -3,14 +3,13 @@
 
 """Unit tests for search endpoint schemas."""
 
-import pytest
 
 from app.api.v1.endpoints.search import (
     SearchFilterRequest,
-    SearchSortRequest,
-    SearchRequest,
     SearchHitResponse,
+    SearchRequest,
     SearchResponse,
+    SearchSortRequest,
     SuggestResponse,
 )
 
@@ -20,11 +19,7 @@ class TestSearchSchemas:
 
     def test_search_filter_request_schema(self):
         """Test SearchFilterRequest schema."""
-        filter_req = SearchFilterRequest(
-            field="status",
-            value="active",
-            operator="eq"
-        )
+        filter_req = SearchFilterRequest(field="status", value="active", operator="eq")
         assert filter_req.field == "status"
         assert filter_req.value == "active"
         assert filter_req.operator == "eq"
@@ -48,8 +43,7 @@ class TestSearchSchemas:
     def test_search_request_schema(self):
         """Test SearchRequest schema."""
         request = SearchRequest(  # type: ignore[call-arg]
-            query="test query",
-            index="users"
+            query="test query", index="users"
         )
         assert request.query == "test query"
         assert request.index == "users"
@@ -64,15 +58,13 @@ class TestSearchSchemas:
             index="documents",
             filters=[
                 SearchFilterRequest(field="status", value="published", operator="eq"),
-                SearchFilterRequest(field="category", value="tech", operator="eq")
+                SearchFilterRequest(field="category", value="tech", operator="eq"),
             ],
-            sort=[
-                SearchSortRequest(field="created_at", order="desc")
-            ],
+            sort=[SearchSortRequest(field="created_at", order="desc")],
             highlight_fields=["title", "content"],
             page=2,
             page_size=50,
-            fuzzy=False
+            fuzzy=False,
         )
         assert len(request.filters) == 2
         assert len(request.sort) == 1
@@ -88,7 +80,7 @@ class TestSearchSchemas:
             score=0.95,
             source={"title": "Test Doc", "content": "Content here"},
             highlights={"title": ["<em>Test</em> Doc"]},
-            matched_fields=["title"]
+            matched_fields=["title"],
         )
         assert hit.id == "doc-123"
         assert hit.score == 0.95
@@ -98,13 +90,7 @@ class TestSearchSchemas:
     def test_search_response_schema(self):
         """Test SearchResponse schema."""
         response = SearchResponse(
-            hits=[
-                SearchHitResponse(
-                    id="1",
-                    score=0.9,
-                    source={"title": "Result 1"}
-                )
-            ],
+            hits=[SearchHitResponse(id="1", score=0.9, source={"title": "Result 1"})],
             total=100,
             page=1,
             page_size=20,
@@ -113,7 +99,7 @@ class TestSearchSchemas:
             has_previous=False,
             took_ms=15.5,
             max_score=0.9,
-            suggestions=["alternative query"]
+            suggestions=["alternative query"],
         )
         assert len(response.hits) == 1
         assert response.total == 100
@@ -128,11 +114,7 @@ class TestSearchSchemas:
 
     def test_search_hit_response_defaults(self):
         """Test SearchHitResponse with defaults."""
-        hit = SearchHitResponse(
-            id="test",
-            score=0.5,
-            source={}
-        )
+        hit = SearchHitResponse(id="test", score=0.5, source={})
         assert hit.highlights == {}
         assert hit.matched_fields == []
 

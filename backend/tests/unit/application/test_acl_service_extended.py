@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, AsyncMock
-from uuid import uuid4, UUID
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -42,7 +41,9 @@ class TestACLPermissions:
         from app.application.services.acl_service import ACLService
 
         service = ACLService(role_repository=mock_role_repository)
-        assert hasattr(service, "has_permission") or hasattr(service, "check_permission")
+        assert hasattr(service, "has_permission") or hasattr(
+            service, "check_permission"
+        )
 
     def test_grant_permission_method(self, mock_role_repository: MagicMock) -> None:
         """Test ACL service has role management methods."""
@@ -50,7 +51,11 @@ class TestACLPermissions:
 
         service = ACLService(role_repository=mock_role_repository)
         # Service should have role-related methods
-        assert hasattr(service, "has_permission") or hasattr(service, "check_permission") or service is not None
+        assert (
+            hasattr(service, "has_permission")
+            or hasattr(service, "check_permission")
+            or service is not None
+        )
 
 
 class TestACLRoles:

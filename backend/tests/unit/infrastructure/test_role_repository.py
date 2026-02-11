@@ -3,16 +3,18 @@
 
 """Unit tests for SQLAlchemy Role Repository implementation."""
 
-import pytest
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.infrastructure.database.repositories.role_repository import SQLAlchemyRoleRepository
-from app.domain.entities.role import Role, Permission
+from app.domain.entities.role import Permission, Role
 from app.domain.exceptions.base import ConflictError
+from app.infrastructure.database.repositories.role_repository import (
+    SQLAlchemyRoleRepository,
+)
 
 
 def create_mock_role(
@@ -65,7 +67,7 @@ class TestSQLAlchemyRoleRepositoryInit:
         """Test initialization with session."""
         session = AsyncMock()
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         assert repo._session is session
 
 
@@ -78,14 +80,14 @@ class TestSQLAlchemyRoleRepositoryGetById:
         session = AsyncMock()
         role_id = uuid4()
         mock_model = create_mock_role_model(role_id=role_id)
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_model
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.get_by_id(role_id)
-        
+
         assert result is not None
         assert result.id == role_id
 
@@ -93,14 +95,14 @@ class TestSQLAlchemyRoleRepositoryGetById:
     async def test_get_by_id_not_found(self):
         """Test getting role by ID when not found."""
         session = AsyncMock()
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.get_by_id(uuid4())
-        
+
         assert result is None
 
 
@@ -113,14 +115,14 @@ class TestSQLAlchemyRoleRepositoryGetByName:
         session = AsyncMock()
         tenant_id = uuid4()
         mock_model = create_mock_role_model(name="Admin", tenant_id=tenant_id)
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_model
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.get_by_name("Admin", tenant_id)
-        
+
         assert result is not None
         assert result.name == "Admin"
 
@@ -128,14 +130,14 @@ class TestSQLAlchemyRoleRepositoryGetByName:
     async def test_get_by_name_not_found(self):
         """Test getting role by name when not found."""
         session = AsyncMock()
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.get_by_name("NonExistent", uuid4())
-        
+
         assert result is None
 
 
@@ -147,16 +149,16 @@ class TestSQLAlchemyRoleRepositoryCreate:
         """Test successful role creation."""
         session = AsyncMock()
         role = create_mock_role()
-        
+
         session.add = MagicMock()
         session.flush = AsyncMock()
         session.refresh = AsyncMock()
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
-        
-        with patch.object(repo, '_to_entity', return_value=role):
+
+        with patch.object(repo, "_to_entity", return_value=role):
             result = await repo.create(role)
-        
+
         assert result is not None
         session.add.assert_called_once()
         session.flush.assert_called_once()
@@ -166,22 +168,22 @@ class TestSQLAlchemyRoleRepositoryCreate:
         """Test role creation with name conflict."""
         session = AsyncMock()
         role = create_mock_role(name="DuplicateName")
-        
+
         integrity_error = IntegrityError(
             statement="INSERT",
             params={},
             orig=Exception("duplicate key value"),
         )
-        
+
         session.add = MagicMock()
         session.flush = AsyncMock(side_effect=integrity_error)
         session.rollback = AsyncMock()
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         with pytest.raises(ConflictError) as exc_info:
             await repo.create(role)
-        
+
         assert "DuplicateName" in exc_info.value.message
         session.rollback.assert_called_once()
 
@@ -196,18 +198,18 @@ class TestSQLAlchemyRoleRepositoryUpdate:
         role_id = uuid4()
         role = create_mock_role(role_id=role_id)
         mock_model = create_mock_role_model(role_id=role_id)
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_model
         session.execute = AsyncMock(return_value=mock_result)
         session.flush = AsyncMock()
         session.refresh = AsyncMock()
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
-        
-        with patch.object(repo, '_to_entity', return_value=role):
+
+        with patch.object(repo, "_to_entity", return_value=role):
             result = await repo.update(role)
-        
+
         assert result is not None
         session.flush.assert_called_once()
 
@@ -216,13 +218,13 @@ class TestSQLAlchemyRoleRepositoryUpdate:
         """Test update when role not found."""
         session = AsyncMock()
         role = create_mock_role()
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         with pytest.raises(Exception):
             await repo.update(role)
 
@@ -236,16 +238,16 @@ class TestSQLAlchemyRoleRepositoryDelete:
         session = AsyncMock()
         role_id = uuid4()
         mock_model = create_mock_role_model(role_id=role_id, is_system=False)
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_model
         session.execute = AsyncMock(return_value=mock_result)
         session.flush = AsyncMock()
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         await repo.delete(role_id)
-        
+
         assert mock_model.is_deleted is True
         assert mock_model.deleted_at is not None
         session.flush.assert_called_once()
@@ -254,13 +256,13 @@ class TestSQLAlchemyRoleRepositoryDelete:
     async def test_delete_not_found(self):
         """Test delete when role not found."""
         session = AsyncMock()
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         with pytest.raises(Exception):
             await repo.delete(uuid4())
 
@@ -270,16 +272,16 @@ class TestSQLAlchemyRoleRepositoryDelete:
         session = AsyncMock()
         role_id = uuid4()
         mock_model = create_mock_role_model(role_id=role_id, is_system=True)
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_model
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         with pytest.raises(ConflictError) as exc_info:
             await repo.delete(role_id)
-        
+
         assert "system role" in exc_info.value.message.lower()
 
 
@@ -293,16 +295,16 @@ class TestSQLAlchemyRoleRepositoryList:
         tenant_id = uuid4()
         mock_model1 = create_mock_role_model(tenant_id=tenant_id)
         mock_model2 = create_mock_role_model(tenant_id=tenant_id)
-        
+
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = [mock_model1, mock_model2]
         mock_result = MagicMock()
         mock_result.scalars.return_value = mock_scalars
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.list(tenant_id=tenant_id)
-        
+
         assert len(result) == 2
 
     @pytest.mark.asyncio
@@ -310,16 +312,16 @@ class TestSQLAlchemyRoleRepositoryList:
         """Test listing roles with pagination."""
         session = AsyncMock()
         tenant_id = uuid4()
-        
+
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
         mock_result = MagicMock()
         mock_result.scalars.return_value = mock_scalars
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.list(tenant_id=tenant_id, skip=10, limit=5)
-        
+
         assert result == []
 
 
@@ -334,26 +336,26 @@ class TestSQLAlchemyRoleRepositoryListByIds:
         role_id2 = uuid4()
         mock_model1 = create_mock_role_model(role_id=role_id1)
         mock_model2 = create_mock_role_model(role_id=role_id2)
-        
+
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = [mock_model1, mock_model2]
         mock_result = MagicMock()
         mock_result.scalars.return_value = mock_scalars
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.list_by_ids([role_id1, role_id2])
-        
+
         assert len(result) == 2
 
     @pytest.mark.asyncio
     async def test_list_by_ids_empty_list(self):
         """Test listing roles with empty ID list."""
         session = AsyncMock()
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.list_by_ids([])
-        
+
         assert result == []
         # Should not call execute for empty list
         session.execute.assert_not_called()
@@ -369,11 +371,11 @@ class TestSQLAlchemyRoleRepositoryGetUserRoles:
         user_id = uuid4()
         role_id1 = uuid4()
         role_id2 = uuid4()
-        
+
         # First call returns user's role IDs
         mock_user_result = MagicMock()
         mock_user_result.scalar_one_or_none.return_value = [role_id1, role_id2]
-        
+
         # Second call returns roles
         mock_model1 = create_mock_role_model(role_id=role_id1)
         mock_model2 = create_mock_role_model(role_id=role_id2)
@@ -381,12 +383,12 @@ class TestSQLAlchemyRoleRepositoryGetUserRoles:
         mock_scalars.all.return_value = [mock_model1, mock_model2]
         mock_roles_result = MagicMock()
         mock_roles_result.scalars.return_value = mock_scalars
-        
+
         session.execute = AsyncMock(side_effect=[mock_user_result, mock_roles_result])
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.get_user_roles(user_id)
-        
+
         assert len(result) == 2
 
     @pytest.mark.asyncio
@@ -394,14 +396,14 @@ class TestSQLAlchemyRoleRepositoryGetUserRoles:
         """Test getting roles when user has none."""
         session = AsyncMock()
         user_id = uuid4()
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         session.execute = AsyncMock(return_value=mock_result)
-        
+
         repo = SQLAlchemyRoleRepository(session=session)
         result = await repo.get_user_roles(user_id)
-        
+
         assert result == []
 
 
@@ -412,11 +414,11 @@ class TestSQLAlchemyRoleRepositoryConversion:
         """Test converting model to entity."""
         session = AsyncMock()
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         mock_model = create_mock_role_model()
-        
+
         entity = repo._to_entity(mock_model)
-        
+
         assert entity.id == mock_model.id
         assert entity.name == mock_model.name
         assert entity.is_system == mock_model.is_system
@@ -426,23 +428,23 @@ class TestSQLAlchemyRoleRepositoryConversion:
         """Test converting model with empty permissions."""
         session = AsyncMock()
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         mock_model = create_mock_role_model()
         mock_model.permissions = None
-        
+
         entity = repo._to_entity(mock_model)
-        
+
         assert entity.permissions == []
 
     def test_to_model_conversion(self):
         """Test converting entity to model."""
         session = AsyncMock()
         repo = SQLAlchemyRoleRepository(session=session)
-        
+
         role = create_mock_role()
-        
+
         model = repo._to_model(role)
-        
+
         assert model.id == role.id
         assert model.name == role.name
         assert model.is_system == role.is_system

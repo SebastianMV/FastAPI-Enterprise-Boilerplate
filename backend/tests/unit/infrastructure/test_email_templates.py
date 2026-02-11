@@ -7,15 +7,13 @@ Unit tests for email template engine.
 Tests for EmailTemplateType, EmailTemplate, and EmailTemplateEngine.
 """
 
-from unittest.mock import MagicMock, patch
 from pathlib import Path
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from app.infrastructure.email.templates import (
     EmailTemplate,
-    EmailTemplateType,
     EmailTemplateEngine,
+    EmailTemplateType,
     get_template_engine,
 )
 
@@ -83,7 +81,7 @@ class TestEmailTemplate:
             template_type=EmailTemplateType.WELCOME,
             locale="en",
         )
-        
+
         assert template.subject == "Test Subject"
         assert template.html_body == "<p>HTML Body</p>"
         assert template.text_body == "Text Body"
@@ -99,13 +97,13 @@ class TestEmailTemplate:
             template_type=EmailTemplateType.REGISTRATION,
             locale="es",
         )
-        
+
         assert template.metadata == {}
 
     def test_template_with_metadata(self) -> None:
         """Test template with custom metadata."""
         metadata = {"rendered_at": "2025-01-08T12:00:00Z", "version": "1.0"}
-        
+
         template = EmailTemplate(
             subject="Subject",
             html_body="HTML",
@@ -114,7 +112,7 @@ class TestEmailTemplate:
             locale="pt",
             metadata=metadata,
         )
-        
+
         assert template.metadata == metadata
         assert template.metadata["version"] == "1.0"
 
@@ -128,21 +126,22 @@ class TestEmailTemplateEngine:
 
     def test_supported_locales(self) -> None:
         """Test supported locales include common languages."""
-        expected = ["en", "es", "pt", "fr", "de"]
-        assert EmailTemplateEngine.SUPPORTED_LOCALES == expected
+        engine = EmailTemplateEngine()
+        expected = ["en", "es", "pt"]
+        assert engine.supported_locales == expected
 
     def test_engine_initialization(self) -> None:
         """Test engine initializes without errors."""
         engine = EmailTemplateEngine()
-        
+
         assert engine is not None
 
     def test_get_available_templates(self) -> None:
         """Test getting available template types."""
         engine = EmailTemplateEngine()
-        
+
         templates = engine.get_available_templates()
-        
+
         assert "registration" in templates
         assert "welcome" in templates
         assert "password_reset" in templates
@@ -150,22 +149,22 @@ class TestEmailTemplateEngine:
     def test_get_supported_locales(self) -> None:
         """Test getting supported locales."""
         engine = EmailTemplateEngine()
-        
+
         locales = engine.get_supported_locales()
-        
+
         assert "en" in locales
         assert "es" in locales
-        assert locales == ["en", "es", "pt", "fr", "de"]
+        assert locales == ["en", "es", "pt"]
 
     def test_get_supported_locales_returns_copy(self) -> None:
         """Test that get_supported_locales returns a copy."""
         engine = EmailTemplateEngine()
-        
+
         locales = engine.get_supported_locales()
         locales.append("invalid")
-        
+
         # Original should be unchanged
-        assert "invalid" not in engine.SUPPORTED_LOCALES
+        assert "invalid" not in engine.supported_locales
 
 
 class TestGetTemplateEngine:
@@ -174,14 +173,14 @@ class TestGetTemplateEngine:
     def test_returns_engine_instance(self) -> None:
         """Test get_template_engine returns an engine."""
         engine = get_template_engine()
-        
+
         assert isinstance(engine, EmailTemplateEngine)
 
     def test_returns_same_instance(self) -> None:
         """Test get_template_engine returns same instance."""
         engine1 = get_template_engine()
         engine2 = get_template_engine()
-        
+
         assert engine1 is engine2
 
 
@@ -196,7 +195,7 @@ class TestEmailTemplateTypeCategories:
             "password_reset",
             "password_changed",
         ]
-        
+
         for template_name in auth_templates:
             assert EmailTemplateType(template_name) is not None
 
@@ -208,7 +207,7 @@ class TestEmailTemplateTypeCategories:
             "account_unlocked",
             "account_deactivated",
         ]
-        
+
         for template_name in account_templates:
             assert EmailTemplateType(template_name) is not None
 
@@ -220,7 +219,7 @@ class TestEmailTemplateTypeCategories:
             "login_new_device",
             "suspicious_activity",
         ]
-        
+
         for template_name in security_templates:
             assert EmailTemplateType(template_name) is not None
 
@@ -230,7 +229,7 @@ class TestEmailTemplateTypeCategories:
             "api_key_created",
             "api_key_expiring",
         ]
-        
+
         for template_name in api_templates:
             assert EmailTemplateType(template_name) is not None
 
@@ -240,7 +239,7 @@ class TestEmailTemplateTypeCategories:
             "tenant_invitation",
             "tenant_role_changed",
         ]
-        
+
         for template_name in tenant_templates:
             assert EmailTemplateType(template_name) is not None
 
@@ -251,28 +250,29 @@ class TestEmailTemplateEngineInternals:
     def test_get_current_year(self) -> None:
         """Test _get_current_year returns current year."""
         from datetime import datetime
-        
+
         engine = EmailTemplateEngine()
         year = engine._get_current_year()
-        
+
         assert year == datetime.now().year
 
     def test_get_current_timestamp(self) -> None:
         """Test _get_current_timestamp returns ISO format."""
         engine = EmailTemplateEngine()
         timestamp = engine._get_current_timestamp()
-        
+
         assert isinstance(timestamp, str)
         assert "T" in timestamp  # ISO format contains T
         # Should be parseable
         from datetime import datetime
+
         datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
 
     def test_get_support_email_returns_email(self) -> None:
         """Test _get_support_email returns an email address."""
         engine = EmailTemplateEngine()
         email = engine._get_support_email()
-        
+
         assert isinstance(email, str)
         assert "@" in email  # Is an email
 
@@ -280,21 +280,21 @@ class TestEmailTemplateEngineInternals:
         """Test _get_app_name returns app name string."""
         engine = EmailTemplateEngine()
         name = engine._get_app_name()
-        
+
         assert isinstance(name, str)
         assert len(name) > 0
 
     def test_translate_method_exists(self) -> None:
         """Test _translate method exists and is callable."""
         engine = EmailTemplateEngine()
-        
+
         assert hasattr(engine, "_translate")
         assert callable(engine._translate)
 
     def test_jinja_environment_has_globals(self) -> None:
         """Test Jinja environment has required globals."""
         engine = EmailTemplateEngine()
-        
+
         assert "t" in engine._env.globals
         assert "app_name" in engine._env.globals
 
@@ -302,31 +302,31 @@ class TestEmailTemplateEngineInternals:
         """Test engine with custom templates directory."""
         custom_dir = tmp_path / "custom_templates"
         custom_dir.mkdir()
-        
+
         engine = EmailTemplateEngine(templates_dir=custom_dir)
-        
+
         assert engine._templates_dir == custom_dir
         assert custom_dir.exists()
 
     def test_templates_dir_created_if_not_exists(self, tmp_path: Path) -> None:
         """Test templates directory is created if it doesn't exist."""
         custom_dir = tmp_path / "new_templates"
-        
+
         engine = EmailTemplateEngine(templates_dir=custom_dir)
-        
+
         assert custom_dir.exists()
 
     def test_default_templates_dir_path(self) -> None:
         """Test default templates directory is set correctly."""
         engine = EmailTemplateEngine()
-        
+
         assert engine._templates_dir is not None
         assert "templates" in str(engine._templates_dir)
 
     def test_jinja_environment_autoescape(self) -> None:
         """Test Jinja environment has autoescape enabled."""
         engine = EmailTemplateEngine()
-        
+
         # Check that autoescape is configured
         assert engine._env.autoescape is not None
 
@@ -337,30 +337,30 @@ class TestEmailTemplateEngineRender:
     def test_render_unsupported_locale_falls_back_to_default(self) -> None:
         """Test render falls back to English for unsupported locale."""
         engine = EmailTemplateEngine()
-        
+
         # Test the locale validation logic directly
         locale = "invalid_locale"
-        if locale not in engine.SUPPORTED_LOCALES:
+        if locale not in engine.supported_locales:
             locale = engine.DEFAULT_LOCALE
-        
+
         assert locale == "en"
 
     def test_render_supported_locale_preserved(self) -> None:
         """Test supported locale is preserved."""
         engine = EmailTemplateEngine()
-        
+
         locale = "es"
-        if locale not in engine.SUPPORTED_LOCALES:
+        if locale not in engine.supported_locales:
             locale = engine.DEFAULT_LOCALE
-        
+
         assert locale == "es"
 
     def test_render_none_locale_uses_default(self) -> None:
         """Test None locale uses default."""
         engine = EmailTemplateEngine()
-        
+
         locale = None or engine.DEFAULT_LOCALE
-        
+
         assert locale == "en"
 
     def test_translate_method(self) -> None:
@@ -368,12 +368,12 @@ class TestEmailTemplateEngineRender:
         with patch("app.infrastructure.email.templates.Path") as mock_path:
             mock_path.return_value.exists.return_value = True
             engine = EmailTemplateEngine()
-            
+
             engine._current_locale = "es"
-            
+
             with patch.object(engine._i18n, "t", return_value="Traducido") as mock_t:
                 result = engine._translate("test.key", name="Test")
-                
+
                 assert result == "Traducido"
                 mock_t.assert_called_once_with("test.key", locale="es", name="Test")
 
@@ -382,9 +382,9 @@ class TestEmailTemplateEngineRender:
         with patch("app.infrastructure.email.templates.Path") as mock_path:
             mock_path.return_value.exists.return_value = True
             engine = EmailTemplateEngine()
-            
+
             year = engine._get_current_year()
-            
+
             assert isinstance(year, int)
             assert year >= 2025
 
@@ -395,9 +395,9 @@ class TestEmailTemplateEngineRender:
             with patch("app.config.settings") as mock_settings:
                 mock_settings.APP_NAME = "Test App"
                 engine = EmailTemplateEngine()
-                
+
                 app_name = engine._get_app_name()
-                
+
                 assert app_name == "Test App"
 
     def test_get_support_email(self) -> None:
@@ -407,41 +407,41 @@ class TestEmailTemplateEngineRender:
             with patch("app.config.settings") as mock_settings:
                 mock_settings.SUPPORT_EMAIL = "support@test.com"
                 engine = EmailTemplateEngine()
-                
+
                 support_email = engine._get_support_email()
-                
+
                 assert support_email == "support@test.com"
 
     def test_render_full_flow(self) -> None:
         """Test render method full flow (lines 155-181)."""
         with patch("app.infrastructure.email.templates.Path") as mock_path:
             mock_path.return_value.exists.return_value = True
-            
+
             engine = EmailTemplateEngine()
-            
+
             # Mock the Jinja environment and templates
             mock_html_template = MagicMock()
             mock_html_template.render.return_value = "<p>HTML Body</p>"
-            
+
             mock_text_template = MagicMock()
             mock_text_template.render.return_value = "Text Body"
-            
+
             def mock_get_template(name: str):
                 if "html" in name:
                     return mock_html_template
                 return mock_text_template
-            
+
             engine._env.get_template = mock_get_template
-            
+
             # Mock i18n to avoid the locale conflict
             engine._i18n.t = MagicMock(return_value="Test Subject")
-            
+
             result = engine.render(
                 template_type=EmailTemplateType.REGISTRATION,
                 context={"user_name": "Test User"},
                 locale="en",
             )
-            
+
             assert result.subject == "Test Subject"
             assert result.html_body == "<p>HTML Body</p>"
             assert result.text_body == "Text Body"
@@ -453,24 +453,26 @@ class TestEmailTemplateEngineRender:
         """Test render with Spanish locale (line 156-157)."""
         with patch("app.infrastructure.email.templates.Path") as mock_path:
             mock_path.return_value.exists.return_value = True
-            
+
             engine = EmailTemplateEngine()
-            
+
             mock_html_template = MagicMock()
             mock_html_template.render.return_value = "<p>Cuerpo HTML</p>"
-            
+
             mock_text_template = MagicMock()
             mock_text_template.render.return_value = "Cuerpo Texto"
-            
-            engine._env.get_template = lambda name: mock_html_template if "html" in name else mock_text_template
+
+            engine._env.get_template = lambda name: (
+                mock_html_template if "html" in name else mock_text_template
+            )
             engine._i18n.t = MagicMock(return_value="Asunto de Prueba")
-            
+
             result = engine.render(
                 template_type=EmailTemplateType.PASSWORD_RESET,
                 context={"reset_link": "http://test.com/reset"},
                 locale="es",
             )
-            
+
             assert result.subject == "Asunto de Prueba"
             assert result.locale == "es"
 
@@ -478,24 +480,26 @@ class TestEmailTemplateEngineRender:
         """Test render with invalid locale falls back to English (line 157-158)."""
         with patch("app.infrastructure.email.templates.Path") as mock_path:
             mock_path.return_value.exists.return_value = True
-            
+
             engine = EmailTemplateEngine()
-            
+
             mock_html_template = MagicMock()
             mock_html_template.render.return_value = "<p>Body</p>"
-            
+
             mock_text_template = MagicMock()
             mock_text_template.render.return_value = "Body"
-            
-            engine._env.get_template = lambda name: mock_html_template if "html" in name else mock_text_template
+
+            engine._env.get_template = lambda name: (
+                mock_html_template if "html" in name else mock_text_template
+            )
             engine._i18n.t = MagicMock(return_value="Subject")
-            
+
             result = engine.render(
                 template_type=EmailTemplateType.WELCOME,
                 context={},
                 locale="invalid_locale",  # Should fall back to "en"
             )
-            
+
             # Verify it fell back to default locale
             assert result.locale == "en"
 
@@ -503,24 +507,26 @@ class TestEmailTemplateEngineRender:
         """Test render with None locale uses default (line 155)."""
         with patch("app.infrastructure.email.templates.Path") as mock_path:
             mock_path.return_value.exists.return_value = True
-            
+
             engine = EmailTemplateEngine()
-            
+
             mock_html_template = MagicMock()
             mock_html_template.render.return_value = "<p>Body</p>"
-            
+
             mock_text_template = MagicMock()
             mock_text_template.render.return_value = "Body"
-            
-            engine._env.get_template = lambda name: mock_html_template if "html" in name else mock_text_template
+
+            engine._env.get_template = lambda name: (
+                mock_html_template if "html" in name else mock_text_template
+            )
             engine._i18n.t = MagicMock(return_value="Subject")
-            
+
             result = engine.render(
                 template_type=EmailTemplateType.MFA_ENABLED,
                 context={"user_name": "User"},
                 locale=None,  # Should use default "en"
             )
-            
+
             assert result.locale == "en"
 
     def test_render_adds_common_context(self) -> None:
@@ -530,30 +536,32 @@ class TestEmailTemplateEngineRender:
             with patch("app.config.settings") as mock_settings:
                 mock_settings.APP_NAME = "TestApp"
                 mock_settings.SUPPORT_EMAIL = "support@test.com"
-                
+
                 engine = EmailTemplateEngine()
-                
+
                 captured_context = {}
-                
+
                 def capture_html_render(**context):
                     captured_context.update(context)
                     return "<p>Body</p>"
-                
+
                 mock_html_template = MagicMock()
                 mock_html_template.render = capture_html_render
-                
+
                 mock_text_template = MagicMock()
                 mock_text_template.render.return_value = "Body"
-                
-                engine._env.get_template = lambda name: mock_html_template if "html" in name else mock_text_template
+
+                engine._env.get_template = lambda name: (
+                    mock_html_template if "html" in name else mock_text_template
+                )
                 engine._i18n.t = MagicMock(return_value="Subject")
-                
+
                 engine.render(
                     template_type=EmailTemplateType.REGISTRATION,
                     context={"user_name": "Test"},
                     locale="en",
                 )
-                
+
                 # Verify common context was added
                 assert "year" in captured_context
                 assert "app_name" in captured_context

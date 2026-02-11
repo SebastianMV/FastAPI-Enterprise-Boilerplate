@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, AsyncMock
-from uuid import uuid4
 from datetime import datetime
+from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 
@@ -27,7 +27,9 @@ class TestAuditServiceImport:
 
         assert AuditService is not None
 
-    def test_audit_service_instantiation(self, mock_audit_repository: MagicMock) -> None:
+    def test_audit_service_instantiation(
+        self, mock_audit_repository: MagicMock
+    ) -> None:
         """Test audit service can be instantiated."""
         from app.application.services.audit_service import AuditService
 
@@ -62,7 +64,11 @@ class TestAuditQuery:
         from app.application.services.audit_service import AuditService
 
         service = AuditService(repository=mock_audit_repository)
-        assert hasattr(service, "get_audit_logs") or hasattr(service, "query_logs") or service is not None
+        assert (
+            hasattr(service, "get_audit_logs")
+            or hasattr(service, "query_logs")
+            or service is not None
+        )
 
 
 class TestAuditEntryFields:
@@ -71,7 +77,7 @@ class TestAuditEntryFields:
     def test_audit_entry_has_timestamp(self) -> None:
         """Test audit entry has timestamp field."""
         # Audit entries should have timestamp
-        from datetime import datetime, UTC
+        from datetime import UTC
 
         now = datetime.now(UTC)
         assert now is not None

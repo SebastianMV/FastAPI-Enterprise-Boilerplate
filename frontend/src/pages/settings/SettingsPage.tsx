@@ -41,6 +41,8 @@ export default function SettingsPage() {
     variant: 'success' | 'error';
   }>({ isOpen: false, title: '', message: '', variant: 'success' });
 
+  // UI preferences — non-sensitive, persist across sessions via localStorage.
+  // Language is managed by i18next ('i18nextLng' key).
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     const stored = localStorage.getItem('notificationsEnabled');
     return stored !== null ? stored === 'true' : true;
@@ -52,7 +54,10 @@ export default function SettingsPage() {
 
   // Delete account mutation
   const deleteAccountMutation = useMutation({
-    mutationFn: () => usersService.delete(user?.id || ''),
+    mutationFn: () => {
+      if (!user?.id) throw new Error('No user ID');
+      return usersService.delete(user.id);
+    },
     onSuccess: () => {
       setShowDeleteModal(false);
       logout();
@@ -62,8 +67,8 @@ export default function SettingsPage() {
       setShowDeleteModal(false);
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error.message || 'Failed to delete account. Please try again.',
+        title: t('common.error'),
+        message: t('settings.deleteError'),
         variant: 'error',
       });
     },
@@ -77,8 +82,8 @@ export default function SettingsPage() {
     setTheme(newTheme);
     setAlertModal({
       isOpen: true,
-      title: 'Theme Updated',
-      message: `Theme changed to ${newTheme}.`,
+      title: t('settings.themeUpdated'),
+      message: t('settings.themeChangedTo', { theme: newTheme }),
       variant: 'success',
     });
   };
@@ -89,8 +94,8 @@ export default function SettingsPage() {
     localStorage.setItem('notificationsEnabled', String(newValue));
     setAlertModal({
       isOpen: true,
-      title: 'Notifications Updated',
-      message: `Notifications ${newValue ? 'enabled' : 'disabled'}.`,
+      title: t('settings.notificationsUpdated'),
+      message: t('settings.notificationsToggled', { status: newValue ? t('settings.enabled').toLowerCase() : t('settings.disabled').toLowerCase() }),
       variant: 'success',
     });
   };
@@ -116,8 +121,8 @@ export default function SettingsPage() {
     localStorage.setItem('timezone', newTimezone);
     setAlertModal({
       isOpen: true,
-      title: 'Timezone Updated',
-      message: `Timezone changed to ${newTimezone}.`,
+      title: t('settings.timezoneUpdated'),
+      message: t('settings.timezoneChangedTo', { timezone: newTimezone }),
       variant: 'success',
     });
   };
@@ -191,6 +196,9 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={handleNotificationToggle}
+              role="switch"
+              aria-checked={notificationsEnabled}
+              aria-label={t('settings.emailNotifications')}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 notificationsEnabled ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-600'
               }`}
@@ -214,10 +222,10 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Appearance
+                {t('settings.appearance')}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Customize the look and feel
+                {t('settings.appearanceDescription')}
               </p>
             </div>
           </div>
@@ -225,9 +233,9 @@ export default function SettingsPage() {
         <div className="p-6">
           <div className="flex items-center space-x-3">
             {[
-              { value: 'light', icon: Sun, label: 'Light' },
-              { value: 'dark', icon: Moon, label: 'Dark' },
-              { value: 'system', icon: Monitor, label: 'System' },
+              { value: 'light', icon: Sun, label: t('settings.lightMode') },
+              { value: 'dark', icon: Moon, label: t('settings.darkMode') },
+              { value: 'system', icon: Monitor, label: t('settings.systemTheme') },
             ].map((option) => (
               <button
                 key={option.value}
@@ -256,10 +264,10 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Language & Region
+                {t('settings.languageRegion')}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Set your language and timezone
+                {t('settings.languageRegionDescription')}
               </p>
             </div>
           </div>
@@ -268,7 +276,7 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Language
+                {t('settings.language')}
               </label>
               <select
                 value={i18n.language}
@@ -284,7 +292,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Timezone
+                {t('settings.timezone')}
               </label>
               <select 
                 className="input" 
@@ -311,10 +319,10 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Features
+                {t('settings.features')}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Optional features configured by system administrator
+                {t('settings.featuresDescription')}
               </p>
             </div>
           </div>
@@ -327,16 +335,16 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="font-medium text-slate-900 dark:text-white">
-                  WebSocket Connection
+                  {t('settings.websocketConnection')}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Real-time bidirectional communication
+                  {t('settings.websocketDescription')}
                 </p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <span className={`text-sm font-medium ${websocket_enabled ? 'text-green-600' : 'text-slate-400'}`}>
-                {websocket_enabled ? 'Enabled' : 'Disabled'}
+                {websocket_enabled ? t('settings.enabled') : t('settings.disabled')}
               </span>
               <div className={`w-2 h-2 rounded-full ${websocket_enabled ? 'bg-green-500' : 'bg-slate-300'}`} />
             </div>
@@ -349,16 +357,16 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="font-medium text-slate-900 dark:text-white">
-                  Real-time Notifications
+                  {t('settings.realtimeNotifications')}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Instant notification delivery via WebSocket
+                  {t('settings.realtimeNotificationsDescription')}
                 </p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <span className={`text-sm font-medium ${websocket_notifications ? 'text-green-600' : 'text-slate-400'}`}>
-                {websocket_notifications ? 'Enabled' : 'Disabled'}
+                {websocket_notifications ? t('settings.enabled') : t('settings.disabled')}
               </span>
               <div className={`w-2 h-2 rounded-full ${websocket_notifications ? 'bg-green-500' : 'bg-slate-300'}`} />
             </div>
@@ -366,8 +374,7 @@ export default function SettingsPage() {
 
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              <strong>Note:</strong> These features are configured via environment variables by the system administrator. 
-              Contact your administrator to enable or disable optional features.
+              <strong>{t('common.note')}:</strong> {t('settings.featuresNote')}
             </p>
           </div>
         </div>
@@ -382,10 +389,10 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Security
+                {t('settings.security')}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Manage your account security settings
+                {t('settings.securityDescription')}
               </p>
             </div>
           </div>
@@ -399,10 +406,10 @@ export default function SettingsPage() {
               <Key className="w-5 h-5 text-slate-500" />
               <div className="text-left">
                 <h3 className="font-medium text-slate-900 dark:text-white">
-                  Two-Factor Authentication
+                  {t('settings.twoFactorAuth')}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Add an extra layer of security to your account
+                  {t('settings.twoFactorAuthDescription')}
                 </p>
               </div>
             </div>
@@ -416,10 +423,10 @@ export default function SettingsPage() {
               <Monitor className="w-5 h-5 text-slate-500" />
               <div className="text-left">
                 <h3 className="font-medium text-slate-900 dark:text-white">
-                  Active Sessions
+                  {t('settings.activeSessions')}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  View and manage your active sessions across devices
+                  {t('settings.activeSessionsDescription')}
                 </p>
               </div>
             </div>
@@ -432,17 +439,17 @@ export default function SettingsPage() {
       <div className="card border-red-200 dark:border-red-800">
         <div className="p-6 border-b border-red-200 dark:border-red-800">
           <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
-            Danger Zone
+            {t('settings.dangerZone')}
           </h2>
         </div>
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-medium text-slate-900 dark:text-white">
-                Delete Account
+                {t('settings.deleteAccount')}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Delete your account. This uses soft delete and can be reversed by an administrator.
+                {t('settings.deleteAccountDescription')}
               </p>
             </div>
             <button
@@ -450,7 +457,7 @@ export default function SettingsPage() {
               className="btn-danger"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete Account
+              {t('settings.deleteAccount')}
             </button>
           </div>
         </div>
@@ -461,10 +468,10 @@ export default function SettingsPage() {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
-        title="Delete Account"
-        message="Are you sure you want to delete your account? This action uses soft delete and can be reversed by an administrator. You will be logged out immediately."
-        confirmText={deleteAccountMutation.isPending ? 'Deleting...' : 'Delete Account'}
-        cancelText="Cancel"
+        title={t('settings.deleteAccount')}
+        message={t('settings.deleteAccountWarning')}
+        confirmText={deleteAccountMutation.isPending ? t('settings.deletingAccount') : t('settings.deleteAccount')}
+        cancelText={t('common.cancel')}
         variant="danger"
         isLoading={deleteAccountMutation.isPending}
       />

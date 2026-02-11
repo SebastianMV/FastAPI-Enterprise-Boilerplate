@@ -9,8 +9,26 @@ e2e/
 ├── auth/
 │   ├── login.spec.ts          # Login básico sin MFA
 │   └── login-mfa.spec.ts      # Login con MFA habilitado
+├── audit/
+│   └── audit.spec.ts          # Audit logs y filtros
+├── dashboard/
+│   └── dashboard.spec.ts      # Dashboard principal y navegación
+├── data/
+│   └── data-exchange.spec.ts  # Import/Export de datos
+├── notifications/
+│   └── notifications.spec.ts  # Notificaciones y panel
+├── profile/
+│   └── profile.spec.ts        # Perfil de usuario y sesiones
+├── roles/
+│   └── roles.spec.ts          # Gestión de roles RBAC
+├── search/
+│   └── search.spec.ts         # Búsqueda global y resultados
+├── security/
+│   └── security.spec.ts       # MFA setup y configuración de seguridad
 ├── settings/
 │   └── settings.spec.ts       # Página de configuración
+├── users/
+│   └── users.spec.ts          # Gestión de usuarios
 └── README.md
 ```
 
@@ -66,7 +84,7 @@ La configuración se encuentra en `playwright.config.ts`:
 
 ## 📊 Cobertura Actual
 
-### Tests Implementados (3 archivos, ~25 tests)
+### Tests Implementados (12 archivos, ~70 tests)
 
 #### ✅ Auth - Login Básico (`login.spec.ts`)
 
@@ -101,28 +119,132 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Features section read-only
 - [x] **Dark mode theme buttons visible** ⚠️ Test específico del bug
 
-## 🎯 Próximos Tests a Implementar
+#### ✅ Roles Page (`roles.spec.ts`)
 
-### Sprint 1 - Fase B (Pendientes)
+- [x] Display roles page with header
+- [x] Show roles table/list
+- [x] Display default roles (admin)
+- [x] Create role button visible
+- [x] Open create role modal/form
+- [x] Validate required fields
+- [x] Create a new role
+- [x] Show role permissions section
+- [x] Edit functionality for roles
+- [x] Delete functionality (non-system roles)
+- [x] Confirm before deleting
+- [x] Search/filter roles
+- [x] Display role count/pagination
+- [x] Redirect non-admin users
 
-1. **Profile Edit** (`e2e/profile/edit.spec.ts`)
-   - Update first name, last name
-   - Update email
-   - Form validation
-   - Success/error messages
+#### ✅ Search Page (`search.spec.ts`)
 
-2. **Password Change** (`e2e/profile/password.spec.ts`)
-   - Change password flow
-   - Validation (current, new, confirm)
-   - Success message
+- [x] Display search bar in header
+- [x] Focus on click
+- [x] Show suggestions on typing
+- [x] Navigate to search page on Enter
+- [x] Clear search input
+- [x] Close dropdown on Escape
+- [x] Display search results
+- [x] Filter by type
+- [x] Result count
+- [x] Pagination
+- [x] Recent searches save
+- [x] Display recent searches
+- [x] Keyboard navigation
+- [x] Accessibility labels
 
-3. **MFA Setup** (`e2e/security/mfa-setup.spec.ts`)
-   - Begin MFA setup
-   - Display QR code
-   - Manual code entry
-   - Verify MFA code
-   - Show backup codes
-   - Download backup codes
+#### ✅ Users Page (`users.spec.ts`)
+
+- [x] Display users page with header
+- [x] Show users table/list
+- [x] Display user data columns
+- [x] Search users
+- [x] Action buttons for users
+- [x] Paginate users
+- [x] Show user count
+- [x] View user details
+
+#### ✅ Notifications (`notifications.spec.ts`)
+
+- [x] Display notifications page
+- [x] Show notification list or empty state
+- [x] Mark all as read button
+- [x] Filter notifications
+- [x] Notification bell in header
+- [x] Show dropdown on click
+- [x] Notification count badge
+
+#### ✅ Dashboard (`dashboard.spec.ts`)
+
+- [x] Display dashboard page
+- [x] Show welcome message or user info
+- [x] Display statistics cards
+- [x] Navigation sidebar/menu
+- [x] User menu in header
+- [x] Navigate to users page
+- [x] Navigate to roles page
+- [x] Navigate to settings
+- [x] Logout successfully
+- [x] Responsive on mobile viewport
+- [x] Quick action buttons
+
+#### ✅ Profile (`profile.spec.ts`)
+
+- [x] Display profile page
+- [x] Show user information
+- [x] Display avatar/placeholder
+- [x] Edit profile button/form
+- [x] First/last name fields
+- [x] Update profile successfully
+- [x] Validate required fields
+- [x] Change password section
+- [x] Password form fields
+- [x] Navigate to sessions
+- [x] Show current session
+
+#### ✅ Audit Logs (`audit.spec.ts`)
+
+- [x] Display audit logs page
+- [x] Show logs table/list
+- [x] Display action types
+- [x] Filter options
+- [x] Filter by action type
+- [x] Pagination
+- [x] Log details on click
+- [x] Export functionality
+- [x] Timestamps display
+- [x] Actor/user display
+- [x] Access control for non-admin
+
+#### ✅ Data Exchange (`data-exchange.spec.ts`)
+
+- [x] Display data exchange page
+- [x] Export section
+- [x] Import section
+- [x] Entity type selector
+- [x] Format selector for export
+- [x] Trigger export download
+- [x] Download template option
+- [x] File upload zone
+- [x] Accept CSV/Excel files
+- [x] Validation mode option
+- [x] Import/export history
+
+#### ✅ Security/MFA (`security.spec.ts`)
+
+- [x] Display security page
+- [x] MFA status section
+- [x] Enable MFA button
+- [x] QR code display
+- [x] Manual setup key
+- [x] Code verification required
+- [x] 6-digit code validation
+- [x] Backup codes section
+- [x] View backup codes
+- [x] Disable MFA option
+- [x] Password required to disable
+- [x] Active sessions section
+- [x] Sign out all sessions
 
 ## 📖 Guía de Escritura de Tests
 

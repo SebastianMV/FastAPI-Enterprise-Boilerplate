@@ -7,9 +7,8 @@ Unit tests for OAuth API endpoints schemas.
 Tests for OAuth endpoint request/response schemas.
 """
 
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -244,7 +243,7 @@ class TestOAuthProviders:
         from app.domain.entities.oauth import OAuthProvider
 
         supported = [p.value for p in OAuthProvider]
-        
+
         assert "google" in supported
         assert "github" in supported
         assert "microsoft" in supported
@@ -271,7 +270,7 @@ class TestOAuthEndpointEdgeCases:
             provider_email="user@gmail.com",
             is_primary=True,
         )
-        
+
         github_conn = OAuthConnectionResponse(
             id=uuid4(),
             provider="github",

@@ -77,28 +77,14 @@ export default function TenantsPage() {
 
   const queryClient = useQueryClient();
 
-  // Check if user is superuser
-  if (!user?.is_superuser) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('tenants.accessDenied')}</h2>
-          <p className="text-gray-500 dark:text-gray-400">
-            {t('tenants.accessDeniedMessage')}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Fetch tenants
+  // Fetch tenants - hooks must be called before any conditional returns
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['tenants', statusFilter],
     queryFn: () => tenantsService.list({
       limit: 100,
       is_active: statusFilter === 'all' ? undefined : statusFilter === 'active',
     }),
+    enabled: !!user?.is_superuser,
   });
 
   // Create mutation
@@ -115,11 +101,11 @@ export default function TenantsPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('tenants.createError'),
+        message: t('tenants.createError'),
         variant: 'error',
       });
     },
@@ -140,11 +126,11 @@ export default function TenantsPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('tenants.updateError'),
+        message: t('tenants.updateError'),
         variant: 'error',
       });
     },
@@ -164,11 +150,11 @@ export default function TenantsPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('tenants.deleteError'),
+        message: t('tenants.deleteError'),
         variant: 'error',
       });
     },
@@ -231,11 +217,11 @@ export default function TenantsPage() {
   ) || [];
 
   // Helper to clean empty strings from form data
-  const cleanFormData = (data: CreateTenantFormData | EditTenantFormData): Record<string, unknown> => {
-    const cleaned: Record<string, unknown> = {};
+  const cleanFormData = <T extends Record<string, unknown>>(data: T): Partial<T> => {
+    const cleaned: Partial<T> = {};
     for (const [key, value] of Object.entries(data)) {
       if (value !== '' && value !== undefined && value !== null) {
-        cleaned[key] = value;
+        (cleaned as Record<string, unknown>)[key] = value;
       }
     }
     return cleaned;
@@ -246,7 +232,7 @@ export default function TenantsPage() {
     const cleaned = cleanFormData(formData);
     // Ensure required fields are present
     if (cleaned.name && cleaned.slug) {
-      createMutation.mutate(cleaned as unknown as CreateTenantFormData);
+      createMutation.mutate(cleaned as CreateTenantFormData);
     }
   };
 
@@ -291,6 +277,21 @@ export default function TenantsPage() {
       activateMutation.mutate(tenant.id);
     }
   };
+
+  // Check if user is superuser (after all hooks)
+  if (!user?.is_superuser) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('tenants.accessDenied')}</h2>
+          <p className="text-gray-500 dark:text-gray-400">
+            {t('tenants.accessDeniedMessage')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -439,8 +440,8 @@ export default function TenantsPage() {
                     {t('tenants.maxUsers', { count: tenant.settings.max_users })}
                   </span>
                   <span>
-                    {tenant.settings.enable_2fa && '2FA'} 
-                    {tenant.settings.enable_api_keys && ' • API Keys'}
+                    {tenant.settings.enable_2fa && t('tenants.feature2fa')} 
+                    {tenant.settings.enable_api_keys && ` • ${t('tenants.featureApiKeys')}`}
                   </span>
                 </div>
               </div>
@@ -609,11 +610,9 @@ export default function TenantsPage() {
                 {...registerCreate('locale')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
-                <option value="en">English</option>
-                <option value="es">Español</option>
-                <option value="pt">Português</option>
-                <option value="fr">Français</option>
-                <option value="de">Deutsch</option>
+                <option value="en">{t('tenants.localeEnglish')}</option>
+                <option value="es">{t('tenants.localeSpanish')}</option>
+                <option value="pt">{t('tenants.localePortuguese')}</option>
               </select>
             </div>
           </div>

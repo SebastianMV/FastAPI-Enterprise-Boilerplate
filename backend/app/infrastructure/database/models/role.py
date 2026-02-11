@@ -19,26 +19,26 @@ from app.infrastructure.database.models.custom_types import JSONEncodedList
 class RoleModel(Base):
     """
     Role database model.
-    
+
     Table: roles
     """
-    
+
     __tablename__ = "roles"
-    
+
     # Primary key
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
-    
+
     # Tenant isolation
     tenant_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         nullable=False,
         index=True,
     )
-    
+
     # Role info
     name: Mapped[str] = mapped_column(
         String(100),
@@ -50,7 +50,7 @@ class RoleModel(Base):
         nullable=False,
         default="",
     )
-    
+
     # Permissions stored as array of strings (resource:action)
     # Uses PostgreSQL ARRAY or JSON for SQLite
     permissions: Mapped[list[str]] = mapped_column(
@@ -58,14 +58,14 @@ class RoleModel(Base):
         nullable=False,
         default=list,
     )
-    
+
     # System roles cannot be deleted
     is_system: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=False,
     )
-    
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -78,7 +78,7 @@ class RoleModel(Base):
         server_default=text("CURRENT_TIMESTAMP"),
         onupdate=text("CURRENT_TIMESTAMP"),
     )
-    
+
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(
         Boolean,
@@ -89,7 +89,7 @@ class RoleModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    
+
     # Audit
     created_by: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -99,7 +99,7 @@ class RoleModel(Base):
         UUID(as_uuid=True),
         nullable=True,
     )
-    
+
     def __repr__(self) -> str:
         """String representation for debugging."""
         return f"<Role(id={self.id}, name={self.name})>"

@@ -22,30 +22,20 @@ import {
 } from 'lucide-react';
 import { useNotificationsStore, type Notification } from '@/stores/notificationsStore';
 import { notificationsService } from '@/services/api';
+import { formatRelativeTime as formatRelativeTimeShared } from '@/utils/formatRelativeTime';
 
 type FilterType = 'all' | 'unread' | 'read';
 
 /**
  * Format a timestamp as relative time.
  */
-function formatRelativeTime(timestamp: string, t: any): string {
-  try {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    if (diffInSeconds < 60) return t('notifications.timeAgo.justNow');
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) return t('notifications.timeAgo.minutesAgo', { count: diffInMinutes });
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return t('notifications.timeAgo.hoursAgo', { count: diffInHours });
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return t('notifications.timeAgo.daysAgo', { count: diffInDays });
-    
-    return date.toLocaleDateString();
-  } catch {
-    return t('notifications.timeAgo.justNow');
-  }
+function formatRelativeTime(timestamp: string, t: (key: string, options?: Record<string, unknown>) => string): string {
+  return formatRelativeTimeShared(timestamp, {
+    justNow: t('notifications.timeAgo.justNow'),
+    minutesAgo: (count: number) => t('notifications.timeAgo.minutesAgo', { count }),
+    hoursAgo: (count: number) => t('notifications.timeAgo.hoursAgo', { count }),
+    daysAgo: (count: number) => t('notifications.timeAgo.daysAgo', { count }),
+  });
 }
 
 /**
@@ -62,6 +52,19 @@ function getNotificationIcon(type: Notification['type']) {
     default:
       return <Info className="w-5 h-5 text-blue-500" />;
   }
+}
+
+/**
+ * Validate that an action URL is a safe relative path (not an external redirect).
+ */
+function isSafeActionUrl(url: string): boolean {
+  // Only allow relative paths starting with /
+  if (!url.startsWith('/')) return false;
+  // Block protocol-relative URLs (//evil.com)
+  if (url.startsWith('//')) return false;
+  // Block URLs with protocol schemes
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url)) return false;
+  return true;
 }
 
 /**
@@ -90,8 +93,8 @@ export default function NotificationsPage() {
       setIsLoading(true);
       const response = await notificationsService.getAll({ page: 1, page_size: 100 });
       setNotifications(response.items);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+    } catch {
+      // Fetch failed — non-critical
     } finally {
       setIsLoading(false);
     }
@@ -115,11 +118,17 @@ export default function NotificationsPage() {
   );
   const totalPages = Math.ceil(filteredNotifications.length / pageSize);
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
+      // Sync to backend so read state persists across sessions/devices
+      try {
+        await notificationsService.markAsRead(notification.id);
+      } catch {
+        // API call failed — still mark locally
+      }
       markAsRead(notification.id);
     }
-    if (notification.action_url) {
+    if (notification.action_url && isSafeActionUrl(notification.action_url)) {
       navigate(notification.action_url);
     }
   };
@@ -129,8 +138,8 @@ export default function NotificationsPage() {
     try {
       await notificationsService.delete(id);
       removeNotification(id);
-    } catch (error) {
-      console.error('Failed to delete notification:', error);
+    } catch {
+      // Delete failed — non-critical
     }
   };
 
@@ -138,9 +147,8 @@ export default function NotificationsPage() {
     try {
       await notificationsService.markAllAsRead();
       markAllAsRead();
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
-      // Still mark locally
+    } catch {
+      // API call failed but still mark locally
       markAllAsRead();
     }
   };
@@ -232,7 +240,10 @@ export default function NotificationsPage() {
             {paginatedNotifications.map((notification) => (
               <div
                 key={notification.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleNotificationClick(notification)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNotificationClick(notification); } }}
                 className={`flex items-start gap-4 p-4 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
                   !notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                 }`}
@@ -258,9 +269,9 @@ export default function NotificationsPage() {
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {!notification.read && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); markAsRead(notification.id); }}
+                      onClick={async (e) => { e.stopPropagation(); try { await notificationsService.markAsRead(notification.id); } catch { /* non-critical */ } markAsRead(notification.id); }}
                       className="p-1.5 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
-                      title="Mark as read"
+                      title={t('notificationsDropdown.markAsRead')}
                     >
                       <Check className="w-4 h-4" />
                     </button>
@@ -268,7 +279,7 @@ export default function NotificationsPage() {
                   <button
                     onClick={(e) => handleDelete(notification.id, e)}
                     className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
-                    title="Delete"
+                    title={t('common.delete')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

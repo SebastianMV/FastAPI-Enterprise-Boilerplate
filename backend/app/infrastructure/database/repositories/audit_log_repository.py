@@ -7,8 +7,8 @@ SQLAlchemy implementation of the AuditLog repository.
 Implements the AuditLogRepository port from the domain layer.
 """
 
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -24,20 +24,20 @@ from app.infrastructure.database.models.audit_log import AuditLogModel
 class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
     """
     SQLAlchemy implementation of AuditLogRepository.
-    
+
     Handles persistence of audit log entries to PostgreSQL.
     This implementation is append-only - no updates or deletes.
     """
-    
+
     def __init__(self, session: AsyncSession) -> None:
         """
         Initialize repository with database session.
-        
+
         Args:
             session: SQLAlchemy async session
         """
         self._session = session
-    
+
     def _to_model(self, entity: AuditLog) -> AuditLogModel:
         """Convert domain entity to database model."""
         return AuditLogModel(
@@ -57,10 +57,11 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
             metadata=entity.metadata,
             reason=entity.reason,
         )
-    
+
     def _to_entity(self, model: AuditLogModel) -> AuditLog:
         """Convert database model to domain entity."""
         from uuid import UUID as PyUUID
+
         return AuditLog(
             id=PyUUID(str(model.id)),
             timestamp=model.timestamp,
@@ -78,21 +79,21 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
             metadata=model.metadata or {},
             reason=model.reason,
         )
-    
+
     async def create(self, audit_log: AuditLog) -> AuditLog:
         """Create a new audit log entry."""
         model = self._to_model(audit_log)
         self._session.add(model)
         await self._session.flush()
         return self._to_entity(model)
-    
+
     async def create_many(self, audit_logs: list[AuditLog]) -> list[AuditLog]:
         """Create multiple audit log entries in a single transaction."""
         models = [self._to_model(log) for log in audit_logs]
         self._session.add_all(models)
         await self._session.flush()
         return [self._to_entity(model) for model in models]
-    
+
     async def get_by_id(self, audit_id: UUID) -> AuditLog | None:
         """Retrieve an audit log entry by ID."""
         result = await self._session.execute(
@@ -100,7 +101,7 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         )
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
-    
+
     async def list_by_actor(
         self,
         actor_id: UUID,
@@ -109,21 +110,24 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         offset: int = 0,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+        tenant_id: UUID | None = None,
     ) -> Sequence[AuditLog]:
         """List audit logs for a specific actor."""
         query = select(AuditLogModel).where(AuditLogModel.actor_id == actor_id)
-        
+
+        if tenant_id:
+            query = query.where(AuditLogModel.tenant_id == tenant_id)
         if start_date:
             query = query.where(AuditLogModel.timestamp >= start_date)
         if end_date:
             query = query.where(AuditLogModel.timestamp <= end_date)
-        
+
         query = query.order_by(AuditLogModel.timestamp.desc())
         query = query.limit(limit).offset(offset)
-        
+
         result = await self._session.execute(query)
         return [self._to_entity(model) for model in result.scalars()]
-    
+
     async def list_by_resource(
         self,
         resource_type: AuditResourceType,
@@ -131,20 +135,23 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         *,
         limit: int = 100,
         offset: int = 0,
+        tenant_id: UUID | None = None,
     ) -> Sequence[AuditLog]:
         """List audit logs for a specific resource."""
         query = (
             select(AuditLogModel)
             .where(AuditLogModel.resource_type == resource_type.value)
             .where(AuditLogModel.resource_id == resource_id)
-            .order_by(AuditLogModel.timestamp.desc())
-            .limit(limit)
-            .offset(offset)
         )
-        
+
+        if tenant_id:
+            query = query.where(AuditLogModel.tenant_id == tenant_id)
+
+        query = query.order_by(AuditLogModel.timestamp.desc()).limit(limit).offset(offset)
+
         result = await self._session.execute(query)
         return [self._to_entity(model) for model in result.scalars()]
-    
+
     async def list_by_tenant(
         self,
         tenant_id: UUID,
@@ -158,7 +165,7 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
     ) -> Sequence[AuditLog]:
         """List audit logs for a specific tenant."""
         query = select(AuditLogModel).where(AuditLogModel.tenant_id == tenant_id)
-        
+
         if action:
             query = query.where(AuditLogModel.action == action.value)
         if resource_type:
@@ -167,13 +174,13 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
             query = query.where(AuditLogModel.timestamp >= start_date)
         if end_date:
             query = query.where(AuditLogModel.timestamp <= end_date)
-        
+
         query = query.order_by(AuditLogModel.timestamp.desc())
         query = query.limit(limit).offset(offset)
-        
+
         result = await self._session.execute(query)
         return [self._to_entity(model) for model in result.scalars()]
-    
+
     async def count_by_tenant(
         self,
         tenant_id: UUID,
@@ -187,7 +194,7 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         query = select(func.count(AuditLogModel.id)).where(
             AuditLogModel.tenant_id == tenant_id
         )
-        
+
         if action:
             query = query.where(AuditLogModel.action == action.value)
         if resource_type:
@@ -196,10 +203,10 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
             query = query.where(AuditLogModel.timestamp >= start_date)
         if end_date:
             query = query.where(AuditLogModel.timestamp <= end_date)
-        
+
         result = await self._session.execute(query)
         return result.scalar_one()
-    
+
     async def list_recent_logins(
         self,
         tenant_id: UUID | None = None,
@@ -211,15 +218,13 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         login_actions = [AuditAction.LOGIN.value]
         if include_failed:
             login_actions.append(AuditAction.LOGIN_FAILED.value)
-        
-        query = select(AuditLogModel).where(
-            AuditLogModel.action.in_(login_actions)
-        )
-        
+
+        query = select(AuditLogModel).where(AuditLogModel.action.in_(login_actions))
+
         if tenant_id:
             query = query.where(AuditLogModel.tenant_id == tenant_id)
-        
+
         query = query.order_by(AuditLogModel.timestamp.desc()).limit(limit)
-        
+
         result = await self._session.execute(query)
         return [self._to_entity(model) for model in result.scalars()]

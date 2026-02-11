@@ -15,11 +15,11 @@ from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app.api.deps import (
-    get_current_user_id,
     get_current_tenant_id,
-    require_superuser,
-    require_permission,
     get_current_user,
+    get_current_user_id,
+    require_permission,
+    require_superuser,
     security,
 )
 from app.domain.exceptions.base import AuthenticationError
@@ -45,7 +45,7 @@ class TestGetCurrentUserId:
         """Test missing credentials raises 401."""
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user_id(None)
-        
+
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail["code"] == "MISSING_TOKEN"
 
@@ -54,34 +54,31 @@ class TestGetCurrentUserId:
         """Test valid token returns user ID."""
         user_id = uuid4()
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="valid_token"
+            scheme="Bearer", credentials="valid_token"
         )
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {"sub": str(user_id)}
-            
+
             result = await get_current_user_id(credentials)
-            
+
             assert result == user_id
 
     @pytest.mark.asyncio
     async def test_invalid_token_raises_401(self) -> None:
         """Test invalid token raises 401."""
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="invalid_token"
+            scheme="Bearer", credentials="invalid_token"
         )
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.side_effect = AuthenticationError(
-                message="Token expired",
-                code="TOKEN_EXPIRED"
+                message="Token expired", code="TOKEN_EXPIRED"
             )
-            
+
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user_id(credentials)
-            
+
             assert exc_info.value.status_code == 401
             assert exc_info.value.detail["code"] == "TOKEN_EXPIRED"
 
@@ -100,45 +97,45 @@ class TestGetCurrentTenantId:
         """Test valid token with tenant returns tenant ID."""
         tenant_id = uuid4()
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="valid_token"
+            scheme="Bearer", credentials="valid_token"
         )
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
-            mock_validate.return_value = {"sub": str(uuid4()), "tenant_id": str(tenant_id)}
-            
+            mock_validate.return_value = {
+                "sub": str(uuid4()),
+                "tenant_id": str(tenant_id),
+            }
+
             result = await get_current_tenant_id(credentials)
-            
+
             assert result == tenant_id
 
     @pytest.mark.asyncio
     async def test_valid_token_without_tenant_returns_none(self) -> None:
         """Test valid token without tenant returns None."""
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="valid_token"
+            scheme="Bearer", credentials="valid_token"
         )
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {"sub": str(uuid4())}
-            
+
             result = await get_current_tenant_id(credentials)
-            
+
             assert result is None
 
     @pytest.mark.asyncio
     async def test_invalid_token_returns_none(self) -> None:
         """Test invalid token returns None instead of raising."""
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="invalid_token"
+            scheme="Bearer", credentials="invalid_token"
         )
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.side_effect = AuthenticationError("Invalid", "INVALID")
-            
+
             result = await get_current_tenant_id(credentials)
-            
+
             assert result is None
 
 
@@ -150,7 +147,7 @@ class TestRequireSuperuser:
         """Test missing credentials raises 401."""
         with pytest.raises(HTTPException) as exc_info:
             await require_superuser(None)
-        
+
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
@@ -158,37 +155,29 @@ class TestRequireSuperuser:
         """Test superuser token returns user ID."""
         user_id = uuid4()
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="superuser_token"
+            scheme="Bearer", credentials="superuser_token"
         )
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
-            mock_validate.return_value = {
-                "sub": str(user_id),
-                "is_superuser": True
-            }
-            
+            mock_validate.return_value = {"sub": str(user_id), "is_superuser": True}
+
             result = await require_superuser(credentials)
-            
+
             assert result == user_id
 
     @pytest.mark.asyncio
     async def test_non_superuser_raises_403(self) -> None:
         """Test non-superuser raises 403."""
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="regular_token"
+            scheme="Bearer", credentials="regular_token"
         )
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
-            mock_validate.return_value = {
-                "sub": str(uuid4()),
-                "is_superuser": False
-            }
-            
+            mock_validate.return_value = {"sub": str(uuid4()), "is_superuser": False}
+
             with pytest.raises(HTTPException) as exc_info:
                 await require_superuser(credentials)
-            
+
             assert exc_info.value.status_code == 403
             assert "Superuser" in exc_info.value.detail["message"]
 
@@ -196,16 +185,15 @@ class TestRequireSuperuser:
     async def test_invalid_token_raises_401(self) -> None:
         """Test invalid token raises 401."""
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="invalid"
+            scheme="Bearer", credentials="invalid"
         )
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.side_effect = AuthenticationError("Expired", "EXPIRED")
-            
+
             with pytest.raises(HTTPException) as exc_info:
                 await require_superuser(credentials)
-            
+
             assert exc_info.value.status_code == 401
 
 
@@ -222,10 +210,10 @@ class TestRequirePermission:
         """Test missing credentials raises 401."""
         checker = require_permission("users", "read")
         mock_session = AsyncMock()
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await checker(None, mock_session)
-        
+
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
@@ -234,19 +222,15 @@ class TestRequirePermission:
         checker = require_permission("users", "delete")
         user_id = uuid4()
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="superuser_token"
+            scheme="Bearer", credentials="superuser_token"
         )
         mock_session = AsyncMock()
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
-            mock_validate.return_value = {
-                "sub": str(user_id),
-                "is_superuser": True
-            }
-            
+            mock_validate.return_value = {"sub": str(user_id), "is_superuser": True}
+
             result = await checker(credentials, mock_session)
-            
+
             assert result == user_id
 
     @pytest.mark.asyncio
@@ -254,17 +238,16 @@ class TestRequirePermission:
         """Test invalid token raises 401."""
         checker = require_permission("users", "read")
         credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer",
-            credentials="invalid"
+            scheme="Bearer", credentials="invalid"
         )
         mock_session = AsyncMock()
-        
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.side_effect = AuthenticationError("Invalid", "INVALID")
-            
+
             with pytest.raises(HTTPException) as exc_info:
                 await checker(credentials, mock_session)
-            
+
             assert exc_info.value.status_code == 401
 
 
@@ -277,10 +260,10 @@ class TestGetCurrentUser:
         user_id = uuid4()
         mock_session = AsyncMock()
         mock_session.get.return_value = None
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user(user_id, mock_session)
-        
+
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail["code"] == "USER_NOT_FOUND"
 
@@ -289,7 +272,7 @@ class TestGetCurrentUser:
         """Test user found returns User domain entity."""
         user_id = uuid4()
         tenant_id = uuid4()
-        
+
         mock_user_model = MagicMock()
         mock_user_model.id = user_id
         mock_user_model.tenant_id = tenant_id
@@ -303,12 +286,12 @@ class TestGetCurrentUser:
         mock_user_model.last_login = None
         mock_user_model.created_at = None
         mock_user_model.updated_at = None
-        
+
         mock_session = AsyncMock()
         mock_session.get.return_value = mock_user_model
-        
+
         result = await get_current_user(user_id, mock_session)
-        
+
         assert result.id == user_id
         assert str(result.email) == "test@example.com"
         assert result.first_name == "John"
@@ -321,13 +304,13 @@ class TestTypeAliases:
     def test_type_aliases_exist(self) -> None:
         """Test type aliases are defined."""
         from app.api.deps import (
-            CurrentUserId,
             CurrentTenantId,
             CurrentUser,
-            SuperuserId,
+            CurrentUserId,
             DbSession,
+            SuperuserId,
         )
-        
+
         assert CurrentUserId is not None
         assert CurrentTenantId is not None
         assert CurrentUser is not None

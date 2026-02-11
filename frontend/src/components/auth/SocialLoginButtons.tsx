@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { oauthService, OAUTH_PROVIDERS } from '@/services/api';
 
@@ -16,6 +17,7 @@ export default function SocialLoginButtons({
   mode = 'login',
   onError 
 }: SocialLoginButtonsProps) {
+  const { t } = useTranslation();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
   const handleSocialLogin = async (providerId: string) => {
@@ -27,9 +29,8 @@ export default function SocialLoginButtons({
       } else {
         await oauthService.redirectToProvider(providerId);
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to connect';
-      onError?.(message);
+    } catch {
+      onError?.(t('oauth.connectionFailed'));
       setLoadingProvider(null);
     }
   };
@@ -84,11 +85,11 @@ export default function SocialLoginButtons({
   const getButtonLabel = () => {
     switch (mode) {
       case 'register':
-        return 'Sign up with';
+        return t('oauth.signUpWith');
       case 'link':
-        return 'Connect';
+        return t('oauth.connect');
       default:
-        return 'Continue with';
+        return t('oauth.continueWith');
     }
   };
 

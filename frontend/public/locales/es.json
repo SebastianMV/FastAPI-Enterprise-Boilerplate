@@ -95,7 +95,8 @@
     "tenants": "Inquilinos",
     "notifications": "Notificaciones",
     "security": "Seguridad",
-    "sessions": "Sesiones"
+    "sessions": "Sesiones",
+    "dataExchange": "Intercambio de Datos"
   },
   "dashboard": {
     "title": "Panel",
@@ -303,22 +304,6 @@
     "saveChanges": "Guardar Cambios",
     "changesSaved": "Configuración guardada exitosamente"
   },
-  "validation": {
-    "required": "Este campo es requerido",
-    "emailInvalid": "Por favor ingresa un correo electrónico válido",
-    "passwordMin": "La contraseña debe tener al menos {{min}} caracteres",
-    "passwordMismatch": "Las contraseñas no coinciden",
-    "minLength": "Debe tener al menos {{min}} caracteres",
-    "maxLength": "Debe tener como máximo {{max}} caracteres"
-  },
-  "errors": {
-    "generic": "Algo salió mal. Por favor intenta de nuevo",
-    "notFound": "Página no encontrada",
-    "unauthorized": "No estás autorizado para acceder a esta página",
-    "forbidden": "Acceso denegado",
-    "serverError": "Error del servidor. Por favor intenta más tarde",
-    "networkError": "Error de red. Por favor verifica tu conexión"
-  },
   "audit": {
     "title": "Registro de Auditoría",
     "subtitle": "Seguimiento de seguridad y cumplimiento para tu organización",
@@ -359,15 +344,6 @@
       "actor": "Actor",
       "resource": "Recurso",
       "ipAddress": "Dirección IP"
-    },
-    "pagination": {
-      "showing": "Mostrando",
-      "to": "a",
-      "of": "de",
-      "entries": "entradas",
-      "previous": "Anterior",
-      "next": "Siguiente",
-      "page": "Página"
     },
     "actions": {
       "CREATE": "Creó",
@@ -421,7 +397,6 @@
     "name": "Nombre",
     "prefix": "Prefijo",
     "expires": "Expira",
-    "scopes": "Scopes",
     "savedKey": "He Guardado Mi Clave",
     "revoked": "Revocada",
     "expired": "Expirada",
@@ -639,6 +614,53 @@
       "yes": "Sí",
       "no": "No"
     }
+  },
+  "data": {
+    "title": "Intercambio de Datos",
+    "description": "Importar, exportar y generar reportes de tus datos",
+    "selectEntity": "Seleccionar Entidad",
+    "fields": "campos",
+    "export": "Exportar",
+    "import": "Importar",
+    "reports": "Reportes",
+    "exportFormat": "Formato de Exportación",
+    "selectColumns": "Seleccionar Columnas (opcional)",
+    "allColumnsSelected": "Se exportarán todas las columnas",
+    "columnsSelected": "{{count}} columnas seleccionadas",
+    "preview": "Vista Previa",
+    "records": "registros",
+    "exportButton": "Exportar Datos",
+    "downloadTemplate": "Descargar Plantilla de Importación",
+    "templateDescription": "Descarga una plantilla vacía con todos los campos requeridos",
+    "downloadTemplateButton": "Descargar Plantilla",
+    "importMode": "Modo de Importación",
+    "mode": {
+      "insert": "Solo Insertar",
+      "update": "Solo Actualizar",
+      "upsert": "Insertar o Actualizar"
+    },
+    "uploadFile": "Subir Archivo",
+    "dropFileHere": "Haz clic o arrastra el archivo aquí",
+    "validateButton": "Validar",
+    "importButton": "Importar Datos",
+    "validationResult": "Resultado de Validación",
+    "importResult": "Resultado de Importación",
+    "totalRows": "Filas Totales",
+    "inserted": "Insertados",
+    "updated": "Actualizados",
+    "skipped": "Omitidos",
+    "errors": "Errores",
+    "errorDetails": "Detalle de Errores",
+    "reportTitle": "Título del Reporte",
+    "reportFormat": "Formato del Reporte",
+    "availableFields": "Campos Disponibles",
+    "generateReportButton": "Generar Reporte",
+    "loadError": "Error al cargar entidades",
+    "exportError": "Error al exportar datos",
+    "templateError": "Error al descargar plantilla",
+    "validateError": "Error al validar archivo",
+    "importError": "Error al importar datos",
+    "reportError": "Error al generar reporte"
   },
   "search": {
     "title": "Buscar",

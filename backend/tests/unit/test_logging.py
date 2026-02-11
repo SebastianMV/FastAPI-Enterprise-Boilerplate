@@ -12,10 +12,10 @@ from app.infrastructure.observability.logging import (
     ConsoleFormatter,
     ContextLogger,
     JSONFormatter,
-    set_log_context,
     clear_log_context,
-    setup_logging,
     get_logger,
+    set_log_context,
+    setup_logging,
 )
 
 
@@ -201,6 +201,7 @@ class TestSetupLogging:
     def test_setup_with_json_format(self, monkeypatch):
         """Should use JSON formatter for production."""
         from app import config
+
         monkeypatch.setattr(config.settings, "LOG_FORMAT", "json")
         monkeypatch.setattr(config.settings, "ENVIRONMENT", "production")
 

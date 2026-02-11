@@ -7,9 +7,9 @@ Extended unit tests for Auth API endpoints.
 Additional tests covering more auth endpoint paths.
 """
 
-from datetime import datetime, timedelta, timezone, UTC
-from uuid import uuid4
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -28,9 +28,7 @@ class TestRefreshTokenEndpoint:
         request = RefreshTokenRequest(refresh_token="invalid-token")
         mock_session = AsyncMock()
 
-        with patch(
-            "app.api.v1.endpoints.auth.validate_refresh_token"
-        ) as mock_validate:
+        with patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate:
             mock_validate.side_effect = AuthenticationError(
                 code="INVALID_TOKEN",
                 message="Token is invalid",
@@ -52,9 +50,7 @@ class TestRefreshTokenEndpoint:
         mock_session = AsyncMock()
         user_id = uuid4()
 
-        with patch(
-            "app.api.v1.endpoints.auth.validate_refresh_token"
-        ) as mock_validate:
+        with patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(uuid4()),
@@ -87,9 +83,7 @@ class TestRefreshTokenEndpoint:
         mock_user.id = user_id
         mock_user.is_active = False
 
-        with patch(
-            "app.api.v1.endpoints.auth.validate_refresh_token"
-        ) as mock_validate:
+        with patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(uuid4()),
@@ -126,9 +120,7 @@ class TestRefreshTokenEndpoint:
         mock_user.is_superuser = False
         mock_user.roles = []
 
-        with patch(
-            "app.api.v1.endpoints.auth.validate_refresh_token"
-        ) as mock_validate:
+        with patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(tenant_id),
@@ -144,15 +136,14 @@ class TestRefreshTokenEndpoint:
                 with patch(
                     "app.api.v1.endpoints.auth.create_access_token",
                     return_value="new-access-token",
+                ), patch(
+                    "app.api.v1.endpoints.auth.create_refresh_token",
+                    return_value="new-refresh-token",
                 ):
-                    with patch(
-                        "app.api.v1.endpoints.auth.create_refresh_token",
-                        return_value="new-refresh-token",
-                    ):
-                        result = await refresh_token(
-                            request=request,
-                            session=mock_session,
-                        )
+                    result = await refresh_token(
+                        request=request,
+                        session=mock_session,
+                    )
 
         assert result.access_token == "new-access-token"
         assert result.refresh_token == "new-refresh-token"
@@ -207,6 +198,7 @@ class TestChangePasswordEndpoint:
     async def test_change_password_weak_password(self) -> None:
         """Test change password with weak new password - validation at schema level."""
         from pydantic import ValidationError
+
         from app.api.v1.schemas.auth import ChangePasswordRequest
 
         # Password validation happens at schema level
@@ -215,7 +207,7 @@ class TestChangePasswordEndpoint:
                 current_password="CurrentPass123!",
                 new_password="weak",  # Too short
             )
-        
+
         assert "new_password" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -275,13 +267,12 @@ class TestChangePasswordEndpoint:
             with patch(
                 "app.api.v1.endpoints.auth.verify_password",
                 return_value=False,
-            ):
-                with pytest.raises(HTTPException) as exc_info:
-                    await change_password(
-                        request=request,
-                        current_user_id=user_id,
-                        session=mock_session,
-                    )
+            ), pytest.raises(HTTPException) as exc_info:
+                await change_password(
+                    request=request,
+                    current_user_id=user_id,
+                    session=mock_session,
+                )
 
         assert exc_info.value.status_code == 400
         assert exc_info.value.detail["code"] == "INVALID_PASSWORD"
@@ -313,13 +304,12 @@ class TestChangePasswordEndpoint:
             with patch(
                 "app.api.v1.endpoints.auth.verify_password",
                 return_value=True,
-            ):
-                with patch("app.api.v1.endpoints.auth.hash_password"):
-                    result = await change_password(
-                        request=request,
-                        current_user_id=user_id,
-                        session=mock_session,
-                    )
+            ), patch("app.api.v1.endpoints.auth.hash_password"):
+                result = await change_password(
+                    request=request,
+                    current_user_id=user_id,
+                    session=mock_session,
+                )
 
         assert result.success is True
         mock_repo.update.assert_called_once()
@@ -447,6 +437,7 @@ class TestAuthSchemaValidation:
     def test_forgot_password_request_invalid_email(self) -> None:
         """Test ForgotPasswordRequest with invalid email."""
         from pydantic import ValidationError
+
         from app.api.v1.schemas.auth import ForgotPasswordRequest
 
         with pytest.raises(ValidationError):
@@ -461,7 +452,7 @@ class TestAuthSchemaValidation:
 
     def test_message_response_schema(self) -> None:
         """Test MessageResponse schema."""
-        from app.api.v1.schemas.auth import MessageResponse
+        from app.api.v1.schemas.common import MessageResponse
 
         response = MessageResponse(message="Success", success=True)
         assert response.message == "Success"
@@ -507,25 +498,22 @@ class TestAuthEdgeCases:
             with patch(
                 "app.api.v1.endpoints.auth.verify_password",
                 return_value=True,
+            ), patch(
+                "app.api.v1.endpoints.auth.create_access_token",
+                return_value="access",
+            ), patch(
+                "app.api.v1.endpoints.auth.create_refresh_token",
+                return_value="refresh",
+            ), patch(
+                "app.infrastructure.auth.jwt_handler.decode_token",
+                return_value={"jti": "mfa-test-jti"},
             ):
-                with patch(
-                    "app.api.v1.endpoints.auth.create_access_token",
-                    return_value="access",
-                ):
-                    with patch(
-                        "app.api.v1.endpoints.auth.create_refresh_token",
-                        return_value="refresh",
-                    ):
-                        with patch(
-                            "app.infrastructure.auth.jwt_handler.decode_token",
-                            return_value={"jti": "mfa-test-jti"},
-                        ):
-                            mock_http_request = MagicMock()
-                            result = await login(
-                                request=request,
-                                session=mock_session,
-                                http_request=mock_http_request,
-                            )
+                mock_http_request = MagicMock()
+                result = await login(
+                    request=request,
+                    session=mock_session,
+                    http_request=mock_http_request,
+                )
 
         assert result.access_token == "access"
 

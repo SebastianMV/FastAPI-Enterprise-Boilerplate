@@ -6,13 +6,12 @@ Full-Text Search API endpoints.
 """
 
 from typing import Any
-from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import DataError, ProgrammingError
 
-from app.api.deps import CurrentUser, CurrentTenantId, DbSession
-from app.config import settings
+from app.api.deps import CurrentTenantId, CurrentUser, DbSession, SuperuserId
 from app.domain.ports.search import (
     SearchFilter,
     SearchHighlight,
@@ -21,10 +20,23 @@ from app.domain.ports.search import (
     SearchSort,
     SortOrder,
 )
+from app.infrastructure.observability.logging import get_logger
 from app.infrastructure.search import get_search_backend
 
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/search", tags=["Search"])
+
+
+def _validate_search_index(index_name: str) -> SearchIndex:
+    """Validate and convert a search index name, raising HTTP 400 on invalid input."""
+    try:
+        return SearchIndex(index_name.lower())
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "INVALID_SEARCH_INDEX", "message": "Invalid search index"},
+        ) from None
 
 
 # ==============================================================================
@@ -34,30 +46,34 @@ router = APIRouter(prefix="/search", tags=["Search"])
 
 class SearchFilterRequest(BaseModel):
     """Search filter."""
-    
-    field: str = Field(..., description="Field to filter on")
+
+    field: str = Field(..., max_length=100, description="Field to filter on")
     value: Any = Field(..., description="Filter value")
     operator: str = Field(
         "eq",
+        max_length=20,
+        pattern="^(eq|ne|gt|gte|lt|lte|in|contains|startswith|endswith)$",
         description="Filter operator: eq, ne, gt, gte, lt, lte, in, contains, startswith, endswith",
     )
 
 
 class SearchSortRequest(BaseModel):
     """Search sort criteria."""
-    
-    field: str = Field(..., description="Field to sort by")
-    order: str = Field("desc", description="Sort order: asc or desc")
+
+    field: str = Field(..., max_length=100, description="Field to sort by")
+    order: str = Field("desc", pattern="^(asc|desc)$", description="Sort order: asc or desc")
 
 
 class SearchRequest(BaseModel):
     """Full-text search request."""
-    
+
     query: str = Field(..., min_length=1, max_length=500, description="Search query")
-    index: str = Field(..., description="Search index: users, posts, messages, documents, audit_logs")
-    filters: list[SearchFilterRequest] = Field(default_factory=list)
-    sort: list[SearchSortRequest] = Field(default_factory=list)
-    highlight_fields: list[str] = Field(default_factory=list)
+    index: str = Field(
+        ..., description="Search index: users, posts, messages, documents, audit_logs"
+    )
+    filters: list[SearchFilterRequest] = Field(default_factory=list, max_length=20)
+    sort: list[SearchSortRequest] = Field(default_factory=list, max_length=5)
+    highlight_fields: list[str] = Field(default_factory=list, max_length=20)
     page: int = Field(1, ge=1, description="Page number")
     page_size: int = Field(20, ge=1, le=100, description="Results per page")
     fuzzy: bool = Field(True, description="Enable fuzzy matching")
@@ -65,7 +81,7 @@ class SearchRequest(BaseModel):
 
 class SearchHitResponse(BaseModel):
     """Individual search result."""
-    
+
     id: str
     score: float
     source: dict[str, Any]
@@ -75,7 +91,7 @@ class SearchHitResponse(BaseModel):
 
 class SearchResponse(BaseModel):
     """Search results response."""
-    
+
     hits: list[SearchHitResponse]
     total: int
     page: int
@@ -90,13 +106,13 @@ class SearchResponse(BaseModel):
 
 class SuggestResponse(BaseModel):
     """Search suggestions response."""
-    
+
     suggestions: list[str]
 
 
 class HealthResponse(BaseModel):
     """Search health status."""
-    
+
     status: str
     backend: str
     details: dict[str, Any] = Field(default_factory=dict)
@@ -121,7 +137,7 @@ async def search(
 ) -> SearchResponse:
     """
     Execute full-text search.
-    
+
     Supports:
     - Multi-field search with relevance ranking
     - Filters with various operators
@@ -131,14 +147,8 @@ async def search(
     - Pagination
     """
     # Validate index
-    try:
-        search_index = SearchIndex(request.index.lower())
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid search index: {request.index}. Valid options: {[i.value for i in SearchIndex]}",
-        )
-    
+    search_index = _validate_search_index(request.index)
+
     # Build search query
     filters = [
         SearchFilter(
@@ -148,21 +158,23 @@ async def search(
         )
         for f in request.filters
     ]
-    
+
     sort = [
         SearchSort(
             field=s.field,
-            order=SortOrder(s.order.lower()) if s.order.lower() in ["asc", "desc"] else SortOrder.DESC,
+            order=SortOrder(s.order.lower())
+            if s.order.lower() in ["asc", "desc"]
+            else SortOrder.DESC,
         )
         for s in request.sort
     ]
-    
+
     highlight = None
     if request.highlight_fields:
         highlight = SearchHighlight(
             fields=request.highlight_fields,
         )
-    
+
     query = SearchQuery(
         query=request.query,
         index=search_index,
@@ -174,20 +186,13 @@ async def search(
         tenant_id=tenant_id,
         fuzzy=request.fuzzy,
     )
-    
-    # Get search backend
-    backend = getattr(settings, "SEARCH_BACKEND", "postgres")
-    
+
+    # Get search backend (PostgreSQL FTS)
     try:
-        search_service = await get_search_backend(
-            backend=backend,
-            session=session,
-            url=getattr(settings, "ELASTICSEARCH_URL", "http://localhost:9200"),
-            index_prefix=getattr(settings, "SEARCH_INDEX_PREFIX", "app"),
-        )
-        
+        search_service = await get_search_backend(session=session)
+
         result = await search_service.search(query)
-        
+
         return SearchResponse(
             hits=[
                 SearchHitResponse(
@@ -209,11 +214,34 @@ async def search(
             max_score=result.max_score,
             suggestions=result.suggestions,
         )
+    except ValueError as e:
+        # Invalid query parameters — log detail, return generic
+        logger.warning("Invalid search query: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "INVALID_QUERY", "message": "Invalid search query parameters"},
+        ) from e
+    except (ProgrammingError, DataError):
+        # Bad query syntax or invalid data type — return empty results
+        logger.warning("Search query produced a database error")
+        return SearchResponse(
+            hits=[],
+            total=0,
+            page=request.page,
+            page_size=request.page_size,
+            total_pages=0,
+            has_next=False,
+            has_previous=False,
+            took_ms=0,
+            max_score=None,
+            suggestions=[],
+        )
     except Exception as e:
+        logger.warning("Unexpected search error", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Search failed: {str(e)}",
-        )
+            detail={"code": "SEARCH_ERROR", "message": "An internal search error occurred"},
+        ) from e
 
 
 @router.get(
@@ -241,7 +269,7 @@ async def simple_search(
         page_size=page_size,
         fuzzy=True,
     )
-    
+
     return await search(request, session, current_user, tenant_id)
 
 
@@ -263,22 +291,11 @@ async def suggest(
     """
     Get search suggestions for autocomplete.
     """
+    search_index = _validate_search_index(index)
+
     try:
-        search_index = SearchIndex(index.lower())
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid search index: {index}",
-        )
-    
-    backend = getattr(settings, "SEARCH_BACKEND", "postgres")
-    
-    try:
-        search_service = await get_search_backend(
-            backend=backend,
-            session=session,
-        )
-        
+        search_service = await get_search_backend(session=session)
+
         suggestions = await search_service.suggest(
             query=q,
             index=search_index,
@@ -286,13 +303,14 @@ async def suggest(
             size=size,
             tenant_id=tenant_id,
         )
-        
+
         return SuggestResponse(suggestions=suggestions)
     except Exception as e:
+        logger.warning("Unexpected suggest error", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Suggest failed: {str(e)}",
-        )
+            detail={"code": "SEARCH_ERROR", "message": "An internal search error occurred"},
+        ) from e
 
 
 @router.get(
@@ -303,30 +321,27 @@ async def suggest(
 )
 async def health(
     session: DbSession,
+    current_user: CurrentUser,
 ) -> HealthResponse:
     """
     Check search backend health.
     """
-    backend = getattr(settings, "SEARCH_BACKEND", "postgres")
-    
     try:
-        search_service = await get_search_backend(
-            backend=backend,
-            session=session,
-        )
-        
+        search_service = await get_search_backend(session=session)
+
         health_info = await search_service.health_check()
-        
+
         return HealthResponse(
             status=health_info.get("status", "unknown"),
-            backend=health_info.get("backend", backend),
+            backend=health_info.get("backend", "postgres"),
             details=health_info,
         )
     except Exception as e:
+        logger.error("Search health check failed: %s", e)
         return HealthResponse(
             status="unhealthy",
-            backend=backend,
-            details={"error": str(e)},
+            backend="postgres",
+            details={"error": "Health check failed"},
         )
 
 
@@ -361,53 +376,36 @@ async def list_indices(
 async def create_index(
     index: str,
     session: DbSession,
-    current_user: CurrentUser,
+    superuser_id: SuperuserId,
 ) -> dict[str, Any]:
     """
     Create a search index.
-    
-    For PostgreSQL, this creates the GIN index.
-    For Elasticsearch, this creates the index with mappings.
-    
+
+    Creates the GIN index for PostgreSQL Full-Text Search.
+
     Requires superadmin privileges.
     """
-    # Check admin privileges
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superadmins can create search indices",
-        )
-    
+    search_index = _validate_search_index(index)
+
     try:
-        search_index = SearchIndex(index.lower())
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid search index: {index}",
-        )
-    
-    backend = getattr(settings, "SEARCH_BACKEND", "postgres")
-    
-    try:
-        search_service = await get_search_backend(
-            backend=backend,
-            session=session,
-        )
-        
+        search_service = await get_search_backend(session=session)
+
         success = await search_service.create_index(search_index)
-        
+
         if success:
             return {"status": "created", "index": index}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create index",
-            )
-    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Create index failed: {str(e)}",
+            detail={"code": "INDEX_CREATE_FAILED", "message": "Failed to create index"},
         )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Create index failed: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"code": "INDEX_CREATE_FAILED", "message": "Failed to create search index"},
+        ) from e
 
 
 @router.post(
@@ -418,42 +416,24 @@ async def create_index(
 async def reindex(
     index: str,
     session: DbSession,
-    current_user: CurrentUser,
+    superuser_id: SuperuserId,
     tenant_id: CurrentTenantId = None,
 ) -> dict[str, Any]:
     """
     Reindex all documents in an index.
-    
+
     Requires superadmin privileges.
     """
-    # Check admin privileges
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superadmins can reindex search indices",
-        )
-    
+    search_index = _validate_search_index(index)
+
     try:
-        search_index = SearchIndex(index.lower())
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid search index: {index}",
-        )
-    
-    backend = getattr(settings, "SEARCH_BACKEND", "postgres")
-    
-    try:
-        search_service = await get_search_backend(
-            backend=backend,
-            session=session,
-        )
-        
+        search_service = await get_search_backend(session=session)
+
         result = await search_service.reindex(
             index=search_index,
             tenant_id=tenant_id,
         )
-        
+
         return {
             "status": "completed",
             "index": index,
@@ -461,11 +441,14 @@ async def reindex(
             "failed": result.failed,
             "took_ms": result.took_ms,
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error("Reindex failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Reindex failed: {str(e)}",
-        )
+            detail={"code": "REINDEX_FAILED", "message": "Reindex operation failed"},
+        ) from e
 
 
 @router.delete(
@@ -477,45 +460,30 @@ async def reindex(
 async def delete_index(
     index: str,
     session: DbSession,
-    current_user: CurrentUser,
+    superuser_id: SuperuserId,
 ) -> None:
     """
     Delete a search index.
-    
+
     Requires superadmin privileges.
     """
-    # Check admin privileges
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superadmins can delete search indices",
-        )
-    
+    search_index = _validate_search_index(index)
+
     try:
-        search_index = SearchIndex(index.lower())
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid search index: {index}",
-        )
-    
-    backend = getattr(settings, "SEARCH_BACKEND", "postgres")
-    
-    try:
-        search_service = await get_search_backend(
-            backend=backend,
-            session=session,
-        )
-        
+        search_service = await get_search_backend(session=session)
+
         success = await search_service.delete_index(search_index)
-        
+
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to delete index",
+                detail={"code": "INDEX_DELETE_FAILED", "message": "Failed to delete index"},
             )
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error("Delete index failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Delete index failed: {str(e)}",
-        )
+            detail={"code": "INDEX_DELETE_FAILED", "message": "Failed to delete search index"},
+        ) from e

@@ -13,7 +13,7 @@ Provides administrative commands for:
 
 import typer
 
-from app.cli.commands import users, database, apikeys
+from app.cli.commands import apikeys, database, users
 
 app = typer.Typer(
     name="boilerplate",
@@ -32,7 +32,7 @@ app.add_typer(apikeys.app, name="apikeys", help="API key management commands")
 def version() -> None:
     """Show the application version."""
     from app.config import settings
-    
+
     typer.echo(f"{settings.APP_NAME} v{settings.APP_VERSION}")
     typer.echo(f"Environment: {settings.ENVIRONMENT}")
 
@@ -41,27 +41,27 @@ def version() -> None:
 def health() -> None:
     """Check application health status."""
     import asyncio
+
     from app.cli.utils import check_database, check_redis
-    
+
     typer.echo("Checking application health...\n")
-    
+
     # Database check
     db_ok = asyncio.run(check_database())
     db_status = "[green]✓[/green]" if db_ok else "[red]✗[/red]"
     typer.echo(f"Database: {'Connected' if db_ok else 'Failed'}")
-    
+
     # Redis check
     redis_ok = asyncio.run(check_redis())
     redis_status = "[green]✓[/green]" if redis_ok else "[red]✗[/red]"
     typer.echo(f"Redis: {'Connected' if redis_ok else 'Failed'}")
-    
+
     # Overall status
     if db_ok and redis_ok:
         typer.echo("\n[green]All systems operational[/green]")
         raise typer.Exit(0)
-    else:
-        typer.echo("\n[red]Some systems are not operational[/red]")
-        raise typer.Exit(1)
+    typer.echo("\n[red]Some systems are not operational[/red]")
+    raise typer.Exit(1)
 
 
 if __name__ == "__main__":

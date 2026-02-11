@@ -22,18 +22,18 @@ export default function VerifyEmailPage() {
     mutationFn: (token: string) => emailVerificationService.verifyEmail(token),
     onSuccess: (response) => {
       setStatus('success');
-      setMessage(response.message);
+      setMessage(t('auth.emailVerifiedSuccess'));
     },
-    onError: (error: Error & { response?: { data?: { detail?: { message?: string } } } }) => {
+    onError: () => {
       setStatus('error');
-      setMessage(error.response?.data?.detail?.message || error.message || 'Verification failed');
+      setMessage(t('auth.verificationError'));
     },
   });
 
   useEffect(() => {
     if (!token) {
       setStatus('no-token');
-      setMessage('No verification token provided.');
+      setMessage(t('auth.noTokenMessage'));
       return;
     }
 
@@ -67,7 +67,7 @@ export default function VerifyEmailPage() {
                 <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                Email Verified!
+                {t('auth.emailVerified')}
               </h1>
               <p className="text-slate-500 dark:text-slate-400 mb-6">
                 {message}
@@ -76,7 +76,7 @@ export default function VerifyEmailPage() {
                 onClick={() => navigate('/dashboard')}
                 className="btn-primary w-full"
               >
-                Go to Dashboard
+                {t('auth.goToDashboard')}
               </button>
             </>
           )}
@@ -88,7 +88,7 @@ export default function VerifyEmailPage() {
                 <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
               </div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                Verification Failed
+                {t('auth.verificationFailed')}
               </h1>
               <p className="text-slate-500 dark:text-slate-400 mb-6">
                 {message}
@@ -98,7 +98,7 @@ export default function VerifyEmailPage() {
                   {t('auth.resendVerification')}
                 </Link>
                 <Link to="/dashboard" className="btn-secondary w-full block">
-                  Go to Dashboard
+                  {t('auth.goToDashboard')}
                 </Link>
               </div>
             </>
@@ -111,13 +111,13 @@ export default function VerifyEmailPage() {
                 <Mail className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
               </div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                No Token Provided
+                {t('auth.noTokenProvided')}
               </h1>
               <p className="text-slate-500 dark:text-slate-400 mb-6">
                 {message}
               </p>
               <Link to="/dashboard" className="btn-primary w-full block">
-                Go to Dashboard
+                {t('auth.goToDashboard')}
               </Link>
             </>
           )}

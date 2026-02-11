@@ -3,18 +3,18 @@
 
 """Session management endpoints."""
 
-from datetime import datetime, UTC
+from datetime import datetime
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from app.api.deps import CurrentUser, CurrentUserId, DbSession
+from app.api.deps import CurrentUserId, DbSession
 from app.infrastructure.auth.jwt_handler import validate_access_token
-from app.infrastructure.database.repositories.session_repository import SQLAlchemySessionRepository
-
+from app.infrastructure.database.repositories.session_repository import (
+    SQLAlchemySessionRepository,
+)
 
 router = APIRouter()
 
@@ -39,9 +39,10 @@ def get_current_token_jti(
 # Response Schemas
 # ===========================================
 
+
 class SessionResponse(BaseModel):
     """Single session information."""
-    
+
     id: UUID
     device_name: str
     device_type: str
@@ -56,14 +57,14 @@ class SessionResponse(BaseModel):
 
 class SessionListResponse(BaseModel):
     """List of user sessions."""
-    
+
     sessions: list[SessionResponse]
     total: int
 
 
 class RevokeSessionsResponse(BaseModel):
     """Response for revoke operations."""
-    
+
     message: str
     revoked_count: int
 
@@ -71,6 +72,7 @@ class RevokeSessionsResponse(BaseModel):
 # ===========================================
 # Endpoints
 # ===========================================
+
 
 @router.get(
     "",
@@ -86,16 +88,16 @@ async def list_sessions(
 ) -> SessionListResponse:
     """
     List all active sessions for the authenticated user.
-    
+
     Shows device info, location, and last activity for each session.
     The current session is marked with is_current=true.
     """
     repo = SQLAlchemySessionRepository(session)
     user_sessions = await repo.get_user_sessions(user_id)
-    
+
     # Get current session ID from JWT token's jti claim
     current_token_jti = get_current_token_jti(credentials)
-    
+
     sessions = [
         SessionResponse(
             id=s.id,
@@ -111,7 +113,7 @@ async def list_sessions(
         )
         for s in user_sessions
     ]
-    
+
     return SessionListResponse(
         sessions=sessions,
         total=len(sessions),
@@ -132,7 +134,7 @@ async def revoke_session(
 ) -> RevokeSessionsResponse:
     """
     Revoke a specific session.
-    
+
     This will log out the user on that specific device.
     Cannot revoke the current session (use /auth/logout instead).
     """
@@ -146,9 +148,9 @@ async def revoke_session(
                 "message": "Cannot revoke current session. Use /auth/logout instead.",
             },
         )
-    
+
     repo = SQLAlchemySessionRepository(session)
-    
+
     # Verify session belongs to user
     target_session = await repo.get_by_id(session_id)
     if not target_session or target_session.user_id != user_id:
@@ -159,11 +161,11 @@ async def revoke_session(
                 "message": "Session not found",
             },
         )
-    
+
     # Revoke the session
     success = await repo.revoke(session_id)
     await session.commit()
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -172,7 +174,7 @@ async def revoke_session(
                 "message": "Session not found or already revoked",
             },
         )
-    
+
     return RevokeSessionsResponse(
         message="Session revoked successfully",
         revoked_count=1,
@@ -192,15 +194,15 @@ async def revoke_all_sessions(
 ) -> RevokeSessionsResponse:
     """
     Revoke all sessions except the current one.
-    
+
     This will log out the user on all other devices.
     Useful when user suspects their account is compromised.
     """
     repo = SQLAlchemySessionRepository(session)
-    
+
     # Get current session ID from JWT's jti claim
     current_token_jti = get_current_token_jti(credentials)
-    
+
     if current_token_jti:
         # Try to parse as UUID, otherwise use as string
         try:
@@ -211,9 +213,9 @@ async def revoke_all_sessions(
             count = await repo.revoke_all(user_id)
     else:
         count = await repo.revoke_all(user_id)
-    
+
     await session.commit()
-    
+
     return RevokeSessionsResponse(
         message=f"Successfully revoked {count} session(s)",
         revoked_count=count,

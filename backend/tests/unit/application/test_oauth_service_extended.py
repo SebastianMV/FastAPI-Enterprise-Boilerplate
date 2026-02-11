@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, AsyncMock
-from uuid import uuid4
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -42,9 +41,11 @@ class TestOAuthProviders:
         from app.application.services.oauth_service import OAuthService
 
         service = OAuthService(session=mock_session)
-        assert hasattr(service, "get_google_auth_url") or hasattr(
-            service, "get_authorization_url"
-        ) or service is not None
+        assert (
+            hasattr(service, "get_google_auth_url")
+            or hasattr(service, "get_authorization_url")
+            or service is not None
+        )
 
     def test_github_provider(self, mock_session: MagicMock) -> None:
         """Test GitHub OAuth provider."""
@@ -70,9 +71,11 @@ class TestOAuthFlow:
         from app.application.services.oauth_service import OAuthService
 
         service = OAuthService(session=mock_session)
-        assert hasattr(service, "handle_callback") or hasattr(
-            service, "exchange_code"
-        ) or service is not None
+        assert (
+            hasattr(service, "handle_callback")
+            or hasattr(service, "exchange_code")
+            or service is not None
+        )
 
 
 class TestOAuthTokens:
@@ -101,6 +104,8 @@ class TestOAuthUserInfo:
         from app.application.services.oauth_service import OAuthService
 
         service = OAuthService(session=mock_session)
-        assert hasattr(service, "get_user_info") or hasattr(
-            service, "fetch_user_info"
-        ) or service is not None
+        assert (
+            hasattr(service, "get_user_info")
+            or hasattr(service, "fetch_user_info")
+            or service is not None
+        )

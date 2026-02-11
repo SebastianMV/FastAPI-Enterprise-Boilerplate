@@ -4,7 +4,8 @@
  * Displays linked OAuth providers and allows users to connect/disconnect accounts.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Link2, 
   Unlink, 
@@ -15,8 +16,9 @@ import {
 } from 'lucide-react';
 import { oauthService, type OAuthConnection } from '@/services/api';
 
-// OAuth provider configurations with icons
-const OAUTH_PROVIDERS = [
+// Display configuration for OAuth providers — NOT the same as OAUTH_PROVIDERS from oauthService.ts.
+// This has JSX icons and Tailwind classes for the profile UI; oauthService has string IDs for API calls.
+const PROVIDER_DISPLAY_CONFIG = [
   {
     id: 'google',
     name: 'Google',
@@ -60,6 +62,7 @@ const OAUTH_PROVIDERS = [
  * Shows OAuth connections and allows linking/unlinking providers.
  */
 export default function ConnectedAccounts() {
+  const { t } = useTranslation();
   const [connections, setConnections] = useState<OAuthConnection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -67,23 +70,22 @@ export default function ConnectedAccounts() {
   const [success, setSuccess] = useState<string | null>(null);
 
   // Fetch current connections on mount
-  useEffect(() => {
-    fetchConnections();
-  }, []);
-
-  const fetchConnections = async () => {
+  const fetchConnections = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await oauthService.getConnections();
       setConnections(data);
-    } catch (err) {
-      console.error('Failed to fetch OAuth connections:', err);
+    } catch {
       // Don't show error for 404 (no connections yet)
       setConnections([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchConnections();
+  }, [fetchConnections]);
 
   const handleConnect = async (provider: string) => {
     try {
@@ -91,8 +93,8 @@ export default function ConnectedAccounts() {
       setError(null);
       await oauthService.linkProvider(provider);
       // Redirect happens automatically
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect account');
+    } catch {
+      setError(t('profile.connectError'));
       setActionLoading(null);
     }
   };
@@ -103,10 +105,10 @@ export default function ConnectedAccounts() {
       setError(null);
       await oauthService.disconnect(provider);
       setConnections(connections.filter(c => c.provider !== provider));
-      setSuccess(`${provider.charAt(0).toUpperCase() + provider.slice(1)} account disconnected`);
+      setSuccess(t('profile.disconnectSuccess', { provider: provider.charAt(0).toUpperCase() + provider.slice(1) }));
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to disconnect account');
+    } catch {
+      setError(t('profile.disconnectError'));
     } finally {
       setActionLoading(null);
     }
@@ -133,10 +135,10 @@ export default function ConnectedAccounts() {
       {/* Header */}
       <div>
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Connected Accounts
+          {t('profile.connectedAccounts')}
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Link your social accounts for easier sign-in and additional features
+          {t('profile.connectedAccountsDescription')}
         </p>
       </div>
 
@@ -157,7 +159,7 @@ export default function ConnectedAccounts() {
 
       {/* Provider List */}
       <div className="space-y-3">
-        {OAUTH_PROVIDERS.map((provider) => {
+        {PROVIDER_DISPLAY_CONFIG.map((provider) => {
           const connected = isConnected(provider.id);
           const connection = getConnection(provider.id);
           const loading = actionLoading === provider.id;
@@ -177,11 +179,11 @@ export default function ConnectedAccounts() {
                   </h4>
                   {connected && connection ? (
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Connected as {connection.provider_email || connection.provider_username || 'Connected'}
+                      {t('profile.connectedAs', { account: connection.provider_email || connection.provider_username || t('profile.connected') })}
                     </p>
                   ) : (
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Not connected
+                      {t('profile.notConnected')}
                     </p>
                   )}
                 </div>
@@ -199,7 +201,7 @@ export default function ConnectedAccounts() {
                     ) : (
                       <Unlink className="w-4 h-4 mr-1.5" />
                     )}
-                    Disconnect
+                    {t('profile.disconnect')}
                   </button>
                 ) : (
                   <button
@@ -212,7 +214,7 @@ export default function ConnectedAccounts() {
                     ) : (
                       <Link2 className="w-4 h-4 mr-1.5" />
                     )}
-                    Connect
+                    {t('profile.connect')}
                   </button>
                 )}
               </div>
@@ -226,11 +228,11 @@ export default function ConnectedAccounts() {
         <div className="flex items-start space-x-3">
           <ExternalLink className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-700 dark:text-blue-300">
-            <p className="font-medium">Why connect accounts?</p>
+            <p className="font-medium">{t('profile.whyConnect')}</p>
             <ul className="mt-1 list-disc list-inside space-y-0.5 text-blue-600 dark:text-blue-400">
-              <li>Sign in faster with one click</li>
-              <li>No need to remember another password</li>
-              <li>Sync profile information automatically</li>
+              <li>{t('profile.whyConnectReasons.faster')}</li>
+              <li>{t('profile.whyConnectReasons.noPassword')}</li>
+              <li>{t('profile.whyConnectReasons.sync')}</li>
             </ul>
           </div>
         </div>

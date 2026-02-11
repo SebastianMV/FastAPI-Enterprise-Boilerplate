@@ -95,7 +95,8 @@
     "tenants": "Tenants",
     "notifications": "Notifications",
     "security": "Security",
-    "sessions": "Sessions"
+    "sessions": "Sessions",
+    "dataExchange": "Data Exchange"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -639,6 +640,53 @@
       "yes": "Yes",
       "no": "No"
     }
+  },
+  "data": {
+    "title": "Data Exchange",
+    "description": "Import, export, and generate reports for your data",
+    "selectEntity": "Select Entity",
+    "fields": "fields",
+    "export": "Export",
+    "import": "Import",
+    "reports": "Reports",
+    "exportFormat": "Export Format",
+    "selectColumns": "Select Columns (optional)",
+    "allColumnsSelected": "All columns will be exported",
+    "columnsSelected": "{{count}} columns selected",
+    "preview": "Preview",
+    "records": "records",
+    "exportButton": "Export Data",
+    "downloadTemplate": "Download Import Template",
+    "templateDescription": "Download an empty template with all required fields",
+    "downloadTemplateButton": "Download Template",
+    "importMode": "Import Mode",
+    "mode": {
+      "insert": "Insert Only",
+      "update": "Update Only",
+      "upsert": "Insert or Update"
+    },
+    "uploadFile": "Upload File",
+    "dropFileHere": "Click or drop file here",
+    "validateButton": "Validate",
+    "importButton": "Import Data",
+    "validationResult": "Validation Result",
+    "importResult": "Import Result",
+    "totalRows": "Total Rows",
+    "inserted": "Inserted",
+    "updated": "Updated",
+    "skipped": "Skipped",
+    "errors": "Errors",
+    "errorDetails": "Error Details",
+    "reportTitle": "Report Title",
+    "reportFormat": "Report Format",
+    "availableFields": "Available Fields",
+    "generateReportButton": "Generate Report",
+    "loadError": "Failed to load entities",
+    "exportError": "Failed to export data",
+    "templateError": "Failed to download template",
+    "validateError": "Failed to validate file",
+    "importError": "Failed to import data",
+    "reportError": "Failed to generate report"
   },
   "search": {
     "title": "Search",

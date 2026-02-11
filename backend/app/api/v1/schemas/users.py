@@ -9,14 +9,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-
 # ===========================================
 # Request Schemas
 # ===========================================
 
+
 class UserCreate(BaseModel):
     """Create user request (admin)."""
-    
+
     email: EmailStr = Field(
         ...,
         description="User's email address",
@@ -39,12 +39,12 @@ class UserCreate(BaseModel):
     )
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
-    roles: list[UUID] = Field(default_factory=list)
+    roles: list[UUID] = Field(default_factory=list, max_length=50)
 
 
 class UserUpdate(BaseModel):
     """Update user request."""
-    
+
     email: EmailStr | None = None
     first_name: str | None = Field(
         default=None,
@@ -57,12 +57,12 @@ class UserUpdate(BaseModel):
         max_length=100,
     )
     is_active: bool | None = None
-    roles: list[UUID] | None = None
+    roles: list[UUID] | None = Field(default=None, max_length=50)
 
 
 class UserUpdateSelf(BaseModel):
     """Update self request (limited fields)."""
-    
+
     first_name: str | None = Field(
         default=None,
         min_length=1,
@@ -79,11 +79,12 @@ class UserUpdateSelf(BaseModel):
 # Response Schemas
 # ===========================================
 
+
 class UserResponse(BaseModel):
     """User response with basic info."""
-    
+
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     email: str
     first_name: str
@@ -106,14 +107,14 @@ class UserResponse(BaseModel):
 
 class UserDetailResponse(UserResponse):
     """User response with additional details."""
-    
+
     roles: list[UUID] = Field(default_factory=list)
     tenant_id: UUID
 
 
 class UserListResponse(BaseModel):
     """Paginated user list response."""
-    
+
     items: list[UserResponse]
     total: int
     page: int

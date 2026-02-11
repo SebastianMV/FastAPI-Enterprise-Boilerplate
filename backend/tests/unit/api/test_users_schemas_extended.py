@@ -5,18 +5,16 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
-import pytest
-from pydantic import ValidationError
 
 from app.api.v1.schemas.users import (
     UserCreate,
-    UserUpdate,
-    UserUpdateSelf,
-    UserResponse,
     UserDetailResponse,
     UserListResponse,
+    UserResponse,
+    UserUpdate,
+    UserUpdateSelf,
 )
 
 
@@ -215,16 +213,19 @@ class TestUsersRouterExtended:
     def test_router_exists(self) -> None:
         """Test router exists."""
         from app.api.v1.endpoints.users import router
+
         assert router is not None
 
     def test_router_has_routes(self) -> None:
         """Test router has routes."""
         from app.api.v1.endpoints.users import router
+
         assert len(router.routes) > 0
 
     def test_router_routes_include_me(self) -> None:
         """Test router includes /me endpoint."""
         from app.api.v1.endpoints.users import router
+
         paths = [getattr(route, "path", None) for route in router.routes]
         # Check if there's a /me style path or similar user endpoint
         assert len(paths) > 0

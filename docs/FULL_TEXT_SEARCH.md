@@ -131,10 +131,7 @@ Response:
 
 | Index | Description | Searchable Fields |
 | ----- | ----------- | ----------------- |
-| `users` | User accounts | email, full_name, username |
-| `posts` | Blog posts/articles | title, content, tags |
-| `messages` | Chat messages | content |
-| `documents` | Uploaded documents | title, content, description, tags |
+| `users` | User accounts | email, first_name, last_name |
 | `audit_logs` | Audit trail | action, resource_type, details |
 
 ### Filter Operators
@@ -250,43 +247,34 @@ Authorization: Bearer {admin_token}
 
 This creates a GIN index for the specified table.
 
-## Elasticsearch Details
+## Advanced PostgreSQL FTS Features
 
-### Index Mappings
+### Custom Text Configurations
 
-Each search index has predefined mappings optimized for search:
+You can configure language-specific stemming and stop words:
 
-```json
-{
-  "settings": {
-    "number_of_shards": 2,
-    "number_of_replicas": 1,
-    "analysis": {
-      "analyzer": {
-        "content_analyzer": {
-          "type": "custom",
-          "tokenizer": "standard",
-          "filter": ["lowercase", "stop", "snowball"]
-        }
-      }
-    }
-  },
-  "mappings": {
-    "properties": {
-      "title": {
-        "type": "text",
-        "fields": {
-          "keyword": {"type": "keyword"},
-          "suggest": {"type": "completion"}
-        }
-      },
-      "content": {
-        "type": "text",
-        "analyzer": "content_analyzer"
-      }
-    }
-  }
-}
+```sql
+-- Create custom configuration
+CREATE TEXT SEARCH CONFIGURATION custom_english (COPY = english);
+ALTER TEXT SEARCH CONFIGURATION custom_english
+    ALTER MAPPING FOR asciiword, word
+    WITH english_stem;
+```
+
+### Weighted Search Columns
+
+Different columns can have different weights (A, B, C, D):
+
+```sql
+-- Weight A is highest relevance, D is lowest
+SELECT *,
+    ts_rank(
+        setweight(to_tsvector('english', title), 'A') ||
+        setweight(to_tsvector('english', content), 'B'),
+        to_tsquery('english', 'search')
+    ) AS rank
+FROM documents
+ORDER BY rank DESC;
 ```
 
 ### Fuzzy Matching
@@ -443,42 +431,38 @@ export const useAutocomplete = (index: string, field: string = 'title') => {
 2. **Use `ts_headline` sparingly** - it's CPU intensive
 3. **Limit result set size** before applying highlights
 4. **Consider materialized views** for complex aggregated searches
-
-### Elasticsearch
-
-1. **Tune shard count** based on data volume
-2. **Use scroll API** for large result sets
-3. **Implement request coalescing** for autocomplete
-4. **Configure circuit breakers** to prevent OOM
+5. **Use trigram indexes** for fuzzy/LIKE searches
+6. **Partition large tables** by tenant or date for faster searches
 
 ## Troubleshooting
 
 ### "No results found"
 
-- Check if the table has a GIN index (PostgreSQL)
-- Verify the index exists (Elasticsearch)
+- Check if the table has a GIN index
+- Verify the search columns are indexed
 - Try simpler search terms
 - Check if documents are properly indexed
 
 ### "Search is slow"
 
-- Ensure GIN indexes exist (PostgreSQL)
-- Check cluster health (Elasticsearch)
-- Reduce result set size
+- Ensure GIN indexes exist for search columns
+- Reduce result set size with pagination
 - Disable highlighting for large result sets
+- Consider adding partial indexes for filtered searches
 
 ### "Trigram extension not available"
 
 ```sql
--- Install pg_trgm
+-- Install pg_trgm for fuzzy searches
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ```
 
-### "Elasticsearch connection refused"
+### "unaccent extension not available"
 
-- Check Elasticsearch is running: `curl http://localhost:9200`
-- Verify credentials in configuration
-- Check firewall/network settings
+```sql
+-- Install unaccent for accent-insensitive search
+CREATE EXTENSION IF NOT EXISTS unaccent;
+```
 
 ## Admin Operations
 
@@ -507,7 +491,7 @@ Authorization: Bearer {admin_token}
 
 ### Add New Index
 
-1. Define index configuration in `postgres_fts.py` or `elasticsearch.py`:
+1. Define index configuration in `postgres_fts.py`:
 
 ```python
 INDEX_CONFIGS[SearchIndex.PRODUCTS] = {

@@ -3,6 +3,7 @@
 # ===========================================
 
 # Stage 1: Base
+# Pin to minor; update patch periodically: docker pull python:3.13-slim
 FROM python:3.13-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -22,25 +23,18 @@ RUN pip install --upgrade pip && \
 
 # Stage 3: Development
 FROM deps AS development
+# NOTE: Runs as root for hot-reload file watching in mounted volumes.
+# Production stage below uses a non-root 'appuser'.
 
 COPY pyproject.toml ./
 COPY . .
 RUN pip install -e .[dev]
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
-# Stage 4: Production
-FROM deps AS production
-
-COPY pyproject.toml ./
-COPY . .
-RUN pip install .
-
-# Non-root user for security
-RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app
-USER appuser
-
-EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# NOTE: For production builds, use Dockerfile.prod (multi-stage with venv,
+# non-root user, uvloop, stripped dev artifacts, proper healthcheck).

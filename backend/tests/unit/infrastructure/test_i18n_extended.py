@@ -5,11 +5,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, AsyncMock, patch
-from uuid import uuid4
-
-import pytest
-
 
 class TestI18nImport:
     """Tests for i18n import."""
@@ -31,7 +26,7 @@ class TestLocales:
 
     def test_supported_locales(self) -> None:
         """Test supported locales."""
-        supported = ["en", "es", "fr", "de", "pt"]
+        supported = ["en", "es", "pt"]
         assert "en" in supported
         assert "es" in supported
 

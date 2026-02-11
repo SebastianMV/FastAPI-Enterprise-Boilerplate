@@ -57,7 +57,7 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="relative text-center mb-6">
             <div className="relative inline-flex items-center justify-center mb-6">
-              <img src="/logo.png" alt="Boilerplate" className="relative w-24 h-24 drop-shadow-lg" />
+              <img src="/logo.png" alt={t('common.brandLogoAlt')} className="relative w-24 h-24 drop-shadow-lg" />
             </div>
             <h1 className="text-3xl font-bold text-slate-900">
               {t('auth.welcomeBack')}
@@ -71,7 +71,7 @@ export default function LoginPage() {
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700">{t(error)}</p>
             </div>
           )}
 
@@ -176,7 +176,7 @@ export default function LoginPage() {
                     required: requiresMFA ? t('validation.required') : false,
                     pattern: {
                       value: /^\d{6}$/,
-                      message: 'Code must be 6 digits',
+                      message: t('auth.mfa.codeMustBe6Digits'),
                     },
                   })}
                 />
@@ -224,16 +224,6 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-white text-slate-500">{t('auth.orContinueWith')}</span>
-            </div>
-          </div>
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-slate-500">
-                Or continue with
-              </span>
             </div>
           </div>
 

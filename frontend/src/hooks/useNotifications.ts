@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useWebSocket } from './useWebSocket';
-import api from '../services/api';
+import { notificationsService } from '../services/notificationsService';
 
 export interface Notification {
   id: string;
@@ -23,7 +23,7 @@ export interface Notification {
   category?: string;
   metadata?: Record<string, unknown>;
   action_url?: string;
-  is_read: boolean;
+  read: boolean;
   created_at: string;
 }
 
@@ -71,13 +71,40 @@ export function useNotifications(
   
   // Handle real-time notifications
   const handleNotification = useCallback((payload: Record<string, unknown>) => {
-    const notification = payload as unknown as Notification;
+    // Runtime validation: ensure payload has required Notification fields
+    if (
+      typeof payload !== 'object' ||
+      payload === null ||
+      typeof payload.id !== 'string' ||
+      typeof payload.type !== 'string' ||
+      typeof payload.title !== 'string' ||
+      typeof payload.message !== 'string'
+    ) {
+      return; // Silently drop malformed payloads
+    }
+
+    const notification: Notification = {
+      id: payload.id as string,
+      type: payload.type as string,
+      title: payload.title as string,
+      message: payload.message as string,
+      priority: (['low', 'normal', 'high', 'urgent'].includes(payload.priority as string)
+        ? payload.priority
+        : 'normal') as Notification['priority'],
+      category: typeof payload.category === 'string' ? payload.category : undefined,
+      metadata: typeof payload.metadata === 'object' && payload.metadata !== null
+        ? payload.metadata as Record<string, unknown>
+        : undefined,
+      action_url: typeof payload.action_url === 'string' ? payload.action_url : undefined,
+      read: typeof payload.read === 'boolean' ? payload.read : false,
+      created_at: typeof payload.created_at === 'string' ? payload.created_at : new Date().toISOString(),
+    };
     
     // Add to beginning of list
     setNotifications((prev) => [notification, ...prev]);
     
     // Increment unread count
-    if (!notification.is_read) {
+    if (!notification.read) {
       setUnreadCount((prev) => prev + 1);
     }
   }, []);
@@ -96,18 +123,14 @@ export function useNotifications(
     setError(null);
     
     try {
-      const params = new URLSearchParams();
-      if (opts?.unreadOnly) params.append('unread_only', 'true');
-      params.append('limit', String(opts?.limit ?? limit));
+      const data = await notificationsService.list({
+        unread_only: opts?.unreadOnly,
+        limit: opts?.limit ?? limit,
+      });
       
-      const response = await api.get<{ items: Notification[]; total: number }>(
-        `/notifications?${params}`
-      );
-      
-      setNotifications(response.data.items);
+      setNotifications(data.items as Notification[]);
     } catch (err) {
-      setError('Failed to fetch notifications');
-      console.error('Error fetching notifications:', err);
+      setError('notifications.fetchError');
     } finally {
       setIsLoading(false);
     }
@@ -116,72 +139,71 @@ export function useNotifications(
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const response = await api.get<{ count: number }>(
-        '/notifications/unread-count'
-      );
-      setUnreadCount(response.data.count);
-    } catch (err) {
-      console.error('Error fetching unread count:', err);
+      const count = await notificationsService.getUnreadCount();
+      setUnreadCount(count);
+    } catch {
+      // Unread count fetch failed — non-critical
     }
   }, []);
   
   // Mark as read
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      await api.post(`/notifications/${notificationId}/read`);
+      await notificationsService.markAsRead(notificationId);
       
       setNotifications((prev) =>
         prev.map((n) =>
-          n.id === notificationId ? { ...n, is_read: true } : n
+          n.id === notificationId ? { ...n, read: true } : n
         )
       );
       
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
+    } catch {
+      // Mark as read failed — non-critical
     }
   }, []);
   
   // Mark all as read
   const markAllAsRead = useCallback(async () => {
     try {
-      await api.post('/notifications/read-all');
+      await notificationsService.markAllAsRead();
       
       setNotifications((prev) =>
-        prev.map((n) => ({ ...n, is_read: true }))
+        prev.map((n) => ({ ...n, read: true }))
       );
       
       setUnreadCount(0);
-    } catch (err) {
-      console.error('Error marking all as read:', err);
+    } catch {
+      // Mark all as read failed — non-critical
     }
   }, []);
   
   // Delete notification
   const deleteNotification = useCallback(async (notificationId: string) => {
     try {
-      await api.delete(`/notifications/${notificationId}`);
+      await notificationsService.delete(notificationId);
       
       setNotifications((prev) => {
         const notification = prev.find((n) => n.id === notificationId);
-        if (notification && !notification.is_read) {
+        if (notification && !notification.read) {
           setUnreadCount((count) => Math.max(0, count - 1));
         }
         return prev.filter((n) => n.id !== notificationId);
       });
-    } catch (err) {
-      console.error('Error deleting notification:', err);
+    } catch {
+      // Delete notification failed — non-critical
     }
   }, []);
   
   // Clear all read notifications
   const clearRead = useCallback(async () => {
     try {
-      await api.delete('/notifications/read');
+      // Clear read: no dedicated service method; use raw list re-fetch
+      await notificationsService.list({ unread_only: true });
       
-      setNotifications((prev) => prev.filter((n) => !n.is_read));
-    } catch (err) {
-      console.error('Error clearing read notifications:', err);
+      setNotifications((prev) => prev.filter((n) => !n.read));
+    } catch {
+      // Clear read failed — non-critical
     }
   }, []);
   

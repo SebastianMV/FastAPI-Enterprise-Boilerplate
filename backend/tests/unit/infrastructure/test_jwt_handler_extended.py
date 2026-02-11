@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, UTC
-from unittest.mock import patch
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -86,20 +85,20 @@ class TestJWTTokenValidation:
 
     def test_validate_invalid_token(self) -> None:
         """Test validating invalid token raises error."""
-        from app.infrastructure.auth.jwt_handler import validate_access_token
         from app.domain.exceptions.base import AuthenticationError
+        from app.infrastructure.auth.jwt_handler import validate_access_token
 
         with pytest.raises(AuthenticationError):
             validate_access_token("invalid.token.here")
 
     def test_validate_expired_token(self) -> None:
         """Test validating expired token raises error."""
-        from app.infrastructure.auth.jwt_handler import validate_access_token
-        from app.domain.exceptions.base import AuthenticationError
-
         # Create token that's already expired
         import jwt
+
         from app.config import settings
+        from app.domain.exceptions.base import AuthenticationError
+        from app.infrastructure.auth.jwt_handler import validate_access_token
 
         payload = {
             "sub": str(uuid4()),
@@ -218,17 +217,20 @@ class TestValidateRefreshTokenEdgeCases:
 
     def test_validate_refresh_token_missing_user_id(self) -> None:
         """Test validation fails when token has no 'sub' claim."""
-        from app.infrastructure.auth.jwt_handler import validate_refresh_token
-        from app.domain.exceptions.base import AuthenticationError
         import jwt
+
         from app.config import settings
+        from app.domain.exceptions.base import AuthenticationError
+        from app.infrastructure.auth.jwt_handler import validate_refresh_token
 
         # Create token without 'sub' claim
         payload = {
             "exp": datetime.now(UTC) + timedelta(days=7),
             "jti": str(uuid4()),
         }
-        token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        token = jwt.encode(
+            payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+        )
 
         with pytest.raises(AuthenticationError) as exc:
             validate_refresh_token(token)

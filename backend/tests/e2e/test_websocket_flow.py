@@ -10,12 +10,14 @@ Note: These tests require WebSocket client support.
 They are marked as skip until proper WebSocket testing infrastructure is available.
 """
 
-import pytest
-from httpx import AsyncClient
 from uuid import uuid4
 
+import pytest
+from httpx import AsyncClient
 
-pytestmark = pytest.mark.skip(reason="E2E WebSocket tests require WebSocket client support")
+pytestmark = pytest.mark.skip(
+    reason="E2E WebSocket tests require WebSocket client support"
+)
 
 
 class TestWebSocketConnectionE2E:
@@ -29,7 +31,7 @@ class TestWebSocketConnectionE2E:
         # 1. Get authentication token
         # (Already have from auth_headers)
         token = auth_headers.get("Authorization", "").replace("Bearer ", "")
-        
+
         # 2. Connect to WebSocket
         # Note: Would use websockets library or similar
         # ws_url = f"ws://test/api/v1/ws?token={token}"
@@ -39,15 +41,14 @@ class TestWebSocketConnectionE2E:
         #     data = json.loads(connected_msg)
         #     assert data["type"] == "connected"
         #     assert "connection_id" in data["payload"]
-        #     
+        #
         #     # 4. Send ping
         #     await ws.send(json.dumps({"type": "ping", "payload": {}}))
-        #     
+        #
         #     # 5. Receive pong
         #     pong_msg = await ws.recv()
         #     pong_data = json.loads(pong_msg)
         #     assert pong_data["type"] == "pong"
-        pass
 
     @pytest.mark.asyncio
     async def test_reconnection_flow(
@@ -58,25 +59,19 @@ class TestWebSocketConnectionE2E:
         # 2. Disconnect unexpectedly
         # 3. Reconnect with same token
         # 4. Verify connection restored
-        pass
 
     @pytest.mark.asyncio
-    async def test_connection_with_expired_token(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_connection_with_expired_token(self, client: AsyncClient) -> None:
         """Test WebSocket rejects expired tokens."""
         # Connect with expired token
         # Should receive close with appropriate code
-        pass
 
 
 class TestWebSocketChatE2E:
     """End-to-end WebSocket chat tests."""
 
     @pytest.mark.asyncio
-    async def test_direct_message_flow(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_direct_message_flow(self, client: AsyncClient) -> None:
         """Test complete direct message flow between two users."""
         # 1. User A connects
         # 2. User B connects
@@ -85,12 +80,9 @@ class TestWebSocketChatE2E:
         # 5. User A receives delivery confirmation
         # 6. User B sends read receipt
         # 7. User A receives read receipt
-        pass
 
     @pytest.mark.asyncio
-    async def test_group_chat_flow(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_group_chat_flow(self, client: AsyncClient) -> None:
         """Test complete group chat flow."""
         # 1. Create chat room
         # 2. User A, B, C join room
@@ -98,19 +90,15 @@ class TestWebSocketChatE2E:
         # 4. User B and C receive message
         # 5. User C sends message
         # 6. User A and B receive message
-        pass
 
     @pytest.mark.asyncio
-    async def test_typing_indicator_flow(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_typing_indicator_flow(self, client: AsyncClient) -> None:
         """Test typing indicator flow."""
         # 1. User A and B in conversation
         # 2. User A starts typing
         # 3. User B receives typing indicator
         # 4. User A stops typing
         # 5. User B receives typing stopped
-        pass
 
     @pytest.mark.asyncio
     async def test_chat_history_persistence(
@@ -122,7 +110,7 @@ class TestWebSocketChatE2E:
         # 3. Reconnect
         # 4. Fetch history via REST API
         # 5. Verify messages present
-        
+
         # Fetch chat history
         response = await client.get(
             "/api/v1/chat/messages",
@@ -135,16 +123,13 @@ class TestWebSocketNotificationsE2E:
     """End-to-end WebSocket notification tests."""
 
     @pytest.mark.asyncio
-    async def test_real_time_notification_flow(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_real_time_notification_flow(self, client: AsyncClient) -> None:
         """Test receiving real-time notifications."""
         # 1. User connects via WebSocket
         # 2. Trigger notification (e.g., via REST API)
         # 3. User receives notification via WebSocket
         # 4. User marks notification read
         # 5. Notification status updated
-        pass
 
     @pytest.mark.asyncio
     async def test_notification_while_offline(
@@ -155,7 +140,7 @@ class TestWebSocketNotificationsE2E:
         # 2. Trigger notification
         # 3. User connects
         # 4. User receives pending notifications or fetches via REST
-        
+
         response = await client.get(
             "/api/v1/notifications/unread",
             headers=auth_headers,
@@ -170,36 +155,27 @@ class TestWebSocketNotificationsE2E:
         # 1. User sets notification preferences (no chat notifications)
         # 2. Chat event occurs
         # 3. User should not receive that notification type via WebSocket
-        pass
 
 
 class TestWebSocketPresenceE2E:
     """End-to-end WebSocket presence tests."""
 
     @pytest.mark.asyncio
-    async def test_presence_online_flow(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_presence_online_flow(self, client: AsyncClient) -> None:
         """Test presence online notification flow."""
         # 1. User B monitoring presence
         # 2. User A connects
         # 3. User B receives "presence_online" for User A
-        pass
 
     @pytest.mark.asyncio
-    async def test_presence_offline_flow(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_presence_offline_flow(self, client: AsyncClient) -> None:
         """Test presence offline notification flow."""
         # 1. User A and B connected
         # 2. User A disconnects
         # 3. User B receives "presence_offline" for User A
-        pass
 
     @pytest.mark.asyncio
-    async def test_presence_across_multiple_tabs(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_presence_across_multiple_tabs(self, client: AsyncClient) -> None:
         """Test presence with multiple connections."""
         # 1. User A connects from Tab 1
         # 2. User A connects from Tab 2
@@ -207,7 +183,6 @@ class TestWebSocketPresenceE2E:
         # 4. User A still shows as online (Tab 2 active)
         # 5. User A closes Tab 2
         # 6. User A now offline
-        pass
 
 
 class TestWebSocketRoomE2E:
@@ -219,17 +194,17 @@ class TestWebSocketRoomE2E:
     ) -> None:
         """Test room join and leave flow."""
         room_name = f"e2e_room_{uuid4().hex[:8]}"
-        
+
         # 1. Create room via REST API
         create_response = await client.post(
             "/api/v1/chat/rooms",
             json={"name": room_name, "type": "group"},
             headers=auth_headers,
         )
-        
+
         if create_response.status_code == 201:
             room_id = create_response.json()["id"]
-            
+
             # 2. Join room via WebSocket or REST
             # 3. Receive room messages
             # 4. Leave room
@@ -241,12 +216,12 @@ class TestWebSocketRoomE2E:
     ) -> None:
         """Test getting room members."""
         room_id = str(uuid4())
-        
+
         response = await client.get(
             f"/api/v1/chat/rooms/{room_id}/members",
             headers=auth_headers,
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             assert isinstance(data, list) or "members" in data
@@ -256,81 +231,60 @@ class TestWebSocketSecurityE2E:
     """End-to-end WebSocket security tests."""
 
     @pytest.mark.asyncio
-    async def test_cannot_impersonate_sender(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_cannot_impersonate_sender(self, client: AsyncClient) -> None:
         """Test sender_id is enforced server-side."""
         # 1. User A connects
         # 2. User A sends message with fake sender_id (User B)
         # 3. Server should override sender_id with authenticated user
-        pass
 
     @pytest.mark.asyncio
-    async def test_cannot_send_to_other_tenant(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_cannot_send_to_other_tenant(self, client: AsyncClient) -> None:
         """Test tenant isolation in WebSocket messages."""
         # 1. User A (Tenant X) connects
         # 2. User A tries to send message to User B (Tenant Y)
         # 3. Message should not be delivered
-        pass
 
     @pytest.mark.asyncio
-    async def test_rate_limiting_messages(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_rate_limiting_messages(self, client: AsyncClient) -> None:
         """Test rate limiting on WebSocket messages."""
         # 1. User connects
         # 2. User sends many messages rapidly
         # 3. After threshold, messages should be rate limited
-        pass
 
 
 class TestWebSocketScalingE2E:
     """End-to-end WebSocket scaling tests."""
 
     @pytest.mark.asyncio
-    async def test_message_delivery_multiple_servers(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_message_delivery_multiple_servers(self, client: AsyncClient) -> None:
         """Test message delivery across multiple server instances."""
         # Note: This would require Redis backend and multiple instances
         # 1. User A connects to Server 1
         # 2. User B connects to Server 2
         # 3. User A sends message to User B
         # 4. User B should receive via Redis pub/sub
-        pass
 
 
 class TestWebSocketErrorHandlingE2E:
     """End-to-end WebSocket error handling tests."""
 
     @pytest.mark.asyncio
-    async def test_malformed_message_handling(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_malformed_message_handling(self, client: AsyncClient) -> None:
         """Test handling of malformed messages."""
         # 1. Connect
         # 2. Send malformed JSON
         # 3. Should receive error message, not disconnect
-        pass
 
     @pytest.mark.asyncio
-    async def test_invalid_message_type_handling(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_invalid_message_type_handling(self, client: AsyncClient) -> None:
         """Test handling of invalid message types."""
         # 1. Connect
         # 2. Send message with unknown type
         # 3. Should receive error or be ignored
-        pass
 
     @pytest.mark.asyncio
-    async def test_connection_timeout_handling(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_connection_timeout_handling(self, client: AsyncClient) -> None:
         """Test connection timeout handling."""
         # 1. Connect
         # 2. Don't send any messages (no heartbeat)
         # 3. Connection should timeout gracefully
-        pass

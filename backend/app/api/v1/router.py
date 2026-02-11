@@ -5,23 +5,26 @@
 
 from fastapi import APIRouter
 
-from app.config import settings
 from app.api.v1.endpoints import (
     api_keys,
     audit_logs,
     auth,
+    bulk,
     config,
     dashboard,
+    data_exchange,
     health,
     mfa,
     notifications,
     oauth,
+    report_templates,
     roles,
     search,
     sessions,
     tenants,
     users,
 )
+from app.config import settings
 
 # Create main API router
 api_router = APIRouter()
@@ -110,7 +113,7 @@ api_router.include_router(
 # WebSocket router (if enabled)
 if settings.WEBSOCKET_ENABLED:
     from app.api.v1.endpoints import websocket
-    
+
     api_router.include_router(
         websocket.router,
         tags=["WebSocket"],
@@ -122,3 +125,21 @@ if settings.WEBSOCKET_ENABLED and settings.WEBSOCKET_NOTIFICATIONS:
         notifications.router,
         tags=["Notifications"],
     )
+
+# Data Exchange endpoints (import/export/reports)
+api_router.include_router(
+    data_exchange.router,
+    tags=["Data Exchange"],
+)
+
+# Report Templates & Scheduling endpoints
+api_router.include_router(
+    report_templates.router,
+    tags=["Report Templates"],
+)
+
+# Bulk Operations endpoints
+api_router.include_router(
+    bulk.router,
+    tags=["Bulk Operations"],
+)

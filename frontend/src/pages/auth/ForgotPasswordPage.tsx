@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import api from '@/services/api';
 import { 
   Mail, 
   ArrowLeft, 
@@ -36,22 +37,8 @@ export default function ForgotPasswordPage() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: data.email }),
-      });
-
-      // Even if user doesn't exist, we show success for security
-      // Backend should handle this gracefully
-      if (response.ok || response.status === 404) {
-        setIsSuccess(true);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail?.message || 'Failed to process request');
-      }
+      await api.post('/auth/forgot-password', { email: data.email });
+      setIsSuccess(true);
     } catch {
       // For security, still show success even on errors
       // This prevents email enumeration attacks
@@ -78,7 +65,7 @@ export default function ForgotPasswordPage() {
               </p>
               <div className="space-y-3">
                 <p className="text-sm text-slate-500">
-                  Didn't receive the email? Check your spam folder or try again.
+                  {t('auth.didntReceiveEmail')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
@@ -86,7 +73,7 @@ export default function ForgotPasswordPage() {
                     className="btn-secondary"
                   >
                     <Mail className="w-4 h-4 mr-2" />
-                    Try Another Email
+                    {t('auth.tryAnotherEmail')}
                   </button>
                   <Link to="/login" className="btn-primary">
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -109,7 +96,7 @@ export default function ForgotPasswordPage() {
           {/* Logo & Header */}
           <div className="relative text-center mb-6">
             <div className="relative inline-flex items-center justify-center mb-6">
-              <img src="/logo.png" alt="Boilerplate" className="relative w-24 h-24 drop-shadow-lg" />
+              <img src="/logo.png" alt={t('common.brandLogoAlt')} className="relative w-24 h-24 drop-shadow-lg" />
             </div>
             <h1 className="text-3xl font-bold text-slate-900">
               {t('auth.forgotPasswordTitle')}
@@ -196,7 +183,7 @@ export default function ForgotPasswordPage() {
 
           {/* Help text */}
           <p className="mt-4 text-center text-sm text-slate-500">
-            Remember your password?{' '}
+            {t('auth.rememberPassword')}{' '}
             <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
               {t('auth.signIn')}
             </Link>

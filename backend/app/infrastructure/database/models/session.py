@@ -18,27 +18,27 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.connection import Base
 
 if TYPE_CHECKING:
-    from app.infrastructure.database.models.user import UserModel
     from app.infrastructure.database.models.tenant import TenantModel
+    from app.infrastructure.database.models.user import UserModel
 
 
 class UserSessionModel(Base):
     """
     User session database model.
-    
+
     Table: user_sessions
     Tracks active user sessions for session management.
     """
-    
+
     __tablename__ = "user_sessions"
-    
+
     # Primary key
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
-    
+
     # Tenant isolation
     tenant_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -46,7 +46,7 @@ class UserSessionModel(Base):
         nullable=False,
         index=True,
     )
-    
+
     # User reference
     user_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -54,14 +54,14 @@ class UserSessionModel(Base):
         nullable=False,
         index=True,
     )
-    
+
     # Session identification
     refresh_token_hash: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
         index=True,
     )
-    
+
     # Device information
     device_name: Mapped[str] = mapped_column(
         String(255),
@@ -83,7 +83,7 @@ class UserSessionModel(Base):
         nullable=False,
         default="",
     )
-    
+
     # Location information
     ip_address: Mapped[str] = mapped_column(
         String(45),  # IPv6 max length
@@ -95,14 +95,14 @@ class UserSessionModel(Base):
         nullable=False,
         default="",
     )
-    
+
     # Activity tracking
     last_activity: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP"),
     )
-    
+
     # Session status
     is_revoked: Mapped[bool] = mapped_column(
         Boolean,
@@ -113,25 +113,25 @@ class UserSessionModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP"),
     )
-    
+
     # Relationships
     user: Mapped["UserModel"] = relationship(
         "UserModel",
         lazy="selectin",
     )
-    
+
     tenant: Mapped["TenantModel"] = relationship(
         "TenantModel",
         lazy="selectin",
     )
-    
+
     def __repr__(self) -> str:
         """String representation for debugging."""
         return f"<UserSession(id={self.id}, user_id={self.user_id}, device={self.device_name})>"

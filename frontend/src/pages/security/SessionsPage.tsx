@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { sessionsService, type UserSession } from '@/services/api';
+import { formatRelativeTime as formatRelativeTimeShared } from '@/utils/formatRelativeTime';
 import { ConfirmModal, AlertModal } from '@/components/common/Modal';
 import {
   Monitor,
@@ -32,19 +33,13 @@ function DeviceIcon({ type }: { type: string }) {
 /**
  * Format relative time
  */
-function formatRelativeTime(dateStr: string, t: any): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return t('sessions.timeAgo.justNow');
-  if (diffMins < 60) return t('sessions.timeAgo.minutesAgo', { count: diffMins });
-  if (diffHours < 24) return t('sessions.timeAgo.hoursAgo', { count: diffHours });
-  if (diffDays < 7) return t('sessions.timeAgo.daysAgo', { count: diffDays });
-  return date.toLocaleDateString();
+function formatRelativeTime(dateStr: string, t: (key: string, options?: Record<string, unknown>) => string): string {
+  return formatRelativeTimeShared(dateStr, {
+    justNow: t('sessions.timeAgo.justNow'),
+    minutesAgo: (count: number) => t('sessions.timeAgo.minutesAgo', { count }),
+    hoursAgo: (count: number) => t('sessions.timeAgo.hoursAgo', { count }),
+    daysAgo: (count: number) => t('sessions.timeAgo.daysAgo', { count }),
+  });
 }
 
 /**
@@ -71,22 +66,22 @@ export default function SessionsPage() {
   // Revoke single session mutation
   const revokeMutation = useMutation({
     mutationFn: (sessionId: string) => sessionsService.revoke(sessionId),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       setSessionToRevoke(null);
       setAlertModal({
         isOpen: true,
         title: t('sessions.sessionRevoked'),
-        message: response.message,
+        message: t('sessions.sessionRevokedMessage'),
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setSessionToRevoke(null);
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('sessions.revokeError'),
+        message: t('sessions.revokeError'),
         variant: 'error',
       });
     },
@@ -95,22 +90,22 @@ export default function SessionsPage() {
   // Revoke all sessions mutation
   const revokeAllMutation = useMutation({
     mutationFn: sessionsService.revokeAll,
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       setShowRevokeAllModal(false);
       setAlertModal({
         isOpen: true,
         title: t('sessions.sessionsRevoked'),
-        message: response.message,
+        message: t('sessions.allSessionsRevokedMessage'),
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setShowRevokeAllModal(false);
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('sessions.revokeAllError'),
+        message: t('sessions.revokeAllError'),
         variant: 'error',
       });
     },
@@ -223,7 +218,7 @@ export default function SessionsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                    {session.browser} on {session.os} • {t('sessions.started')} {new Date(session.created_at).toLocaleDateString()}
+                    {t('sessions.browserOnOs', { browser: session.browser, os: session.os })} • {t('sessions.started')} {new Date(session.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -233,6 +228,7 @@ export default function SessionsPage() {
                 <button
                   onClick={() => setSessionToRevoke(session)}
                   className="btn-ghost text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  aria-label={t('sessions.revokeSession')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

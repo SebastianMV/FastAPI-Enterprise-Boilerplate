@@ -5,26 +5,26 @@
 Comprehensive tests for search endpoints to improve coverage.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+import pytest
+
 from app.api.v1.endpoints.search import (
+    SearchFilterRequest,
+    SearchRequest,
+    SearchSortRequest,
+    health,
+    list_indices,
     search,
     simple_search,
     suggest,
-    health,
-    list_indices,
-    SearchRequest,
-    SearchFilterRequest,
-    SearchSortRequest,
 )
-from app.domain.ports.search import SearchIndex
 
 
 class MockSearchHit:
     """Mock search hit for testing."""
-    
+
     def __init__(self, id: str, score: float = 1.0):
         self.id = id
         self.score = score
@@ -35,7 +35,7 @@ class MockSearchHit:
 
 class MockSearchResult:
     """Mock search result for testing."""
-    
+
     def __init__(self, total: int = 1, hits: list | None = None):
         self.hits = hits or [MockSearchHit("1")]
         self.total = total
@@ -75,8 +75,9 @@ class TestSearchEndpoint:
             query="test",
             index="invalid_index",
         )
-        
+
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc:
             await search(
                 request=request,
@@ -84,9 +85,9 @@ class TestSearchEndpoint:
                 current_user=mock_user,
                 tenant_id=None,
             )
-        
+
         assert exc.value.status_code == 400
-        assert "Invalid search index" in exc.value.detail
+        assert exc.value.detail["code"] == "INVALID_SEARCH_INDEX"
 
     @pytest.mark.asyncio
     async def test_search_success(
@@ -99,21 +100,23 @@ class TestSearchEndpoint:
             page=1,
             page_size=20,
         )
-        
+
         mock_result = MockSearchResult(total=1)
         mock_service = AsyncMock()
         mock_service.search.return_value = mock_result
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
-            
+
             result = await search(
                 request=request,
                 session=mock_session,
                 current_user=mock_user,
                 tenant_id=uuid4(),
             )
-            
+
             assert result.total == 1
             assert len(result.hits) == 1
             assert result.page == 1
@@ -128,24 +131,28 @@ class TestSearchEndpoint:
             index="users",
             filters=[
                 SearchFilterRequest(field="is_active", value=True, operator="eq"),
-                SearchFilterRequest(field="created_at", value="2024-01-01", operator="gte"),
+                SearchFilterRequest(
+                    field="created_at", value="2024-01-01", operator="gte"
+                ),
             ],
         )
-        
+
         mock_result = MockSearchResult(total=5)
         mock_service = AsyncMock()
         mock_service.search.return_value = mock_result
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
-            
+
             result = await search(
                 request=request,
                 session=mock_session,
                 current_user=mock_user,
                 tenant_id=None,
             )
-            
+
             assert result.total == 5
 
     @pytest.mark.asyncio
@@ -161,21 +168,23 @@ class TestSearchEndpoint:
                 SearchSortRequest(field="email", order="asc"),
             ],
         )
-        
+
         mock_result = MockSearchResult(total=10)
         mock_service = AsyncMock()
         mock_service.search.return_value = mock_result
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
-            
+
             result = await search(
                 request=request,
                 session=mock_session,
                 current_user=mock_user,
                 tenant_id=None,
             )
-            
+
             assert result.total == 10
 
     @pytest.mark.asyncio
@@ -188,21 +197,23 @@ class TestSearchEndpoint:
             index="users",
             highlight_fields=["email", "first_name", "last_name"],
         )
-        
+
         mock_result = MockSearchResult(total=3)
         mock_service = AsyncMock()
         mock_service.search.return_value = mock_result
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
-            
+
             result = await search(
                 request=request,
                 session=mock_session,
                 current_user=mock_user,
                 tenant_id=None,
             )
-            
+
             assert result.total == 3
 
     @pytest.mark.asyncio
@@ -214,11 +225,14 @@ class TestSearchEndpoint:
             query="test",
             index="users",
         )
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.side_effect = Exception("Backend error")
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await search(
                     request=request,
@@ -226,9 +240,9 @@ class TestSearchEndpoint:
                     current_user=mock_user,
                     tenant_id=None,
                 )
-            
+
             assert exc.value.status_code == 500
-            assert "Search failed" in exc.value.detail
+            assert exc.value.detail["code"] == "SEARCH_ERROR"
 
 
 class TestSimpleSearchEndpoint:
@@ -242,10 +256,12 @@ class TestSimpleSearchEndpoint:
         mock_result = MockSearchResult(total=5)
         mock_service = AsyncMock()
         mock_service.search.return_value = mock_result
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
-            
+
             result = await simple_search(
                 session=mock_session,
                 current_user=mock_user,
@@ -255,7 +271,7 @@ class TestSimpleSearchEndpoint:
                 page=1,
                 page_size=10,
             )
-            
+
             assert result.total == 5
 
     @pytest.mark.asyncio
@@ -264,14 +280,16 @@ class TestSimpleSearchEndpoint:
     ) -> None:
         """Test simple search with tenant context."""
         tenant_id = uuid4()
-        
+
         mock_result = MockSearchResult(total=3)
         mock_service = AsyncMock()
         mock_service.search.return_value = mock_result
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
-            
+
             result = await simple_search(
                 session=mock_session,
                 current_user=mock_user,
@@ -281,7 +299,7 @@ class TestSimpleSearchEndpoint:
                 page=2,
                 page_size=20,
             )
-            
+
             assert result.total == 3
 
 
@@ -294,6 +312,7 @@ class TestSuggestEndpoint:
     ) -> None:
         """Test suggest with invalid index."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc:
             await suggest(
                 session=mock_session,
@@ -304,9 +323,9 @@ class TestSuggestEndpoint:
                 field="title",
                 size=5,
             )
-        
+
         assert exc.value.status_code == 400
-        assert "Invalid search index" in exc.value.detail
+        assert exc.value.detail["code"] == "INVALID_SEARCH_INDEX"
 
     @pytest.mark.asyncio
     async def test_suggest_success(
@@ -314,11 +333,17 @@ class TestSuggestEndpoint:
     ) -> None:
         """Test successful suggest."""
         mock_service = AsyncMock()
-        mock_service.suggest.return_value = ["suggestion1", "suggestion2", "suggestion3"]
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+        mock_service.suggest.return_value = [
+            "suggestion1",
+            "suggestion2",
+            "suggestion3",
+        ]
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
-            
+
             result = await suggest(
                 session=mock_session,
                 current_user=mock_user,
@@ -328,7 +353,7 @@ class TestSuggestEndpoint:
                 field="email",
                 size=5,
             )
-            
+
             assert len(result.suggestions) == 3
 
     @pytest.mark.asyncio
@@ -336,10 +361,13 @@ class TestSuggestEndpoint:
         self, mock_session: MagicMock, mock_user: MagicMock
     ) -> None:
         """Test suggest when backend fails."""
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.side_effect = Exception("Backend error")
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await suggest(
                     session=mock_session,
@@ -350,9 +378,9 @@ class TestSuggestEndpoint:
                     field="email",
                     size=5,
                 )
-            
+
             assert exc.value.status_code == 500
-            assert "Suggest failed" in exc.value.detail
+            assert exc.value.detail["code"] == "SEARCH_ERROR"
 
 
 class TestHealthEndpoint:
@@ -367,23 +395,27 @@ class TestHealthEndpoint:
             "backend": "postgres",
             "version": "15",
         }
-        
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
-            
+
             result = await health(session=mock_session)
-            
+
             assert result.status == "healthy"
             assert result.backend == "postgres"
 
     @pytest.mark.asyncio
     async def test_health_unhealthy(self, mock_session: MagicMock) -> None:
         """Test health check when backend is unhealthy."""
-        with patch("app.api.v1.endpoints.search.get_search_backend") as mock_get_backend:
+        with patch(
+            "app.api.v1.endpoints.search.get_search_backend"
+        ) as mock_get_backend:
             mock_get_backend.side_effect = Exception("Connection failed")
-            
+
             result = await health(session=mock_session)
-            
+
             assert result.status == "unhealthy"
             assert "error" in result.details
 
@@ -395,10 +427,10 @@ class TestListIndicesEndpoint:
     async def test_list_indices(self, mock_user: MagicMock) -> None:
         """Test listing search indices."""
         result = await list_indices(current_user=mock_user)
-        
+
         assert isinstance(result, list)
         assert len(result) > 0
-        
+
         # Check structure
         for item in result:
             assert "name" in item
@@ -415,7 +447,7 @@ class TestSearchSchemas:
             value=True,
             operator="eq",
         )
-        
+
         assert filter_req.field == "is_active"
         assert filter_req.value is True
         assert filter_req.operator == "eq"
@@ -426,7 +458,7 @@ class TestSearchSchemas:
             field="created_at",
             order="desc",
         )
-        
+
         assert sort_req.field == "created_at"
         assert sort_req.order == "desc"
 
@@ -436,7 +468,7 @@ class TestSearchSchemas:
             query="test",
             index="users",
         )
-        
+
         assert request.page == 1
         assert request.page_size == 20
         assert request.fuzzy is True
@@ -456,7 +488,7 @@ class TestSearchSchemas:
             page_size=50,
             fuzzy=False,
         )
-        
+
         assert request.query == "test query"
         assert request.page == 2
         assert request.page_size == 50

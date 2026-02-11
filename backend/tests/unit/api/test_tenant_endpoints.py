@@ -3,12 +3,11 @@
 
 """Tests for tenant endpoints module."""
 
-from datetime import datetime, timezone as tz
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 import pytest
-from pydantic import ValidationError
 
 from app.api.v1.schemas.tenants import (
     TenantActivateRequest,
@@ -57,8 +56,8 @@ def create_mock_tenant(tenant_id: UUID | None = None) -> MagicMock:
     mock_tenant.plan = "free"
     mock_tenant.plan_expires_at = None
     mock_tenant.settings = create_mock_settings()
-    mock_tenant.created_at = datetime.now(tz.utc)
-    mock_tenant.updated_at = datetime.now(tz.utc)
+    mock_tenant.created_at = datetime.now(UTC)
+    mock_tenant.updated_at = datetime.now(UTC)
     return mock_tenant
 
 
@@ -138,7 +137,8 @@ class TestTenantResponseSchema:
 
     def test_tenant_response_creation(self) -> None:
         """Test tenant response creation."""
-        from datetime import datetime, timezone
+        from datetime import datetime
+
         tenant_id = uuid4()
         response = TenantResponse(
             id=tenant_id,
@@ -150,8 +150,8 @@ class TestTenantResponseSchema:
             settings=TenantSettingsSchema(),
             timezone="UTC",
             locale="en",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         assert response.id == tenant_id
         assert response.name == "Test Tenant"
@@ -163,7 +163,8 @@ class TestTenantListResponseSchema:
 
     def test_tenant_list_response(self) -> None:
         """Test tenant list response."""
-        from datetime import datetime, timezone
+        from datetime import datetime
+
         items = [
             TenantResponse(
                 id=uuid4(),
@@ -175,8 +176,8 @@ class TestTenantListResponseSchema:
                 settings=TenantSettingsSchema(),
                 timezone="UTC",
                 locale="en",
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
             for i in range(3)
         ]
@@ -329,6 +330,7 @@ class TestCreateTenantEndpoint:
     async def test_create_tenant_slug_conflict(self) -> None:
         """Test creating tenant with existing slug."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.tenants import create_tenant
 
         mock_repo = AsyncMock()
@@ -350,6 +352,7 @@ class TestCreateTenantEndpoint:
     async def test_create_tenant_domain_conflict(self) -> None:
         """Test creating tenant with existing domain."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.tenants import create_tenant
 
         mock_repo = AsyncMock()
@@ -399,6 +402,7 @@ class TestGetTenantEndpoint:
     async def test_get_tenant_not_found(self) -> None:
         """Test getting non-existent tenant."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.tenants import get_tenant
 
         mock_repo = AsyncMock()
@@ -440,6 +444,7 @@ class TestGetTenantBySlugEndpoint:
     async def test_get_tenant_by_slug_not_found(self) -> None:
         """Test getting non-existent tenant by slug."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.tenants import get_tenant_by_slug
 
         mock_repo = AsyncMock()
@@ -487,6 +492,7 @@ class TestUpdateTenantEndpoint:
     async def test_update_tenant_not_found(self) -> None:
         """Test updating non-existent tenant."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.tenants import update_tenant
 
         mock_repo = AsyncMock()
@@ -529,6 +535,7 @@ class TestDeleteTenantEndpoint:
     async def test_delete_tenant_not_found(self) -> None:
         """Test deleting non-existent tenant."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.tenants import delete_tenant
 
         mock_repo = AsyncMock()
@@ -629,6 +636,7 @@ class TestSetTenantVerifiedEndpoint:
     async def test_verify_tenant_not_found(self) -> None:
         """Test verifying non-existent tenant."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.tenants import set_tenant_verified
 
         mock_repo = AsyncMock()

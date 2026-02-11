@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { usersService, type User } from '@/services/api';
+import { usersService, rolesService, type User } from '@/services/api';
 import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
 import {
   Plus,
@@ -17,6 +17,7 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
+  Shield,
 } from 'lucide-react';
 
 interface CreateUserFormData {
@@ -26,6 +27,7 @@ interface CreateUserFormData {
   last_name: string;
   is_active: boolean;
   is_superuser: boolean;
+  roles: string[];  // Role IDs
 }
 
 interface EditUserFormData {
@@ -33,6 +35,7 @@ interface EditUserFormData {
   first_name: string;
   last_name: string;
   is_active: boolean;
+  roles: string[];  // Role IDs
 }
 
 /**
@@ -60,6 +63,13 @@ export default function UsersPage() {
     queryFn: () => usersService.list({ limit: 100 }),
   });
 
+  // Fetch available roles for assignment
+  const { data: rolesData } = useQuery({
+    queryKey: ['roles'],
+    queryFn: () => rolesService.list({ limit: 100 }),
+  });
+  const availableRoles = rolesData?.items || [];
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data: CreateUserFormData) => usersService.create(data),
@@ -74,11 +84,11 @@ export default function UsersPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('users.createError'),
+        message: t('users.createError'),
         variant: 'error',
       });
     },
@@ -99,11 +109,11 @@ export default function UsersPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('users.updateError'),
+        message: t('users.updateError'),
         variant: 'error',
       });
     },
@@ -123,11 +133,11 @@ export default function UsersPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('users.deleteError'),
+        message: t('users.deleteError'),
         variant: 'error',
       });
     },
@@ -138,21 +148,28 @@ export default function UsersPage() {
     register: registerCreate,
     handleSubmit: handleCreateSubmit,
     reset: resetCreateForm,
+    watch: watchCreate,
+    setValue: setCreateValue,
     formState: { errors: createErrors },
   } = useForm<CreateUserFormData>({
     defaultValues: {
       is_active: true,
       is_superuser: false,
+      roles: [],
     },
   });
+  const selectedCreateRoles = watchCreate('roles') || [];
 
   // Edit form
   const {
     register: registerEdit,
     handleSubmit: handleEditSubmit,
     reset: resetEditForm,
+    watch: watchEdit,
+    setValue: setEditValue,
     formState: { errors: editErrors },
   } = useForm<EditUserFormData>();
+  const selectedEditRoles = watchEdit('roles') || [];
 
   const handleEditClick = (user: User) => {
     setSelectedUser(user);
@@ -161,6 +178,7 @@ export default function UsersPage() {
       first_name: user.first_name,
       last_name: user.last_name,
       is_active: user.is_active,
+      roles: user.roles || [],
     });
     setShowEditModal(true);
   };
@@ -188,8 +206,8 @@ export default function UsersPage() {
   const filteredUsers = users.filter(
     (user) =>
       user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.first_name.toLowerCase().includes(search.toLowerCase()) ||
-      user.last_name.toLowerCase().includes(search.toLowerCase()),
+      (user.first_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (user.last_name ?? '').toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -201,7 +219,7 @@ export default function UsersPage() {
             {t('users.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Manage user accounts and permissions
+            {t('users.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -246,7 +264,7 @@ export default function UsersPage() {
             <p className="text-red-600 mb-4">{t('users.loadingUsers')}</p>
             <button onClick={() => refetch()} className="btn-primary">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         ) : (
@@ -291,7 +309,7 @@ export default function UsersPage() {
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-medium">
-                              {user.first_name.charAt(0)}
+                              {(user.first_name ?? '').charAt(0)}
                             </span>
                           </div>
                           <div className="ml-4">
@@ -325,8 +343,34 @@ export default function UsersPage() {
                           )}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                        {user.is_superuser ? t('settings.administrator') : t('settings.user')}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex flex-wrap gap-1">
+                          {user.is_superuser && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+                              <Shield className="w-3 h-3 mr-1" />
+                              {t('settings.administrator')}
+                            </span>
+                          )}
+                          {user.roles && user.roles.length > 0 ? (
+                            user.roles.map((roleId) => {
+                              const role = availableRoles.find((r) => r.id === roleId);
+                              return role ? (
+                                <span
+                                  key={roleId}
+                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                                >
+                                  {role.name}
+                                </span>
+                              ) : null;
+                            })
+                          ) : (
+                            !user.is_superuser && (
+                              <span className="text-slate-400 dark:text-slate-500">
+                                {t('settings.user')}
+                              </span>
+                            )
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                         {new Date(user.created_at).toLocaleDateString()}
@@ -361,7 +405,7 @@ export default function UsersPage() {
       {/* Pagination info */}
       {data && (
         <div className="text-sm text-slate-500 dark:text-slate-400">
-          Showing {filteredUsers.length} of {data.total} users
+          {t('users.showingCount', { showing: filteredUsers.length, total: data.total })}
         </div>
       )}
 
@@ -386,7 +430,7 @@ export default function UsersPage() {
                 <input
                   {...registerCreate('first_name', { required: t('validation.required') })}
                   className="input pl-10"
-                  placeholder="John"
+                  placeholder={t('common.placeholderFirstName')}
                 />
               </div>
               {createErrors.first_name && (
@@ -402,7 +446,7 @@ export default function UsersPage() {
                 <input
                   {...registerCreate('last_name', { required: t('validation.required') })}
                   className="input pl-10"
-                  placeholder="Doe"
+                  placeholder={t('common.placeholderLastName')}
                 />
               </div>
               {createErrors.last_name && (
@@ -427,7 +471,7 @@ export default function UsersPage() {
                 })}
                 type="email"
                 className="input pl-10"
-                placeholder="john.doe@example.com"
+                placeholder={t('common.placeholderEmail')}
               />
             </div>
             {createErrors.email && (
@@ -450,6 +494,7 @@ export default function UsersPage() {
                   },
                 })}
                 type="password"
+                autoComplete="new-password"
                 className="input pl-10"
                 placeholder="••••••••"
               />
@@ -477,6 +522,34 @@ export default function UsersPage() {
               <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">{t('settings.administrator')}</span>
             </label>
           </div>
+
+          {/* Roles selector */}
+          {availableRoles.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <Shield className="inline w-4 h-4 mr-1" />
+                {t('users.role')}
+              </label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-lg">
+                {availableRoles.map((role) => (
+                  <label key={role.id} className="flex items-center text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selectedCreateRoles.includes(role.id)}
+                      onChange={(e) => {
+                        const newRoles = e.target.checked
+                          ? [...selectedCreateRoles, role.id]
+                          : selectedCreateRoles.filter((id) => id !== role.id);
+                        setCreateValue('roles', newRoles);
+                      }}
+                      className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="ml-2 text-slate-700 dark:text-slate-300">{role.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
             <button
@@ -578,6 +651,34 @@ export default function UsersPage() {
               <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">{t('users.active')}</span>
             </label>
           </div>
+
+          {/* Roles selector */}
+          {availableRoles.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <Shield className="inline w-4 h-4 mr-1" />
+                {t('users.role')}
+              </label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-lg">
+                {availableRoles.map((role) => (
+                  <label key={role.id} className="flex items-center text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selectedEditRoles.includes(role.id)}
+                      onChange={(e) => {
+                        const newRoles = e.target.checked
+                          ? [...selectedEditRoles, role.id]
+                          : selectedEditRoles.filter((id) => id !== role.id);
+                        setEditValue('roles', newRoles);
+                      }}
+                      className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="ml-2 text-slate-700 dark:text-slate-300">{role.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
             <button

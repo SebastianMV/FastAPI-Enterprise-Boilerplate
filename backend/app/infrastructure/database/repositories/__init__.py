@@ -3,15 +3,6 @@
 
 """Infrastructure database repositories package."""
 
-from app.infrastructure.database.repositories.user_repository import (
-    SQLAlchemyUserRepository,
-)
-from app.infrastructure.database.repositories.role_repository import (
-    SQLAlchemyRoleRepository,
-)
-from app.infrastructure.database.repositories.tenant_repository import (
-    SQLAlchemyTenantRepository,
-)
 from app.infrastructure.database.repositories.audit_log_repository import (
     SQLAlchemyAuditLogRepository,
 )
@@ -23,7 +14,15 @@ from app.infrastructure.database.repositories.cached_tenant_repository import (
     CachedTenantRepository,
     get_cached_tenant_repository,
 )
-
+from app.infrastructure.database.repositories.role_repository import (
+    SQLAlchemyRoleRepository,
+)
+from app.infrastructure.database.repositories.tenant_repository import (
+    SQLAlchemyTenantRepository,
+)
+from app.infrastructure.database.repositories.user_repository import (
+    SQLAlchemyUserRepository,
+)
 
 __all__ = [
     # Base repositories

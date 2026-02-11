@@ -7,9 +7,9 @@ Unit tests for Tenants API endpoints.
 Tests for tenant management CRUD operations.
 """
 
-from datetime import datetime, UTC
-from uuid import uuid4
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -170,17 +170,16 @@ class TestGetTenantRepository:
 
         with patch(
             "app.api.v1.endpoints.tenants.SQLAlchemyTenantRepository"
-        ) as mock_base_repo:
-            with patch(
-                "app.api.v1.endpoints.tenants.get_cached_tenant_repository"
-            ) as mock_get_cached:
-                mock_cached_repo = MagicMock()
-                mock_get_cached.return_value = mock_cached_repo
+        ) as mock_base_repo, patch(
+            "app.api.v1.endpoints.tenants.get_cached_tenant_repository"
+        ) as mock_get_cached:
+            mock_cached_repo = MagicMock()
+            mock_get_cached.return_value = mock_cached_repo
 
-                result = get_tenant_repository(session=mock_session)
+            result = get_tenant_repository(session=mock_session)
 
-                mock_base_repo.assert_called_once_with(mock_session)
-                assert result == mock_cached_repo
+            mock_base_repo.assert_called_once_with(mock_session)
+            assert result == mock_cached_repo
 
 
 class TestTenantSchemas:
@@ -248,7 +247,11 @@ class TestTenantSchemas:
 
     def test_tenant_list_response(self) -> None:
         """Test TenantListResponse schema."""
-        from app.api.v1.schemas.tenants import TenantListResponse, TenantResponse, TenantSettingsSchema
+        from app.api.v1.schemas.tenants import (
+            TenantListResponse,
+            TenantResponse,
+            TenantSettingsSchema,
+        )
 
         response = TenantListResponse(
             items=[

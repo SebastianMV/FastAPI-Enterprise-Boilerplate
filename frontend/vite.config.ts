@@ -66,12 +66,6 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => `/api/v1${path}`,
       },
-      '/chat': {
-        target: apiUrl,
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => `/api/v1${path}`,
-      },
       '/search': {
         target: apiUrl,
         changeOrigin: true,
@@ -85,6 +79,30 @@ export default defineConfig({
         rewrite: (path) => `/api/v1${path}`,
       },
       '/notifications': {
+        target: apiUrl,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => `/api/v1${path}`,
+      },
+      '/sessions': {
+        target: apiUrl,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => `/api/v1${path}`,
+      },
+      '/audit-logs': {
+        target: apiUrl,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => `/api/v1${path}`,
+      },
+      '/config': {
+        target: apiUrl,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => `/api/v1${path}`,
+      },
+      '/data-exchange': {
         target: apiUrl,
         changeOrigin: true,
         secure: false,
@@ -107,7 +125,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
   },
   test: {
     globals: true,
@@ -119,6 +137,12 @@ export default defineConfig({
       reporter: ['text', 'html'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/test/**', 'src/**/*.d.ts'],
+      thresholds: {
+        statements: 30,
+        branches: 25,
+        functions: 25,
+        lines: 30,
+      },
     },
   },
 });

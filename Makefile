@@ -93,6 +93,9 @@ format:
 type-check:
 	cd backend && mypy app
 
+check: lint type-check test
+	@echo "✅ All checks passed!"
+
 # ===========================================
 # Docker - Development
 # ===========================================
@@ -125,54 +128,6 @@ docker-prod-down:
 
 docker-prod-logs:
 	docker compose -f docker-compose.prod.yml logs -f
-
-# ===========================================
-# Local Development
-# ===========================================
-dev:
-	docker compose up -d db redis
-	@echo "Starting backend..."
-	cd backend && uvicorn app.main:app --reload --port 8000 &
-	@echo "Starting frontend..."
-	cd frontend && npm run dev
-
-dev-backend:
-	cd backend && uvicorn app.main:app --reload --port 8000
-
-dev-frontend:
-	cd frontend && npm run dev
-
-# ===========================================
-# Testing
-# ===========================================
-test:
-	cd backend && pytest tests/ -v --cov=app
-
-test-unit:
-	cd backend && pytest tests/unit/ -v
-
-test-integration:
-	cd backend && pytest tests/integration/ -v
-
-test-frontend:
-	cd frontend && npm test
-
-# ===========================================
-# Code Quality
-# ===========================================
-lint:
-	cd backend && ruff check .
-	cd frontend && npm run lint
-
-format:
-	cd backend && ruff format .
-	cd frontend && npm run format
-
-type-check:
-	cd backend && mypy app
-
-check: lint type-check test
-	@echo "✅ All checks passed!"
 
 # ===========================================
 # Database

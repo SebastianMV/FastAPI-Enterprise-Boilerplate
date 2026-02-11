@@ -13,7 +13,6 @@ They are marked as skip until the implementation is complete.
 import pytest
 from httpx import AsyncClient
 
-
 pytestmark = pytest.mark.skip(reason="E2E tests require full endpoint implementation")
 from uuid import uuid4
 
@@ -42,7 +41,7 @@ class TestMultiTenantE2E:
         )
         assert create_a.status_code == 201
         user_a_id = create_a.json()["id"]
-        
+
         # 2. Create user in Tenant B
         user_email_b = f"tenant_b_{uuid4().hex[:8]}@example.com"
         create_b = await client.post(
@@ -56,21 +55,21 @@ class TestMultiTenantE2E:
         )
         assert create_b.status_code == 201
         user_b_id = create_b.json()["id"]
-        
+
         # 3. Tenant A cannot see Tenant B's user
         cross_access = await client.get(
             f"/api/v1/users/{user_b_id}",
             headers=tenant_a_admin_headers,
         )
         assert cross_access.status_code == 404
-        
+
         # 4. Tenant B cannot see Tenant A's user
         cross_access_b = await client.get(
             f"/api/v1/users/{user_a_id}",
             headers=tenant_b_admin_headers,
         )
         assert cross_access_b.status_code == 404
-        
+
         # 5. List users only shows own tenant's users
         list_a = await client.get("/api/v1/users", headers=tenant_a_admin_headers)
         assert list_a.status_code == 200
@@ -78,7 +77,7 @@ class TestMultiTenantE2E:
         user_ids_a = [u["id"] for u in users_a.get("items", users_a)]
         assert user_a_id in user_ids_a
         assert user_b_id not in user_ids_a
-        
+
         list_b = await client.get("/api/v1/users", headers=tenant_b_admin_headers)
         assert list_b.status_code == 200
         users_b = list_b.json()
@@ -107,14 +106,14 @@ class TestMultiTenantE2E:
         )
         assert create_role_a.status_code == 201
         role_a_id = create_role_a.json()["id"]
-        
+
         # 2. Tenant B cannot access Tenant A's role
         cross_access = await client.get(
             f"/api/v1/roles/{role_a_id}",
             headers=tenant_b_admin_headers,
         )
         assert cross_access.status_code == 404
-        
+
         # 3. Tenant B can create same role name (different tenant)
         create_role_b = await client.post(
             "/api/v1/roles",
@@ -137,7 +136,7 @@ class TestTenantOnboardingE2E:
     ) -> None:
         """Test complete new tenant onboarding flow."""
         tenant_name = f"new_tenant_{uuid4().hex[:8]}"
-        
+
         # 1. Create new tenant
         create_tenant = await client.post(
             "/api/v1/tenants",
@@ -153,7 +152,7 @@ class TestTenantOnboardingE2E:
         )
         assert create_tenant.status_code == 201
         tenant_id = create_tenant.json()["id"]
-        
+
         # 2. Create admin user for new tenant
         admin_email = f"admin_{uuid4().hex[:8]}@{tenant_name}.com"
         create_admin = await client.post(
@@ -167,7 +166,7 @@ class TestTenantOnboardingE2E:
             headers=superuser_headers,
         )
         assert create_admin.status_code in [200, 201]
-        
+
         # 3. Admin can login
         login_response = await client.post(
             "/api/v1/auth/login",
@@ -179,7 +178,7 @@ class TestTenantOnboardingE2E:
         assert login_response.status_code == 200
         tenant_admin_token = login_response.json()["access_token"]
         tenant_admin_headers = {"Authorization": f"Bearer {tenant_admin_token}"}
-        
+
         # 4. Admin can manage their tenant
         me_response = await client.get("/api/v1/users/me", headers=tenant_admin_headers)
         assert me_response.status_code == 200

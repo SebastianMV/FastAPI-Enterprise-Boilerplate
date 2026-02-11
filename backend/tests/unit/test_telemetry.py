@@ -9,15 +9,15 @@ import pytest
 
 from app.infrastructure.observability.telemetry import (
     AppMetrics,
-    span_context,
-    traced,
-    get_tracer,
-    get_meter,
-    get_default_meter,
     add_span_attributes,
     get_current_span,
+    get_default_meter,
+    get_meter,
+    get_tracer,
     inject_trace_context,
     setup_telemetry,
+    span_context,
+    traced,
 )
 
 
@@ -27,19 +27,19 @@ class TestAppMetrics:
     def test_metrics_class_exists(self):
         """AppMetrics class should exist."""
         assert AppMetrics is not None
-        assert hasattr(AppMetrics, 'initialize')
-        assert hasattr(AppMetrics, 'request_counter')
-        assert hasattr(AppMetrics, 'db_query_counter')
+        assert hasattr(AppMetrics, "initialize")
+        assert hasattr(AppMetrics, "request_counter")
+        assert hasattr(AppMetrics, "db_query_counter")
 
     def test_metrics_attributes_exist(self):
         """Metrics should have expected attributes."""
         # These are class attributes, initially None
-        assert hasattr(AppMetrics, 'request_counter')
-        assert hasattr(AppMetrics, 'request_duration')
-        assert hasattr(AppMetrics, 'error_counter')
-        assert hasattr(AppMetrics, 'db_query_counter')
-        assert hasattr(AppMetrics, 'db_query_duration')
-        assert hasattr(AppMetrics, 'active_connections')
+        assert hasattr(AppMetrics, "request_counter")
+        assert hasattr(AppMetrics, "request_duration")
+        assert hasattr(AppMetrics, "error_counter")
+        assert hasattr(AppMetrics, "db_query_counter")
+        assert hasattr(AppMetrics, "db_query_duration")
+        assert hasattr(AppMetrics, "active_connections")
 
     def test_initialize_is_classmethod(self):
         """Initialize should be a classmethod."""
@@ -118,9 +118,8 @@ class TestSpanContext:
 
     def test_span_context_exception_handling(self):
         """Should handle exceptions."""
-        with pytest.raises(ValueError):
-            with span_context("test.failing") as span:
-                raise ValueError("Test error")
+        with pytest.raises(ValueError), span_context("test.failing") as span:
+            raise ValueError("Test error")
 
 
 class TestGetTracer:
@@ -171,14 +170,18 @@ class TestSetupTelemetry:
 
     def test_setup_telemetry_disabled(self):
         """Should skip setup when OTEL is disabled."""
-        with patch("app.infrastructure.observability.telemetry.settings") as mock_settings:
+        with patch(
+            "app.infrastructure.observability.telemetry.settings"
+        ) as mock_settings:
             mock_settings.OTEL_ENABLED = False
             # Should not raise and should return early
             setup_telemetry(app=None)
 
     def test_setup_telemetry_with_console_exporter(self):
         """Should configure console exporter when no OTLP endpoint."""
-        with patch("app.infrastructure.observability.telemetry.settings") as mock_settings:
+        with patch(
+            "app.infrastructure.observability.telemetry.settings"
+        ) as mock_settings:
             mock_settings.OTEL_ENABLED = True
             mock_settings.OTEL_EXPORTER_OTLP_ENDPOINT = None
             mock_settings.APP_NAME = "test-app"
@@ -262,9 +265,9 @@ class TestAppMetricsInitialize:
         # Reset state
         AppMetrics._initialized = False
         AppMetrics.request_counter = None
-        
+
         AppMetrics.initialize()
-        
+
         assert AppMetrics._initialized is True
         assert AppMetrics.request_counter is not None
 
@@ -273,10 +276,10 @@ class TestAppMetricsInitialize:
         AppMetrics._initialized = False
         AppMetrics.initialize()
         first_counter = AppMetrics.request_counter
-        
+
         AppMetrics.initialize()  # Second call
         second_counter = AppMetrics.request_counter
-        
+
         # Should be the same instance
         assert first_counter is second_counter
 
@@ -289,9 +292,9 @@ class TestAppMetricsInitialize:
         AppMetrics.db_query_counter = None
         AppMetrics.db_query_duration = None
         AppMetrics.active_connections = None
-        
+
         AppMetrics.initialize()
-        
+
         assert AppMetrics.request_counter is not None
         assert AppMetrics.request_duration is not None
         assert AppMetrics.error_counter is not None

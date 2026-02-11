@@ -19,7 +19,6 @@ from app.infrastructure.auth.oauth_providers import (
     GitHubOAuthProvider,
     GoogleOAuthProvider,
     MicrosoftOAuthProvider,
-    OAuthProviderBase,
     OAuthTokenResponse,
     get_oauth_provider,
 )
@@ -35,10 +34,10 @@ class TestOAuthProviderBase:
             client_secret="test_secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         state1 = provider.generate_state()
         state2 = provider.generate_state()
-        
+
         assert isinstance(state1, str)
         assert len(state1) > 32
         assert state1 != state2  # Should be unique
@@ -50,9 +49,9 @@ class TestOAuthProviderBase:
             client_secret="test_secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         verifier, challenge = provider.generate_pkce()
-        
+
         assert isinstance(verifier, str)
         assert isinstance(challenge, str)
         assert len(verifier) > 64
@@ -66,13 +65,13 @@ class TestOAuthProviderBase:
             client_secret="my_secret",
             redirect_uri="http://localhost:8000/callback",
         )
-        
+
         state = "test_state_123"
         url = provider.get_authorization_url(state=state)
-        
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         assert parsed.scheme == "https"
         assert "accounts.google.com" in parsed.netloc
         assert params["client_id"][0] == "my_client_id"
@@ -88,17 +87,17 @@ class TestOAuthProviderBase:
             client_secret="my_secret",
             redirect_uri="http://localhost:8000/callback",
         )
-        
+
         state = "test_state"
         _, challenge = provider.generate_pkce()
         url = provider.get_authorization_url(
             state=state,
             code_challenge=challenge,
         )
-        
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         assert params["code_challenge"][0] == challenge
         assert params["code_challenge_method"][0] == "S256"
 
@@ -109,15 +108,15 @@ class TestOAuthProviderBase:
             client_secret="github_secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         url = provider.get_authorization_url(
             state="state123",
             scopes=["repo", "admin:org"],
         )
-        
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         assert params["scope"][0] == "repo admin:org"
 
     def test_get_authorization_url_extra_params(self):
@@ -127,15 +126,15 @@ class TestOAuthProviderBase:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         url = provider.get_authorization_url(
             state="state",
             extra_params={"access_type": "offline", "prompt": "consent"},
         )
-        
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         assert params["access_type"][0] == "offline"
         assert params["prompt"][0] == "consent"
 
@@ -147,7 +146,7 @@ class TestOAuthProviderBase:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "access_token_123",
@@ -158,14 +157,14 @@ class TestOAuthProviderBase:
             "id_token": "id_token_789",
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(
                 return_value=mock_response
             )
-            
+
             result = await provider.exchange_code(code="auth_code_123")
-            
+
             assert isinstance(result, OAuthTokenResponse)
             assert result.access_token == "access_token_123"
             assert result.token_type == "Bearer"
@@ -182,25 +181,25 @@ class TestOAuthProviderBase:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         verifier, _ = provider.generate_pkce()
-        
+
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "access_token",
             "token_type": "Bearer",
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_post = AsyncMock(return_value=mock_response)
             mock_client.return_value.__aenter__.return_value.post = mock_post
-            
+
             await provider.exchange_code(
                 code="code123",
                 code_verifier=verifier,
             )
-            
+
             # Verify code_verifier was included in request
             call_kwargs = mock_post.call_args[1]
             assert call_kwargs["data"]["code_verifier"] == verifier
@@ -213,7 +212,7 @@ class TestOAuthProviderBase:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "new_access_token",
@@ -222,16 +221,16 @@ class TestOAuthProviderBase:
             "scope": "openid email",
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(
                 return_value=mock_response
             )
-            
+
             result = await provider.refresh_access_token(
                 refresh_token="old_refresh_token"
             )
-            
+
             assert result.access_token == "new_access_token"
             assert result.refresh_token == "old_refresh_token"  # Preserved
 
@@ -243,17 +242,17 @@ class TestOAuthProviderBase:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         mock_response = MagicMock()
         mock_response.status_code = 200
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(
                 return_value=mock_response
             )
-            
+
             result = await provider.revoke_token(token="token_to_revoke")
-            
+
             assert result is True
 
     @pytest.mark.asyncio
@@ -264,10 +263,10 @@ class TestOAuthProviderBase:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         # GitHub doesn't have revoke_url
         assert provider.revoke_url is None
-        
+
         result = await provider.revoke_token(token="token")
         assert result is False
 
@@ -279,12 +278,12 @@ class TestOAuthProviderBase:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(
                 side_effect=httpx.HTTPError("Network error")
             )
-            
+
             result = await provider.revoke_token(token="token")
             assert result is False
 
@@ -299,12 +298,12 @@ class TestGoogleOAuthProvider:
             client_secret="google_secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         url = provider.get_authorization_url(state="state123")
-        
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         # Google-specific defaults
         assert params["access_type"][0] == "offline"
         assert params["prompt"][0] == "consent"
@@ -317,7 +316,7 @@ class TestGoogleOAuthProvider:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "sub": "google_user_123",
@@ -330,14 +329,14 @@ class TestGoogleOAuthProvider:
             "locale": "en",
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(
                 return_value=mock_response
             )
-            
+
             user_info = await provider.get_user_info(access_token="access_token")
-            
+
             assert user_info.provider == OAuthProvider.GOOGLE
             assert user_info.provider_user_id == "google_user_123"
             assert user_info.email == "user@gmail.com"
@@ -360,7 +359,7 @@ class TestGitHubOAuthProvider:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "id": 12345,
@@ -369,14 +368,14 @@ class TestGitHubOAuthProvider:
             "avatar_url": "https://avatars.githubusercontent.com/u/12345",
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(
                 return_value=mock_response
             )
-            
+
             user_info = await provider.get_user_info(access_token="token")
-            
+
             assert user_info.provider == OAuthProvider.GITHUB
             assert user_info.provider_user_id == "12345"
             assert user_info.email == "user@github.com"
@@ -393,7 +392,7 @@ class TestGitHubOAuthProvider:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         # User profile without email
         profile_response = MagicMock()
         profile_response.json.return_value = {
@@ -402,7 +401,7 @@ class TestGitHubOAuthProvider:
             "avatar_url": "https://avatars.githubusercontent.com/u/67890",
         }
         profile_response.raise_for_status = MagicMock()
-        
+
         # Email endpoint
         emails_response = MagicMock()
         emails_response.status_code = 200
@@ -410,14 +409,14 @@ class TestGitHubOAuthProvider:
             {"email": "secondary@example.com", "primary": False, "verified": True},
             {"email": "primary@github.com", "primary": True, "verified": True},
         ]
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_get = AsyncMock()
             mock_get.side_effect = [profile_response, emails_response]
             mock_client.return_value.__aenter__.return_value.get = mock_get
-            
+
             user_info = await provider.get_user_info(access_token="token")
-            
+
             assert user_info.email == "primary@github.com"
             assert user_info.email_verified is True
 
@@ -432,7 +431,7 @@ class TestMicrosoftOAuthProvider:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         assert provider.tenant_id == "common"
         assert "common" in provider.authorization_url
         assert "common" in provider.token_url
@@ -445,7 +444,7 @@ class TestMicrosoftOAuthProvider:
             redirect_uri="http://localhost/callback",
             tenant_id="my-tenant-id-123",
         )
-        
+
         assert provider.tenant_id == "my-tenant-id-123"
         assert "my-tenant-id-123" in provider.authorization_url
         assert "my-tenant-id-123" in provider.token_url
@@ -458,7 +457,7 @@ class TestMicrosoftOAuthProvider:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "id": "microsoft_user_id_123",
@@ -469,14 +468,14 @@ class TestMicrosoftOAuthProvider:
             "preferredLanguage": "en-US",
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(
                 return_value=mock_response
             )
-            
+
             user_info = await provider.get_user_info(access_token="token")
-            
+
             assert user_info.provider == OAuthProvider.MICROSOFT
             assert user_info.provider_user_id == "microsoft_user_id_123"
             assert user_info.email == "user@contoso.com"
@@ -494,7 +493,7 @@ class TestMicrosoftOAuthProvider:
             client_secret="secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "id": "user_id",
@@ -502,14 +501,14 @@ class TestMicrosoftOAuthProvider:
             "displayName": "User Name",
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(
                 return_value=mock_response
             )
-            
+
             user_info = await provider.get_user_info(access_token="token")
-            
+
             # Should use userPrincipalName when mail is absent
             assert user_info.email == "user@tenant.onmicrosoft.com"
 
@@ -522,7 +521,7 @@ class TestProviderRegistry:
         assert OAuthProvider.GOOGLE in OAUTH_PROVIDERS
         assert OAuthProvider.GITHUB in OAUTH_PROVIDERS
         assert OAuthProvider.MICROSOFT in OAUTH_PROVIDERS
-        
+
         assert OAUTH_PROVIDERS[OAuthProvider.GOOGLE] == GoogleOAuthProvider
         assert OAUTH_PROVIDERS[OAuthProvider.GITHUB] == GitHubOAuthProvider
         assert OAUTH_PROVIDERS[OAuthProvider.MICROSOFT] == MicrosoftOAuthProvider
@@ -535,7 +534,7 @@ class TestProviderRegistry:
             client_secret="google_secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         assert isinstance(provider, GoogleOAuthProvider)
         assert provider.client_id == "google_client"
         assert provider.client_secret == "google_secret"
@@ -548,7 +547,7 @@ class TestProviderRegistry:
             client_secret="github_secret",
             redirect_uri="http://localhost/callback",
         )
-        
+
         assert isinstance(provider, GitHubOAuthProvider)
 
     def test_get_oauth_provider_microsoft_with_tenant(self):
@@ -560,7 +559,7 @@ class TestProviderRegistry:
             redirect_uri="http://localhost/callback",
             tenant_id="specific-tenant",
         )
-        
+
         assert isinstance(provider, MicrosoftOAuthProvider)
         assert provider.tenant_id == "specific-tenant"
 

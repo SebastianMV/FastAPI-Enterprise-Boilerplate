@@ -4,7 +4,7 @@
 """Pydantic schemas for Audit Log endpoints."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -12,29 +12,29 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class AuditLogResponse(BaseModel):
     """Schema for audit log response."""
-    
+
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     timestamp: datetime
     action: str
     resource_type: str
-    resource_id: Optional[str] = None
-    resource_name: Optional[str] = None
-    actor_id: Optional[UUID] = None
-    actor_email: Optional[str] = None
-    actor_ip: Optional[str] = None
-    actor_user_agent: Optional[str] = None
-    tenant_id: Optional[UUID] = None
-    old_value: Optional[dict[str, Any]] = None
-    new_value: Optional[dict[str, Any]] = None
+    resource_id: str | None = None
+    resource_name: str | None = None
+    actor_id: UUID | None = None
+    actor_email: str | None = None
+    actor_ip: str | None = None
+    actor_user_agent: str | None = None
+    tenant_id: UUID | None = None
+    old_value: dict[str, Any] | None = None
+    new_value: dict[str, Any] | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class AuditLogListResponse(BaseModel):
     """Schema for paginated audit log list."""
-    
+
     items: list[AuditLogResponse]
     total: int
     skip: int
@@ -43,17 +43,17 @@ class AuditLogListResponse(BaseModel):
 
 class AuditLogFilters(BaseModel):
     """Schema for audit log filter options."""
-    
-    action: Optional[str] = None
-    resource_type: Optional[str] = None
-    actor_id: Optional[UUID] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+
+    action: str | None = None
+    resource_type: str | None = None
+    actor_id: UUID | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
 
 
 class AuditLogStatsResponse(BaseModel):
     """Schema for audit log statistics."""
-    
+
     total_entries: int
     actions_breakdown: dict[str, int]
     resource_types_breakdown: dict[str, int]

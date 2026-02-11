@@ -8,40 +8,35 @@ Provides async email sending with template support.
 Supports multiple backends: SMTP, SendGrid, AWS SES, Console (dev).
 """
 
-import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
 from app.infrastructure.email.templates import (
-    EmailTemplate,
     EmailTemplateEngine,
     EmailTemplateType,
     get_template_engine,
 )
+from app.infrastructure.observability.logging import get_logger
 
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class EmailBackend(str, Enum):
     """Available email backends."""
-    
+
     CONSOLE = "console"  # Development - prints to console
     SMTP = "smtp"
-    SENDGRID = "sendgrid"
-    AWS_SES = "aws_ses"
-    MAILGUN = "mailgun"
 
 
 @dataclass
 class EmailRecipient:
     """Email recipient information."""
-    
+
     email: str
     name: str | None = None
-    
+
     def formatted(self) -> str:
         """Return formatted email address."""
         if self.name:
@@ -52,7 +47,7 @@ class EmailRecipient:
 @dataclass
 class EmailMessage:
     """Email message ready to send."""
-    
+
     to: list[EmailRecipient]
     subject: str
     html_body: str
@@ -70,57 +65,59 @@ class EmailMessage:
 
 class EmailSenderPort(ABC):
     """Abstract port for email sending backends."""
-    
+
     @abstractmethod
     async def send(self, message: EmailMessage) -> bool:
         """
         Send an email message.
-        
+
         Args:
             message: The email message to send
-            
+
         Returns:
             True if sent successfully, False otherwise
         """
-        pass
-    
+
     @abstractmethod
     async def send_batch(self, messages: list[EmailMessage]) -> dict[str, bool]:
         """
         Send multiple email messages.
-        
+
         Args:
             messages: List of email messages to send
-            
+
         Returns:
             Dict mapping recipient emails to success status
         """
-        pass
 
 
 class ConsoleEmailSender(EmailSenderPort):
     """
     Console email sender for development.
-    
+
     Prints emails to console/logs instead of sending.
     """
-    
+
     async def send(self, message: EmailMessage) -> bool:
         """Print email to console."""
         recipients = ", ".join(r.formatted() for r in message.to)
-        
+
         logger.info("=" * 60)
         logger.info("📧 EMAIL (Console Mode - Not Actually Sent)")
         logger.info("=" * 60)
-        logger.info(f"To: {recipients}")
-        logger.info(f"Subject: {message.subject}")
+        logger.info("To: %s", recipients)
+        logger.info("Subject: %s", message.subject)
         logger.info("-" * 60)
         logger.info("TEXT BODY:")
-        logger.info(message.text_body[:500] + "..." if len(message.text_body) > 500 else message.text_body)
+        logger.info(
+            message.text_body[:500] + "..."
+            if len(message.text_body) > 500
+            else message.text_body
+        )
         logger.info("=" * 60)
-        
+
         return True
-    
+
     async def send_batch(self, messages: list[EmailMessage]) -> dict[str, bool]:
         """Print all emails to console."""
         results = {}
@@ -134,10 +131,10 @@ class ConsoleEmailSender(EmailSenderPort):
 class SMTPEmailSender(EmailSenderPort):
     """
     SMTP email sender.
-    
+
     Uses aiosmtplib for async SMTP sending.
     """
-    
+
     def __init__(
         self,
         host: str,
@@ -153,28 +150,33 @@ class SMTPEmailSender(EmailSenderPort):
         self.password = password
         self.use_tls = use_tls
         self.start_tls = start_tls
-    
+
     async def send(self, message: EmailMessage) -> bool:
         """Send email via SMTP."""
         try:
-            import aiosmtplib
             from email.mime.multipart import MIMEMultipart
             from email.mime.text import MIMEText
-            
+
+            import aiosmtplib
+
             # Build MIME message
             msg = MIMEMultipart("alternative")
             msg["Subject"] = message.subject
             from_email = message.from_email or "noreply@example.com"
-            msg["From"] = f"{message.from_name} <{from_email}>" if message.from_name else from_email
+            msg["From"] = (
+                f"{message.from_name} <{from_email}>"
+                if message.from_name
+                else from_email
+            )
             msg["To"] = ", ".join(r.formatted() for r in message.to)
-            
+
             if message.reply_to:
                 msg["Reply-To"] = message.reply_to
-            
+
             # Attach text and HTML parts
             msg.attach(MIMEText(message.text_body, "plain", "utf-8"))
             msg.attach(MIMEText(message.html_body, "html", "utf-8"))
-            
+
             # Send
             await aiosmtplib.send(
                 msg,
@@ -185,14 +187,14 @@ class SMTPEmailSender(EmailSenderPort):
                 use_tls=self.use_tls,
                 start_tls=self.start_tls,
             )
-            
-            logger.info(f"Email sent successfully to {[r.email for r in message.to]}")
+
+            logger.info("Email sent successfully to %d recipient(s)", len(message.to))
             return True
-            
+
         except Exception as e:
-            logger.error(f"Failed to send email: {e}")
+            logger.error("Failed to send email: %s", type(e).__name__)
             return False
-    
+
     async def send_batch(self, messages: list[EmailMessage]) -> dict[str, bool]:
         """Send multiple emails via SMTP."""
         results = {}
@@ -206,12 +208,12 @@ class SMTPEmailSender(EmailSenderPort):
 class EmailService:
     """
     Main email service with template support.
-    
+
     Combines template engine with email sending backend.
-    
+
     Usage:
         service = get_email_service()
-        
+
         await service.send_verification_email(
             to_email="user@example.com",
             to_name="John Doe",
@@ -219,7 +221,7 @@ class EmailService:
             locale="es",
         )
     """
-    
+
     def __init__(
         self,
         sender: EmailSenderPort | None = None,
@@ -227,7 +229,7 @@ class EmailService:
     ) -> None:
         """
         Initialize email service.
-        
+
         Args:
             sender: Email backend to use (defaults to console in dev)
             template_engine: Template engine instance
@@ -236,13 +238,13 @@ class EmailService:
         self._template_engine = template_engine or get_template_engine()
         self._default_from_email = self._get_default_from_email()
         self._default_from_name = self._get_default_from_name()
-    
+
     def _create_default_sender(self) -> EmailSenderPort:
         """Create default email sender based on settings."""
         from app.config import settings
-        
+
         backend = getattr(settings, "EMAIL_BACKEND", "console")
-        
+
         if backend == EmailBackend.SMTP.value:
             return SMTPEmailSender(
                 host=getattr(settings, "SMTP_HOST", "localhost"),
@@ -251,20 +253,22 @@ class EmailService:
                 password=getattr(settings, "SMTP_PASSWORD", None),
                 use_tls=getattr(settings, "SMTP_TLS", True),
             )
-        
+
         # Default to console for development
         return ConsoleEmailSender()
-    
+
     def _get_default_from_email(self) -> str:
         """Get default from email."""
         from app.config import settings
+
         return getattr(settings, "EMAIL_FROM", "noreply@example.com")
-    
+
     def _get_default_from_name(self) -> str:
         """Get default from name."""
         from app.config import settings
+
         return getattr(settings, "EMAIL_FROM_NAME", settings.APP_NAME)
-    
+
     async def send_template_email(
         self,
         template_type: EmailTemplateType,
@@ -276,7 +280,7 @@ class EmailService:
     ) -> bool:
         """
         Send an email using a template.
-        
+
         Args:
             template_type: Type of email template
             to_email: Recipient email address
@@ -284,7 +288,7 @@ class EmailService:
             locale: Language locale for template
             context: Additional context for template
             **kwargs: Additional email options
-            
+
         Returns:
             True if sent successfully
         """
@@ -292,14 +296,14 @@ class EmailService:
         full_context = context or {}
         full_context["recipient_name"] = to_name or to_email.split("@")[0]
         full_context["recipient_email"] = to_email
-        
+
         # Render template
         template = self._template_engine.render(
             template_type=template_type,
             locale=locale,
             context=full_context,
         )
-        
+
         # Build message
         message = EmailMessage(
             to=[EmailRecipient(email=to_email, name=to_name)],
@@ -312,13 +316,13 @@ class EmailService:
             tags=[template_type.value],
             metadata={"locale": locale, "template": template_type.value},
         )
-        
+
         return await self._sender.send(message)
-    
+
     # ===========================================
     # Convenience Methods for Common Emails
     # ===========================================
-    
+
     async def send_registration_email(
         self,
         to_email: str,
@@ -334,7 +338,7 @@ class EmailService:
             locale=locale,
             context=context,
         )
-    
+
     async def send_verification_email(
         self,
         to_email: str,
@@ -354,7 +358,7 @@ class EmailService:
                 "expires_in_hours": expires_in_hours,
             },
         )
-    
+
     async def send_password_reset_email(
         self,
         to_email: str,
@@ -374,7 +378,7 @@ class EmailService:
                 "expires_in_hours": expires_in_hours,
             },
         )
-    
+
     async def send_password_changed_email(
         self,
         to_email: str,
@@ -394,7 +398,7 @@ class EmailService:
                 "user_agent": user_agent,
             },
         )
-    
+
     async def send_welcome_email(
         self,
         to_email: str,
@@ -410,7 +414,7 @@ class EmailService:
             locale=locale,
             context={"login_url": login_url},
         )
-    
+
     async def send_login_new_device_email(
         self,
         to_email: str,
@@ -434,7 +438,7 @@ class EmailService:
                 "login_time": login_time,
             },
         )
-    
+
     async def send_account_locked_email(
         self,
         to_email: str,
@@ -454,7 +458,7 @@ class EmailService:
                 "reason": reason,
             },
         )
-    
+
     async def send_mfa_enabled_email(
         self,
         to_email: str,
@@ -468,7 +472,7 @@ class EmailService:
             to_name=to_name,
             locale=locale,
         )
-    
+
     async def send_tenant_invitation_email(
         self,
         to_email: str,

@@ -13,20 +13,26 @@ Supports:
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from alembic import context
 from app.config import settings
 from app.infrastructure.database.connection import Base
 
 # Import all models for autogenerate to detect them
 from app.infrastructure.database.models import (  # noqa: F401
     APIKeyModel,
+    AuditLogModel,
+    MFAConfigModel,
+    NotificationModel,
+    OAuthConnectionModel,
     RoleModel,
+    SSOConfigurationModel,
     TenantModel,
     UserModel,
+    UserSessionModel,
 )
 
 # Alembic Config object
@@ -46,7 +52,7 @@ config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
 def run_migrations_offline() -> None:
     """
     Run migrations in 'offline' mode.
-    
+
     Generates SQL script without connecting to database.
     """
     url = config.get_main_option("sqlalchemy.url")
@@ -91,7 +97,7 @@ async def run_async_migrations() -> None:
 def run_migrations_online() -> None:
     """
     Run migrations in 'online' mode.
-    
+
     Creates async engine and runs migrations.
     """
     asyncio.run(run_async_migrations())

@@ -3,22 +3,23 @@
 
 """Unit tests for MFA endpoint schemas."""
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 from pydantic import ValidationError
 
 from app.api.v1.schemas.mfa import (
-    MFASetupRequest,
-    MFAVerifyRequest,
+    MFABackupCodesResponse,
     MFADisableRequest,
+    MFADisableResponse,
+    MFAEnableResponse,
     MFALoginRequest,
+    MFARequiredResponse,
+    MFASetupRequest,
     MFASetupResponse,
     MFAStatusResponse,
+    MFAVerifyRequest,
     MFAVerifyResponse,
-    MFAEnableResponse,
-    MFADisableResponse,
-    MFABackupCodesResponse,
-    MFARequiredResponse,
 )
 
 
@@ -97,19 +98,16 @@ class TestMFAResponseSchemas:
             secret="JBSWY3DPEHPK3PXP",
             qr_code="data:image/png;base64,iVBORw0...",
             provisioning_uri="otpauth://totp/App:user@example.com?secret=JBSWY3DPEHPK3PXP",
-            backup_codes=["CODE1", "CODE2", "CODE3", "CODE4"]
+            backup_codes=["CODE1", "CODE2", "CODE3", "CODE4"],
         )
         assert response.secret == "JBSWY3DPEHPK3PXP"
         assert len(response.backup_codes) == 4
 
     def test_mfa_status_response_enabled(self):
         """Test MFA status when enabled."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = MFAStatusResponse(
-            is_enabled=True,
-            enabled_at=now,
-            backup_codes_remaining=8,
-            last_used_at=now
+            is_enabled=True, enabled_at=now, backup_codes_remaining=8, last_used_at=now
         )
         assert response.is_enabled is True
         assert response.backup_codes_remaining == 8
@@ -120,7 +118,7 @@ class TestMFAResponseSchemas:
             is_enabled=False,
             backup_codes_remaining=0,
             enabled_at=None,
-            last_used_at=None
+            last_used_at=None,
         )
         assert response.is_enabled is False
         assert response.enabled_at is None
@@ -130,7 +128,7 @@ class TestMFAResponseSchemas:
         response = MFAVerifyResponse(
             success=True,
             message="MFA verification successful",
-            backup_codes_remaining=7
+            backup_codes_remaining=7,
         )
         assert response.success is True
         assert response.backup_codes_remaining == 7
@@ -144,22 +142,19 @@ class TestMFAResponseSchemas:
 
     def test_mfa_enable_response(self):
         """Test enable response."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = MFAEnableResponse(
             success=True,
             message="MFA has been enabled",
             enabled_at=now,
-            backup_codes_remaining=10
+            backup_codes_remaining=10,
         )
         assert response.success is True
         assert response.backup_codes_remaining == 10
 
     def test_mfa_disable_response(self):
         """Test disable response."""
-        response = MFADisableResponse(
-            success=True,
-            message="MFA has been disabled"
-        )
+        response = MFADisableResponse(success=True, message="MFA has been disabled")
         assert response.success is True
 
     def test_mfa_disable_response_defaults(self):
@@ -173,14 +168,14 @@ class TestMFAResponseSchemas:
         codes = ["CODE1", "CODE2", "CODE3", "CODE4", "CODE5"]
         response = MFABackupCodesResponse(backup_codes=codes)
         assert len(response.backup_codes) == 5
-        assert response.message == "New backup codes generated. Previous codes are now invalid."
+        assert (
+            response.message
+            == "New backup codes generated. Previous codes are now invalid."
+        )
 
     def test_mfa_required_response(self):
         """Test MFA required response."""
-        response = MFARequiredResponse(
-            mfa_required=True,
-            mfa_token="temp_token_abc123"
-        )
+        response = MFARequiredResponse(mfa_required=True, mfa_token="temp_token_abc123")
         assert response.mfa_required is True
         assert response.mfa_token == "temp_token_abc123"
         assert "MFA verification required" in response.message

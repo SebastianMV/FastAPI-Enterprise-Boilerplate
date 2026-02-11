@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Search, X, Loader2, User, FileText, MessageSquare, Clock } from 'lucide-react';
 import { searchService, type SearchHit } from '@/services/api';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -19,12 +20,15 @@ interface SearchBarProps {
  * - Recent searches
  */
 export default function SearchBar({ 
-  placeholder = 'Search users, documents...',
+  placeholder,
   className = ''
 }: SearchBarProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const effectivePlaceholder = placeholder || t('common.search');
 
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -36,9 +40,9 @@ export default function SearchBar({
 
   const debouncedQuery = useDebounce(query, 300);
 
-  // Load recent searches from localStorage
+  // Load recent searches from sessionStorage (not localStorage — search queries may contain PII)
   useEffect(() => {
-    const saved = localStorage.getItem('recent-searches');
+    const saved = sessionStorage.getItem('recent-searches');
     if (saved) {
       try {
         setRecentSearches(JSON.parse(saved));
@@ -52,11 +56,13 @@ export default function SearchBar({
   const saveRecentSearch = useCallback((search: string) => {
     const updated = [search, ...recentSearches.filter(s => s !== search)].slice(0, 5);
     setRecentSearches(updated);
-    localStorage.setItem('recent-searches', JSON.stringify(updated));
+    sessionStorage.setItem('recent-searches', JSON.stringify(updated));
   }, [recentSearches]);
 
   // Perform search when query changes
   useEffect(() => {
+    const controller = new AbortController();
+
     const performSearch = async () => {
       if (!debouncedQuery || debouncedQuery.length < 2) {
         setResults([]);
@@ -66,18 +72,26 @@ export default function SearchBar({
 
       setIsLoading(true);
       try {
-        const response = await searchService.quickSearch(debouncedQuery);
-        setResults(response.hits.slice(0, 5));
-        setSuggestions(response.suggestions || []);
-      } catch (error) {
-        console.error('Search error:', error);
-        setResults([]);
+        const response = await searchService.quickSearch(debouncedQuery, controller.signal);
+        if (!controller.signal.aborted) {
+          setResults(response.hits.slice(0, 5));
+          setSuggestions(response.suggestions || []);
+        }
+      } catch {
+        // Search failed — don't log error details in production
+        if (!controller.signal.aborted) {
+          setResults([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     };
 
     performSearch();
+
+    return () => controller.abort();
   }, [debouncedQuery]);
 
   // Handle click outside
@@ -136,14 +150,15 @@ export default function SearchBar({
     // Navigate based on result type
     const source = result.source as Record<string, unknown>;
     if ('email' in source) {
-      navigate(`/users/${result.id}`);
+      navigate(`/users/${encodeURIComponent(result.id)}`);
     } else {
-      navigate(`/documents/${result.id}`);
+      navigate(`/documents/${encodeURIComponent(result.id)}`);
     }
   };
 
   const getResultIcon = (result: SearchHit) => {
-    const source = result.source as Record<string, unknown>;
+    const source = result.source as Record<string, unknown> | undefined;
+    if (!source) return <FileText className="w-4 h-4" />;
     if ('email' in source) return <User className="w-4 h-4" />;
     if ('content' in source) return <FileText className="w-4 h-4" />;
     if ('message' in source) return <MessageSquare className="w-4 h-4" />;
@@ -151,17 +166,19 @@ export default function SearchBar({
   };
 
   const getResultTitle = (result: SearchHit): string => {
-    const source = result.source as Record<string, unknown>;
+    const source = result.source as Record<string, unknown> | undefined;
+    if (!source) return t('common.untitled');
     if (source.first_name && source.last_name) {
       return `${source.first_name} ${source.last_name}`;
     }
     if (source.title) return String(source.title);
     if (source.name) return String(source.name);
-    return 'Untitled';
+    return t('common.untitled');
   };
 
   const getResultSubtitle = (result: SearchHit): string => {
-    const source = result.source as Record<string, unknown>;
+    const source = result.source as Record<string, unknown> | undefined;
+    if (!source) return '';
     if (source.email) return String(source.email);
     if (source.description) return String(source.description).slice(0, 50);
     return '';
@@ -183,7 +200,7 @@ export default function SearchBar({
           }}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={effectivePlaceholder}
           className="w-full pl-10 pr-10 py-2 bg-slate-100 dark:bg-slate-700 border-0 rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
         />
         {query && (
@@ -213,7 +230,7 @@ export default function SearchBar({
           {results.length > 0 && (
             <div className="p-2">
               <p className="px-2 py-1 text-xs font-medium text-slate-500 uppercase">
-                Results
+                {t('search.results')}
               </p>
               {results.map((result, index) => (
                 <button
@@ -245,7 +262,7 @@ export default function SearchBar({
           {suggestions.length > 0 && (
             <div className="p-2 border-t border-slate-100 dark:border-slate-700">
               <p className="px-2 py-1 text-xs font-medium text-slate-500 uppercase">
-                Suggestions
+                {t('search.suggestions')}
               </p>
               {suggestions.map((suggestion, index) => (
                 <button
@@ -270,7 +287,7 @@ export default function SearchBar({
           {!query && recentSearches.length > 0 && (
             <div className="p-2">
               <p className="px-2 py-1 text-xs font-medium text-slate-500 uppercase">
-                Recent Searches
+                {t('search.recentSearches')}
               </p>
               {recentSearches.map((search) => (
                 <button
@@ -290,7 +307,7 @@ export default function SearchBar({
           {/* No Results */}
           {query && !isLoading && results.length === 0 && suggestions.length === 0 && (
             <div className="p-4 text-center text-slate-500">
-              <p className="text-sm">No results found for "{query}"</p>
+              <p className="text-sm">{t('search.noResultsFor', { query })}</p>
             </div>
           )}
 
@@ -301,7 +318,7 @@ export default function SearchBar({
                 onClick={() => handleSearch(query)}
                 className="w-full px-2 py-2 text-sm text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-colors text-left"
               >
-                Search all for "{query}" →
+                {t('search.searchAll', { query })} →
               </button>
             </div>
           )}

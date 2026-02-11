@@ -3,18 +3,19 @@
 
 """Unit tests for user endpoint schemas."""
 
-import pytest
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 from pydantic import ValidationError
 
 from app.api.v1.schemas.users import (
     UserCreate,
-    UserUpdate,
-    UserUpdateSelf,
-    UserResponse,
     UserDetailResponse,
     UserListResponse,
+    UserResponse,
+    UserUpdate,
+    UserUpdateSelf,
 )
 
 
@@ -27,7 +28,7 @@ class TestUserCreate:
             email="test@example.com",
             password="securepass123",
             first_name="John",
-            last_name="Doe"
+            last_name="Doe",
         )
         assert user.email == "test@example.com"
         assert user.password == "securepass123"
@@ -46,7 +47,7 @@ class TestUserCreate:
             first_name="Admin",
             last_name="User",
             is_superuser=True,
-            roles=[role_id]
+            roles=[role_id],
         )
         assert user.is_superuser is True
         assert len(user.roles) == 1
@@ -59,7 +60,7 @@ class TestUserCreate:
                 email="invalid-email",
                 password="password123",
                 first_name="John",
-                last_name="Doe"
+                last_name="Doe",
             )
 
     def test_user_create_password_min_length(self):
@@ -69,7 +70,7 @@ class TestUserCreate:
                 email="test@example.com",
                 password="short",
                 first_name="John",
-                last_name="Doe"
+                last_name="Doe",
             )
 
     def test_user_create_password_max_length(self):
@@ -79,7 +80,7 @@ class TestUserCreate:
                 email="test@example.com",
                 password="x" * 129,
                 first_name="John",
-                last_name="Doe"
+                last_name="Doe",
             )
 
     def test_user_create_name_min_length(self):
@@ -89,7 +90,7 @@ class TestUserCreate:
                 email="test@example.com",
                 password="password123",
                 first_name="",
-                last_name="Doe"
+                last_name="Doe",
             )
 
     def test_user_create_name_max_length(self):
@@ -99,7 +100,7 @@ class TestUserCreate:
                 email="test@example.com",
                 password="password123",
                 first_name="x" * 101,
-                last_name="Doe"
+                last_name="Doe",
             )
 
 
@@ -130,7 +131,7 @@ class TestUserUpdate:
             first_name="Updated",
             last_name="User",
             is_active=True,
-            roles=[role_id]
+            roles=[role_id],
         )
         assert update.email == "updated@example.com"
         assert update.first_name == "Updated"
@@ -176,7 +177,7 @@ class TestUserResponse:
 
     def test_user_response_valid(self):
         """Test valid user response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = UserResponse(
             id=uuid4(),
             email="user@example.com",
@@ -186,7 +187,7 @@ class TestUserResponse:
             is_superuser=False,
             created_at=now,
             updated_at=now,
-            last_login=None
+            last_login=None,
         )
         assert response.email == "user@example.com"
         assert response.is_active is True
@@ -194,7 +195,7 @@ class TestUserResponse:
 
     def test_user_response_with_last_login(self):
         """Test user response with last login."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = UserResponse(
             id=uuid4(),
             email="user@example.com",
@@ -204,13 +205,13 @@ class TestUserResponse:
             is_superuser=False,
             created_at=now,
             updated_at=now,
-            last_login=now
+            last_login=now,
         )
         assert response.last_login == now
 
     def test_user_response_superuser(self):
         """Test superuser response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = UserResponse(
             id=uuid4(),
             email="admin@example.com",
@@ -219,7 +220,7 @@ class TestUserResponse:
             is_active=True,
             is_superuser=True,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         assert response.is_superuser is True
 
@@ -229,11 +230,11 @@ class TestUserDetailResponse:
 
     def test_user_detail_response(self):
         """Test user detail response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         user_id = uuid4()
         tenant_id = uuid4()
         role_id = uuid4()
-        
+
         response = UserDetailResponse(
             id=user_id,
             email="user@example.com",
@@ -244,7 +245,7 @@ class TestUserDetailResponse:
             created_at=now,
             updated_at=now,
             roles=[role_id],
-            tenant_id=tenant_id
+            tenant_id=tenant_id,
         )
         assert response.tenant_id == tenant_id
         assert len(response.roles) == 1
@@ -252,7 +253,7 @@ class TestUserDetailResponse:
 
     def test_user_detail_response_no_roles(self):
         """Test user detail with no roles."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = UserDetailResponse(
             id=uuid4(),
             email="user@example.com",
@@ -262,7 +263,7 @@ class TestUserDetailResponse:
             is_superuser=False,
             created_at=now,
             updated_at=now,
-            tenant_id=uuid4()
+            tenant_id=uuid4(),
         )
         assert response.roles == []
 
@@ -272,7 +273,7 @@ class TestUserListResponse:
 
     def test_user_list_response(self):
         """Test user list response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = UserListResponse(
             items=[
                 UserResponse(
@@ -283,13 +284,13 @@ class TestUserListResponse:
                     is_active=True,
                     is_superuser=False,
                     created_at=now,
-                    updated_at=now
+                    updated_at=now,
                 )
             ],
             total=50,
             page=1,
             page_size=20,
-            pages=3
+            pages=3,
         )
         assert len(response.items) == 1
         assert response.total == 50
@@ -298,26 +299,14 @@ class TestUserListResponse:
 
     def test_user_list_response_empty(self):
         """Test empty user list."""
-        response = UserListResponse(
-            items=[],
-            total=0,
-            page=1,
-            page_size=20,
-            pages=0
-        )
+        response = UserListResponse(items=[], total=0, page=1, page_size=20, pages=0)
         assert len(response.items) == 0
         assert response.total == 0
 
     def test_user_list_response_pagination(self):
         """Test user list pagination values."""
-        now = datetime.utcnow()
-        response = UserListResponse(
-            items=[],
-            total=100,
-            page=5,
-            page_size=10,
-            pages=10
-        )
+        now = datetime.now(UTC)
+        response = UserListResponse(items=[], total=100, page=5, page_size=10, pages=10)
         assert response.page == 5
         assert response.page_size == 10
         assert response.pages == 10

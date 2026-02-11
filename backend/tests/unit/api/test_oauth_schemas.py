@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
+
 import pytest
 from pydantic import ValidationError
 
@@ -26,7 +27,7 @@ class TestOAuthAuthorizeResponse:
         """Test authorize response."""
         data = OAuthAuthorizeResponse(
             authorization_url="https://accounts.google.com/oauth/authorize?...",
-            state="random_state_123"
+            state="random_state_123",
         )
         assert "google" in data.authorization_url
         assert data.state == "random_state_123"
@@ -35,7 +36,7 @@ class TestOAuthAuthorizeResponse:
         """Test authorize response for GitHub."""
         data = OAuthAuthorizeResponse(
             authorization_url="https://github.com/login/oauth/authorize",
-            state="state_456"
+            state="state_456",
         )
         assert data.state == "state_456"
 
@@ -178,15 +179,11 @@ class TestOAuthProviderEnum:
         assert OAuthProvider.MICROSOFT is not None
         assert OAuthProvider.MICROSOFT.value == "microsoft"
 
-    def test_apple_provider(self) -> None:
-        """Test Apple provider."""
-        assert OAuthProvider.APPLE is not None
-        assert OAuthProvider.APPLE.value == "apple"
-
-    def test_okta_provider(self) -> None:
-        """Test Okta provider."""
-        assert OAuthProvider.OKTA is not None
-        assert OAuthProvider.OKTA.value == "okta"
+    def test_all_implemented_providers(self) -> None:
+        """Test all implemented providers exist."""
+        expected = {"google", "github", "microsoft"}
+        actual = {p.value for p in OAuthProvider}
+        assert actual == expected
 
 
 class TestOAuthRouter:
@@ -195,14 +192,17 @@ class TestOAuthRouter:
     def test_router_exists(self) -> None:
         """Test router exists."""
         from app.api.v1.endpoints.oauth import router
+
         assert router is not None
 
     def test_router_prefix(self) -> None:
         """Test router prefix."""
         from app.api.v1.endpoints.oauth import router
+
         assert router.prefix == "/auth/oauth"
 
     def test_router_has_routes(self) -> None:
         """Test router has routes."""
         from app.api.v1.endpoints.oauth import router
+
         assert len(router.routes) > 0

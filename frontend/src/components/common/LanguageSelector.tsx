@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../i18n';
@@ -26,6 +27,21 @@ export function LanguageSelector({
   className = '',
 }: LanguageSelectorProps) {
   const { i18n, t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
 
   const currentLanguage = SUPPORTED_LANGUAGES.find(
     (lang) => lang.code === i18n.language
@@ -50,7 +66,7 @@ export function LanguageSelector({
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
                   : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
               }`}
-            aria-label={`Switch to ${lang.name}`}
+            aria-label={t('settings.switchToLanguage', { language: lang.name })}
             aria-pressed={i18n.language === lang.code}
           >
             {showFlags && <span className="mr-1">{lang.flag}</span>}
@@ -63,9 +79,10 @@ export function LanguageSelector({
 
   // Dropdown variant
   return (
-    <div className={`relative inline-block ${className}`}>
-      <div className="group">
+    <div className={`relative inline-block ${className}`} ref={dropdownRef}>
+      <div>
         <button
+          onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 
                      bg-white border border-gray-300 rounded-md shadow-sm 
                      hover:bg-gray-50 focus:outline-none focus:ring-2 
@@ -73,7 +90,7 @@ export function LanguageSelector({
                      dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 
                      dark:hover:bg-gray-700"
           aria-haspopup="listbox"
-          aria-expanded="false"
+          aria-expanded={isOpen}
         >
           <Globe className="w-4 h-4" />
           {showFlags && currentLanguage && (
@@ -85,12 +102,11 @@ export function LanguageSelector({
         </button>
 
         {/* Dropdown menu */}
+        {isOpen && (
         <div
           className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md 
                      bg-white shadow-lg ring-1 ring-black ring-opacity-5 
-                     dark:bg-gray-800 dark:ring-gray-700
-                     invisible group-hover:visible opacity-0 group-hover:opacity-100
-                     transition-all duration-200"
+                     dark:bg-gray-800 dark:ring-gray-700"
           role="listbox"
           aria-label={t('settings.language')}
         >
@@ -98,7 +114,10 @@ export function LanguageSelector({
             {SUPPORTED_LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
-                onClick={() => handleLanguageChange(lang.code)}
+                onClick={() => {
+                  handleLanguageChange(lang.code);
+                  setIsOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-2 text-sm
                   ${
                     i18n.language === lang.code
@@ -119,6 +138,7 @@ export function LanguageSelector({
             ))}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

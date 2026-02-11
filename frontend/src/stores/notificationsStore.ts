@@ -38,10 +38,16 @@ export const useNotificationsStore = create<NotificationsState>()(
       },
 
       addNotification: (notification) => {
-        set((state) => ({
-          notifications: [notification, ...state.notifications].slice(0, 50),
-          unreadCount: state.unreadCount + (notification.read ? 0 : 1),
-        }));
+        set((state) => {
+          // F-04: Dedup by ID to prevent duplicate notifications from WebSocket replays
+          if (state.notifications.some((n) => n.id === notification.id)) {
+            return state;
+          }
+          return {
+            notifications: [notification, ...state.notifications].slice(0, 50),
+            unreadCount: state.unreadCount + (notification.read ? 0 : 1),
+          };
+        });
       },
 
       removeNotification: (id) => {

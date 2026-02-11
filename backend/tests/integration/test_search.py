@@ -4,29 +4,22 @@
 """
 Full-Text Search Integration Tests.
 
-Tests for search functionality including PostgreSQL FTS
-and optional Elasticsearch integration.
+Tests for search functionality using PostgreSQL FTS.
 """
+
 
 import pytest
 from httpx import AsyncClient
-from uuid import uuid4
 
 
 class TestSearchEndpoint:
     """Tests for the main search endpoint."""
 
     @pytest.mark.asyncio
-    async def test_search_requires_authentication(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_search_requires_authentication(self, client: AsyncClient) -> None:
         """Verify search endpoint requires authentication."""
         response = await client.post(
-            "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "users"
-            }
+            "/api/v1/search", json={"query": "test", "index": "users"}
         )
         assert response.status_code == 401
 
@@ -37,22 +30,20 @@ class TestSearchEndpoint:
         """Test basic search query."""
         response = await client.post(
             "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "users"
-            },
-            headers=auth_headers
+            json={"query": "test", "index": "users"},
+            headers=auth_headers,
         )
-        
+
         # Debug: print error if 500
         if response.status_code != 200:
             import json
+
             print(f"\nStatus: {response.status_code}")
             print(f"Response: {json.dumps(response.json(), indent=2)}")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "hits" in data
         assert "total" in data
         assert "page" in data
@@ -70,13 +61,11 @@ class TestSearchEndpoint:
             json={
                 "query": "test",
                 "index": "users",
-                "filters": [
-                    {"field": "is_active", "value": True, "operator": "eq"}
-                ]
+                "filters": [{"field": "is_active", "value": True, "operator": "eq"}],
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 200
 
     @pytest.mark.asyncio
@@ -89,13 +78,11 @@ class TestSearchEndpoint:
             json={
                 "query": "test",
                 "index": "users",
-                "sort": [
-                    {"field": "created_at", "order": "desc"}
-                ]
+                "sort": [{"field": "created_at", "order": "desc"}],
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 200
 
     @pytest.mark.asyncio
@@ -108,14 +95,14 @@ class TestSearchEndpoint:
             json={
                 "query": "test",
                 "index": "users",
-                "highlight_fields": ["email", "full_name"]
+                "highlight_fields": ["email", "full_name"],
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Highlights should be present in hits
         if data["hits"]:
             assert "highlights" in data["hits"][0]
@@ -128,32 +115,22 @@ class TestSearchEndpoint:
         # First page
         response1 = await client.post(
             "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "users",
-                "page": 1,
-                "page_size": 5
-            },
-            headers=auth_headers
+            json={"query": "test", "index": "users", "page": 1, "page_size": 5},
+            headers=auth_headers,
         )
-        
+
         assert response1.status_code == 200
         data1 = response1.json()
         assert data1["page"] == 1
         assert data1["page_size"] == 5
-        
+
         # Second page
         response2 = await client.post(
             "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "users",
-                "page": 2,
-                "page_size": 5
-            },
-            headers=auth_headers
+            json={"query": "test", "index": "users", "page": 2, "page_size": 5},
+            headers=auth_headers,
         )
-        
+
         assert response2.status_code == 200
         data2 = response2.json()
         assert data2["page"] == 2
@@ -168,11 +145,11 @@ class TestSearchEndpoint:
             json={
                 "query": "tset",  # Typo
                 "index": "users",
-                "fuzzy": True
+                "fuzzy": True,
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 200
 
 
@@ -185,14 +162,9 @@ class TestSearchValidation:
     ) -> None:
         """Test that empty search query is rejected."""
         response = await client.post(
-            "/api/v1/search",
-            json={
-                "query": "",
-                "index": "users"
-            },
-            headers=auth_headers
+            "/api/v1/search", json={"query": "", "index": "users"}, headers=auth_headers
         )
-        
+
         assert response.status_code == 422
 
     @pytest.mark.asyncio
@@ -202,13 +174,10 @@ class TestSearchValidation:
         """Test search with invalid index."""
         response = await client.post(
             "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "invalid_index"
-            },
-            headers=auth_headers
+            json={"query": "test", "index": "invalid_index"},
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 400
         data = response.json()
         assert "detail" in data
@@ -222,11 +191,11 @@ class TestSearchValidation:
             "/api/v1/search",
             json={
                 "query": "x" * 1000,  # Very long query
-                "index": "users"
+                "index": "users",
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 422
 
     @pytest.mark.asyncio
@@ -239,11 +208,11 @@ class TestSearchValidation:
             json={
                 "query": "test",
                 "index": "users",
-                "page": 0  # Invalid
+                "page": 0,  # Invalid
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 422
 
     @pytest.mark.asyncio
@@ -256,11 +225,11 @@ class TestSearchValidation:
             json={
                 "query": "test",
                 "index": "users",
-                "page_size": 500  # Too large
+                "page_size": 500,  # Too large
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 422
 
     @pytest.mark.asyncio
@@ -273,13 +242,11 @@ class TestSearchValidation:
             json={
                 "query": "test",
                 "index": "users",
-                "filters": [
-                    {"field": "email", "value": "test", "operator": "invalid"}
-                ]
+                "filters": [{"field": "email", "value": "test", "operator": "invalid"}],
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         # Should either reject or ignore invalid operator
         assert response.status_code in [200, 400, 422]
 
@@ -294,13 +261,10 @@ class TestSearchIndices:
         """Test search in users index."""
         response = await client.post(
             "/api/v1/search",
-            json={
-                "query": "admin",
-                "index": "users"
-            },
-            headers=auth_headers
+            json={"query": "admin", "index": "users"},
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 200
 
     @pytest.mark.asyncio
@@ -310,13 +274,10 @@ class TestSearchIndices:
         """Test search in audit_logs index."""
         response = await client.post(
             "/api/v1/search",
-            json={
-                "query": "login",
-                "index": "audit_logs"
-            },
-            headers=auth_headers
+            json={"query": "login", "index": "audit_logs"},
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 200
 
 
@@ -329,8 +290,7 @@ class TestSearchSuggestions:
     ) -> None:
         """Verify suggestions endpoint requires authentication."""
         response = await client.get(
-            "/api/v1/search/suggest",
-            params={"query": "test", "index": "users"}
+            "/api/v1/search/suggest", params={"query": "test", "index": "users"}
         )
         assert response.status_code in [401, 404]
 
@@ -341,13 +301,10 @@ class TestSearchSuggestions:
         """Test search suggestions."""
         response = await client.get(
             "/api/v1/search/suggest",
-            params={
-                "query": "adm",
-                "index": "users"
-            },
-            headers=auth_headers
+            params={"query": "adm", "index": "users"},
+            headers=auth_headers,
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             assert "suggestions" in data
@@ -364,38 +321,18 @@ class TestSearchMultiTenant:
         """Test that search respects tenant isolation."""
         response = await client.post(
             "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "users"
-            },
-            headers=auth_headers
+            json={"query": "test", "index": "users"},
+            headers=auth_headers,
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Results should only contain data from user's tenant
         # This is verified at the service level
 
-    @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires multiple tenant setup")
-    async def test_search_cannot_access_other_tenant_data(
-        self, client: AsyncClient, tenant_a_token: str
-    ) -> None:
-        """Test that search cannot access other tenant's data."""
-        headers = {"Authorization": f"Bearer {tenant_a_token}"}
-        
-        response = await client.post(
-            "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "users"
-            },
-            headers=headers
-        )
-        
-        # Should succeed but only return tenant A's data
-        assert response.status_code in [200, 401]
+    # Note: test_search_cannot_access_other_tenant_data removed - requires complex
+    # multi-tenant fixture. Tenant isolation is tested via unit tests.
 
 
 class TestSearchHealth:
@@ -405,10 +342,10 @@ class TestSearchHealth:
     async def test_search_health_check(self, client: AsyncClient) -> None:
         """Test search health endpoint."""
         response = await client.get("/api/v1/search/health")
-        
+
         # Health check may or may not require auth
         assert response.status_code in [200, 401, 404]
-        
+
         if response.status_code == 200:
             data = response.json()
             assert "status" in data
@@ -430,19 +367,18 @@ class TestSearchSQLInjectionPrevention:
             "admin'--",
             "<script>alert('xss')</script>",
         ]
-        
+
         for payload in injection_payloads:
             response = await client.post(
                 "/api/v1/search",
-                json={
-                    "query": payload,
-                    "index": "users"
-                },
-                headers=auth_headers
+                json={"query": payload, "index": "users"},
+                headers=auth_headers,
             )
-            
+
             # Should not cause server error
-            assert response.status_code != 500, f"Injection payload caused 500: {payload}"
+            assert response.status_code != 500, (
+                f"Injection payload caused 500: {payload}"
+            )
 
     @pytest.mark.asyncio
     async def test_sql_injection_in_filter_value(
@@ -455,12 +391,16 @@ class TestSearchSQLInjectionPrevention:
                 "query": "test",
                 "index": "users",
                 "filters": [
-                    {"field": "email", "value": "'; DROP TABLE users; --", "operator": "eq"}
-                ]
+                    {
+                        "field": "email",
+                        "value": "'; DROP TABLE users; --",
+                        "operator": "eq",
+                    }
+                ],
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code != 500
 
     @pytest.mark.asyncio
@@ -473,13 +413,11 @@ class TestSearchSQLInjectionPrevention:
             json={
                 "query": "test",
                 "index": "users",
-                "sort": [
-                    {"field": "email; DROP TABLE users;", "order": "desc"}
-                ]
+                "sort": [{"field": "email; DROP TABLE users;", "order": "desc"}],
             },
-            headers=auth_headers
+            headers=auth_headers,
         )
-        
+
         assert response.status_code != 500
 
 
@@ -493,13 +431,10 @@ class TestSearchPerformance:
         """Test that search returns execution timing."""
         response = await client.post(
             "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "users"
-            },
-            headers=auth_headers
+            json={"query": "test", "index": "users"},
+            headers=auth_headers,
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             assert "took_ms" in data
@@ -513,13 +448,10 @@ class TestSearchPerformance:
         """Test that search returns max score."""
         response = await client.post(
             "/api/v1/search",
-            json={
-                "query": "test",
-                "index": "users"
-            },
-            headers=auth_headers
+            json={"query": "test", "index": "users"},
+            headers=auth_headers,
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             # max_score can be None if no results
@@ -541,21 +473,20 @@ class TestSearchSpecialCharacters:
             "hello world",
             "term1 AND term2",
             "term1 OR term2",
-            "\"exact phrase\"",
+            '"exact phrase"',
             "term*",
             "José García",
             "北京",  # Chinese characters
         ]
-        
+
         for query in special_queries:
             response = await client.post(
                 "/api/v1/search",
-                json={
-                    "query": query,
-                    "index": "users"
-                },
-                headers=auth_headers
+                json={"query": query, "index": "users"},
+                headers=auth_headers,
             )
-            
+
             # Should handle gracefully, not crash
-            assert response.status_code in [200, 400, 422], f"Query '{query}' caused unexpected status"
+            assert response.status_code in [200, 400, 422], (
+                f"Query '{query}' caused unexpected status"
+            )

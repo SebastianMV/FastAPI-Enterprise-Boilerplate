@@ -114,6 +114,7 @@ class TestRoleEntity:
     def test_role_creation(self) -> None:
         """Test role creation."""
         from uuid import uuid4
+
         from app.domain.entities.role import Role
 
         role = Role(
@@ -128,7 +129,8 @@ class TestRoleEntity:
     def test_role_with_permissions(self) -> None:
         """Test role with permissions."""
         from uuid import uuid4
-        from app.domain.entities.role import Role, Permission
+
+        from app.domain.entities.role import Permission, Role
 
         role = Role(
             id=uuid4(),
@@ -144,7 +146,8 @@ class TestRoleEntity:
     def test_role_has_permission(self) -> None:
         """Test role has_permission method."""
         from uuid import uuid4
-        from app.domain.entities.role import Role, Permission
+
+        from app.domain.entities.role import Permission, Role
 
         role = Role(
             id=uuid4(),
@@ -164,6 +167,7 @@ class TestTenantEntity:
     def test_tenant_creation(self) -> None:
         """Test tenant creation."""
         from uuid import uuid4
+
         from app.domain.entities.tenant import Tenant
 
         tenant = Tenant(
@@ -177,6 +181,7 @@ class TestTenantEntity:
     def test_tenant_activate(self) -> None:
         """Test tenant activation."""
         from uuid import uuid4
+
         from app.domain.entities.tenant import Tenant
 
         tenant = Tenant(
@@ -191,6 +196,7 @@ class TestTenantEntity:
     def test_tenant_deactivate(self) -> None:
         """Test tenant deactivation."""
         from uuid import uuid4
+
         from app.domain.entities.tenant import Tenant
 
         tenant = Tenant(
@@ -209,6 +215,7 @@ class TestUserEntity:
     def test_user_creation(self) -> None:
         """Test user creation."""
         from uuid import uuid4
+
         from app.domain.entities.user import User
         from app.domain.value_objects.email import Email
 
@@ -226,6 +233,7 @@ class TestUserEntity:
     def test_user_full_name(self) -> None:
         """Test user full name property."""
         from uuid import uuid4
+
         from app.domain.entities.user import User
         from app.domain.value_objects.email import Email
 
@@ -247,6 +255,7 @@ class TestMFAEntity:
     def test_mfa_config_creation(self) -> None:
         """Test MFA config creation."""
         from uuid import uuid4
+
         from app.domain.entities.mfa import MFAConfig
 
         config = MFAConfig(
@@ -259,6 +268,7 @@ class TestMFAEntity:
     def test_mfa_config_enable(self) -> None:
         """Test enabling MFA."""
         from uuid import uuid4
+
         from app.domain.entities.mfa import MFAConfig
 
         config = MFAConfig(

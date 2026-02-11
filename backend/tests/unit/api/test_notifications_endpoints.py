@@ -7,9 +7,9 @@ import pytest
 from pydantic import ValidationError
 
 from app.api.v1.endpoints.notifications import (
-    NotificationResponse,
-    NotificationListResponse,
     MarkReadRequest,
+    NotificationListResponse,
+    NotificationResponse,
     UnreadCountResponse,
 )
 
@@ -26,7 +26,7 @@ class TestNotificationSchemas:
             message="This is a test",
             priority="normal",
             is_read=False,
-            created_at="2025-01-01T00:00:00Z"
+            created_at="2025-01-01T00:00:00Z",
         )
         assert notification.id == "notif-123"
         assert notification.type == "info"
@@ -45,7 +45,7 @@ class TestNotificationSchemas:
             action_url="/approve/123",
             is_read=True,
             read_at="2025-01-02T00:00:00Z",
-            created_at="2025-01-01T00:00:00Z"
+            created_at="2025-01-01T00:00:00Z",
         )
         assert notification.data == {"action": "approve", "item_id": "123"}
         assert notification.action_url == "/approve/123"
@@ -62,11 +62,11 @@ class TestNotificationSchemas:
                     message="Test message",
                     priority="normal",
                     is_read=False,
-                    created_at="2025-01-01T00:00:00Z"
+                    created_at="2025-01-01T00:00:00Z",
                 )
             ],
             total=1,
-            unread_count=1
+            unread_count=1,
         )
         assert len(response.items) == 1
         assert response.total == 1
@@ -99,7 +99,7 @@ class TestNotificationSchemas:
             action_url="https://example.com/action",
             is_read=True,
             read_at="2025-01-15T10:30:00Z",
-            created_at="2025-01-14T10:30:00Z"
+            created_at="2025-01-14T10:30:00Z",
         )
         assert notification.priority == "high"
         assert notification.data == {"key": "value"}
@@ -108,11 +108,7 @@ class TestNotificationSchemas:
 
     def test_notification_list_response_empty(self):
         """Test empty NotificationListResponse."""
-        response = NotificationListResponse(
-            items=[],
-            total=0,
-            unread_count=0
-        )
+        response = NotificationListResponse(items=[], total=0, unread_count=0)
         assert len(response.items) == 0
         assert response.total == 0
 

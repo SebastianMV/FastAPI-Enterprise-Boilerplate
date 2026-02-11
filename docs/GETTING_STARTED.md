@@ -144,46 +144,6 @@ curl http://localhost:80/health
 
 ## 💻 Local Development (Without Docker)
 
-### Requirements
-
-- Docker & Docker Compose
-- Python 3.13+ (for local development)
-- Node.js 22 LTS (for frontend development)
-
-## Quick Start (Docker)
-
-## Docker Quick Start
-
-> 📖 For quick start commands, see the main [README.md](../README.md#quick-start)
-
-### Detailed Setup
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/fastapi-enterprise-boilerplate.git
-cd fastapi-enterprise-boilerplate
-
-# 2. Copy environment file
-cp .env.example .env
-
-# 3. Start all services
-docker-compose up -d
-
-# 4. Check status
-docker-compose ps
-
-# 5. View logs
-docker-compose logs -f backend
-```
-
-**Access:**
-
-- API: <http://localhost:8000>
-- API Docs: <http://localhost:8000/docs>
-- Frontend: <http://localhost:3000>
-
-## Local Development
-
 ### Backend
 
 ```bash
@@ -301,7 +261,8 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 
 ## Next Steps
 
-1. [Customize authentication](./AUTHENTICATION.md)
-2. [Set up multi-tenant](./MULTI_TENANT.md)
-3. [Configure ACL permissions](./ACL.md)
-4. [Add observability](./OBSERVABILITY.md)
+1. [Security Features](./SECURITY.md) — Authentication, authorization, and security best practices
+2. [Multi-Tenant RLS](./RLS_SETUP.md) — Row-Level Security setup
+3. [API Reference](./API_REFERENCE.md) — Complete endpoint documentation
+4. [Docker Guide](./DOCKER.md) — Docker configuration and troubleshooting
+5. [Deployment](./DEPLOYMENT.md) — Production deployment guide

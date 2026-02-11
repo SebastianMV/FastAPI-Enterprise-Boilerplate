@@ -9,7 +9,8 @@ Provides endpoints for:
 - Delete notifications
 """
 
-from typing import Optional
+from datetime import UTC
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -17,38 +18,39 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, get_current_user
+from app.api.deps import CurrentTenantId, CurrentUser
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.database.models.notification import NotificationModel
-
 
 router = APIRouter(prefix="/notifications")
 
 
 # ===========================================
 # Schemas
+# TODO: Extract to app/api/v1/schemas/notifications.py
 # ===========================================
+
 
 class NotificationResponse(BaseModel):
     """Notification response."""
-    
+
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     type: str
     title: str
     message: str
     priority: str
-    data: Optional[dict] = None
-    action_url: Optional[str] = None
+    data: dict[str, Any] | None = None
+    action_url: str | None = None
     is_read: bool
-    read_at: Optional[str] = None
+    read_at: str | None = None
     created_at: str
 
 
 class NotificationListResponse(BaseModel):
     """List of notifications."""
-    
+
     items: list[NotificationResponse]
     total: int
     unread_count: int
@@ -56,13 +58,13 @@ class NotificationListResponse(BaseModel):
 
 class MarkReadRequest(BaseModel):
     """Request to mark notifications as read."""
-    
-    notification_ids: list[str] = Field(..., min_length=1)
+
+    notification_ids: list[UUID] = Field(..., min_length=1, max_length=100)
 
 
 class UnreadCountResponse(BaseModel):
     """Unread notifications count."""
-    
+
     count: int
 
 
@@ -70,58 +72,60 @@ class UnreadCountResponse(BaseModel):
 # Endpoints
 # ===========================================
 
+
 @router.get("", response_model=NotificationListResponse)
 async def list_notifications(
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     unread_only: bool = Query(default=False),
-):
+) -> NotificationListResponse:
     """List user's notifications."""
     # Build query
-    query = (
-        select(NotificationModel)
-        .where(
-            NotificationModel.user_id == current_user.id,
-            NotificationModel.is_deleted == False,
-        )
+    query = select(NotificationModel).where(
+        NotificationModel.user_id == current_user.id,
+        NotificationModel.is_deleted.is_(False),
     )
-    
+
+    if tenant_id:
+        query = query.where(NotificationModel.tenant_id == tenant_id)
+
     if unread_only:
         query = query.where(NotificationModel.read_at.is_(None))
-    
-    query = query.order_by(NotificationModel.created_at.desc()).limit(limit).offset(offset)
-    
+
+    query = (
+        query.order_by(NotificationModel.created_at.desc()).limit(limit).offset(offset)
+    )
+
     result = await session.execute(query)
     notifications = result.scalars().all()
-    
+
     # Count total
-    count_query = (
-        select(func.count(NotificationModel.id))
-        .where(
-            NotificationModel.user_id == current_user.id,
-            NotificationModel.is_deleted == False,
-        )
+    count_query = select(func.count(NotificationModel.id)).where(
+        NotificationModel.user_id == current_user.id,
+        NotificationModel.is_deleted.is_(False),
     )
+    if tenant_id:
+        count_query = count_query.where(NotificationModel.tenant_id == tenant_id)
     if unread_only:
         count_query = count_query.where(NotificationModel.read_at.is_(None))
-    
+
     count_result = await session.execute(count_query)
     total = count_result.scalar() or 0
-    
+
     # Count unread
-    unread_query = (
-        select(func.count(NotificationModel.id))
-        .where(
-            NotificationModel.user_id == current_user.id,
-            NotificationModel.is_deleted == False,
-            NotificationModel.read_at.is_(None),
-        )
+    unread_query = select(func.count(NotificationModel.id)).where(
+        NotificationModel.user_id == current_user.id,
+        NotificationModel.is_deleted.is_(False),
+        NotificationModel.read_at.is_(None),
     )
+    if tenant_id:
+        unread_query = unread_query.where(NotificationModel.tenant_id == tenant_id)
     unread_result = await session.execute(unread_query)
     unread_count = unread_result.scalar() or 0
-    
+
     return NotificationListResponse(
         items=[
             NotificationResponse(
@@ -130,7 +134,7 @@ async def list_notifications(
                 title=n.title,
                 message=n.message,
                 priority=n.priority,
-                data=n.metadata,
+                data=n.extra_data,
                 action_url=n.action_url,
                 is_read=n.read_at is not None,
                 read_at=n.read_at.isoformat() if n.read_at else None,
@@ -146,21 +150,22 @@ async def list_notifications(
 @router.get("/unread/count", response_model=UnreadCountResponse)
 async def get_unread_count(
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
-):
+) -> UnreadCountResponse:
     """Get count of unread notifications."""
-    query = (
-        select(func.count(NotificationModel.id))
-        .where(
-            NotificationModel.user_id == current_user.id,
-            NotificationModel.is_deleted == False,
-            NotificationModel.read_at.is_(None),
-        )
+    query = select(func.count(NotificationModel.id)).where(
+        NotificationModel.user_id == current_user.id,
+        NotificationModel.is_deleted.is_(False),
+        NotificationModel.read_at.is_(None),
     )
-    
+
+    if tenant_id:
+        query = query.where(NotificationModel.tenant_id == tenant_id)
+
     result = await session.execute(query)
     count = result.scalar() or 0
-    
+
     return UnreadCountResponse(count=count)
 
 
@@ -168,31 +173,35 @@ async def get_unread_count(
 async def get_notification(
     notification_id: UUID,
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
-):
+) -> NotificationResponse:
     """Get a specific notification."""
     query = select(NotificationModel).where(
         NotificationModel.id == notification_id,
         NotificationModel.user_id == current_user.id,
-        NotificationModel.is_deleted == False,
+        NotificationModel.is_deleted.is_(False),
     )
-    
+
+    if tenant_id:
+        query = query.where(NotificationModel.tenant_id == tenant_id)
+
     result = await session.execute(query)
     notification = result.scalar_one_or_none()
-    
+
     if not notification:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found",
+            detail={"code": "NOTIFICATION_NOT_FOUND", "message": "Notification not found"},
         )
-    
+
     return NotificationResponse(
         id=str(notification.id),
         type=notification.type,
         title=notification.title,
         message=notification.message,
         priority=notification.priority,
-        data=notification.metadata,
+        data=notification.extra_data,
         action_url=notification.action_url,
         is_read=notification.read_at is not None,
         read_at=notification.read_at.isoformat() if notification.read_at else None,
@@ -204,23 +213,25 @@ async def get_notification(
 async def mark_as_read(
     request: MarkReadRequest,
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
-):
+) -> None:
     """Mark notifications as read."""
-    from datetime import datetime, timezone
-    
-    notification_ids = [UUID(nid) for nid in request.notification_ids]
-    
+    from datetime import datetime
+
     stmt = (
         update(NotificationModel)
         .where(
-            NotificationModel.id.in_(notification_ids),
+            NotificationModel.id.in_(request.notification_ids),
             NotificationModel.user_id == current_user.id,
             NotificationModel.read_at.is_(None),
         )
-        .values(read_at=datetime.now(timezone.utc))
+        .values(read_at=datetime.now(UTC))
     )
-    
+
+    if tenant_id:
+        stmt = stmt.where(NotificationModel.tenant_id == tenant_id)
+
     await session.execute(stmt)
     await session.commit()
 
@@ -228,21 +239,25 @@ async def mark_as_read(
 @router.post("/read/all", status_code=status.HTTP_204_NO_CONTENT)
 async def mark_all_as_read(
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
-):
+) -> None:
     """Mark all notifications as read."""
-    from datetime import datetime, timezone
-    
+    from datetime import datetime
+
     stmt = (
         update(NotificationModel)
         .where(
             NotificationModel.user_id == current_user.id,
             NotificationModel.read_at.is_(None),
-            NotificationModel.is_deleted == False,
+            NotificationModel.is_deleted.is_(False),
         )
-        .values(read_at=datetime.now(timezone.utc))
+        .values(read_at=datetime.now(UTC))
     )
-    
+
+    if tenant_id:
+        stmt = stmt.where(NotificationModel.tenant_id == tenant_id)
+
     await session.execute(stmt)
     await session.commit()
 
@@ -252,41 +267,51 @@ async def delete_notification(
     notification_id: UUID,
     current_user: CurrentUser,
     session: AsyncSession = Depends(get_db_session),
-):
+) -> None:
     """Delete a notification (soft delete)."""
-    from datetime import datetime, timezone
-    
+    from datetime import datetime
+
     stmt = (
         update(NotificationModel)
         .where(
             NotificationModel.id == notification_id,
             NotificationModel.user_id == current_user.id,
-            NotificationModel.is_deleted == False,
+            NotificationModel.is_deleted.is_(False),
         )
-        .values(is_deleted=True, deleted_at=datetime.now(timezone.utc))
+        .values(is_deleted=True, deleted_at=datetime.now(UTC))
     )
-    
+
     result = await session.execute(stmt)
     await session.commit()
+
+    if result.rowcount == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOTIFICATION_NOT_FOUND", "message": "Notification not found"},
+        )
 
 
 @router.delete("/read", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_read_notifications(
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
-):
+) -> None:
     """Delete all read notifications."""
-    from datetime import datetime, timezone
-    
+    from datetime import datetime
+
     stmt = (
         update(NotificationModel)
         .where(
             NotificationModel.user_id == current_user.id,
             NotificationModel.read_at.isnot(None),
-            NotificationModel.is_deleted == False,
+            NotificationModel.is_deleted.is_(False),
         )
-        .values(is_deleted=True, deleted_at=datetime.now(timezone.utc))
+        .values(is_deleted=True, deleted_at=datetime.now(UTC))
     )
-    
+
+    if tenant_id:
+        stmt = stmt.where(NotificationModel.tenant_id == tenant_id)
+
     await session.execute(stmt)
     await session.commit()

@@ -13,44 +13,44 @@ from uuid import uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from app.infrastructure.database.models.custom_types import JSONBCompat
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.database.connection import Base
+from app.infrastructure.database.models.custom_types import JSONBCompat
 
 
 class AuditLogModel(Base):
     """
     Audit Log database model.
-    
+
     Table: audit_logs
-    
+
     This table stores immutable audit trail entries.
     No UPDATE or DELETE operations should be performed on this table.
-    
+
     Indexes are optimized for common query patterns:
     - By actor (who did what)
     - By resource (what happened to this resource)
     - By tenant + timestamp (tenant activity)
     - By action type (security monitoring)
     """
-    
+
     __tablename__ = "audit_logs"
-    
+
     # Primary key
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
-    
+
     # Timestamp (when)
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         index=True,
     )
-    
+
     # Actor information (who)
     actor_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -70,14 +70,14 @@ class AuditLogModel(Base):
         String(500),
         nullable=True,
     )
-    
+
     # Action (what)
     action: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         index=True,
     )
-    
+
     # Resource (which)
     resource_type: Mapped[str] = mapped_column(
         String(50),
@@ -92,7 +92,7 @@ class AuditLogModel(Base):
         String(255),
         nullable=True,
     )
-    
+
     # Tenant context
     tenant_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -100,7 +100,7 @@ class AuditLogModel(Base):
         nullable=True,
         index=True,
     )
-    
+
     # Change details (stored as JSONB for flexibility)
     old_value: Mapped[dict | None] = mapped_column(
         JSONBCompat,
@@ -110,7 +110,7 @@ class AuditLogModel(Base):
         JSONBCompat,
         nullable=True,
     )
-    
+
     # Additional context
     extra_data: Mapped[dict | None] = mapped_column(
         "metadata",  # Column name in DB
@@ -122,7 +122,7 @@ class AuditLogModel(Base):
         Text,
         nullable=True,
     )
-    
+
     # Composite indexes for common query patterns
     __table_args__ = (
         # For querying resource history
@@ -151,7 +151,7 @@ class AuditLogModel(Base):
             "timestamp",
         ),
     )
-    
+
     def __repr__(self) -> str:
         return (
             f"<AuditLog(id={self.id}, action={self.action}, "

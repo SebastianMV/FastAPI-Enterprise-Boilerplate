@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -17,20 +17,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import api from '@/services/api';
-
-interface MFAStatus {
-  is_enabled: boolean;
-  enabled_at: string | null;
-  backup_codes_remaining: number;
-  last_used_at: string | null;
-}
-
-interface MFASetupResponse {
-  secret: string;
-  qr_code: string;
-  backup_codes: string[];
-}
+import { mfaService, type MFAStatus, type MFASetupResponse } from '@/services/api';
 
 interface VerifyFormData {
   code: string;
@@ -74,29 +61,32 @@ export default function MFASettingsPage() {
     reset: resetDisableForm,
   } = useForm<DisableFormData>();
 
-  // Fetch MFA status on mount
-  useEffect(() => {
-    fetchMFAStatus();
-  }, []);
-
-  const fetchMFAStatus = async () => {
+  const fetchMFAStatus = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await api.get<MFAStatus>('/mfa/status');
-      setMfaStatus(response.data);
+      const status = await mfaService.getStatus();
+      setMfaStatus(status);
     } catch {
       setErrorMessage(t('mfa.fetchError'));
     } finally {
       setIsLoading(false);
     }
-  };
+    // t is intentionally excluded: stable ref in production (i18next),
+    // but unstable in tests causing infinite re-render loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch MFA status on mount
+  useEffect(() => {
+    fetchMFAStatus();
+  }, [fetchMFAStatus]);
 
   const handleSetupMFA = async () => {
     try {
       setIsSetupLoading(true);
       setErrorMessage(null);
-      const response = await api.post<MFASetupResponse>('/mfa/setup');
-      setSetupData(response.data);
+      const data = await mfaService.setup();
+      setSetupData(data);
     } catch {
       setErrorMessage(t('mfa.setupError'));
     } finally {
@@ -109,7 +99,7 @@ export default function MFASettingsPage() {
       setIsVerifying(true);
       setErrorMessage(null);
       
-      await api.post('/mfa/verify', { code: data.code });
+      await mfaService.verify(data.code);
       
       setSuccessMessage(t('mfa.enableSuccess'));
       setSetupData(null);
@@ -127,10 +117,7 @@ export default function MFASettingsPage() {
       setIsDisabling(true);
       setErrorMessage(null);
       
-      await api.post('/mfa/disable', { 
-        code: data.code,
-        password: data.password 
-      });
+      await mfaService.disable(data.code, data.password);
       
       setSuccessMessage(t('mfa.disableSuccess'));
       setShowDisableForm(false);
@@ -153,8 +140,8 @@ export default function MFASettingsPage() {
         setCopiedSecret(true);
         setTimeout(() => setCopiedSecret(false), 2000);
       }
-    } catch (error) {
-      console.error('Failed to copy:', error);
+    } catch {
+      // Clipboard write failed — silently ignore
     }
   };
 
@@ -181,6 +168,7 @@ export default function MFASettingsPage() {
         <Link 
           to="/profile" 
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          aria-label={t('common.back')}
         >
           <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
         </Link>
@@ -295,11 +283,17 @@ export default function MFASettingsPage() {
             </p>
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
+                {setupData.qr_code.startsWith('data:image/') ? (
                 <img 
                   src={setupData.qr_code}
-                  alt="MFA QR Code"
+                  alt={t('mfa.qrCodeAlt')}
                   className="w-48 h-48"
                 />
+                ) : (
+                <div className="w-48 h-48 flex items-center justify-center bg-slate-100 rounded">
+                  <p className="text-sm text-slate-500">{t('mfa.qrCodeAlt')}</p>
+                </div>
+                )}
               </div>
               <div className="flex-1 space-y-4">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -384,6 +378,7 @@ export default function MFASettingsPage() {
                       <button
                         onClick={() => copyToClipboard(code, index)}
                         className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+                        aria-label={t('mfa.copyCode')}
                       >
                         {copiedIndex === index ? (
                           <Check className="w-4 h-4 text-green-600" />
@@ -526,6 +521,7 @@ export default function MFASettingsPage() {
                 </label>
                 <input
                   type="password"
+                  autoComplete="current-password"
                   className="input max-w-xs"
                   {...registerDisable('password', { required: t('mfa.passwordRequired') })}
                 />
@@ -581,7 +577,7 @@ export default function MFASettingsPage() {
             <strong>{t('auth.mfa.backupCodes')}:</strong> {t('mfa.recommendedApps')}
           </p>
           <p>
-            <strong>{t('mfa.lostDevice').split(':')[0]}?</strong> {t('mfa.lostDevice').split(':').slice(1).join(':') || t('mfa.lostDevice')}
+            <strong>{t('mfa.lostDeviceQuestion')}</strong> {t('mfa.lostDeviceAnswer')}
           </p>
         </div>
       </div>

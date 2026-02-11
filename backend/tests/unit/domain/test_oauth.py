@@ -7,45 +7,32 @@ Unit tests for OAuth domain entities.
 Tests for OAuth connections, SSO configuration, and related structures.
 """
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-import pytest
-
 from app.domain.entities.oauth import (
-    OAuthProvider,
     OAuthConnection,
-    SSOConfiguration,
+    OAuthProvider,
     OAuthState,
     OAuthUserInfo,
+    SSOConfiguration,
 )
 
 
 class TestOAuthProvider:
     """Tests for OAuthProvider enum."""
 
-    def test_major_providers(self) -> None:
-        """Test major OAuth provider values."""
+    def test_implemented_providers(self) -> None:
+        """Test implemented OAuth provider values."""
         assert OAuthProvider.GOOGLE.value == "google"
         assert OAuthProvider.GITHUB.value == "github"
         assert OAuthProvider.MICROSOFT.value == "microsoft"
-        assert OAuthProvider.APPLE.value == "apple"
-        assert OAuthProvider.FACEBOOK.value == "facebook"
 
-    def test_social_providers(self) -> None:
-        """Test social OAuth provider values."""
-        assert OAuthProvider.LINKEDIN.value == "linkedin"
-        assert OAuthProvider.TWITTER.value == "twitter"
-        # Discord provider removed - not implemented
-        # assert OAuthProvider.DISCORD.value == "discord"
-        assert OAuthProvider.SLACK.value == "slack"
-
-    def test_enterprise_providers(self) -> None:
-        """Test enterprise SSO provider values."""
-        assert OAuthProvider.OKTA.value == "okta"
-        assert OAuthProvider.AUTH0.value == "auth0"
-        assert OAuthProvider.KEYCLOAK.value == "keycloak"
-        assert OAuthProvider.SAML.value == "saml"
+    def test_all_providers_exist(self) -> None:
+        """Test all expected providers are defined."""
+        expected = {"google", "github", "microsoft"}
+        actual = {p.value for p in OAuthProvider}
+        assert actual == expected
 
 
 class TestOAuthConnection:
@@ -56,7 +43,7 @@ class TestOAuthConnection:
         conn_id = uuid4()
         user_id = uuid4()
         tenant_id = uuid4()
-        
+
         connection = OAuthConnection(
             id=conn_id,
             user_id=user_id,
@@ -64,7 +51,7 @@ class TestOAuthConnection:
             provider=OAuthProvider.GOOGLE,
             provider_user_id="123456789",
         )
-        
+
         assert connection.id == conn_id
         assert connection.user_id == user_id
         assert connection.tenant_id == tenant_id
@@ -80,7 +67,7 @@ class TestOAuthConnection:
             provider=OAuthProvider.GITHUB,
             provider_user_id="12345",
         )
-        
+
         assert connection.provider_email is None
         assert connection.provider_username is None
         assert connection.provider_display_name is None
@@ -109,7 +96,7 @@ class TestOAuthConnection:
             provider_display_name="John Doe",
             provider_avatar_url="https://example.com/avatar.jpg",
         )
-        
+
         assert connection.provider_email == "user@gmail.com"
         assert connection.provider_username == "john.doe"
         assert connection.provider_display_name == "John Doe"
@@ -118,7 +105,7 @@ class TestOAuthConnection:
     def test_with_tokens(self) -> None:
         """Test connection with tokens."""
         expires = datetime.now(UTC) + timedelta(hours=1)
-        
+
         connection = OAuthConnection(
             id=uuid4(),
             user_id=uuid4(),
@@ -129,7 +116,7 @@ class TestOAuthConnection:
             refresh_token="refresh_token_value",
             token_expires_at=expires,
         )
-        
+
         assert connection.access_token == "access_token_value"
         assert connection.refresh_token == "refresh_token_value"
         assert connection.token_expires_at == expires
@@ -144,7 +131,7 @@ class TestOAuthConnection:
             provider_user_id="123",
             scopes=["email", "profile", "openid"],
         )
-        
+
         assert len(connection.scopes) == 3
         assert "email" in connection.scopes
 
@@ -158,7 +145,7 @@ class TestOAuthConnection:
             provider_user_id="123",
             is_primary=True,
         )
-        
+
         assert connection.is_primary is True
 
     def test_inactive_connection(self) -> None:
@@ -171,7 +158,7 @@ class TestOAuthConnection:
             provider_user_id="123",
             is_active=False,
         )
-        
+
         assert connection.is_active is False
 
 
@@ -182,19 +169,19 @@ class TestSSOConfiguration:
         """Test creating basic SSO configuration."""
         config_id = uuid4()
         tenant_id = uuid4()
-        
+
         config = SSOConfiguration(
             id=config_id,
             tenant_id=tenant_id,
-            provider=OAuthProvider.OKTA,
+            provider=OAuthProvider.GOOGLE,
             name="Corporate SSO",
             client_id="client_123",
             client_secret="secret_456",
         )
-        
+
         assert config.id == config_id
         assert config.tenant_id == tenant_id
-        assert config.provider == OAuthProvider.OKTA
+        assert config.provider == OAuthProvider.GOOGLE
         assert config.name == "Corporate SSO"
         assert config.client_id == "client_123"
         assert config.client_secret == "secret_456"
@@ -204,20 +191,15 @@ class TestSSOConfiguration:
         config = SSOConfiguration(
             id=uuid4(),
             tenant_id=uuid4(),
-            provider=OAuthProvider.OKTA,
+            provider=OAuthProvider.GOOGLE,
             name="Test SSO",
             client_id="client",
             client_secret="secret",
         )
-        
+
         assert config.authorization_url is None
         assert config.token_url is None
         assert config.userinfo_url is None
-        assert config.saml_metadata_url is None
-        assert config.saml_entity_id is None
-        assert config.saml_sso_url is None
-        assert config.saml_slo_url is None
-        assert config.saml_certificate is None
         assert config.scopes == []
         assert config.auto_create_users is True
         assert config.auto_update_users is True
@@ -233,12 +215,12 @@ class TestSSOConfiguration:
         config = SSOConfiguration(
             id=uuid4(),
             tenant_id=uuid4(),
-            provider=OAuthProvider.OKTA,
+            provider=OAuthProvider.GOOGLE,
             name="Test SSO",
             client_id="client",
             client_secret="secret",
         )
-        
+
         assert config.attribute_mapping["email"] == "email"
         assert config.attribute_mapping["name"] == "name"
         assert config.attribute_mapping["given_name"] == "given_name"
@@ -250,50 +232,31 @@ class TestSSOConfiguration:
         config = SSOConfiguration(
             id=uuid4(),
             tenant_id=uuid4(),
-            provider=OAuthProvider.KEYCLOAK,
-            name="Keycloak SSO",
+            provider=OAuthProvider.MICROSOFT,
+            name="Microsoft SSO",
             client_id="client",
             client_secret="secret",
-            authorization_url="https://keycloak.example.com/auth",
-            token_url="https://keycloak.example.com/token",
-            userinfo_url="https://keycloak.example.com/userinfo",
+            authorization_url="https://login.microsoftonline.com/auth",
+            token_url="https://login.microsoftonline.com/token",
+            userinfo_url="https://graph.microsoft.com/userinfo",
         )
-        
-        assert config.authorization_url == "https://keycloak.example.com/auth"
-        assert config.token_url == "https://keycloak.example.com/token"
-        assert config.userinfo_url == "https://keycloak.example.com/userinfo"
 
-    def test_with_saml_config(self) -> None:
-        """Test SSO config with SAML settings."""
-        config = SSOConfiguration(
-            id=uuid4(),
-            tenant_id=uuid4(),
-            provider=OAuthProvider.SAML,
-            name="SAML SSO",
-            client_id="",
-            client_secret="",
-            saml_metadata_url="https://idp.example.com/metadata",
-            saml_entity_id="https://app.example.com",
-            saml_sso_url="https://idp.example.com/sso",
-            saml_slo_url="https://idp.example.com/slo",
-            saml_certificate="MIIC...cert...",
-        )
-        
-        assert config.saml_metadata_url == "https://idp.example.com/metadata"
-        assert config.saml_entity_id == "https://app.example.com"
+        assert config.authorization_url == "https://login.microsoftonline.com/auth"
+        assert config.token_url == "https://login.microsoftonline.com/token"
+        assert config.userinfo_url == "https://graph.microsoft.com/userinfo"
 
     def test_with_domain_restrictions(self) -> None:
         """Test SSO config with domain restrictions."""
         config = SSOConfiguration(
             id=uuid4(),
             tenant_id=uuid4(),
-            provider=OAuthProvider.OKTA,
+            provider=OAuthProvider.GITHUB,
             name="Corporate SSO",
             client_id="client",
             client_secret="secret",
             allowed_domains=["company.com", "subsidiary.com"],
         )
-        
+
         assert len(config.allowed_domains) == 2
         assert "company.com" in config.allowed_domains
 
@@ -302,13 +265,13 @@ class TestSSOConfiguration:
         config = SSOConfiguration(
             id=uuid4(),
             tenant_id=uuid4(),
-            provider=OAuthProvider.OKTA,
+            provider=OAuthProvider.MICROSOFT,
             name="Required SSO",
             client_id="client",
             client_secret="secret",
             is_required=True,
         )
-        
+
         assert config.is_required is True
 
 
@@ -321,7 +284,7 @@ class TestOAuthState:
             state="random_state_string",
             provider=OAuthProvider.GOOGLE,
         )
-        
+
         assert state.state == "random_state_string"
         assert state.provider == OAuthProvider.GOOGLE
 
@@ -331,7 +294,7 @@ class TestOAuthState:
             state="test_state",
             provider=OAuthProvider.GITHUB,
         )
-        
+
         assert state.tenant_id is None
         assert state.redirect_uri is None
         assert state.nonce is None
@@ -344,14 +307,14 @@ class TestOAuthState:
     def test_with_tenant_and_redirect(self) -> None:
         """Test state with tenant and redirect."""
         tenant_id = uuid4()
-        
+
         state = OAuthState(
             state="test_state",
             provider=OAuthProvider.GOOGLE,
             tenant_id=tenant_id,
             redirect_uri="https://app.example.com/callback",
         )
-        
+
         assert state.tenant_id == tenant_id
         assert state.redirect_uri == "https://app.example.com/callback"
 
@@ -362,7 +325,7 @@ class TestOAuthState:
             provider=OAuthProvider.GOOGLE,
             code_verifier="pkce_code_verifier_value",
         )
-        
+
         assert state.code_verifier == "pkce_code_verifier_value"
 
     def test_with_openid_connect(self) -> None:
@@ -372,20 +335,20 @@ class TestOAuthState:
             provider=OAuthProvider.GOOGLE,
             nonce="random_nonce_value",
         )
-        
+
         assert state.nonce == "random_nonce_value"
 
     def test_linking_state(self) -> None:
         """Test state for account linking."""
         existing_user = uuid4()
-        
+
         state = OAuthState(
             state="test_state",
             provider=OAuthProvider.GITHUB,
             is_linking=True,
             existing_user_id=existing_user,
         )
-        
+
         assert state.is_linking is True
         assert state.existing_user_id == existing_user
 
@@ -393,14 +356,14 @@ class TestOAuthState:
         """Test state with expiration."""
         created = datetime.now(UTC)
         expires = created + timedelta(minutes=10)
-        
+
         state = OAuthState(
             state="test_state",
             provider=OAuthProvider.GOOGLE,
             created_at=created,
             expires_at=expires,
         )
-        
+
         assert state.created_at == created
         assert state.expires_at == expires
 
@@ -414,7 +377,7 @@ class TestOAuthUserInfo:
             provider=OAuthProvider.GOOGLE,
             provider_user_id="123456789",
         )
-        
+
         assert info.provider == OAuthProvider.GOOGLE
         assert info.provider_user_id == "123456789"
 
@@ -424,7 +387,7 @@ class TestOAuthUserInfo:
             provider=OAuthProvider.GOOGLE,
             provider_user_id="123",
         )
-        
+
         assert info.email is None
         assert info.email_verified is False
         assert info.name is None
@@ -447,7 +410,7 @@ class TestOAuthUserInfo:
             picture="https://example.com/avatar.jpg",
             locale="en-US",
         )
-        
+
         assert info.email == "user@gmail.com"
         assert info.email_verified is True
         assert info.name == "John Doe"
@@ -464,12 +427,12 @@ class TestOAuthUserInfo:
             "hd": "example.com",
             "custom_field": "value",
         }
-        
+
         info = OAuthUserInfo(
             provider=OAuthProvider.GOOGLE,
             provider_user_id="123456789",
             raw_data=raw,
         )
-        
+
         assert info.raw_data["sub"] == "123456789"
         assert info.raw_data["hd"] == "example.com"

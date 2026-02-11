@@ -7,13 +7,14 @@
 # ============================================
 
 # Stage 1: Dependencies
+# Pin to LTS minor; update patch periodically: docker pull node:22-alpine
 FROM node:22-alpine AS deps
 
 WORKDIR /app
 
 # Install dependencies only when package files change
-COPY package.json package-lock.json* ./
-RUN npm ci --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 
 
 # Stage 2: Builder
@@ -31,7 +32,9 @@ RUN npm run build
 
 
 # Stage 3: Production
-FROM nginx:alpine AS production
+# Pin to specific version for reproducibility.
+# Update periodically and verify with: docker pull nginx:1.28-alpine
+FROM nginx:1.28-alpine AS production
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -41,6 +44,9 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Security: Remove default nginx files
 RUN rm -rf /usr/share/nginx/html/50x.html
+
+# Security: Run as non-root user
+USER nginx
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

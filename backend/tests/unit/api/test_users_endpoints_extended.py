@@ -5,9 +5,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, AsyncMock, patch
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
 
 import pytest
 
@@ -33,7 +32,6 @@ class TestUserSchemas:
 
     def test_user_response_schema(self) -> None:
         """Test UserResponse schema."""
-        from app.api.v1.endpoints.users import UserResponse
 
         user_data = {
             "id": str(uuid4()),

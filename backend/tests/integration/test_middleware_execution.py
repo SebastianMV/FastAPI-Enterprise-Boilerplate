@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 
@@ -30,7 +30,7 @@ class TestTenantMiddleware:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
                 "/api/v1/health",
-                headers={"X-Tenant-ID": "00000000-0000-0000-0000-000000000000"}
+                headers={"X-Tenant-ID": "00000000-0000-0000-0000-000000000000"},
             )
             assert response.status_code == 200
 
@@ -40,8 +40,7 @@ class TestTenantMiddleware:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/v1/health",
-                headers={"X-Tenant-ID": "not-a-uuid"}
+                "/api/v1/health", headers={"X-Tenant-ID": "not-a-uuid"}
             )
             # Should either work (health is public) or fail validation
             assert response.status_code in [200, 400, 422]
@@ -59,8 +58,8 @@ class TestCORSMiddleware:
                 "/api/v1/health",
                 headers={
                     "Origin": "http://localhost:3000",
-                    "Access-Control-Request-Method": "GET"
-                }
+                    "Access-Control-Request-Method": "GET",
+                },
             )
             # Should return 200 for preflight
             assert response.status_code in [200, 204]
@@ -71,8 +70,7 @@ class TestCORSMiddleware:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/v1/health",
-                headers={"Origin": "http://localhost:3000"}
+                "/api/v1/health", headers={"Origin": "http://localhost:3000"}
             )
             assert response.status_code == 200
             # CORS headers may or may not be present depending on config
@@ -102,8 +100,7 @@ class TestRequestIDMiddleware:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/v1/health",
-                headers={"X-Request-ID": "test-request-123"}
+                "/api/v1/health", headers={"X-Request-ID": "test-request-123"}
             )
             assert response.status_code == 200
 
@@ -119,7 +116,7 @@ class TestContentTypeNegotiation:
             response = await client.post(
                 "/api/v1/auth/login",
                 json={"email": "test@test.com", "password": "test"},
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
             assert response.status_code in [400, 401, 422, 500]
 
@@ -129,8 +126,7 @@ class TestContentTypeNegotiation:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/v1/health",
-                headers={"Accept": "application/json"}
+                "/api/v1/health", headers={"Accept": "application/json"}
             )
             assert response.status_code == 200
             assert "application/json" in response.headers.get("content-type", "")
@@ -156,7 +152,7 @@ class TestErrorResponses:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/auth/register",
-                json={}  # Missing required fields
+                json={},  # Missing required fields
             )
             assert response.status_code == 422
             data = response.json()
@@ -180,8 +176,7 @@ class TestAuthMiddleware:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/v1/users",
-                headers={"Authorization": "InvalidFormat token123"}
+                "/api/v1/users", headers={"Authorization": "InvalidFormat token123"}
             )
             assert response.status_code in [401, 403]
 
@@ -191,8 +186,7 @@ class TestAuthMiddleware:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/v1/users",
-                headers={"Authorization": "Bearer invalid.jwt.token"}
+                "/api/v1/users", headers={"Authorization": "Bearer invalid.jwt.token"}
             )
             assert response.status_code in [401, 403]
 
@@ -202,8 +196,7 @@ class TestAuthMiddleware:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get(
-                "/api/v1/users",
-                headers={"Authorization": "Bearer "}
+                "/api/v1/users", headers={"Authorization": "Bearer "}
             )
             assert response.status_code in [401, 403]
 
@@ -217,8 +210,7 @@ class TestEndpointMethods:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.patch(
-                "/api/v1/users/00000000-0000-0000-0000-000000000000",
-                json={}
+                "/api/v1/users/00000000-0000-0000-0000-000000000000", json={}
             )
             # Should require auth or validate body
             assert response.status_code in [401, 403, 404, 422]
@@ -239,7 +231,6 @@ class TestEndpointMethods:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.put(
-                "/api/v1/roles/00000000-0000-0000-0000-000000000000",
-                json={}
+                "/api/v1/roles/00000000-0000-0000-0000-000000000000", json={}
             )
             assert response.status_code in [401, 403, 404, 405, 422]

@@ -7,9 +7,9 @@ Unit tests for API Keys API endpoints.
 Tests the API key REST endpoints with mocked dependencies.
 """
 
-from datetime import datetime, timezone, timedelta
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -26,9 +26,7 @@ class TestListMyApiKeysEndpoint:
         user_id = uuid4()
         mock_session = AsyncMock()
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.list_user_api_keys"
-        ) as mock_list:
+        with patch("app.api.v1.endpoints.api_keys.list_user_api_keys") as mock_list:
             mock_list.return_value = []
 
             result = await list_my_api_keys(
@@ -54,14 +52,12 @@ class TestListMyApiKeysEndpoint:
         mock_key.prefix = "sk_test_"
         mock_key.scopes = ["read", "write"]
         mock_key.is_active = True
-        mock_key.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+        mock_key.expires_at = datetime.now(UTC) + timedelta(days=30)
         mock_key.last_used_at = None
         mock_key.usage_count = 0
-        mock_key.created_at = datetime.now(timezone.utc)
+        mock_key.created_at = datetime.now(UTC)
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.list_user_api_keys"
-        ) as mock_list:
+        with patch("app.api.v1.endpoints.api_keys.list_user_api_keys") as mock_list:
             mock_list.return_value = [mock_key]
 
             result = await list_my_api_keys(
@@ -91,7 +87,7 @@ class TestListMyApiKeysEndpoint:
         active_key.expires_at = None
         active_key.last_used_at = None
         active_key.usage_count = 5
-        active_key.created_at = datetime.now(timezone.utc)
+        active_key.created_at = datetime.now(UTC)
 
         revoked_key = MagicMock()
         revoked_key.id = uuid4()
@@ -100,13 +96,11 @@ class TestListMyApiKeysEndpoint:
         revoked_key.scopes = ["read", "write"]
         revoked_key.is_active = False
         revoked_key.expires_at = None
-        revoked_key.last_used_at = datetime.now(timezone.utc) - timedelta(days=5)
+        revoked_key.last_used_at = datetime.now(UTC) - timedelta(days=5)
         revoked_key.usage_count = 100
-        revoked_key.created_at = datetime.now(timezone.utc) - timedelta(days=30)
+        revoked_key.created_at = datetime.now(UTC) - timedelta(days=30)
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.list_user_api_keys"
-        ) as mock_list:
+        with patch("app.api.v1.endpoints.api_keys.list_user_api_keys") as mock_list:
             mock_list.return_value = [active_key, revoked_key]
 
             result = await list_my_api_keys(
@@ -144,12 +138,10 @@ class TestCreateMyApiKeyEndpoint:
         mock_api_key.name = "Test API Key"
         mock_api_key.prefix = "sk_test_"
         mock_api_key.scopes = ["read", "write"]
-        mock_api_key.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-        mock_api_key.created_at = datetime.now(timezone.utc)
+        mock_api_key.expires_at = datetime.now(UTC) + timedelta(days=30)
+        mock_api_key.created_at = datetime.now(UTC)
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.create_api_key"
-        ) as mock_create:
+        with patch("app.api.v1.endpoints.api_keys.create_api_key") as mock_create:
             mock_create.return_value = ("sk_test_full_key_value", mock_api_key)
 
             result = await create_my_api_key(
@@ -185,11 +177,9 @@ class TestCreateMyApiKeyEndpoint:
         mock_api_key.prefix = "sk_perm_"
         mock_api_key.scopes = ["read"]
         mock_api_key.expires_at = None
-        mock_api_key.created_at = datetime.now(timezone.utc)
+        mock_api_key.created_at = datetime.now(UTC)
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.create_api_key"
-        ) as mock_create:
+        with patch("app.api.v1.endpoints.api_keys.create_api_key") as mock_create:
             mock_create.return_value = ("sk_perm_full_key_value", mock_api_key)
 
             result = await create_my_api_key(
@@ -214,9 +204,7 @@ class TestRevokeMyApiKeyEndpoint:
         key_id = uuid4()
         mock_session = AsyncMock()
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.revoke_api_key"
-        ) as mock_revoke:
+        with patch("app.api.v1.endpoints.api_keys.revoke_api_key") as mock_revoke:
             mock_revoke.return_value = True
 
             result = await revoke_my_api_key(
@@ -241,9 +229,7 @@ class TestRevokeMyApiKeyEndpoint:
         key_id = uuid4()
         mock_session = AsyncMock()
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.revoke_api_key"
-        ) as mock_revoke:
+        with patch("app.api.v1.endpoints.api_keys.revoke_api_key") as mock_revoke:
             mock_revoke.return_value = False
 
             with pytest.raises(HTTPException) as exc_info:
@@ -265,9 +251,7 @@ class TestRevokeMyApiKeyEndpoint:
         key_id = uuid4()  # Key owned by different user
         mock_session = AsyncMock()
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.revoke_api_key"
-        ) as mock_revoke:
+        with patch("app.api.v1.endpoints.api_keys.revoke_api_key") as mock_revoke:
             # Returns False because key doesn't belong to user
             mock_revoke.return_value = False
 
@@ -294,10 +278,10 @@ class TestApiKeyResponseSchema:
             prefix="sk_test_",
             scopes=["read", "write"],
             is_active=True,
-            expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+            expires_at=datetime.now(UTC) + timedelta(days=30),
             last_used_at=None,
             usage_count=0,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         assert response.name == "Test Key"
@@ -315,7 +299,7 @@ class TestApiKeyResponseSchema:
             key="sk_new_full_key_value_here",
             scopes=["read"],
             expires_at=None,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         assert response.key == "sk_new_full_key_value_here"
@@ -335,7 +319,7 @@ class TestApiKeyResponseSchema:
                 expires_at=None,
                 last_used_at=None,
                 usage_count=i * 10,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             for i in range(3)
         ]
@@ -379,7 +363,7 @@ class TestApiKeyEdgeCases:
         """Test API key response with usage data."""
         from app.api.v1.schemas.api_keys import APIKeyResponse
 
-        last_used = datetime.now(timezone.utc) - timedelta(hours=2)
+        last_used = datetime.now(UTC) - timedelta(hours=2)
         response = APIKeyResponse(
             id=uuid4(),
             name="Active Key",
@@ -389,7 +373,7 @@ class TestApiKeyEdgeCases:
             expires_at=None,
             last_used_at=last_used,
             usage_count=1500,
-            created_at=datetime.now(timezone.utc) - timedelta(days=30),
+            created_at=datetime.now(UTC) - timedelta(days=30),
         )
 
         assert response.last_used_at == last_used
@@ -399,7 +383,7 @@ class TestApiKeyEdgeCases:
         """Test API key that has expired."""
         from app.api.v1.schemas.api_keys import APIKeyResponse
 
-        expired_at = datetime.now(timezone.utc) - timedelta(days=1)
+        expired_at = datetime.now(UTC) - timedelta(days=1)
         response = APIKeyResponse(
             id=uuid4(),
             name="Expired Key",
@@ -407,14 +391,14 @@ class TestApiKeyEdgeCases:
             scopes=["read"],
             is_active=False,
             expires_at=expired_at,
-            last_used_at=datetime.now(timezone.utc) - timedelta(days=5),
+            last_used_at=datetime.now(UTC) - timedelta(days=5),
             usage_count=50,
-            created_at=datetime.now(timezone.utc) - timedelta(days=60),
+            created_at=datetime.now(UTC) - timedelta(days=60),
         )
 
         assert response.is_active is False
         assert response.expires_at is not None
-        assert response.expires_at < datetime.now(timezone.utc)
+        assert response.expires_at < datetime.now(UTC)
 
     def test_api_key_empty_scopes(self) -> None:
         """Test API key with empty scopes."""
@@ -429,7 +413,7 @@ class TestApiKeyEdgeCases:
             expires_at=None,
             last_used_at=None,
             usage_count=0,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         assert response.scopes == []
@@ -454,12 +438,10 @@ class TestApiKeyEdgeCases:
             key.expires_at = None
             key.last_used_at = None
             key.usage_count = i
-            key.created_at = datetime.now(timezone.utc)
+            key.created_at = datetime.now(UTC)
             mock_keys.append(key)
 
-        with patch(
-            "app.api.v1.endpoints.api_keys.list_user_api_keys"
-        ) as mock_list:
+        with patch("app.api.v1.endpoints.api_keys.list_user_api_keys") as mock_list:
             mock_list.return_value = mock_keys
 
             result = await list_my_api_keys(

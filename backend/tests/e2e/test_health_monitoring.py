@@ -20,10 +20,10 @@ class TestHealthChecksE2E:
     async def test_basic_health_check(self, client: AsyncClient) -> None:
         """Test basic health endpoint."""
         response = await client.get("/api/v1/health")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "status" in data
         assert data["status"] in ["healthy", "ok", "up"]
 
@@ -31,16 +31,16 @@ class TestHealthChecksE2E:
     async def test_detailed_health_check(self, client: AsyncClient) -> None:
         """Test detailed health endpoint with component status."""
         response = await client.get("/api/v1/health/detailed")
-        
+
         if response.status_code == 200:
             data = response.json()
-            
+
             assert "status" in data
-            
+
             # May include component health
             if "components" in data or "checks" in data:
                 components = data.get("components", data.get("checks", {}))
-                
+
                 # Common components
                 expected_components = ["database", "cache", "search"]
                 for component in expected_components:
@@ -51,7 +51,7 @@ class TestHealthChecksE2E:
     async def test_readiness_probe(self, client: AsyncClient) -> None:
         """Test Kubernetes-style readiness probe."""
         response = await client.get("/api/v1/health/ready")
-        
+
         if response.status_code in [200, 404]:
             if response.status_code == 200:
                 data = response.json()
@@ -61,7 +61,7 @@ class TestHealthChecksE2E:
     async def test_liveness_probe(self, client: AsyncClient) -> None:
         """Test Kubernetes-style liveness probe."""
         response = await client.get("/api/v1/health/live")
-        
+
         if response.status_code in [200, 404]:
             if response.status_code == 200:
                 data = response.json()
@@ -72,15 +72,13 @@ class TestMetricsE2E:
     """End-to-end metrics tests."""
 
     @pytest.mark.asyncio
-    async def test_prometheus_metrics_endpoint(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_prometheus_metrics_endpoint(self, client: AsyncClient) -> None:
         """Test Prometheus metrics endpoint."""
         response = await client.get("/metrics")
-        
+
         if response.status_code == 200:
             content = response.text
-            
+
             # Should contain Prometheus format metrics
             assert "# HELP" in content or "# TYPE" in content or "http_" in content
 
@@ -90,7 +88,7 @@ class TestMetricsE2E:
     ) -> None:
         """Test application-specific metrics endpoint."""
         response = await client.get("/api/v1/metrics", headers=auth_headers)
-        
+
         if response.status_code in [200, 401, 404]:
             if response.status_code == 200:
                 data = response.json()
@@ -105,11 +103,11 @@ class TestVersionInfoE2E:
     async def test_version_endpoint(self, client: AsyncClient) -> None:
         """Test version information endpoint."""
         response = await client.get("/api/v1/version")
-        
+
         if response.status_code in [200, 404]:
             if response.status_code == 200:
                 data = response.json()
-                
+
                 # Should include version info
                 assert "version" in data or "api_version" in data
 
@@ -117,10 +115,10 @@ class TestVersionInfoE2E:
     async def test_openapi_schema_available(self, client: AsyncClient) -> None:
         """Test OpenAPI schema is available."""
         response = await client.get("/openapi.json")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "openapi" in data
         assert "info" in data
         assert "paths" in data
@@ -129,7 +127,7 @@ class TestVersionInfoE2E:
     async def test_swagger_ui_available(self, client: AsyncClient) -> None:
         """Test Swagger UI is accessible."""
         response = await client.get("/docs")
-        
+
         assert response.status_code == 200
         assert "swagger" in response.text.lower() or "openapi" in response.text.lower()
 
@@ -137,7 +135,7 @@ class TestVersionInfoE2E:
     async def test_redoc_available(self, client: AsyncClient) -> None:
         """Test ReDoc documentation is accessible."""
         response = await client.get("/redoc")
-        
+
         if response.status_code == 200:
             assert "redoc" in response.text.lower()
 
@@ -145,30 +143,8 @@ class TestVersionInfoE2E:
 class TestLoggingE2E:
     """End-to-end logging configuration tests."""
 
-    @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires admin access")
-    async def test_log_level_configuration(
-        self, client: AsyncClient, admin_headers: dict
-    ) -> None:
-        """Test runtime log level configuration."""
-        # Get current log level
-        get_response = await client.get(
-            "/api/v1/admin/logging",
-            headers=admin_headers,
-        )
-        
-        if get_response.status_code == 200:
-            current = get_response.json()
-            assert "level" in current
-            
-            # Change log level
-            set_response = await client.put(
-                "/api/v1/admin/logging",
-                json={"level": "DEBUG"},
-                headers=admin_headers,
-            )
-            
-            assert set_response.status_code in [200, 204]
+    # Note: test_log_level_configuration removed - admin logging endpoint
+    # not implemented. Add test when feature is available.
 
 
 class TestDatabaseConnectionE2E:
@@ -178,7 +154,7 @@ class TestDatabaseConnectionE2E:
     async def test_database_health(self, client: AsyncClient) -> None:
         """Test database connection health."""
         response = await client.get("/api/v1/health")
-        
+
         assert response.status_code == 200
         # If database is down, health check should fail
 
@@ -189,7 +165,7 @@ class TestDatabaseConnectionE2E:
         """Test basic database operations through API."""
         # Simple read operation
         response = await client.get("/api/v1/users/me", headers=auth_headers)
-        
+
         # If DB is connected, should work (or return 401 if auth issue)
         assert response.status_code in [200, 401]
 
@@ -201,10 +177,10 @@ class TestCacheE2E:
     async def test_cache_health(self, client: AsyncClient) -> None:
         """Test cache connection in health check."""
         response = await client.get("/api/v1/health/detailed")
-        
+
         if response.status_code == 200:
             data = response.json()
-            
+
             if "components" in data:
                 cache_status = data["components"].get("cache", {})
                 if cache_status:
@@ -216,8 +192,8 @@ class TestCacheE2E:
         # Make same request twice
         response1 = await client.get("/api/v1/health")
         response2 = await client.get("/api/v1/health")
-        
+
         assert response1.status_code == 200
         assert response2.status_code == 200
-        
+
         # Both should succeed quickly (cache hit on second)

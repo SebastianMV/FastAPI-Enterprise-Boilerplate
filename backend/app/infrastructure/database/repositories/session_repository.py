@@ -7,7 +7,7 @@ SQLAlchemy implementation of SessionRepository.
 Handles user session persistence and retrieval.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -21,14 +21,14 @@ from app.infrastructure.database.models.session import UserSessionModel
 class SQLAlchemySessionRepository:
     """
     SQLAlchemy implementation of session repository.
-    
+
     Manages user sessions in the database.
     """
-    
+
     def __init__(self, session: AsyncSession) -> None:
         """Initialize repository with database session."""
         self._session = session
-    
+
     async def create(self, user_session: UserSession) -> UserSession:
         """Create a new session record."""
         model = self._to_model(user_session)
@@ -36,51 +36,53 @@ class SQLAlchemySessionRepository:
         await self._session.flush()
         await self._session.refresh(model)
         return self._to_entity(model)
-    
+
     async def get_by_id(self, session_id: UUID) -> UserSession | None:
         """Get session by ID."""
         stmt = select(UserSessionModel).where(
             UserSessionModel.id == session_id,
-            UserSessionModel.is_revoked == False,
+            UserSessionModel.is_revoked.is_(False),
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
-    
+
     async def get_by_token_hash(self, token_hash: str) -> UserSession | None:
         """Get session by refresh token hash."""
         stmt = select(UserSessionModel).where(
             UserSessionModel.refresh_token_hash == token_hash,
-            UserSessionModel.is_revoked == False,
+            UserSessionModel.is_revoked.is_(False),
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
-    
+
     async def get_user_sessions(
-        self, 
-        user_id: UUID, 
-        include_revoked: bool = False
+        self, user_id: UUID, include_revoked: bool = False
     ) -> list[UserSession]:
         """Get all sessions for a user."""
-        stmt = select(UserSessionModel).where(
-            UserSessionModel.user_id == user_id,
-        ).order_by(UserSessionModel.last_activity.desc())
-        
+        stmt = (
+            select(UserSessionModel)
+            .where(
+                UserSessionModel.user_id == user_id,
+            )
+            .order_by(UserSessionModel.last_activity.desc())
+        )
+
         if not include_revoked:
-            stmt = stmt.where(UserSessionModel.is_revoked == False)
-        
+            stmt = stmt.where(UserSessionModel.is_revoked.is_(False))
+
         result = await self._session.execute(stmt)
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
-    
+
     async def revoke(self, session_id: UUID) -> bool:
         """Revoke a specific session."""
         stmt = (
             update(UserSessionModel)
             .where(
                 UserSessionModel.id == session_id,
-                UserSessionModel.is_revoked == False,
+                UserSessionModel.is_revoked.is_(False),
             )
             .values(
                 is_revoked=True,
@@ -90,7 +92,7 @@ class SQLAlchemySessionRepository:
         result = await self._session.execute(stmt)
         await self._session.flush()
         return result.rowcount > 0  # type: ignore[union-attr]
-    
+
     async def revoke_all_except(self, user_id: UUID, current_session_id: UUID) -> int:
         """Revoke all sessions for a user except the current one."""
         stmt = (
@@ -98,7 +100,7 @@ class SQLAlchemySessionRepository:
             .where(
                 UserSessionModel.user_id == user_id,
                 UserSessionModel.id != current_session_id,
-                UserSessionModel.is_revoked == False,
+                UserSessionModel.is_revoked.is_(False),
             )
             .values(
                 is_revoked=True,
@@ -108,14 +110,14 @@ class SQLAlchemySessionRepository:
         result = await self._session.execute(stmt)
         await self._session.flush()
         return result.rowcount  # type: ignore[union-attr]
-    
+
     async def revoke_all(self, user_id: UUID) -> int:
         """Revoke all sessions for a user."""
         stmt = (
             update(UserSessionModel)
             .where(
                 UserSessionModel.user_id == user_id,
-                UserSessionModel.is_revoked == False,
+                UserSessionModel.is_revoked.is_(False),
             )
             .values(
                 is_revoked=True,
@@ -125,34 +127,32 @@ class SQLAlchemySessionRepository:
         result = await self._session.execute(stmt)
         await self._session.flush()
         return result.rowcount  # type: ignore[union-attr]
-    
+
     async def update_activity(
-        self, 
-        session_id: UUID, 
-        ip_address: str | None = None
+        self, session_id: UUID, ip_address: str | None = None
     ) -> None:
         """Update last activity for a session."""
         values: dict[str, Any] = {"last_activity": datetime.now(UTC)}
         if ip_address:
             values["ip_address"] = ip_address
-        
+
         stmt = (
             update(UserSessionModel)
             .where(UserSessionModel.id == session_id)
             .values(**values)
         )
         await self._session.execute(stmt)
-    
+
     async def cleanup_old_sessions(self, older_than: datetime) -> int:
         """Delete sessions older than specified date."""
         stmt = delete(UserSessionModel).where(
             UserSessionModel.created_at < older_than,
-            UserSessionModel.is_revoked == True,
+            UserSessionModel.is_revoked.is_(True),
         )
         result = await self._session.execute(stmt)
         await self._session.flush()
         return result.rowcount  # type: ignore[union-attr]
-    
+
     def _to_entity(self, model: UserSessionModel) -> UserSession:
         """Convert SQLAlchemy model to domain entity."""
         return UserSession(
@@ -171,7 +171,7 @@ class SQLAlchemySessionRepository:
             revoked_at=model.revoked_at,
             created_at=model.created_at,
         )
-    
+
     def _to_model(self, entity: UserSession) -> UserSessionModel:
         """Convert domain entity to SQLAlchemy model."""
         return UserSessionModel(

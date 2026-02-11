@@ -3,16 +3,17 @@
 
 """Unit tests for API Keys endpoint schemas."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 from pydantic import ValidationError
 
 from app.api.v1.schemas.api_keys import (
     APIKeyCreate,
-    APIKeyResponse,
     APIKeyCreatedResponse,
     APIKeyListResponse,
+    APIKeyResponse,
 )
 
 
@@ -29,18 +30,14 @@ class TestAPIKeyCreate:
     def test_api_key_create_with_scopes(self):
         """Test API key creation with scopes."""
         api_key = APIKeyCreate(
-            name="Read Only Key",
-            scopes=["users:read", "roles:read"]
+            name="Read Only Key", scopes=["users:read", "roles:read"]
         )
         assert len(api_key.scopes) == 2
         assert "users:read" in api_key.scopes
 
     def test_api_key_create_with_expiration(self):
         """Test API key creation with expiration."""
-        api_key = APIKeyCreate(
-            name="Temporary Key",
-            expires_in_days=30
-        )
+        api_key = APIKeyCreate(name="Temporary Key", expires_in_days=30)
         assert api_key.expires_in_days == 30
 
     def test_api_key_create_full(self):
@@ -48,7 +45,7 @@ class TestAPIKeyCreate:
         api_key = APIKeyCreate(
             name="Full Config Key",
             scopes=["users:*", "roles:*", "tenants:read"],
-            expires_in_days=90
+            expires_in_days=90,
         )
         assert api_key.name == "Full Config Key"
         assert len(api_key.scopes) == 3
@@ -84,7 +81,7 @@ class TestAPIKeyCreate:
         # Minimum valid
         key_min = APIKeyCreate(name="Min", expires_in_days=1)
         assert key_min.expires_in_days == 1
-        
+
         # Maximum valid
         key_max = APIKeyCreate(name="Max", expires_in_days=365)
         assert key_max.expires_in_days == 365
@@ -95,7 +92,7 @@ class TestAPIKeyResponse:
 
     def test_api_key_response_valid(self):
         """Test valid API key response."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = APIKeyResponse(
             id=uuid4(),
             name="Production Key",
@@ -105,7 +102,7 @@ class TestAPIKeyResponse:
             expires_at=None,
             last_used_at=None,
             usage_count=0,
-            created_at=now
+            created_at=now,
         )
         assert response.name == "Production Key"
         assert response.is_active is True
@@ -113,7 +110,7 @@ class TestAPIKeyResponse:
 
     def test_api_key_response_with_usage(self):
         """Test API key response with usage data."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = APIKeyResponse(
             id=uuid4(),
             name="Active Key",
@@ -123,14 +120,14 @@ class TestAPIKeyResponse:
             expires_at=now,
             last_used_at=now,
             usage_count=1500,
-            created_at=now
+            created_at=now,
         )
         assert response.usage_count == 1500
         assert response.last_used_at == now
 
     def test_api_key_response_revoked(self):
         """Test revoked API key response."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = APIKeyResponse(
             id=uuid4(),
             name="Revoked Key",
@@ -138,7 +135,7 @@ class TestAPIKeyResponse:
             scopes=[],
             is_active=False,
             usage_count=100,
-            created_at=now
+            created_at=now,
         )
         assert response.is_active is False
 
@@ -148,7 +145,7 @@ class TestAPIKeyCreatedResponse:
 
     def test_api_key_created_response(self):
         """Test newly created API key response."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = APIKeyCreatedResponse(
             id=uuid4(),
             name="New Key",
@@ -156,14 +153,16 @@ class TestAPIKeyCreatedResponse:
             key="pk_live_abc123xyz789",
             scopes=["users:read", "roles:read"],
             expires_at=None,
-            created_at=now
+            created_at=now,
         )
         assert response.key == "pk_live_abc123xyz789"
-        assert response.warning == "Store this key securely. It will not be shown again."
+        assert (
+            response.warning == "Store this key securely. It will not be shown again."
+        )
 
     def test_api_key_created_response_with_expiration(self):
         """Test created key with expiration."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = APIKeyCreatedResponse(
             id=uuid4(),
             name="Temp Key",
@@ -171,13 +170,13 @@ class TestAPIKeyCreatedResponse:
             key="pk_test_tempkey123",
             scopes=[],
             expires_at=now,
-            created_at=now
+            created_at=now,
         )
         assert response.expires_at == now
 
     def test_api_key_created_response_custom_warning(self):
         """Test created key with custom warning."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = APIKeyCreatedResponse(
             id=uuid4(),
             name="Key",
@@ -185,7 +184,7 @@ class TestAPIKeyCreatedResponse:
             key="pk_key",
             scopes=[],
             created_at=now,
-            warning="Custom warning message"
+            warning="Custom warning message",
         )
         assert response.warning == "Custom warning message"
 
@@ -195,7 +194,7 @@ class TestAPIKeyListResponse:
 
     def test_api_key_list_response(self):
         """Test API key list response."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = APIKeyListResponse(
             items=[
                 APIKeyResponse(
@@ -205,7 +204,7 @@ class TestAPIKeyListResponse:
                     scopes=[],
                     is_active=True,
                     usage_count=0,
-                    created_at=now
+                    created_at=now,
                 ),
                 APIKeyResponse(
                     id=uuid4(),
@@ -214,10 +213,10 @@ class TestAPIKeyListResponse:
                     scopes=["users:read"],
                     is_active=False,
                     usage_count=50,
-                    created_at=now
-                )
+                    created_at=now,
+                ),
             ],
-            total=2
+            total=2,
         )
         assert len(response.items) == 2
         assert response.total == 2
@@ -230,7 +229,7 @@ class TestAPIKeyListResponse:
 
     def test_api_key_list_response_mixed_status(self):
         """Test list with mixed active/revoked keys."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         active_key = APIKeyResponse(
             id=uuid4(),
             name="Active",
@@ -238,7 +237,7 @@ class TestAPIKeyListResponse:
             scopes=[],
             is_active=True,
             usage_count=0,
-            created_at=now
+            created_at=now,
         )
         revoked_key = APIKeyResponse(
             id=uuid4(),
@@ -247,12 +246,12 @@ class TestAPIKeyListResponse:
             scopes=[],
             is_active=False,
             usage_count=100,
-            created_at=now
+            created_at=now,
         )
         response = APIKeyListResponse(items=[active_key, revoked_key], total=2)
-        
+
         active_count = sum(1 for k in response.items if k.is_active)
         revoked_count = sum(1 for k in response.items if not k.is_active)
-        
+
         assert active_count == 1
         assert revoked_count == 1

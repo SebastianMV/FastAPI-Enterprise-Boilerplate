@@ -7,14 +7,12 @@ Unit tests for AuditLog domain entity.
 Tests for audit log functionality including changes detection.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
 
-import pytest
-
 from app.domain.entities.audit_log import (
-    AuditLog,
     AuditAction,
+    AuditLog,
     AuditResourceType,
 )
 
@@ -87,7 +85,7 @@ class TestAuditLog:
             action=AuditAction.LOGIN,
             resource_type=AuditResourceType.USER,
         )
-        
+
         assert log.id is not None
         assert log.action == AuditAction.LOGIN
         assert log.resource_type == AuditResourceType.USER
@@ -96,7 +94,7 @@ class TestAuditLog:
     def test_default_values(self) -> None:
         """Test default values."""
         log = AuditLog()
-        
+
         assert log.action == AuditAction.READ
         assert log.resource_type == AuditResourceType.SYSTEM
         assert log.actor_id is None
@@ -122,7 +120,7 @@ class TestAuditLog:
             action=AuditAction.CREATE,
             resource_type=AuditResourceType.USER,
         )
-        
+
         assert log.actor_id == actor_id
         assert log.actor_email == "admin@example.com"
         assert log.actor_ip == "192.168.1.100"
@@ -137,7 +135,7 @@ class TestAuditLog:
             resource_id=resource_id,
             resource_name="john.doe@example.com",
         )
-        
+
         assert log.resource_id == resource_id
         assert log.resource_name == "john.doe@example.com"
 
@@ -149,7 +147,7 @@ class TestAuditLog:
             action=AuditAction.UPDATE,
             resource_type=AuditResourceType.ROLE,
         )
-        
+
         assert log.tenant_id == tenant_id
 
     def test_with_change_values(self) -> None:
@@ -160,7 +158,7 @@ class TestAuditLog:
             old_value={"name": "John", "active": True},
             new_value={"name": "Johnny", "active": True},
         )
-        
+
         assert log.old_value == {"name": "John", "active": True}
         assert log.new_value == {"name": "Johnny", "active": True}
 
@@ -175,7 +173,7 @@ class TestAuditLog:
                 "exported_count": 150,
             },
         )
-        
+
         assert log.metadata["request_id"] == "abc123"
         assert log.metadata["correlation_id"] == "xyz789"
         assert log.metadata["exported_count"] == 150
@@ -187,7 +185,7 @@ class TestAuditLog:
             resource_type=AuditResourceType.USER,
             reason="User requested account deletion",
         )
-        
+
         assert log.reason == "User requested account deletion"
 
 
@@ -198,14 +196,14 @@ class TestAuditLogPostInit:
         """Test that naive timestamps get UTC timezone."""
         naive_timestamp = datetime(2025, 1, 15, 12, 0, 0)
         log = AuditLog(timestamp=naive_timestamp)
-        
+
         assert log.timestamp.tzinfo == UTC
 
     def test_aware_timestamp_preserved(self) -> None:
         """Test that aware timestamps are preserved."""
         aware_timestamp = datetime(2025, 1, 15, 12, 0, 0, tzinfo=UTC)
         log = AuditLog(timestamp=aware_timestamp)
-        
+
         assert log.timestamp == aware_timestamp
 
 
@@ -218,7 +216,7 @@ class TestAuditLogChanges:
             action=AuditAction.CREATE,
             new_value={"name": "John"},
         )
-        
+
         assert log.changes is None
 
     def test_changes_with_no_new_value(self) -> None:
@@ -227,7 +225,7 @@ class TestAuditLogChanges:
             action=AuditAction.DELETE,
             old_value={"name": "John"},
         )
-        
+
         assert log.changes is None
 
     def test_changes_detects_modifications(self) -> None:
@@ -237,9 +235,9 @@ class TestAuditLogChanges:
             old_value={"name": "John", "email": "john@example.com"},
             new_value={"name": "Johnny", "email": "john@example.com"},
         )
-        
+
         changes = log.changes
-        
+
         assert changes is not None
         assert "name" in changes
         assert changes["name"] == ("John", "Johnny")
@@ -252,9 +250,9 @@ class TestAuditLogChanges:
             old_value={"name": "John"},
             new_value={"name": "John", "phone": "123-456-7890"},
         )
-        
+
         changes = log.changes
-        
+
         assert changes is not None
         assert "phone" in changes
         assert changes["phone"] == (None, "123-456-7890")
@@ -266,9 +264,9 @@ class TestAuditLogChanges:
             old_value={"name": "John", "phone": "123-456-7890"},
             new_value={"name": "John"},
         )
-        
+
         changes = log.changes
-        
+
         assert changes is not None
         assert "phone" in changes
         assert changes["phone"] == ("123-456-7890", None)
@@ -280,7 +278,7 @@ class TestAuditLogChanges:
             old_value={"name": "John", "active": True},
             new_value={"name": "John", "active": True},
         )
-        
+
         assert log.changes is None
 
     def test_changes_multiple_fields(self) -> None:
@@ -298,9 +296,9 @@ class TestAuditLogChanges:
                 "active": True,
             },
         )
-        
+
         changes = log.changes
-        
+
         assert changes is not None
         assert len(changes) == 3
         assert changes["name"] == ("John", "Johnny")
@@ -315,16 +313,16 @@ class TestAuditLogToDict:
         """Test basic to_dict conversion."""
         log_id = uuid4()
         timestamp = datetime(2025, 1, 15, 12, 0, 0, tzinfo=UTC)
-        
+
         log = AuditLog(
             id=log_id,
             timestamp=timestamp,
             action=AuditAction.LOGIN,
             resource_type=AuditResourceType.USER,
         )
-        
+
         result = log.to_dict()
-        
+
         assert result["id"] == str(log_id)
         assert result["timestamp"] == timestamp.isoformat()
         assert result["action"] == "LOGIN"
@@ -340,9 +338,9 @@ class TestAuditLogToDict:
             action=AuditAction.CREATE,
             resource_type=AuditResourceType.ROLE,
         )
-        
+
         result = log.to_dict()
-        
+
         assert result["actor_id"] == str(actor_id)
         assert result["actor_email"] == "test@example.com"
         assert result["actor_ip"] == "10.0.0.1"
@@ -355,9 +353,9 @@ class TestAuditLogToDict:
             action=AuditAction.UPDATE,
             resource_type=AuditResourceType.TENANT,
         )
-        
+
         result = log.to_dict()
-        
+
         assert result["tenant_id"] == str(tenant_id)
 
     def test_to_dict_null_ids(self) -> None:
@@ -366,9 +364,9 @@ class TestAuditLogToDict:
             action=AuditAction.READ,
             resource_type=AuditResourceType.SYSTEM,
         )
-        
+
         result = log.to_dict()
-        
+
         assert result["actor_id"] is None
         assert result["tenant_id"] is None
 
@@ -381,9 +379,9 @@ class TestAuditLogToDict:
             new_value={"name": "New"},
             metadata={"source": "api"},
         )
-        
+
         result = log.to_dict()
-        
+
         assert result["old_value"] == {"name": "Old"}
         assert result["new_value"] == {"name": "New"}
         assert result["metadata"] == {"source": "api"}

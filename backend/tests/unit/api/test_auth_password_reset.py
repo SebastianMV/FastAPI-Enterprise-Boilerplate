@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -18,7 +18,7 @@ class TestForgotPasswordEndpoint:
     @pytest.mark.asyncio
     async def test_forgot_password_user_exists(self) -> None:
         """Test forgot password with existing user."""
-        from app.api.v1.endpoints.auth import forgot_password, _password_reset_tokens
+        from app.api.v1.endpoints.auth import _password_reset_tokens, forgot_password
         from app.api.v1.schemas.auth import ForgotPasswordRequest
         from app.domain.value_objects.email import Email
 
@@ -76,7 +76,7 @@ class TestForgotPasswordEndpoint:
     @pytest.mark.asyncio
     async def test_forgot_password_inactive_user(self) -> None:
         """Test forgot password with inactive user doesn't send email."""
-        from app.api.v1.endpoints.auth import forgot_password, _password_reset_tokens
+        from app.api.v1.endpoints.auth import _password_reset_tokens, forgot_password
         from app.api.v1.schemas.auth import ForgotPasswordRequest
 
         request = ForgotPasswordRequest(email="inactive@example.com")
@@ -107,7 +107,7 @@ class TestVerifyResetTokenEndpoint:
     @pytest.mark.asyncio
     async def test_verify_valid_token(self) -> None:
         """Test verifying a valid reset token."""
-        from app.api.v1.endpoints.auth import verify_reset_token, _password_reset_tokens
+        from app.api.v1.endpoints.auth import _password_reset_tokens, verify_reset_token
         from app.api.v1.schemas.auth import VerifyResetTokenRequest
 
         # Create a valid token
@@ -131,7 +131,8 @@ class TestVerifyResetTokenEndpoint:
     async def test_verify_expired_token(self) -> None:
         """Test verifying an expired reset token."""
         from fastapi import HTTPException
-        from app.api.v1.endpoints.auth import verify_reset_token, _password_reset_tokens
+
+        from app.api.v1.endpoints.auth import _password_reset_tokens, verify_reset_token
         from app.api.v1.schemas.auth import VerifyResetTokenRequest
 
         # Create an expired token
@@ -154,6 +155,7 @@ class TestVerifyResetTokenEndpoint:
     async def test_verify_invalid_token(self) -> None:
         """Test verifying a non-existent token."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.auth import verify_reset_token
         from app.api.v1.schemas.auth import VerifyResetTokenRequest
 
@@ -172,7 +174,7 @@ class TestResetPasswordEndpoint:
     @pytest.mark.asyncio
     async def test_reset_password_success(self) -> None:
         """Test successful password reset."""
-        from app.api.v1.endpoints.auth import reset_password, _password_reset_tokens
+        from app.api.v1.endpoints.auth import _password_reset_tokens, reset_password
         from app.api.v1.schemas.auth import ResetPasswordRequest
 
         user_id = uuid4()
@@ -207,7 +209,9 @@ class TestResetPasswordEndpoint:
 
                 # Email service is imported inside the function
                 with patch.object(
-                    __import__("app.infrastructure.email", fromlist=["get_email_service"]),
+                    __import__(
+                        "app.infrastructure.email", fromlist=["get_email_service"]
+                    ),
                     "get_email_service",
                 ) as mock_email:
                     mock_service = MagicMock()
@@ -224,7 +228,8 @@ class TestResetPasswordEndpoint:
     async def test_reset_password_weak_password(self) -> None:
         """Test reset password with weak new password."""
         from fastapi import HTTPException
-        from app.api.v1.endpoints.auth import reset_password, _password_reset_tokens
+
+        from app.api.v1.endpoints.auth import _password_reset_tokens, reset_password
         from app.api.v1.schemas.auth import ResetPasswordRequest
 
         token = "reset-weak-token"
@@ -255,7 +260,8 @@ class TestResetPasswordEndpoint:
     async def test_reset_password_user_not_found(self) -> None:
         """Test reset password when user no longer exists."""
         from fastapi import HTTPException
-        from app.api.v1.endpoints.auth import reset_password, _password_reset_tokens
+
+        from app.api.v1.endpoints.auth import _password_reset_tokens, reset_password
         from app.api.v1.schemas.auth import ResetPasswordRequest
 
         user_id = uuid4()

@@ -7,15 +7,13 @@ Unit tests for WebSocket domain ports.
 Tests for WebSocket message and connection info structures.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
 
-import pytest
-
 from app.domain.ports.websocket import (
+    ConnectionInfo,
     MessageType,
     WebSocketMessage,
-    ConnectionInfo,
 )
 
 
@@ -53,7 +51,7 @@ class TestWebSocketMessage:
     def test_create_basic_message(self) -> None:
         """Test creating basic message."""
         message = WebSocketMessage(type=MessageType.PING)
-        
+
         assert message.type == MessageType.PING
         assert message.payload == {}
         assert message.sender_id is None
@@ -67,7 +65,7 @@ class TestWebSocketMessage:
         sender_id = uuid4()
         recipient_id = uuid4()
         message_id = uuid4()
-        
+
         message = WebSocketMessage(
             type=MessageType.NOTIFICATION,
             payload={"content": "Hello!"},
@@ -75,7 +73,7 @@ class TestWebSocketMessage:
             recipient_id=recipient_id,
             message_id=message_id,
         )
-        
+
         assert message.type == MessageType.NOTIFICATION
         assert message.payload["content"] == "Hello!"
         assert message.sender_id == sender_id
@@ -88,13 +86,13 @@ class TestWebSocketMessage:
             type=MessageType.NOTIFICATION,
             room_id="room_123",
         )
-        
+
         assert message.room_id == "room_123"
 
     def test_create_notification_message(self) -> None:
         """Test creating notification message."""
         recipient = uuid4()
-        
+
         message = WebSocketMessage(
             type=MessageType.NOTIFICATION,
             payload={
@@ -103,7 +101,7 @@ class TestWebSocketMessage:
             },
             recipient_id=recipient,
         )
-        
+
         assert message.type == MessageType.NOTIFICATION
         assert message.payload["title"] == "New message"
 
@@ -114,9 +112,9 @@ class TestWebSocketMessageToDict:
     def test_to_dict_basic(self) -> None:
         """Test basic to_dict conversion."""
         message = WebSocketMessage(type=MessageType.PONG)
-        
+
         result = message.to_dict()
-        
+
         assert result["type"] == "pong"
         assert result["payload"] == {}
         assert result["sender_id"] is None
@@ -130,16 +128,16 @@ class TestWebSocketMessageToDict:
         sender = uuid4()
         recipient = uuid4()
         msg_id = uuid4()
-        
+
         message = WebSocketMessage(
             type=MessageType.NOTIFICATION,
             sender_id=sender,
             recipient_id=recipient,
             message_id=msg_id,
         )
-        
+
         result = message.to_dict()
-        
+
         assert result["sender_id"] == str(sender)
         assert result["recipient_id"] == str(recipient)
         assert result["message_id"] == str(msg_id)
@@ -153,9 +151,9 @@ class TestWebSocketMessageToDict:
                 "data": {"key": "value"},
             },
         )
-        
+
         result = message.to_dict()
-        
+
         assert result["payload"]["title"] == "Test"
         assert result["payload"]["data"]["key"] == "value"
 
@@ -165,9 +163,9 @@ class TestWebSocketMessageToDict:
             type=MessageType.TENANT_BROADCAST,
             room_id="tenant_123",
         )
-        
+
         result = message.to_dict()
-        
+
         assert result["room_id"] == "tenant_123"
 
 
@@ -181,9 +179,9 @@ class TestWebSocketMessageFromDict:
             "payload": {},
             "timestamp": datetime.now(UTC).isoformat(),
         }
-        
+
         message = WebSocketMessage.from_dict(data)
-        
+
         assert message.type == MessageType.PING
         assert message.payload == {}
 
@@ -192,7 +190,7 @@ class TestWebSocketMessageFromDict:
         sender = uuid4()
         recipient = uuid4()
         msg_id = uuid4()
-        
+
         data = {
             "type": "notification",
             "payload": {"content": "Hello"},
@@ -201,9 +199,9 @@ class TestWebSocketMessageFromDict:
             "message_id": str(msg_id),
             "timestamp": datetime.now(UTC).isoformat(),
         }
-        
+
         message = WebSocketMessage.from_dict(data)
-        
+
         assert message.sender_id == sender
         assert message.recipient_id == recipient
         assert message.message_id == msg_id
@@ -215,9 +213,9 @@ class TestWebSocketMessageFromDict:
             "room_id": "room_456",
             "timestamp": datetime.now(UTC).isoformat(),
         }
-        
+
         message = WebSocketMessage.from_dict(data)
-        
+
         assert message.room_id == "room_456"
 
     def test_from_dict_null_ids(self) -> None:
@@ -229,9 +227,9 @@ class TestWebSocketMessageFromDict:
             "message_id": None,
             "timestamp": datetime.now(UTC).isoformat(),
         }
-        
+
         message = WebSocketMessage.from_dict(data)
-        
+
         assert message.sender_id is None
         assert message.recipient_id is None
         assert message.message_id is None
@@ -241,9 +239,9 @@ class TestWebSocketMessageFromDict:
         data = {
             "type": "ping",
         }
-        
+
         message = WebSocketMessage.from_dict(data)
-        
+
         assert message.timestamp is not None
 
     def test_roundtrip_conversion(self) -> None:
@@ -256,10 +254,10 @@ class TestWebSocketMessageFromDict:
             room_id="room_123",
             message_id=uuid4(),
         )
-        
+
         data = original.to_dict()
         restored = WebSocketMessage.from_dict(data)
-        
+
         assert restored.type == original.type
         assert restored.payload == original.payload
         assert restored.sender_id == original.sender_id
@@ -275,13 +273,13 @@ class TestConnectionInfo:
         """Test creating basic connection info."""
         user_id = uuid4()
         tenant_id = uuid4()
-        
+
         info = ConnectionInfo(
             user_id=user_id,
             tenant_id=tenant_id,
             connection_id="conn_123",
         )
-        
+
         assert info.user_id == user_id
         assert info.tenant_id == tenant_id
         assert info.connection_id == "conn_123"
@@ -294,7 +292,7 @@ class TestConnectionInfo:
             tenant_id=None,
             connection_id="conn_456",
         )
-        
+
         assert info.tenant_id is None
         assert info.rooms == set()
         assert info.metadata == {}
@@ -307,7 +305,7 @@ class TestConnectionInfo:
             connection_id="conn_789",
             rooms={"room1", "room2", "room3"},
         )
-        
+
         assert len(info.rooms) == 3
         assert "room1" in info.rooms
         assert "room2" in info.rooms
@@ -323,7 +321,7 @@ class TestConnectionInfo:
                 "ip_address": "192.168.1.1",
             },
         )
-        
+
         assert info.metadata["user_agent"] == "Mozilla/5.0"
         assert info.metadata["ip_address"] == "192.168.1.1"
 
@@ -336,7 +334,7 @@ class TestConnectionInfo:
             connection_id="conn_def",
         )
         after = datetime.now(UTC)
-        
+
         assert before <= info.connected_at <= after
 
     def test_rooms_are_mutable(self) -> None:
@@ -346,9 +344,9 @@ class TestConnectionInfo:
             tenant_id=uuid4(),
             connection_id="conn_ghi",
         )
-        
+
         info.rooms.add("new_room")
-        
+
         assert "new_room" in info.rooms
 
     def test_without_tenant(self) -> None:
@@ -358,6 +356,5 @@ class TestConnectionInfo:
             tenant_id=None,
             connection_id="conn_jkl",
         )
-        
-        assert info.tenant_id is None
 
+        assert info.tenant_id is None

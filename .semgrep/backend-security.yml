@@ -1,0 +1,472 @@
+# =============================================================================
+# Semgrep Custom Rules — Backend Security
+# =============================================================================
+# Codified lessons from 19 security audits on this project.
+# These rules catch the EXACT patterns that were found repeatedly.
+#
+# Run: semgrep --config .semgrep/ backend/app/
+# =============================================================================
+
+rules:
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 10: Remote Code Execution
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-eval-exec
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: exec(...)
+          - pattern: compile(..., ..., "exec")
+          - pattern: compile(..., ..., "eval")
+    message: >
+      CRITICAL: eval()/exec() detected. This was the source of a sev-10 RCE
+      vulnerability (Audit #153). Use json.loads(), ast.literal_eval(), or
+      structured parsing instead.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 9, B-01 (#153)"
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"
+      category: security
+      confidence: HIGH
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 9: Information Disclosure via Exception Leaking
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-str-exception-in-response
+    patterns:
+      - pattern-either:
+          - pattern: |
+              return {..., "error": str($E), ...}
+          - pattern: |
+              return {..., "detail": str($E), ...}
+          - pattern: |
+              return {..., "message": str($E), ...}
+          - pattern: |
+              raise HTTPException(..., detail=str($E), ...)
+          - pattern: |
+              raise HTTPException(..., detail=f"...${{$E}}...", ...)
+          - pattern: |
+              raise HTTPException(..., detail=f"...${{str($E)}}...", ...)
+          - pattern: JSONResponse(..., content={..., "detail": str($E), ...}, ...)
+          - pattern: JSONResponse(..., content={..., "detail": f"...${{$E}}...", ...}, ...)
+    message: >
+      Do not expose raw exception messages (str(e)) in HTTP responses. This leaks
+      internal details (DB schema, library versions, stack traces). Use a generic
+      error message and log the real error server-side. Found in 40+ locations
+      across Audits 3-13.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audits 3-13 (40+ occurrences)"
+      cwe: "CWE-209: Generation of Error Message Containing Sensitive Information"
+      category: security
+      confidence: HIGH
+
+  - id: no-fstring-in-exception-response
+    patterns:
+      - pattern-either:
+          - pattern: raise HTTPException(..., detail=f"...{$E}...")
+          - pattern: JSONResponse(..., content={..., "detail": f"...{$E}..."}, ...)
+    message: >
+      f-string in HTTP error detail may interpolate sensitive data. Use a static
+      generic message instead.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audits 5-8"
+      cwe: "CWE-209"
+      category: security
+      confidence: MEDIUM
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 9: Authentication & Session Management
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-tokens-in-json-response
+    patterns:
+      - pattern-either:
+          - pattern: |
+              return {..., "access_token": $TOKEN, ...}
+          - pattern: |
+              return {..., "refresh_token": $TOKEN, ...}
+          - pattern: JSONResponse(..., content={..., "access_token": $TOKEN, ...}, ...)
+    message: >
+      Never return JWT tokens in JSON response bodies. Tokens must be set as
+      HttpOnly cookies to prevent XSS token theft. Use response.set_cookie()
+      with httponly=True, secure=True, samesite="lax".
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 1-2 (HttpOnly cookie migration)"
+      cwe: "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      category: security
+      confidence: HIGH
+
+  - id: password-change-must-revoke-sessions
+    patterns:
+      - pattern: |
+          async def $FUNC(...):
+              ...
+              hash_password(...)
+              ...
+    pattern-not:
+      - pattern: |
+          async def $FUNC(...):
+              ...
+              hash_password(...)
+              ...
+              revoke_all(...)
+              ...
+    message: >
+      Password changes must invalidate all existing sessions via
+      session_repo.revoke_all(). Otherwise, stolen sessions remain valid after
+      password reset (Audit 5, B-02/B-03).
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 5, B-02, B-03"
+      cwe: "CWE-613: Insufficient Session Expiration"
+      category: security
+      confidence: LOW
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Authorization & Tenant Isolation
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: endpoint-needs-permission-check
+    patterns:
+      - pattern: |
+          @router.$METHOD(...)
+          async def $FUNC(..., $USER: CurrentUser, ...):
+              ...
+      - pattern-not: |
+          @router.$METHOD(...)
+          async def $FUNC(..., $USER: CurrentUser, ..., $PERM: ..., ...):
+              ...
+    message: >
+      API endpoint uses CurrentUser but has no require_permission() dependency.
+      Most endpoints should use require_permission("resource", "action") instead
+      of just CurrentUser, to enforce ACL checks. Found in Audits 4-9 across
+      dashboard, audit logs, data exchange, reports, and search endpoints.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audits 4-9 (dashboard, audit_logs, data_exchange, reports, search)"
+      cwe: "CWE-862: Missing Authorization"
+      category: security
+      confidence: LOW
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: SQL Injection & Query Safety
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-raw-sql-fstring
+    patterns:
+      - pattern-either:
+          - pattern: text(f"...")
+          - pattern: text(f'...')
+          - pattern: $DB.execute(f"...")
+          - pattern: $DB.execute(f'...')
+    message: >
+      f-string in SQL query detected. Use parameterized queries with
+      text("... :param ...").bindparams(param=value) or SQLAlchemy ORM to
+      prevent SQL injection. The LIKE wildcard injection in postgres_fts.py
+      (Audit 10, B-07) was caused by this pattern.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 10, B-07; Audit 9, B-09"
+      cwe: "CWE-89: SQL Injection"
+      category: security
+      confidence: HIGH
+
+  - id: like-wildcard-escape
+    patterns:
+      - pattern-either:
+          - pattern: |
+              ...ilike(f"%{$VAR}%")
+          - pattern: |
+              ...like(f"%{$VAR}%")
+          - pattern: |
+              ...contains($VAR)
+    message: >
+      LIKE/ILIKE with user input must escape wildcards (%, _, \). Use a helper
+      like _escape_like(value) and append ESCAPE '\\' to the clause.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 10, B-07; Audit 12, B-03"
+      cwe: "CWE-89"
+      category: security
+      confidence: MEDIUM
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Timing Attacks
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: timing-safe-comparison-for-tokens
+    patterns:
+      - pattern-either:
+          - pattern: |
+              if $TOKEN == $OTHER: ...
+          - pattern: |
+              if $OTHER == $TOKEN: ...
+          - pattern: |
+              $TOKEN != $OTHER
+    pattern-where-python: >
+      any(w in str(meta_vars["$TOKEN"]) for w in
+      ["token", "csrf", "secret", "otp", "code", "verification", "jti"])
+    message: >
+      Token/secret comparison must use hmac.compare_digest() to prevent timing
+      attacks. Direct == comparison leaks information about the token value
+      through response timing. Fixed in Audits 7, B-05 (#121, #122).
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 7, B-05 (#121, #122)"
+      cwe: "CWE-208: Observable Timing Discrepancy"
+      category: security
+      confidence: MEDIUM
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Logging Hygiene
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-stdlib-logging
+    patterns:
+      - pattern: import logging
+    pattern-not-inside: |
+      # This module provides the centralized logging wrapper
+      ...
+    message: >
+      Use get_logger() from app.infrastructure.logging instead of stdlib logging.
+      Direct logging import bypasses structured logging configuration. Migrated
+      in Audit 10 (#110, 15 files).
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 10, #110 (15 files migrated)"
+      category: quality
+      confidence: HIGH
+    paths:
+      include:
+        - backend/app/
+
+  - id: no-fstring-in-logger
+    patterns:
+      - pattern-either:
+          - pattern: logger.info(f"...")
+          - pattern: logger.debug(f"...")
+          - pattern: logger.warning(f"...")
+          - pattern: logger.error(f"...")
+          - pattern: logger.critical(f"...")
+          - pattern: $LOG.info(f"...")
+          - pattern: $LOG.debug(f"...")
+          - pattern: $LOG.warning(f"...")
+          - pattern: $LOG.error(f"...")
+          - pattern: $LOG.critical(f"...")
+    message: >
+      Use lazy %s formatting in logger calls instead of f-strings:
+        logger.info("Processing %s items", count)   ← correct
+        logger.info(f"Processing {count} items")     ← wrong
+      f-strings are evaluated even when the log level is disabled, wasting CPU.
+      Migrated 44+ calls in Audit 10 (#115).
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 10, #115 (44+ calls migrated)"
+      cwe: "CWE-117: Improper Output Neutralization for Logs"
+      category: quality
+      confidence: HIGH
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Cryptographic Safety
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: hashlib-usedforsecurity
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5(...)
+          - pattern: hashlib.sha1(...)
+    pattern-not:
+      - pattern: hashlib.md5(..., usedforsecurity=False)
+      - pattern: hashlib.sha1(..., usedforsecurity=False)
+    message: >
+      hashlib.md5() and hashlib.sha1() must include usedforsecurity=False when
+      used for non-security purposes (cache keys, content hashing). This makes
+      intent explicit and avoids FIPS compliance issues. Fixed in Audit 10, B-06.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 10, B-06 (#309)"
+      category: security
+      confidence: HIGH
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Open Redirect
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: redirect-url-validation
+    patterns:
+      - pattern-either:
+          - pattern: RedirectResponse(url=$URL, ...)
+          - pattern: RedirectResponse($URL, ...)
+    pattern-not:
+      - pattern: RedirectResponse(url=f"{settings.$SETTING}...", ...)
+    message: >
+      Redirect URL must be validated against an allowlist (e.g., settings.FRONTEND_URL)
+      to prevent open redirect attacks. Do not redirect to user-supplied URLs directly.
+      Fixed in Audit 5, B-05.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 5, B-05 (#157)"
+      cwe: "CWE-601: URL Redirection to Untrusted Site"
+      category: security
+      confidence: MEDIUM
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 7: datetime Safety
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-utcnow
+    patterns:
+      - pattern-either:
+          - pattern: datetime.utcnow()
+          - pattern: datetime.datetime.utcnow()
+    message: >
+      datetime.utcnow() is deprecated in Python 3.12+. Use
+      datetime.now(datetime.UTC) instead for timezone-aware datetimes.
+      Migrated 6 occurrences in Audit 10, B-01.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 10, B-01 (#304)"
+      cwe: "CWE-1284"
+      category: quality
+      confidence: HIGH
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 7: Blocking Calls in Async Context
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-sync-redis-in-async
+    patterns:
+      - pattern: import redis
+    pattern-not:
+      - pattern: import redis.asyncio
+    message: >
+      Use redis.asyncio instead of sync redis in async code. Sync Redis blocks
+      the event loop. Migrated MFA module in Audit 7, #69.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 7, #69"
+      category: quality
+      confidence: MEDIUM
+    paths:
+      include:
+        - backend/app/
+
+  - id: no-subprocess-in-api
+    patterns:
+      - pattern-either:
+          - pattern: subprocess.run(...)
+          - pattern: subprocess.call(...)
+          - pattern: subprocess.Popen(...)
+          - pattern: subprocess.check_output(...)
+    message: >
+      subprocess calls block the async event loop. Use
+      asyncio.create_subprocess_exec() or asyncio.create_subprocess_shell()
+      instead. Migrated in Audit 10, #117.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 10, #117"
+      category: quality
+      confidence: MEDIUM
+    paths:
+      include:
+        - backend/app/api/
+        - backend/app/application/
+        - backend/app/infrastructure/
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Reflected User Input in Errors (Audit 14)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-reflected-input-in-error
+    patterns:
+      - pattern-either:
+          - pattern: raise HTTPException(..., detail=f"...{$PATH_PARAM}...")
+          - pattern: raise HTTPException(..., detail=f"...{$QUERY}...")
+          - pattern: |
+              raise HTTPException(..., detail={..., "message": f"...{$VAR}...", ...})
+    message: >
+      Do not reflect user-supplied input (path params, query params, request body)
+      in error messages. This enables error-based injection and information leaking.
+      Use generic static messages: "Resource not found", "Invalid input".
+      Found in 15+ locations in Audit 14 (roles, users, tenants, audit_logs).
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 14, B-09 through B-12, B-21, B-24"
+      cwe: "CWE-209"
+      category: security
+      confidence: MEDIUM
+
+  - id: unsafe-format-string-interpolation
+    patterns:
+      - pattern: $MSG.format(**$PARAMS)
+    message: >
+      str.format(**params) with untrusted keys is vulnerable to format string
+      injection ({0.__class__.__mro__}). Use string.Template or validate field
+      names against attribute/index access patterns. Fixed in Audit 14, B-14.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 14, B-14"
+      cwe: "CWE-134: Use of Externally-Controlled Format String"
+      category: security
+      confidence: HIGH
+
+  - id: hasattr-dict-fallback
+    patterns:
+      - pattern: |
+          if hasattr($OBJ, "__dict__"):
+              ... = $OBJ.__dict__
+    message: >
+      obj.__dict__ as a JSON serialization fallback leaks all object attributes,
+      including private fields and credentials. Use explicit field whitelists or
+      Pydantic model_dump(). Fixed in Audit 14, B-23.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 14, B-23"
+      cwe: "CWE-200: Exposure of Sensitive Information"
+      category: security
+      confidence: HIGH
+
+  - id: client-ip-without-forwarded-for
+    patterns:
+      - pattern: $REQ.client.host
+    pattern-not-inside: |
+      ... = $REQ.headers.get("X-Forwarded-For")
+      ...
+    message: >
+      request.client.host returns the proxy IP (usually nginx/127.0.0.1)
+      instead of the real client IP. Extract from X-Forwarded-For header first:
+      forwarded = request.headers.get("X-Forwarded-For")
+      ip = forwarded.split(",")[0].strip() if forwarded else request.client.host
+      Fixed in Audit 14, B-15.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 14, B-15"
+      cwe: "CWE-348: Use of Less Trusted Source"
+      category: security
+      confidence: MEDIUM

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { usersService } from '@/services/api';
+import api from '@/services/api';
 import ConnectedAccounts from '@/components/profile/ConnectedAccounts';
 import { ConfirmModal, AlertModal } from '@/components/common/Modal';
 import { 
@@ -84,7 +85,7 @@ export default function ProfilePage() {
   // Fetch user data on mount
   useEffect(() => {
     if (!user) {
-      fetchUser().catch(console.error);
+      fetchUser().catch(() => {});
     }
   }, [user, fetchUser]);
 
@@ -127,11 +128,11 @@ export default function ProfilePage() {
         message: t('profile.updateSuccess'),
         variant: 'success',
       });
-    } catch (error) {
+    } catch {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error instanceof Error ? error.message : t('profile.updateError'),
+        message: t('profile.updateError'),
         variant: 'error',
       });
     } finally {
@@ -154,8 +155,8 @@ export default function ProfilePage() {
     if (!allowedTypes.includes(file.type)) {
       setAlertModal({
         isOpen: true,
-        title: 'Invalid File',
-        message: 'Please select a valid image file (JPEG, PNG, GIF, or WebP).',
+        title: t('common.error'),
+        message: t('profile.invalidFileType'),
         variant: 'error',
       });
       return;
@@ -166,8 +167,8 @@ export default function ProfilePage() {
     if (file.size > maxSize) {
       setAlertModal({
         isOpen: true,
-        title: 'File Too Large',
-        message: 'Image must be less than 5MB.',
+        title: t('common.error'),
+        message: t('profile.fileTooLarge'),
         variant: 'error',
       });
       return;
@@ -179,15 +180,15 @@ export default function ProfilePage() {
       await fetchUser();
       setAlertModal({
         isOpen: true,
-        title: 'Success',
-        message: 'Avatar updated successfully!',
+        title: t('common.success'),
+        message: t('profile.avatarUpdateSuccess'),
         variant: 'success',
       });
-    } catch (error) {
+    } catch {
       setAlertModal({
         isOpen: true,
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to upload avatar',
+        title: t('common.error'),
+        message: t('profile.avatarUploadError'),
         variant: 'error',
       });
     } finally {
@@ -212,11 +213,11 @@ export default function ProfilePage() {
         message: t('profile.avatarDeleteSuccess'),
         variant: 'success',
       });
-    } catch (error) {
+    } catch {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error instanceof Error ? error.message : t('profile.avatarDeleteError'),
+        message: t('profile.avatarDeleteError'),
         variant: 'error',
       });
     } finally {
@@ -230,36 +231,25 @@ export default function ProfilePage() {
     setErrorMessage(null);
 
     try {
-      // Call password change endpoint
-      const response = await fetch('/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')!).state.accessToken : ''}`,
-        },
-        body: JSON.stringify({
-          current_password: data.current_password,
-          new_password: data.new_password,
-        }),
+      // Call password change endpoint using the configured axios instance
+      // (sends HttpOnly cookies + CSRF token automatically)
+      await api.post('/auth/change-password', {
+        current_password: data.current_password,
+        new_password: data.new_password,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail?.message || 'Failed to change password');
-      }
 
       setSuccessMessage(t('profile.passwordChangeSuccess'));
       resetPasswordForm();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : t('profile.passwordChangeError'));
+    } catch {
+      setErrorMessage(t('profile.passwordChangeError'));
     } finally {
       setIsPasswordLoading(false);
     }
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return t('common.never');
+    return new Date(dateString).toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -319,7 +309,7 @@ export default function ProfilePage() {
                 disabled={isAvatarLoading}
                 className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
                 type="button"
-                title="Change photo"
+                title={t('profile.changePhoto')}
               >
                 {isAvatarLoading ? (
                   <Loader2 className="w-6 h-6 text-white animate-spin" />
@@ -342,7 +332,7 @@ export default function ProfilePage() {
                 disabled={isAvatarLoading}
                 className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50"
                 type="button"
-                title="Remove photo"
+                title={t('profile.removePhoto')}
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -567,6 +557,7 @@ export default function ProfilePage() {
                 <input
                   type="password"
                   className="input"
+                  autoComplete="current-password"
                   {...registerPassword('current_password', { required: t('validation.required') })}
                 />
                 {passwordErrors.current_password && (
@@ -580,11 +571,12 @@ export default function ProfilePage() {
                 <input
                   type="password"
                   className="input"
+                  autoComplete="new-password"
                   {...registerPassword('new_password', { 
                     required: t('validation.required'),
                     minLength: { value: 8, message: t('validation.passwordMin', { min: 8 }) },
                     pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
                       message: t('validation.passwordStrength')
                     }
                   })}
@@ -600,6 +592,7 @@ export default function ProfilePage() {
                 <input
                   type="password"
                   className="input"
+                  autoComplete="new-password"
                   {...registerPassword('confirm_password', { 
                     required: t('validation.required'),
                     validate: value => value === newPassword || t('profile.passwordsNoMatch')
@@ -635,33 +628,33 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Two-Factor Authentication
+                {t('profile.twoFactorAuth')}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Protect your account with an additional layer of security using TOTP.
+                {t('profile.twoFactorDescription')}
               </p>
               <Link
                 to="/security/mfa"
                 className="btn-secondary w-full text-center"
               >
                 <Shield className="w-4 h-4 mr-2" />
-                Configure 2FA
+                {t('profile.configureMfa')}
               </Link>
             </div>
 
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Active Sessions
+                {t('profile.activeSessions')}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Manage your active login sessions across devices.
+                {t('profile.activeSessionsDescription')}
               </p>
-              <button
-                className="btn-secondary w-full"
-                onClick={() => alert('Coming soon!')}
+              <Link
+                to="/sessions"
+                className="btn-secondary w-full inline-flex items-center justify-center"
               >
-                View All Sessions
-              </button>
+                {t('profile.viewAllSessions')}
+              </Link>
             </div>
           </div>
         </div>

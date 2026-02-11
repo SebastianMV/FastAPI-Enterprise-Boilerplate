@@ -37,7 +37,7 @@ WITH CHECK (tenant_id::text = COALESCE(current_setting('app.current_tenant_id', 
 ###  Completed
 
 1. **Migration 006**: Enable RLS on 7 core tables
-   - `users`, `roles`, `api_keys`, `conversations`, `chat_messages`, `notifications`, `audit_logs`
+   - `users`, `roles`, `api_keys`, `notifications`, `audit_logs`
    - Policies for `oauth_connections` and `sso_configurations` (migration 004)
 
 2. **Migration 007**: Create `app_user` database user
@@ -48,7 +48,7 @@ WITH CHECK (tenant_id::text = COALESCE(current_setting('app.current_tenant_id', 
 3. **Migration 008**: Complete CRUD policies
    - `FOR ALL` with `USING` + `WITH CHECK`
    - Supports SELECT, INSERT, UPDATE, DELETE
-   - Chat messages use FK lookup to conversations
+   - Notifications use user_id for isolation
 
 4. **SQLAlchemy Event Listener**: Automatic context configuration
    - Executes on `after_begin` of each session
@@ -68,7 +68,7 @@ WITH CHECK (tenant_id::text = COALESCE(current_setting('app.current_tenant_id', 
 | `roles` | roles_tenant_isolation | FOR ALL |  Active |
 | `api_keys` | api_keys_tenant_isolation | FOR ALL |  Active |
 | `conversations` | conversations_tenant_isolation | FOR ALL |  Active |
-| `chat_messages` | chat_messages_tenant_isolation | FOR ALL (FK) |  Active |
+
 | `notifications` | notifications_tenant_isolation | FOR ALL |  Active |
 | `audit_logs` | audit_logs_tenant_isolation | FOR ALL |  Active |
 | `oauth_connections` | oauth_connections_tenant_isolation | FOR SELECT |  Active |
@@ -180,7 +180,7 @@ Response (only tenant's data)
 2.  **INSERT Protection**: Cannot insert into another tenant
 3.  **UPDATE Protection**: Cannot modify another tenant's data
 4.  **DELETE Protection**: Cannot delete another tenant's data
-5.  **FK Consistency**: Chat messages respect tenant via conversation FK
+5.  **User Isolation**: Notifications are isolated by user and tenant
 6.  **Policy Active**: 9 policies confirmed in `pg_policies`
 
 ### Critical Use Cases

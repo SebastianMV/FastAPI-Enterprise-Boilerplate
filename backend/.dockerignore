@@ -1,0 +1,57 @@
+# ==========================
+# Backend .dockerignore
+# ==========================
+
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.python-version
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Virtual environments
+.venv
+venv
+env
+
+# Tests (not needed in production image)
+tests/
+htmlcov/
+coverage.xml
+.coverage
+
+# Storage (runtime data, not build-time)
+storage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files (secrets!)
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+docs/
+LICENSE
+
+# Docker
+Dockerfile*
+docker-compose*
+
+# Scripts (dev-only)
+scripts/
+
+# CI config
+.github/

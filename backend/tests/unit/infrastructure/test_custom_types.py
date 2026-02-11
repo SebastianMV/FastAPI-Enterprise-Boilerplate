@@ -7,14 +7,14 @@ Tests for custom SQLAlchemy type decorators.
 
 import json
 from uuid import UUID, uuid4
-import pytest
-from sqlalchemy.engine import default
+
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.engine import default
 
 from app.infrastructure.database.models.custom_types import (
+    JSONBCompat,
     JSONEncodedList,
     JSONEncodedUUIDList,
-    JSONBCompat,
 )
 
 
@@ -25,7 +25,7 @@ class TestJSONEncodedList:
         """Test loading PostgreSQL dialect implementation."""
         decorator = JSONEncodedList()
         dialect = postgresql.dialect()
-        
+
         impl = decorator.load_dialect_impl(dialect)
         assert impl is not None
 
@@ -33,8 +33,8 @@ class TestJSONEncodedList:
         """Test loading SQLite dialect implementation."""
         decorator = JSONEncodedList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         impl = decorator.load_dialect_impl(dialect)
         assert impl is not None
 
@@ -42,8 +42,8 @@ class TestJSONEncodedList:
         """Test processing None value for bind."""
         decorator = JSONEncodedList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         result = decorator.process_bind_param(None, dialect)
         assert result is None
 
@@ -51,7 +51,7 @@ class TestJSONEncodedList:
         """Test processing list for PostgreSQL."""
         decorator = JSONEncodedList()
         dialect = postgresql.dialect()
-        
+
         permissions = ["users:read", "users:write"]
         result = decorator.process_bind_param(permissions, dialect)
         assert result == permissions
@@ -60,8 +60,8 @@ class TestJSONEncodedList:
         """Test processing list for SQLite."""
         decorator = JSONEncodedList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         permissions = ["users:read", "users:write"]
         result = decorator.process_bind_param(permissions, dialect)
         assert result == '["users:read", "users:write"]'
@@ -71,8 +71,8 @@ class TestJSONEncodedList:
         """Test processing None value from database."""
         decorator = JSONEncodedList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         result = decorator.process_result_value(None, dialect)
         assert result == []
 
@@ -80,17 +80,17 @@ class TestJSONEncodedList:
         """Test processing empty string from SQLite."""
         decorator = JSONEncodedList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
-        result = decorator.process_result_value('', dialect)
+        dialect.name = "sqlite"
+
+        result = decorator.process_result_value("", dialect)
         assert result == []
 
     def test_process_result_value_list_sqlite(self):
         """Test processing JSON list from SQLite."""
         decorator = JSONEncodedList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         json_str = '["users:read", "users:write"]'
         result = decorator.process_result_value(json_str, dialect)
         assert result == ["users:read", "users:write"]
@@ -99,7 +99,7 @@ class TestJSONEncodedList:
         """Test processing list from PostgreSQL."""
         decorator = JSONEncodedList()
         dialect = postgresql.dialect()
-        
+
         permissions = ["users:read", "users:write"]
         result = decorator.process_result_value(permissions, dialect)
         assert result == permissions
@@ -108,7 +108,7 @@ class TestJSONEncodedList:
         """Test processing empty list from PostgreSQL."""
         decorator = JSONEncodedList()
         dialect = postgresql.dialect()
-        
+
         result = decorator.process_result_value([], dialect)
         assert result == []
 
@@ -116,7 +116,7 @@ class TestJSONEncodedList:
         """Test processing None value from PostgreSQL."""
         decorator = JSONEncodedList()
         dialect = postgresql.dialect()
-        
+
         result = decorator.process_result_value(None, dialect)
         assert result == []
 
@@ -128,7 +128,7 @@ class TestJSONEncodedUUIDList:
         """Test loading PostgreSQL dialect implementation."""
         decorator = JSONEncodedUUIDList()
         dialect = postgresql.dialect()
-        
+
         impl = decorator.load_dialect_impl(dialect)
         assert impl is not None
 
@@ -136,8 +136,8 @@ class TestJSONEncodedUUIDList:
         """Test loading SQLite dialect implementation."""
         decorator = JSONEncodedUUIDList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         impl = decorator.load_dialect_impl(dialect)
         assert impl is not None
 
@@ -145,8 +145,8 @@ class TestJSONEncodedUUIDList:
         """Test processing None value for bind."""
         decorator = JSONEncodedUUIDList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         result = decorator.process_bind_param(None, dialect)
         assert result is None
 
@@ -154,11 +154,11 @@ class TestJSONEncodedUUIDList:
         """Test processing UUID list for PostgreSQL."""
         decorator = JSONEncodedUUIDList()
         dialect = postgresql.dialect()
-        
+
         uuid1 = uuid4()
         uuid2 = uuid4()
         uuids = [uuid1, uuid2]
-        
+
         result = decorator.process_bind_param(uuids, dialect)
         assert result == uuids
 
@@ -166,15 +166,15 @@ class TestJSONEncodedUUIDList:
         """Test processing UUID list for SQLite."""
         decorator = JSONEncodedUUIDList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         uuid1 = uuid4()
         uuid2 = uuid4()
         uuids = [uuid1, uuid2]
-        
+
         result = decorator.process_bind_param(uuids, dialect)
         assert isinstance(result, str)
-        
+
         # Verify it's valid JSON with UUID strings
         parsed = json.loads(result)
         assert len(parsed) == 2
@@ -185,8 +185,8 @@ class TestJSONEncodedUUIDList:
         """Test processing None value from database."""
         decorator = JSONEncodedUUIDList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         result = decorator.process_result_value(None, dialect)
         assert result == []
 
@@ -194,21 +194,21 @@ class TestJSONEncodedUUIDList:
         """Test processing empty string from SQLite."""
         decorator = JSONEncodedUUIDList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
-        result = decorator.process_result_value('', dialect)
+        dialect.name = "sqlite"
+
+        result = decorator.process_result_value("", dialect)
         assert result == []
 
     def test_process_result_value_uuids_sqlite(self):
         """Test processing UUID JSON from SQLite."""
         decorator = JSONEncodedUUIDList()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         uuid1 = uuid4()
         uuid2 = uuid4()
         json_str = json.dumps([str(uuid1), str(uuid2)])
-        
+
         result = decorator.process_result_value(json_str, dialect)
         assert len(result) == 2
         assert isinstance(result[0], UUID)
@@ -220,11 +220,11 @@ class TestJSONEncodedUUIDList:
         """Test processing UUID list from PostgreSQL."""
         decorator = JSONEncodedUUIDList()
         dialect = postgresql.dialect()
-        
+
         uuid1 = uuid4()
         uuid2 = uuid4()
         uuids = [uuid1, uuid2]
-        
+
         result = decorator.process_result_value(uuids, dialect)
         assert result == uuids
 
@@ -232,7 +232,7 @@ class TestJSONEncodedUUIDList:
         """Test processing empty list from PostgreSQL."""
         decorator = JSONEncodedUUIDList()
         dialect = postgresql.dialect()
-        
+
         result = decorator.process_result_value([], dialect)
         assert result == []
 
@@ -240,7 +240,7 @@ class TestJSONEncodedUUIDList:
         """Test processing None value from PostgreSQL."""
         decorator = JSONEncodedUUIDList()
         dialect = postgresql.dialect()
-        
+
         result = decorator.process_result_value(None, dialect)
         assert result == []
 
@@ -252,7 +252,7 @@ class TestJSONBCompat:
         """Test loading PostgreSQL dialect implementation."""
         decorator = JSONBCompat()
         dialect = postgresql.dialect()
-        
+
         impl = decorator.load_dialect_impl(dialect)
         assert impl is not None
 
@@ -260,8 +260,8 @@ class TestJSONBCompat:
         """Test loading SQLite dialect implementation."""
         decorator = JSONBCompat()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         impl = decorator.load_dialect_impl(dialect)
         assert impl is not None
 
@@ -269,8 +269,8 @@ class TestJSONBCompat:
         """Test processing None value for bind."""
         decorator = JSONBCompat()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         result = decorator.process_bind_param(None, dialect)
         assert result is None
 
@@ -278,7 +278,7 @@ class TestJSONBCompat:
         """Test processing dict for PostgreSQL."""
         decorator = JSONBCompat()
         dialect = postgresql.dialect()
-        
+
         data = {"key": "value", "count": 42}
         result = decorator.process_bind_param(data, dialect)
         assert result == data
@@ -287,8 +287,8 @@ class TestJSONBCompat:
         """Test processing dict for SQLite."""
         decorator = JSONBCompat()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         data = {"key": "value", "count": 42}
         result = decorator.process_bind_param(data, dialect)
         assert isinstance(result, str)
@@ -298,8 +298,8 @@ class TestJSONBCompat:
         """Test processing None value from database."""
         decorator = JSONBCompat()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         result = decorator.process_result_value(None, dialect)
         assert result == {}
 
@@ -307,20 +307,20 @@ class TestJSONBCompat:
         """Test processing empty string from SQLite."""
         decorator = JSONBCompat()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
-        result = decorator.process_result_value('', dialect)
+        dialect.name = "sqlite"
+
+        result = decorator.process_result_value("", dialect)
         assert result == {}
 
     def test_process_result_value_dict_sqlite(self):
         """Test processing JSON dict from SQLite."""
         decorator = JSONBCompat()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         data = {"key": "value", "count": 42}
         json_str = json.dumps(data)
-        
+
         result = decorator.process_result_value(json_str, dialect)
         assert result == data
 
@@ -328,7 +328,7 @@ class TestJSONBCompat:
         """Test processing dict from PostgreSQL."""
         decorator = JSONBCompat()
         dialect = postgresql.dialect()
-        
+
         data = {"key": "value", "count": 42}
         result = decorator.process_result_value(data, dialect)
         assert result == data
@@ -337,7 +337,7 @@ class TestJSONBCompat:
         """Test processing empty dict from PostgreSQL."""
         decorator = JSONBCompat()
         dialect = postgresql.dialect()
-        
+
         result = decorator.process_result_value({}, dialect)
         assert result == {}
 
@@ -345,7 +345,7 @@ class TestJSONBCompat:
         """Test processing None value from PostgreSQL."""
         decorator = JSONBCompat()
         dialect = postgresql.dialect()
-        
+
         result = decorator.process_result_value(None, dialect)
         assert result == {}
 
@@ -353,14 +353,14 @@ class TestJSONBCompat:
         """Test processing complex nested JSON from SQLite."""
         decorator = JSONBCompat()
         dialect = default.DefaultDialect()
-        dialect.name = 'sqlite'
-        
+        dialect.name = "sqlite"
+
         data = {
             "user": {"name": "John", "age": 30},
             "roles": ["admin", "user"],
-            "settings": {"theme": "dark", "notifications": True}
+            "settings": {"theme": "dark", "notifications": True},
         }
         json_str = json.dumps(data)
-        
+
         result = decorator.process_result_value(json_str, dialect)
         assert result == data

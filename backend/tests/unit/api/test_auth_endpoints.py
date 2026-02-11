@@ -7,15 +7,12 @@ Unit tests for Auth API endpoints.
 Tests for authentication endpoints - login, register, refresh, etc.
 """
 
-from datetime import datetime, UTC
-from uuid import uuid4
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
-
-from app.domain.entities.user import User
-from app.domain.value_objects.email import Email
 
 
 class TestLoginEndpoint:
@@ -24,6 +21,7 @@ class TestLoginEndpoint:
     def test_login_invalid_email_format_pydantic(self) -> None:
         """Test login with invalid email format fails at Pydantic validation."""
         from pydantic import ValidationError
+
         from app.api.v1.schemas.auth import LoginRequest
 
         with pytest.raises(ValidationError) as exc_info:
@@ -55,7 +53,11 @@ class TestLoginEndpoint:
             mock_repo_class.return_value = mock_repo
 
             with pytest.raises(HTTPException) as exc_info:
-                await login(request=request, session=mock_session, http_request=mock_http_request)
+                await login(
+                    request=request,
+                    session=mock_session,
+                    http_request=mock_http_request,
+                )
 
             assert exc_info.value.status_code == 401
             assert exc_info.value.detail["code"] == "INVALID_CREDENTIALS"
@@ -77,7 +79,9 @@ class TestLoginEndpoint:
         mock_user.password_hash = "hashed_password"
         mock_user.is_active = True
         mock_user.is_locked.return_value = False  # Not locked
-        mock_user.record_failed_login.return_value = False  # Not locked after failed attempt
+        mock_user.record_failed_login.return_value = (
+            False  # Not locked after failed attempt
+        )
 
         with patch(
             "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
@@ -86,11 +90,13 @@ class TestLoginEndpoint:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_class.return_value = mock_repo
 
-            with patch(
-                "app.api.v1.endpoints.auth.verify_password", return_value=False
-            ):
+            with patch("app.api.v1.endpoints.auth.verify_password", return_value=False):
                 with pytest.raises(HTTPException) as exc_info:
-                    await login(request=request, session=mock_session, http_request=mock_http_request)
+                    await login(
+                        request=request,
+                        session=mock_session,
+                        http_request=mock_http_request,
+                    )
 
                 assert exc_info.value.status_code == 401
                 assert exc_info.value.detail["code"] == "INVALID_CREDENTIALS"
@@ -120,11 +126,13 @@ class TestLoginEndpoint:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_class.return_value = mock_repo
 
-            with patch(
-                "app.api.v1.endpoints.auth.verify_password", return_value=True
-            ):
+            with patch("app.api.v1.endpoints.auth.verify_password", return_value=True):
                 with pytest.raises(HTTPException) as exc_info:
-                    await login(request=request, session=mock_session, http_request=mock_http_request)
+                    await login(
+                        request=request,
+                        session=mock_session,
+                        http_request=mock_http_request,
+                    )
 
                 assert exc_info.value.status_code == 403
                 assert exc_info.value.detail["code"] == "USER_INACTIVE"
@@ -159,9 +167,7 @@ class TestLoginEndpoint:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_class.return_value = mock_repo
 
-            with patch(
-                "app.api.v1.endpoints.auth.verify_password", return_value=True
-            ):
+            with patch("app.api.v1.endpoints.auth.verify_password", return_value=True):
                 with patch(
                     "app.api.v1.endpoints.auth.create_access_token",
                     return_value="access_token",
@@ -174,7 +180,11 @@ class TestLoginEndpoint:
                             "app.infrastructure.auth.jwt_handler.decode_token",
                             return_value={"jti": "test-jti-123"},
                         ):
-                            result = await login(request=request, session=mock_session, http_request=mock_http_request)
+                            result = await login(
+                                request=request,
+                                session=mock_session,
+                                http_request=mock_http_request,
+                            )
 
         assert result.access_token == "access_token"
         assert result.refresh_token == "refresh_token"
@@ -187,6 +197,7 @@ class TestRegisterEndpoint:
     def test_register_invalid_email_pydantic(self) -> None:
         """Test register with invalid email fails at Pydantic validation."""
         from pydantic import ValidationError
+
         from app.api.v1.schemas.auth import RegisterRequest
 
         with pytest.raises(ValidationError) as exc_info:
@@ -202,6 +213,7 @@ class TestRegisterEndpoint:
     def test_register_weak_password_pydantic(self) -> None:
         """Test register with weak password fails at Pydantic validation."""
         from pydantic import ValidationError
+
         from app.api.v1.schemas.auth import RegisterRequest
 
         with pytest.raises(ValidationError) as exc_info:
@@ -285,19 +297,18 @@ class TestRefreshTokenEndpoint:
         with patch(
             "app.api.v1.endpoints.auth.validate_refresh_token",
             return_value={"sub": str(user_id), "tenant_id": str(uuid4())},
-        ):
-            with patch(
-                "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
-            ) as mock_repo_class:
-                mock_repo = AsyncMock()
-                mock_repo.get_by_id.return_value = None
-                mock_repo_class.return_value = mock_repo
+        ), patch(
+            "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
+        ) as mock_repo_class:
+            mock_repo = AsyncMock()
+            mock_repo.get_by_id.return_value = None
+            mock_repo_class.return_value = mock_repo
 
-                with pytest.raises(HTTPException) as exc_info:
-                    await refresh_token(request=request, session=mock_session)
+            with pytest.raises(HTTPException) as exc_info:
+                await refresh_token(request=request, session=mock_session)
 
-                assert exc_info.value.status_code == 401
-                assert exc_info.value.detail["code"] == "USER_NOT_FOUND"
+            assert exc_info.value.status_code == 401
+            assert exc_info.value.detail["code"] == "USER_NOT_FOUND"
 
     @pytest.mark.asyncio
     async def test_refresh_inactive_user(self) -> None:
@@ -318,19 +329,18 @@ class TestRefreshTokenEndpoint:
         with patch(
             "app.api.v1.endpoints.auth.validate_refresh_token",
             return_value={"sub": str(user_id), "tenant_id": str(uuid4())},
-        ):
-            with patch(
-                "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
-            ) as mock_repo_class:
-                mock_repo = AsyncMock()
-                mock_repo.get_by_id.return_value = mock_user
-                mock_repo_class.return_value = mock_repo
+        ), patch(
+            "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
+        ) as mock_repo_class:
+            mock_repo = AsyncMock()
+            mock_repo.get_by_id.return_value = mock_user
+            mock_repo_class.return_value = mock_repo
 
-                with pytest.raises(HTTPException) as exc_info:
-                    await refresh_token(request=request, session=mock_session)
+            with pytest.raises(HTTPException) as exc_info:
+                await refresh_token(request=request, session=mock_session)
 
-                assert exc_info.value.status_code == 403
-                assert exc_info.value.detail["code"] == "USER_INACTIVE"
+            assert exc_info.value.status_code == 403
+            assert exc_info.value.detail["code"] == "USER_INACTIVE"
 
     @pytest.mark.asyncio
     async def test_refresh_success(self) -> None:
@@ -355,25 +365,23 @@ class TestRefreshTokenEndpoint:
         with patch(
             "app.api.v1.endpoints.auth.validate_refresh_token",
             return_value={"sub": str(user_id), "tenant_id": str(tenant_id)},
-        ):
-            with patch(
-                "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
-            ) as mock_repo_class:
-                mock_repo = AsyncMock()
-                mock_repo.get_by_id.return_value = mock_user
-                mock_repo_class.return_value = mock_repo
+        ), patch(
+            "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
+        ) as mock_repo_class:
+            mock_repo = AsyncMock()
+            mock_repo.get_by_id.return_value = mock_user
+            mock_repo_class.return_value = mock_repo
 
-                with patch(
-                    "app.api.v1.endpoints.auth.create_access_token",
-                    return_value="new_access_token",
-                ):
-                    with patch(
-                        "app.api.v1.endpoints.auth.create_refresh_token",
-                        return_value="new_refresh_token",
-                    ):
-                        result = await refresh_token(
-                            request=request, session=mock_session
-                        )
+            with patch(
+                "app.api.v1.endpoints.auth.create_access_token",
+                return_value="new_access_token",
+            ), patch(
+                "app.api.v1.endpoints.auth.create_refresh_token",
+                return_value="new_refresh_token",
+            ):
+                result = await refresh_token(
+                    request=request, session=mock_session
+                )
 
         assert result.access_token == "new_access_token"
         assert result.refresh_token == "new_refresh_token"
@@ -425,6 +433,7 @@ class TestChangePasswordEndpoint:
     def test_change_password_weak_password_pydantic(self) -> None:
         """Test change password with weak new password fails at Pydantic validation."""
         from pydantic import ValidationError
+
         from app.api.v1.schemas.auth import ChangePasswordRequest
 
         with pytest.raises(ValidationError) as exc_info:
@@ -497,7 +506,7 @@ class TestAuthSchemas:
 
     def test_message_response(self) -> None:
         """Test MessageResponse."""
-        from app.api.v1.schemas.auth import MessageResponse
+        from app.api.v1.schemas.common import MessageResponse
 
         response = MessageResponse(
             message="Success",

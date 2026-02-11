@@ -5,22 +5,21 @@
 Comprehensive tests for users endpoints to improve coverage.
 """
 
-import pytest
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from datetime import datetime, timezone
+
+import pytest
 
 from app.api.v1.endpoints.users import (
-    list_users,
-    get_user,
     create_user,
-    update_user,
     delete_user,
+    get_user,
+    list_users,
     update_self,
+    update_user,
 )
 from app.api.v1.schemas.users import UserCreate, UserUpdate, UserUpdateSelf
-from app.domain.entities.user import User
-from app.domain.value_objects.email import Email
 from app.domain.exceptions.base import ConflictError, EntityNotFoundError
 
 
@@ -31,13 +30,15 @@ class TestListUsersEndpoint:
     async def test_list_users_empty(self) -> None:
         """Test list users returns empty list."""
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.list.return_value = []
             mock_repo.count.return_value = 0
             mock_repo_cls.return_value = mock_repo
-            
+
             result = await list_users(
                 current_user_id=uuid4(),
                 session=mock_session,
@@ -45,7 +46,7 @@ class TestListUsersEndpoint:
                 page_size=20,
                 is_active=None,
             )
-            
+
             assert result.total == 0
             assert result.items == []
             assert result.page == 1
@@ -54,13 +55,15 @@ class TestListUsersEndpoint:
     async def test_list_users_pagination(self) -> None:
         """Test list users with pagination."""
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.list.return_value = []
             mock_repo.count.return_value = 50
             mock_repo_cls.return_value = mock_repo
-            
+
             result = await list_users(
                 current_user_id=uuid4(),
                 session=mock_session,
@@ -68,7 +71,7 @@ class TestListUsersEndpoint:
                 page_size=10,
                 is_active=True,
             )
-            
+
             assert result.total == 50
             assert result.pages == 5
             mock_repo.list.assert_called_once_with(skip=20, limit=10, is_active=True)
@@ -77,13 +80,15 @@ class TestListUsersEndpoint:
     async def test_list_users_filter_active(self) -> None:
         """Test list users filtered by active status."""
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.list.return_value = []
             mock_repo.count.return_value = 10
             mock_repo_cls.return_value = mock_repo
-            
+
             result = await list_users(
                 current_user_id=uuid4(),
                 session=mock_session,
@@ -91,7 +96,7 @@ class TestListUsersEndpoint:
                 page_size=20,
                 is_active=False,
             )
-            
+
             mock_repo.list.assert_called_once()
             mock_repo.count.assert_called_once_with(is_active=False)
 
@@ -104,20 +109,23 @@ class TestGetUserEndpoint:
         """Test get user when user doesn't exist."""
         user_id = uuid4()
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_cls.return_value = mock_repo
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await get_user(
                     user_id=user_id,
                     current_user_id=uuid4(),
                     session=mock_session,
                 )
-            
+
             assert exc.value.status_code == 404
             assert "USER_NOT_FOUND" in str(exc.value.detail)
 
@@ -137,13 +145,16 @@ class TestCreateUserEndpoint:
             is_superuser=False,
         )
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.exists_by_email.return_value = True
             mock_repo_cls.return_value = mock_repo
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await create_user(
                     request=request,
@@ -151,7 +162,7 @@ class TestCreateUserEndpoint:
                     tenant_id=uuid4(),
                     session=mock_session,
                 )
-            
+
             assert exc.value.status_code == 409
             assert "EMAIL_EXISTS" in str(exc.value.detail)
 
@@ -167,14 +178,17 @@ class TestCreateUserEndpoint:
             is_superuser=False,
         )
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.exists_by_email.return_value = False
             mock_repo.create.side_effect = ConflictError("Conflict error")
             mock_repo_cls.return_value = mock_repo
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await create_user(
                     request=request,
@@ -182,7 +196,7 @@ class TestCreateUserEndpoint:
                     tenant_id=uuid4(),
                     session=mock_session,
                 )
-            
+
             assert exc.value.status_code == 409
 
 
@@ -195,13 +209,16 @@ class TestUpdateUserEndpoint:
         user_id = uuid4()
         request = UserUpdate(first_name="NewName")
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_cls.return_value = mock_repo
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await update_user(
                     user_id=user_id,
@@ -209,7 +226,7 @@ class TestUpdateUserEndpoint:
                     superuser_id=uuid4(),
                     session=mock_session,
                 )
-            
+
             assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
@@ -218,17 +235,20 @@ class TestUpdateUserEndpoint:
         user_id = uuid4()
         request = UserUpdate(email="existing@example.com")
         mock_session = MagicMock()
-        
+
         mock_user = MagicMock()
         mock_user.id = user_id
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_user
             mock_repo.exists_by_email.return_value = True
             mock_repo_cls.return_value = mock_repo
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await update_user(
                     user_id=user_id,
@@ -236,7 +256,7 @@ class TestUpdateUserEndpoint:
                     superuser_id=uuid4(),
                     session=mock_session,
                 )
-            
+
             assert exc.value.status_code == 409
             assert "EMAIL_EXISTS" in str(exc.value.detail)
 
@@ -246,19 +266,22 @@ class TestUpdateUserEndpoint:
         user_id = uuid4()
         request = UserUpdate(first_name="NewName")
         mock_session = MagicMock()
-        
+
         mock_user = MagicMock()
         mock_user.id = user_id
         mock_user.first_name = "OldName"
         mock_user.mark_updated = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_user
             mock_repo.update.side_effect = EntityNotFoundError("User not found")
             mock_repo_cls.return_value = mock_repo
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await update_user(
                     user_id=user_id,
@@ -266,7 +289,7 @@ class TestUpdateUserEndpoint:
                     superuser_id=uuid4(),
                     session=mock_session,
                 )
-            
+
             assert exc.value.status_code == 404
 
 
@@ -278,20 +301,23 @@ class TestDeleteUserEndpoint:
         """Test delete user when user doesn't exist."""
         user_id = uuid4()
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.delete.side_effect = EntityNotFoundError("User not found")
             mock_repo_cls.return_value = mock_repo
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await delete_user(
                     user_id=user_id,
                     superuser_id=uuid4(),
                     session=mock_session,
                 )
-            
+
             assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
@@ -299,18 +325,20 @@ class TestDeleteUserEndpoint:
         """Test delete user successfully."""
         user_id = uuid4()
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.delete.return_value = None
             mock_repo_cls.return_value = mock_repo
-            
+
             result = await delete_user(
                 user_id=user_id,
                 superuser_id=uuid4(),
                 session=mock_session,
             )
-            
+
             assert result.success is True
             assert "deleted" in result.message.lower()
 
@@ -324,20 +352,23 @@ class TestUpdateSelfEndpoint:
         user_id = uuid4()
         request = UserUpdateSelf(first_name="NewName")
         mock_session = MagicMock()
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_cls.return_value = mock_repo
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await update_self(
                     request=request,
                     current_user_id=user_id,
                     session=mock_session,
                 )
-            
+
             assert exc.value.status_code == 404
 
 
@@ -355,7 +386,7 @@ class TestUpdateUserFieldVariations:
             roles=[uuid4()],
         )
         mock_session = MagicMock()
-        
+
         mock_user = MagicMock()
         mock_user.id = user_id
         mock_user.first_name = "OldFirst"
@@ -364,7 +395,7 @@ class TestUpdateUserFieldVariations:
         mock_user.roles = []
         mock_user.mark_updated = MagicMock()
         mock_user.model_dump = MagicMock(return_value={})
-        
+
         updated_user = MagicMock()
         updated_user.id = user_id
         updated_user.tenant_id = uuid4()
@@ -375,36 +406,40 @@ class TestUpdateUserFieldVariations:
         updated_user.is_active = False
         updated_user.is_superuser = False
         updated_user.roles = []
-        updated_user.created_at = datetime.now(timezone.utc)
-        updated_user.updated_at = datetime.now(timezone.utc)
+        updated_user.created_at = datetime.now(UTC)
+        updated_user.updated_at = datetime.now(UTC)
         updated_user.last_login = None
-        updated_user.model_dump = MagicMock(return_value={
-            "id": user_id,
-            "tenant_id": updated_user.tenant_id,
-            "email": "test@example.com",
-            "first_name": "NewFirst",
-            "last_name": "NewLast",
-            "avatar_url": None,
-            "is_active": False,
-            "is_superuser": False,
-            "roles": [],
-            "created_at": updated_user.created_at,
-            "updated_at": updated_user.updated_at,
-        })
-        
-        with patch("app.api.v1.endpoints.users.SQLAlchemyUserRepository") as mock_repo_cls:
+        updated_user.model_dump = MagicMock(
+            return_value={
+                "id": user_id,
+                "tenant_id": updated_user.tenant_id,
+                "email": "test@example.com",
+                "first_name": "NewFirst",
+                "last_name": "NewLast",
+                "avatar_url": None,
+                "is_active": False,
+                "is_superuser": False,
+                "roles": [],
+                "created_at": updated_user.created_at,
+                "updated_at": updated_user.updated_at,
+            }
+        )
+
+        with patch(
+            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+        ) as mock_repo_cls:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_user
             mock_repo.update.return_value = updated_user
             mock_repo_cls.return_value = mock_repo
-            
+
             result = await update_user(
                 user_id=user_id,
                 request=request,
                 superuser_id=uuid4(),
                 session=mock_session,
             )
-            
+
             assert result is not None
             # Verify all fields were updated
             assert mock_user.first_name == "NewFirst"

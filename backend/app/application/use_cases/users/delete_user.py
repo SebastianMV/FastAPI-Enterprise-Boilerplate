@@ -1,0 +1,71 @@
+# Copyright (c) 2025-2026 Sebastián Muñoz
+# Licensed under the MIT License
+
+"""
+Delete user use case.
+
+Handles soft-deleting a user and invalidating their active sessions.
+"""
+
+from dataclasses import dataclass
+from uuid import UUID
+
+from app.domain.exceptions.base import EntityNotFoundError
+from app.domain.ports.session_repository import SessionRepositoryPort
+from app.domain.ports.user_repository import UserRepositoryPort
+
+
+@dataclass
+class DeleteUserRequest:
+    """Delete user request data."""
+
+    user_id: UUID
+
+
+class DeleteUserUseCase:
+    """
+    Use case for deleting (soft-delete) a user.
+
+    Verifies the user exists before deletion and invalidates all active sessions.
+    """
+
+    def __init__(
+        self,
+        user_repository: UserRepositoryPort,
+        session_repository: SessionRepositoryPort | None = None,
+    ) -> None:
+        """
+        Initialize use case.
+
+        Args:
+            user_repository: Repository for user data access
+            session_repository: Repository for session management (optional)
+        """
+        self._user_repository = user_repository
+        self._session_repository = session_repository
+
+    async def execute(self, request: DeleteUserRequest) -> None:
+        """
+        Execute delete user flow.
+
+        Args:
+            request: Delete user request with user_id
+
+        Raises:
+            EntityNotFoundError: If user does not exist
+        """
+        # 1. Verify user exists
+        user = await self._user_repository.get_by_id(request.user_id)
+
+        if not user:
+            raise EntityNotFoundError(
+                entity_type="User",
+                entity_id=str(request.user_id),
+            )
+
+        # 2. Invalidate all active sessions
+        if self._session_repository:
+            await self._session_repository.revoke_all(request.user_id)
+
+        # 3. Soft delete
+        await self._user_repository.delete(request.user_id)

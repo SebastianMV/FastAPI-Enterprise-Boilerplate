@@ -10,20 +10,22 @@ Provides full-text search using PostgreSQL FTS (built-in, no extra dependencies)
 from typing import Any
 
 from app.domain.ports.search import (
+    BulkIndexResult,
+    IndexDocument,
+    SearchFilter,
+    SearchHighlight,
+    SearchHit,
+    SearchIndex,
     SearchPort,
     SearchQuery,
     SearchResult,
-    SearchHit,
-    SearchFilter,
     SearchSort,
-    SearchHighlight,
-    SearchIndex,
     SortOrder,
-    IndexDocument,
-    BulkIndexResult,
 )
-from app.infrastructure.search.postgres_fts import PostgresFullTextSearch, get_postgres_search
-
+from app.infrastructure.search.postgres_fts import (
+    PostgresFullTextSearch,
+    get_postgres_search,
+)
 
 __all__ = [
     # Port interface
@@ -51,12 +53,12 @@ async def get_search_backend(
     language: str = "english",
 ) -> SearchPort:
     """
-    Get PostgreSQL FTS search backend.
-    
+    Get search backend (PostgreSQL FTS).
+
     Args:
         session: SQLAlchemy async session
         language: PostgreSQL text search configuration (default: english)
-        
+
     Returns:
         PostgresFullTextSearch instance
     """

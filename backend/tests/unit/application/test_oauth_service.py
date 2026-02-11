@@ -9,10 +9,10 @@ Tests for OAuth2/SSO authentication flows and connection management.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
-from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
@@ -52,7 +52,7 @@ class TestOAuthServiceGetDefaultOAuthConfig:
     """Tests for _get_default_oauth_config method."""
 
     @pytest.fixture
-    def oauth_service(self) -> "OAuthService":
+    def oauth_service(self) -> OAuthService:
         """Create OAuthService."""
         from app.application.services.oauth_service import OAuthService
 
@@ -109,7 +109,7 @@ class TestOAuthServiceGetRedirectUri:
     """Tests for _get_redirect_uri method."""
 
     @pytest.fixture
-    def oauth_service(self) -> "OAuthService":
+    def oauth_service(self) -> OAuthService:
         """Create OAuthService."""
         from app.application.services.oauth_service import OAuthService
 
@@ -150,19 +150,19 @@ class TestOAuthServiceStoreState:
         return cache
 
     @pytest.fixture
-    def oauth_service(self, mock_cache: MagicMock) -> "OAuthService":
+    def oauth_service(self, mock_cache: MagicMock) -> OAuthService:
         """Create OAuthService with mock cache."""
         from app.application.services.oauth_service import OAuthService
 
         mock_session = AsyncMock()
-        with patch(
-            "app.application.services.oauth_service.get_cache"
-        ) as cache_factory:
+        with patch("app.application.services.oauth_service.get_cache") as cache_factory:
             cache_factory.return_value = mock_cache
             return OAuthService(session=mock_session)
 
     @pytest.mark.asyncio
-    async def test_store_oauth_state(self, oauth_service, mock_cache: MagicMock) -> None:
+    async def test_store_oauth_state(
+        self, oauth_service, mock_cache: MagicMock
+    ) -> None:
         """Test storing OAuth state."""
         state_data = OAuthState(
             state="test-state",
@@ -195,14 +195,12 @@ class TestOAuthServiceGetState:
         return cache
 
     @pytest.fixture
-    def oauth_service(self, mock_cache: MagicMock) -> "OAuthService":
+    def oauth_service(self, mock_cache: MagicMock) -> OAuthService:
         """Create OAuthService with mock cache."""
         from app.application.services.oauth_service import OAuthService
 
         mock_session = AsyncMock()
-        with patch(
-            "app.application.services.oauth_service.get_cache"
-        ) as cache_factory:
+        with patch("app.application.services.oauth_service.get_cache") as cache_factory:
             cache_factory.return_value = mock_cache
             return OAuthService(session=mock_session)
 
@@ -254,14 +252,12 @@ class TestOAuthServiceDeleteState:
         return cache
 
     @pytest.fixture
-    def oauth_service(self, mock_cache: MagicMock) -> "OAuthService":
+    def oauth_service(self, mock_cache: MagicMock) -> OAuthService:
         """Create OAuthService with mock cache."""
         from app.application.services.oauth_service import OAuthService
 
         mock_session = AsyncMock()
-        with patch(
-            "app.application.services.oauth_service.get_cache"
-        ) as cache_factory:
+        with patch("app.application.services.oauth_service.get_cache") as cache_factory:
             cache_factory.return_value = mock_cache
             return OAuthService(session=mock_session)
 
@@ -284,7 +280,7 @@ class TestOAuthServiceGetUserConnections:
         return AsyncMock()
 
     @pytest.fixture
-    def oauth_service(self, mock_session: AsyncMock) -> "OAuthService":
+    def oauth_service(self, mock_session: AsyncMock) -> OAuthService:
         """Create OAuthService with mock session."""
         from app.application.services.oauth_service import OAuthService
 
@@ -352,7 +348,7 @@ class TestOAuthServiceUnlinkAccount:
         return session
 
     @pytest.fixture
-    def oauth_service(self, mock_session: AsyncMock) -> "OAuthService":
+    def oauth_service(self, mock_session: AsyncMock) -> OAuthService:
         """Create OAuthService with mock session."""
         from app.application.services.oauth_service import OAuthService
 
@@ -433,7 +429,7 @@ class TestOAuthServiceGetSSOConfig:
         return AsyncMock()
 
     @pytest.fixture
-    def oauth_service(self, mock_session: AsyncMock) -> "OAuthService":
+    def oauth_service(self, mock_session: AsyncMock) -> OAuthService:
         """Create OAuthService with mock session."""
         from app.application.services.oauth_service import OAuthService
 
@@ -483,7 +479,7 @@ class TestOAuthServiceCreateSSOConfig:
         return session
 
     @pytest.fixture
-    def oauth_service(self, mock_session: AsyncMock) -> "OAuthService":
+    def oauth_service(self, mock_session: AsyncMock) -> OAuthService:
         """Create OAuthService with mock session."""
         from app.application.services.oauth_service import OAuthService
 
@@ -530,13 +526,13 @@ class TestOAuthServiceInitiateOAuth:
         return cache
 
     @pytest.fixture
-    def oauth_service(self, mock_session: AsyncMock, mock_cache: MagicMock) -> "OAuthService":
+    def oauth_service(
+        self, mock_session: AsyncMock, mock_cache: MagicMock
+    ) -> OAuthService:
         """Create OAuthService with mocks."""
         from app.application.services.oauth_service import OAuthService
 
-        with patch(
-            "app.application.services.oauth_service.get_cache"
-        ) as cache_factory:
+        with patch("app.application.services.oauth_service.get_cache") as cache_factory:
             cache_factory.return_value = mock_cache
             return OAuthService(session=mock_session)
 
@@ -548,7 +544,9 @@ class TestOAuthServiceInitiateOAuth:
         mock_provider = MagicMock()
         mock_provider.generate_pkce.return_value = ("verifier", "challenge")
         mock_provider.redirect_uri = "https://example.com/callback"
-        mock_provider.get_authorization_url.return_value = "https://accounts.google.com/oauth"
+        mock_provider.get_authorization_url.return_value = (
+            "https://accounts.google.com/oauth"
+        )
 
         with patch.object(
             oauth_service, "_get_provider", return_value=mock_provider
@@ -581,13 +579,13 @@ class TestOAuthServiceHandleCallback:
         return cache
 
     @pytest.fixture
-    def oauth_service(self, mock_session: AsyncMock, mock_cache: MagicMock) -> "OAuthService":
+    def oauth_service(
+        self, mock_session: AsyncMock, mock_cache: MagicMock
+    ) -> OAuthService:
         """Create OAuthService with mocks."""
         from app.application.services.oauth_service import OAuthService
 
-        with patch(
-            "app.application.services.oauth_service.get_cache"
-        ) as cache_factory:
+        with patch("app.application.services.oauth_service.get_cache") as cache_factory:
             cache_factory.return_value = mock_cache
             return OAuthService(session=mock_session)
 

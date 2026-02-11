@@ -13,9 +13,7 @@ src/i18n/
 └── locales/           # Translation files
     ├── en.json        # English (source/fallback)
     ├── es.json        # Spanish
-    ├── pt.json        # Portuguese
-    ├── fr.json        # French
-    └── de.json        # German
+    └── pt.json        # Portuguese
 ```
 
 ---
@@ -62,7 +60,7 @@ function LanguageSwitcher() {
 | Metric | Value |
 | ------ | ----- |
 | **Coverage** | 100% (all pages translated) |
-| **Languages** | 3 active (EN, ES, PT) + 2 available (FR, DE) |
+| **Languages** | 3 (EN, ES, PT) |
 | **Translation Keys** | ~700 per language |
 | **Loading Strategy** | Lazy loading (optimized) |
 
@@ -150,13 +148,6 @@ t(`tenants.plans.${plan}`)
 - 🇺🇸 **English (en)** - Default
 - 🇪🇸 **Español (es)** - Complete
 - 🇧🇷 **Português (pt)** - Complete
-
-### Available (Disabled)
-
-- 🇫🇷 **Français (fr)** - Complete
-- 🇩🇪 **Deutsch (de)** - Complete
-
-> Uncomment FR/DE in [index.ts](./index.ts) to enable them.
 
 ---
 

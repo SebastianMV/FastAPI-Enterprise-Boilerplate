@@ -3,8 +3,8 @@
 
 """Tests for role endpoints module."""
 
-from datetime import datetime, timezone as tz
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -12,12 +12,12 @@ from pydantic import ValidationError
 
 from app.api.v1.schemas.roles import (
     AssignRoleRequest,
+    PermissionSchema,
     RevokeRoleRequest,
     RoleCreate,
     RoleListResponse,
     RoleResponse,
     RoleUpdate,
-    PermissionSchema,
 )
 
 
@@ -94,8 +94,8 @@ class TestRoleResponseSchema:
             description="Administrator role",
             permissions=["users:read", "users:write"],
             is_system=False,
-            created_at=datetime.now(tz.utc),
-            updated_at=datetime.now(tz.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         assert response.id == role_id
         assert response.name == "Admin"
@@ -114,8 +114,8 @@ class TestRoleListResponseSchema:
                 description=f"Description {i}",
                 permissions=[],
                 is_system=False,
-                created_at=datetime.now(tz.utc),
-                updated_at=datetime.now(tz.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
             for i in range(3)
         ]
@@ -177,8 +177,8 @@ def create_mock_role(role_id=None, tenant_id=None):
     mock_role.description = "Test description"
     mock_role.permissions = []
     mock_role.is_system = False
-    mock_role.created_at = datetime.now(tz.utc)
-    mock_role.updated_at = datetime.now(tz.utc)
+    mock_role.created_at = datetime.now(UTC)
+    mock_role.updated_at = datetime.now(UTC)
     mock_role.created_by = uuid4()
     return mock_role
 
@@ -216,6 +216,7 @@ class TestListRolesEndpoint:
     async def test_list_roles_no_tenant(self) -> None:
         """Test listing roles without tenant context."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.roles import list_roles
 
         mock_repo = AsyncMock()
@@ -264,6 +265,7 @@ class TestGetRoleEndpoint:
     async def test_get_role_not_found(self) -> None:
         """Test getting non-existent role."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.roles import get_role
 
         mock_repo = AsyncMock()
@@ -288,6 +290,7 @@ class TestCreateRoleEndpoint:
     async def test_create_role_no_tenant(self) -> None:
         """Test creating role without tenant context."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.roles import create_role
 
         request = RoleCreate(name="New Role")
@@ -307,6 +310,7 @@ class TestCreateRoleEndpoint:
     async def test_create_role_invalid_permission(self) -> None:
         """Test creating role with invalid permission format."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.roles import create_role
 
         request = RoleCreate(
@@ -341,10 +345,16 @@ class TestRoleEdgeCases:
             id=uuid4(),
             name="Full Access",
             description="Has all permissions",
-            permissions=["users:read", "users:write", "posts:read", "posts:write", "admin:*"],
+            permissions=[
+                "users:read",
+                "users:write",
+                "posts:read",
+                "posts:write",
+                "admin:*",
+            ],
             is_system=True,
-            created_at=datetime.now(tz.utc),
-            updated_at=datetime.now(tz.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         assert len(response.permissions) == 5
         assert response.is_system is True

@@ -233,7 +233,7 @@ class TestAPIKeyScopes:
             is_active=True,
             created_at=datetime.now(UTC),
         )
-        
+
         assert key.has_all_scopes(["read:users"]) is True
         assert key.has_all_scopes(["read:users", "write:users"]) is True
         assert key.has_all_scopes(["delete:users"]) is False
@@ -250,7 +250,7 @@ class TestAPIKeyScopes:
             is_active=True,
             created_at=datetime.now(UTC),
         )
-        
+
         assert key.has_all_scopes(["read:users"]) is True
         assert key.has_all_scopes(["write:users", "delete:roles"]) is True
         assert key.has_all_scopes(["anything:at:all"]) is True
@@ -267,7 +267,7 @@ class TestAPIKeyScopes:
             is_active=True,
             created_at=datetime.now(UTC),
         )
-        
+
         assert key.has_all_scopes([]) is True
 
     def test_api_key_is_valid(self):
@@ -312,5 +312,5 @@ class TestAPIKeyScopes:
             usage_count=42,
             created_at=datetime.now(UTC),
         )
-        
+
         assert key.usage_count == 42

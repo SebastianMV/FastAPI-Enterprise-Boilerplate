@@ -7,9 +7,9 @@ Unit tests for Notification API endpoints.
 Tests the notification REST endpoints with mocked database.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -31,9 +31,9 @@ class TestNotificationSchemas:
             action_url="https://example.com/action",
             is_read=False,
             read_at=None,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
-        
+
         assert response.type == "info"
         assert response.title == "Test Notification"
         assert response.is_read is False
@@ -43,7 +43,7 @@ class TestNotificationSchemas:
         """Test NotificationResponse with read notification."""
         from app.api.v1.endpoints.notifications import NotificationResponse
 
-        read_at = datetime.now(timezone.utc).isoformat()
+        read_at = datetime.now(UTC).isoformat()
         response = NotificationResponse(
             id=str(uuid4()),
             type="success",
@@ -52,9 +52,9 @@ class TestNotificationSchemas:
             priority="high",
             is_read=True,
             read_at=read_at,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
-        
+
         assert response.is_read is True
         assert response.read_at == read_at
 
@@ -73,17 +73,17 @@ class TestNotificationSchemas:
                 message=f"Message {i}",
                 priority="normal",
                 is_read=False,
-                created_at=datetime.now(timezone.utc).isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
             )
             for i in range(3)
         ]
-        
+
         response = NotificationListResponse(
             items=items,
             total=10,
             unread_count=7,
         )
-        
+
         assert len(response.items) == 3
         assert response.total == 10
         assert response.unread_count == 7
@@ -95,17 +95,18 @@ class TestNotificationSchemas:
         request = MarkReadRequest(
             notification_ids=[str(uuid4()), str(uuid4())],
         )
-        
+
         assert len(request.notification_ids) == 2
 
     def test_mark_read_request_min_length(self) -> None:
         """Test MarkReadRequest requires at least one ID."""
         from pydantic import ValidationError
+
         from app.api.v1.endpoints.notifications import MarkReadRequest
 
         with pytest.raises(ValidationError) as exc_info:
             MarkReadRequest(notification_ids=[])
-        
+
         assert "notification_ids" in str(exc_info.value)
 
     def test_unread_count_response_schema(self) -> None:
@@ -127,7 +128,7 @@ class TestNotificationSchemas:
                 message="Message",
                 priority=priority,
                 is_read=False,
-                created_at=datetime.now(timezone.utc).isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
             )
             assert response.priority == priority
 
@@ -143,7 +144,7 @@ class TestNotificationSchemas:
                 message="Message",
                 priority="normal",
                 is_read=False,
-                created_at=datetime.now(timezone.utc).isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
             )
             assert response.type == ntype
 
@@ -159,12 +160,12 @@ class TestListNotificationsEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         # Mock query execution to return empty results
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
         mock_session.execute.return_value = mock_result
-        
+
         # Mock count query to return 0
         mock_count_result = MagicMock()
         mock_count_result.scalar.return_value = 0
@@ -173,7 +174,7 @@ class TestListNotificationsEndpoint:
             mock_count_result,  # total count
             mock_count_result,  # unread count
         ]
-        
+
         result = await list_notifications(
             current_user=mock_user,
             session=mock_session,
@@ -181,7 +182,7 @@ class TestListNotificationsEndpoint:
             offset=0,
             unread_only=False,
         )
-        
+
         assert len(result.items) == 0
         assert result.total == 0
         assert result.unread_count == 0
@@ -194,7 +195,7 @@ class TestListNotificationsEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         # Create mock notification
         mock_notification = MagicMock()
         mock_notification.id = uuid4()
@@ -205,20 +206,20 @@ class TestListNotificationsEndpoint:
         mock_notification.metadata = None
         mock_notification.action_url = None
         mock_notification.read_at = None
-        mock_notification.created_at = datetime.now(timezone.utc)
-        
+        mock_notification.created_at = datetime.now(UTC)
+
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = [mock_notification]
-        
+
         mock_count_result = MagicMock()
         mock_count_result.scalar.return_value = 1
-        
+
         mock_session.execute.side_effect = [
             mock_result,  # notifications
             mock_count_result,  # total
             mock_count_result,  # unread
         ]
-        
+
         result = await list_notifications(
             current_user=mock_user,
             session=mock_session,
@@ -226,7 +227,7 @@ class TestListNotificationsEndpoint:
             offset=0,
             unread_only=False,
         )
-        
+
         assert len(result.items) == 1
         assert result.items[0].title == "Test"
 
@@ -238,7 +239,7 @@ class TestListNotificationsEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         # Create mock notification
         mock_notification = MagicMock()
         mock_notification.id = uuid4()
@@ -249,20 +250,20 @@ class TestListNotificationsEndpoint:
         mock_notification.metadata = None
         mock_notification.action_url = None
         mock_notification.read_at = None  # Unread
-        mock_notification.created_at = datetime.now(timezone.utc)
-        
+        mock_notification.created_at = datetime.now(UTC)
+
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = [mock_notification]
-        
+
         mock_count_result = MagicMock()
         mock_count_result.scalar.return_value = 1
-        
+
         mock_session.execute.side_effect = [
             mock_result,  # notifications
             mock_count_result,  # total (unread_only filtered)
             mock_count_result,  # unread
         ]
-        
+
         result = await list_notifications(
             current_user=mock_user,
             session=mock_session,
@@ -270,7 +271,7 @@ class TestListNotificationsEndpoint:
             offset=0,
             unread_only=True,  # Test unread_only filter
         )
-        
+
         assert len(result.items) == 1
         assert result.items[0].title == "Unread Test"
         assert result.items[0].is_read is False
@@ -287,16 +288,16 @@ class TestGetUnreadCountEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         mock_result = MagicMock()
         mock_result.scalar.return_value = 0
         mock_session.execute.return_value = mock_result
-        
+
         result = await get_unread_count(
             current_user=mock_user,
             session=mock_session,
         )
-        
+
         assert result.count == 0
 
     @pytest.mark.asyncio
@@ -307,16 +308,16 @@ class TestGetUnreadCountEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         mock_result = MagicMock()
         mock_result.scalar.return_value = 15
         mock_session.execute.return_value = mock_result
-        
+
         result = await get_unread_count(
             current_user=mock_user,
             session=mock_session,
         )
-        
+
         assert result.count == 15
 
 
@@ -327,23 +328,24 @@ class TestGetNotificationEndpoint:
     async def test_get_notification_not_found(self) -> None:
         """Test getting a notification that doesn't exist."""
         from fastapi import HTTPException
+
         from app.api.v1.endpoints.notifications import get_notification
 
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_session.execute.return_value = mock_result
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await get_notification(
                 notification_id=uuid4(),
                 current_user=mock_user,
                 session=mock_session,
             )
-        
+
         assert exc_info.value.status_code == 404
         assert "Notification not found" in exc_info.value.detail
 
@@ -355,7 +357,7 @@ class TestGetNotificationEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         notification_id = uuid4()
         mock_notification = MagicMock()
         mock_notification.id = notification_id
@@ -365,19 +367,19 @@ class TestGetNotificationEndpoint:
         mock_notification.priority = "high"
         mock_notification.metadata = {"extra": "data"}
         mock_notification.action_url = "https://example.com"
-        mock_notification.read_at = datetime.now(timezone.utc)
-        mock_notification.created_at = datetime.now(timezone.utc)
-        
+        mock_notification.read_at = datetime.now(UTC)
+        mock_notification.created_at = datetime.now(UTC)
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_notification
         mock_session.execute.return_value = mock_result
-        
+
         result = await get_notification(
             notification_id=notification_id,
             current_user=mock_user,
             session=mock_session,
         )
-        
+
         assert result.id == str(notification_id)
         assert result.title == "Found"
         assert result.is_read is True
@@ -389,22 +391,22 @@ class TestMarkAsReadEndpoint:
     @pytest.mark.asyncio
     async def test_mark_as_read(self) -> None:
         """Test marking notifications as read."""
-        from app.api.v1.endpoints.notifications import mark_as_read, MarkReadRequest
+        from app.api.v1.endpoints.notifications import MarkReadRequest, mark_as_read
 
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         request = MarkReadRequest(
             notification_ids=[str(uuid4()), str(uuid4())],
         )
-        
+
         await mark_as_read(
             request=request,
             current_user=mock_user,
             session=mock_session,
         )
-        
+
         mock_session.execute.assert_called_once()
         mock_session.commit.assert_called_once()
 
@@ -420,12 +422,12 @@ class TestMarkAllAsReadEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         await mark_all_as_read(
             current_user=mock_user,
             session=mock_session,
         )
-        
+
         mock_session.execute.assert_called_once()
         mock_session.commit.assert_called_once()
 
@@ -441,16 +443,16 @@ class TestDeleteNotificationEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         mock_result = MagicMock()
         mock_session.execute.return_value = mock_result
-        
+
         await delete_notification(
             notification_id=uuid4(),
             current_user=mock_user,
             session=mock_session,
         )
-        
+
         mock_session.execute.assert_called_once()
         mock_session.commit.assert_called_once()
 
@@ -466,12 +468,12 @@ class TestDeleteReadNotificationsEndpoint:
         mock_user = MagicMock()
         mock_user.id = uuid4()
         mock_session = AsyncMock()
-        
+
         await delete_read_notifications(
             current_user=mock_user,
             session=mock_session,
         )
-        
+
         mock_session.execute.assert_called_once()
         mock_session.commit.assert_called_once()
 
@@ -493,9 +495,9 @@ class TestNotificationEdgeCases:
             action_url=None,
             is_read=False,
             read_at=None,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
-        
+
         assert response.data is None
         assert response.action_url is None
         assert response.read_at is None
@@ -509,7 +511,7 @@ class TestNotificationEdgeCases:
             total=0,
             unread_count=0,
         )
-        
+
         assert response.items == []
         assert response.total == 0
 
@@ -520,7 +522,7 @@ class TestNotificationEdgeCases:
         request = MarkReadRequest(
             notification_ids=[str(uuid4())],
         )
-        
+
         assert len(request.notification_ids) == 1
 
     def test_mark_read_many_notifications(self) -> None:
@@ -529,7 +531,7 @@ class TestNotificationEdgeCases:
 
         notification_ids = [str(uuid4()) for _ in range(100)]
         request = MarkReadRequest(notification_ids=notification_ids)
-        
+
         assert len(request.notification_ids) == 100
 
     def test_unread_count_none_returns_zero(self) -> None:

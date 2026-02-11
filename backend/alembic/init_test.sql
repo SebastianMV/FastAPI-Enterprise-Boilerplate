@@ -6,6 +6,10 @@
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+-- Grant privileges (for RLS support)
+ALTER DATABASE test_boilerplate SET row_security = on;
 
 -- Log initialization
 DO $$

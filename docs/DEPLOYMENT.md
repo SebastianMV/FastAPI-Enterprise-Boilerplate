@@ -188,7 +188,7 @@ services:
       retries: 5
 
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.28-alpine
     restart: always
     ports:
       - "80:80"

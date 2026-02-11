@@ -1,0 +1,336 @@
+# =============================================================================
+# Semgrep Custom Rules — Frontend Security (React/TypeScript)
+# =============================================================================
+# Codified lessons from 19 security audits on this project.
+# These rules catch the EXACT patterns that were found repeatedly.
+#
+# Run: semgrep --config .semgrep/ frontend/src/
+# =============================================================================
+
+rules:
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 9: Error Message Information Leaking
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-error-message-in-ui
+    patterns:
+      - pattern-either:
+          - pattern: $ERR.message
+          - pattern: ($ERR as Error).message
+    pattern-not-inside: |
+      if (import.meta.env.DEV) { ... }
+    message: >
+      Do not render error.message to users. Backend error messages may contain
+      internal details (DB errors, stack traces, file paths). Use i18n keys
+      for user-facing error messages: t('resource.genericError'). Found in 30+
+      locations across Audits 4-13.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audits 4-13 (30+ locations: TenantsPage, RolesPage, UsersPage, SessionsPage, ProfilePage, OAuthCallbackPage, etc.)"
+      cwe: "CWE-209: Generation of Error Message Containing Sensitive Information"
+      category: security
+      confidence: MEDIUM
+
+  - id: no-response-detail-in-ui
+    patterns:
+      - pattern-either:
+          - pattern: $RESP.detail
+          - pattern: $RESP.data.detail
+          - pattern: $ERR.response?.data?.detail
+          - pattern: $ERR.response.data.detail
+    pattern-not-inside: |
+      if (import.meta.env.DEV) { ... }
+    message: >
+      Do not render server response detail/message in the UI. Use i18n keys
+      for user-facing messages. Server error details may leak implementation
+      information. Fixed in Audits 6-7 (RegisterPage, ResetPasswordPage,
+      VerifyEmailPage, ProfilePage).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 6 (#235-238); Audit 7 (#199)"
+      cwe: "CWE-209"
+      category: security
+      confidence: MEDIUM
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Console Logging in Production
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-ungated-console-error
+    patterns:
+      - pattern: console.error(...)
+    pattern-not-inside: |
+      if (import.meta.env.DEV) { ... }
+    message: >
+      console.error() must be gated behind import.meta.env.DEV to prevent
+      information leakage in production builds. Vite tree-shakes DEV-gated
+      code from production bundles. Fixed in 8+ files in Audit 11.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 11 (#346-350)"
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+      category: security
+      confidence: HIGH
+    paths:
+      exclude:
+        - "*.test.*"
+        - "*.spec.*"
+        - "**/test/**"
+        - "**/tests/**"
+        - "**/__tests__/**"
+
+  - id: no-ungated-console-log
+    patterns:
+      - pattern: console.log(...)
+    pattern-not-inside: |
+      if ($DEBUG) { ... }
+    pattern-not-inside: |
+      if (import.meta.env.DEV) { ... }
+    message: >
+      console.log() must be gated behind a DEBUG flag or import.meta.env.DEV.
+      Production builds should not emit console output.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      category: quality
+      confidence: HIGH
+    paths:
+      exclude:
+        - "*.test.*"
+        - "*.spec.*"
+        - "**/test/**"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Token & Auth Security
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-tokens-in-localstorage
+    patterns:
+      - pattern-either:
+          - pattern: localStorage.setItem("access_token", ...)
+          - pattern: localStorage.setItem("refresh_token", ...)
+          - pattern: localStorage.setItem("token", ...)
+          - pattern: localStorage.setItem("jwt", ...)
+          - pattern: localStorage.setItem("auth", ...)
+    message: >
+      Never store JWT tokens in localStorage — they are accessible to any XSS
+      attack. Tokens must be stored as HttpOnly cookies set by the backend.
+      Completely migrated in Audit 7 (#88, #133).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 7, #88, #133"
+      cwe: "CWE-922: Insecure Storage of Sensitive Information"
+      category: security
+      confidence: HIGH
+
+  - id: no-pii-in-localstorage
+    patterns:
+      - pattern-either:
+          - pattern: localStorage.setItem("user", ...)
+          - pattern: localStorage.setItem("email", ...)
+          - pattern: localStorage.setItem("profile", ...)
+    message: >
+      Do not persist PII (user data, email, profile) in localStorage. Use
+      sessionStorage for session-scoped data or keep it in memory (Zustand store
+      without persist). Fixed in Audit 10 (#133).
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 10, #133"
+      cwe: "CWE-922"
+      category: security
+      confidence: HIGH
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Open Redirect & URL Safety
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: validate-redirect-urls
+    patterns:
+      - pattern-either:
+          - pattern: window.location.href = $URL
+          - pattern: window.location.replace($URL)
+          - pattern: window.location.assign($URL)
+    message: >
+      Validate redirect URLs before navigation. Ensure the URL starts with '/'
+      (relative) or matches an allowlist. Do not redirect to URLs from query
+      params or server responses without validation. Open redirect fixed in
+      Audit 4, F-01 (#197).
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 4, F-01 (#197)"
+      cwe: "CWE-601: URL Redirection to Untrusted Site"
+      category: security
+      confidence: MEDIUM
+
+  - id: oauth-url-must-be-https
+    patterns:
+      - pattern: window.location.href = $URL
+    pattern-where-python: >
+      "oauth" in str(meta_vars.get("$URL", "")).lower() or
+      "authorization" in str(meta_vars.get("$URL", "")).lower()
+    message: >
+      OAuth redirect URLs must validate that the URL starts with 'https://'
+      to prevent MITM attacks. Fixed in Audit 6, F-07 (#241).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 6, F-07 (#241)"
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      category: security
+      confidence: LOW
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: XSS Prevention
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-dangerously-set-innerhtml
+    patterns:
+      - pattern: dangerouslySetInnerHTML={...}
+    message: >
+      dangerouslySetInnerHTML bypasses React's XSS protection. If absolutely
+      necessary, sanitize input with DOMPurify first.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-79: Cross-site Scripting (XSS)"
+      category: security
+      confidence: HIGH
+
+  - id: no-reflected-url-params
+    patterns:
+      - pattern-either:
+          - pattern: |
+              const $PARAMS = new URLSearchParams(...);
+              ...
+              <$TAG>...${{$PARAMS.get("error")}}...</$TAG>
+          - pattern: |
+              const $PARAMS = new URLSearchParams(...);
+              ...
+              <$TAG>...${{$PARAMS.get("error_description")}}...</$TAG>
+          - pattern: |
+              const $PARAMS = new URLSearchParams(...);
+              ...
+              <$TAG>...${{$PARAMS.get("message")}}...</$TAG>
+    message: >
+      Do not render URL query parameters directly in the UI. This enables
+      reflected XSS/phishing attacks. Use i18n keys for messages. Fixed in
+      Audit 3, F-03 (#166) and Audit 6, F-03 (#237).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 3, F-03 (#166); Audit 6, F-03 (#237)"
+      cwe: "CWE-79: Cross-site Scripting (XSS)"
+      category: security
+      confidence: HIGH
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 7: i18n Completeness
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-hardcoded-user-facing-strings
+    patterns:
+      - pattern-either:
+          - pattern: title="$STRING"
+          - pattern: aria-label="$STRING"
+          - pattern: placeholder="$STRING"
+          - pattern: alt="$STRING"
+    pattern-where-python: >
+      len(str(meta_vars.get("$STRING", ""))) > 3 and
+      not str(meta_vars.get("$STRING", "")).startswith("t(") and
+      not str(meta_vars.get("$STRING", "")).startswith("{t(")
+    message: >
+      Hardcoded user-facing strings should use i18n: t('key'). Found in 50+
+      locations across Audits 7-13 (titles, aria-labels, placeholders, alt text).
+    languages: [typescript, javascript]
+    severity: INFO
+    metadata:
+      audit-ref: "Audits 7-13 (50+ locations)"
+      category: quality
+      confidence: LOW
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 7: React Hooks Rules
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-fetch-api-use-axios
+    patterns:
+      - pattern: fetch($URL, ...)
+    pattern-not-inside: |
+      // Intentional raw fetch for ...
+      ...
+    message: >
+      Use the centralized api.ts Axios instance instead of raw fetch(). The
+      Axios instance includes CSRF headers, cookie credentials, auth
+      interceptors, and the 401 logout handler. Raw fetch() bypasses all of
+      these. Fixed in Audit 3, F-01 (#164) and Audit 6, F-01 (#235).
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 3, F-01 (#164); Audit 6, F-01 (#235)"
+      cwe: "CWE-352: Cross-Site Request Forgery"
+      category: security
+      confidence: MEDIUM
+    paths:
+      exclude:
+        - "*.test.*"
+        - "*.spec.*"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 8: Untranslated Error Keys (Audit 14)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: websocket-payload-unsafe-cast
+    patterns:
+      - pattern: $PAYLOAD as unknown as $TYPE
+    message: >
+      Unsafe cast of WebSocket/API payload to typed interface. Validate payload
+      shape at runtime before using it (check required fields exist and have
+      correct types). Fixed in Audit 14, F-10.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 14, F-10"
+      cwe: "CWE-20: Improper Input Validation"
+      category: security
+      confidence: MEDIUM
+
+  - id: css-hover-dropdown-accessibility
+    patterns:
+      - pattern-regex: "invisible group-hover:visible"
+    message: >
+      CSS hover-only dropdowns are not keyboard accessible. Use state-based
+      visibility with onClick toggle and proper aria-expanded attribute.
+      Fixed in Audit 14, F-03.
+    languages: [typescript, javascript]
+    severity: INFO
+    metadata:
+      audit-ref: "Audit 14, F-03"
+      cwe: "WCAG 2.1.1"
+      category: accessibility
+      confidence: HIGH
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # SEVERITY 6: Unsafe `as any` cast (Audit 19)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: unsafe-as-any-cast
+    patterns:
+      - pattern: $X as any
+    message: >
+      Avoid `as any` casts — they bypass TypeScript's type system and can
+      hide type errors. Use proper type narrowing, generics, or `unknown`
+      with runtime validation instead.
+    languages: [typescript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 19, I-17"
+      cwe: "CWE-704: Incorrect Type Conversion"
+      category: security
+      confidence: MEDIUM

@@ -7,9 +7,9 @@ Unit tests for Roles API endpoints.
 Tests for role and permission CRUD operations.
 """
 
-from datetime import datetime, UTC
-from uuid import uuid4
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -306,7 +306,7 @@ class TestRoleSchemas:
 
     def test_user_permissions_response(self) -> None:
         """Test UserPermissionsResponse schema."""
-        from app.api.v1.schemas.roles import UserPermissionsResponse, RoleResponse
+        from app.api.v1.schemas.roles import RoleResponse, UserPermissionsResponse
 
         response = UserPermissionsResponse(
             user_id=uuid4(),
@@ -339,14 +339,13 @@ class TestGetRoleRepository:
 
         with patch(
             "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
-        ) as mock_base_repo:
-            with patch(
-                "app.api.v1.endpoints.roles.get_cached_role_repository"
-            ) as mock_get_cached:
-                mock_cached_repo = MagicMock()
-                mock_get_cached.return_value = mock_cached_repo
+        ) as mock_base_repo, patch(
+            "app.api.v1.endpoints.roles.get_cached_role_repository"
+        ) as mock_get_cached:
+            mock_cached_repo = MagicMock()
+            mock_get_cached.return_value = mock_cached_repo
 
-                result = get_role_repository(session=mock_session)
+            result = get_role_repository(session=mock_session)
 
-                mock_base_repo.assert_called_once_with(mock_session)
-                assert result == mock_cached_repo
+            mock_base_repo.assert_called_once_with(mock_session)
+            assert result == mock_cached_repo

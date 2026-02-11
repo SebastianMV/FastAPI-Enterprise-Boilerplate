@@ -7,9 +7,9 @@ Unit tests for Notification Service.
 Tests for notification creation and delivery.
 """
 
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC
 
 import pytest
 
@@ -83,7 +83,7 @@ class TestNotificationEntity:
         """Test creating a notification entity."""
         user_id = uuid4()
         tenant_id = uuid4()
-        
+
         notification = Notification(
             id=uuid4(),
             tenant_id=tenant_id,
@@ -92,7 +92,7 @@ class TestNotificationEntity:
             title="Test Notification",
             message="This is a test message",
         )
-        
+
         assert notification.user_id == user_id
         assert notification.tenant_id == tenant_id
         assert notification.type == NotificationType.INFO
@@ -109,7 +109,7 @@ class TestNotificationEntity:
             message="Important warning",
             priority=NotificationPriority.HIGH,
         )
-        
+
         assert notification.priority == NotificationPriority.HIGH
 
     def test_notification_with_channels(self) -> None:
@@ -123,7 +123,7 @@ class TestNotificationEntity:
             message="System maintenance scheduled",
             channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         )
-        
+
         assert NotificationChannel.IN_APP in notification.channels
         assert NotificationChannel.EMAIL in notification.channels
 
@@ -138,13 +138,13 @@ class TestNotificationEntity:
             message="You have a new message",
             action_url="/chat/conversation/123",
         )
-        
+
         assert notification.action_url == "/chat/conversation/123"
 
     def test_notification_with_metadata(self) -> None:
         """Test notification with metadata."""
         metadata = {"sender_id": str(uuid4()), "conversation_id": "conv-123"}
-        
+
         notification = Notification(
             id=uuid4(),
             tenant_id=uuid4(),
@@ -154,7 +154,7 @@ class TestNotificationEntity:
             message="@user mentioned you in a conversation",
             metadata=metadata,
         )
-        
+
         assert notification.metadata == metadata
         assert "sender_id" in notification.metadata
 
@@ -172,7 +172,7 @@ class TestNotificationDelivery:
             title="Info",
             message="Information",
         )
-        
+
         assert notification.is_read is False
 
     def test_notification_mark_as_read(self) -> None:
@@ -185,9 +185,9 @@ class TestNotificationDelivery:
             title="Info",
             message="Information",
         )
-        
+
         notification.mark_read()
-        
+
         assert notification.is_read is True
         assert notification.read_at is not None
 
@@ -202,16 +202,18 @@ class TestNotificationDelivery:
             message="Information",
             channels=[NotificationChannel.IN_APP],
         )
-        
+
         notification.mark_delivered(NotificationChannel.IN_APP)
-        
+
         assert NotificationChannel.IN_APP.value in notification.delivery_status
-        assert notification.delivery_status[NotificationChannel.IN_APP.value] is not None
+        assert (
+            notification.delivery_status[NotificationChannel.IN_APP.value] is not None
+        )
 
     def test_notification_expiration(self) -> None:
         """Test notification with expiration."""
         expires = datetime(2026, 12, 31, 23, 59, 59, tzinfo=UTC)
-        
+
         notification = Notification(
             id=uuid4(),
             tenant_id=uuid4(),
@@ -221,7 +223,7 @@ class TestNotificationDelivery:
             message="This expires soon",
             expires_at=expires,
         )
-        
+
         assert notification.expires_at == expires
 
 
@@ -239,7 +241,7 @@ class TestNotificationGrouping:
             message="Message from user",
             group_key="chat:conversation:123",
         )
-        
+
         assert notification.group_key == "chat:conversation:123"
 
     def test_notification_with_category(self) -> None:
@@ -253,7 +255,7 @@ class TestNotificationGrouping:
             message="Someone commented on your post",
             category="social",
         )
-        
+
         assert notification.category == "social"
 
 
@@ -268,21 +270,21 @@ class TestNotificationServiceInit:
     def test_init_with_session_only(self) -> None:
         """Test NotificationService can be initialized with session only."""
         from app.application.services.notification_service import NotificationService
-        
+
         mock_session = AsyncMock()
         service = NotificationService(session=mock_session)
-        
+
         assert service._session == mock_session
         assert service._ws_manager is None
 
     def test_init_with_ws_manager(self) -> None:
         """Test NotificationService can be initialized with WebSocket manager."""
         from app.application.services.notification_service import NotificationService
-        
+
         mock_session = AsyncMock()
         mock_ws = MagicMock()
         service = NotificationService(session=mock_session, ws_manager=mock_ws)
-        
+
         assert service._session == mock_session
         assert service._ws_manager == mock_ws
 
@@ -303,6 +305,7 @@ class TestNotificationServiceCreate:
     def notification_service(self, mock_session: AsyncMock):
         """Create NotificationService with mock session."""
         from app.application.services.notification_service import NotificationService
+
         return NotificationService(session=mock_session)
 
     @pytest.mark.asyncio
@@ -312,7 +315,7 @@ class TestNotificationServiceCreate:
         """Test creating a basic notification."""
         user_id = uuid4()
         tenant_id = uuid4()
-        
+
         result = await notification_service.create_notification(
             user_id=user_id,
             type=NotificationType.INFO,
@@ -320,7 +323,7 @@ class TestNotificationServiceCreate:
             message="This is a test",
             tenant_id=tenant_id,
         )
-        
+
         assert result.user_id == user_id
         assert result.tenant_id == tenant_id
         assert result.type == NotificationType.INFO
@@ -340,7 +343,7 @@ class TestNotificationServiceCreate:
             message="High priority message",
             priority=NotificationPriority.HIGH,
         )
-        
+
         assert result.priority == NotificationPriority.HIGH
 
     @pytest.mark.asyncio
@@ -355,7 +358,7 @@ class TestNotificationServiceCreate:
             message="Multi-channel notification",
             channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         )
-        
+
         assert NotificationChannel.IN_APP in result.channels
         assert NotificationChannel.EMAIL in result.channels
 
@@ -365,7 +368,7 @@ class TestNotificationServiceCreate:
     ) -> None:
         """Test creating a notification with metadata."""
         metadata = {"key": "value", "count": 42}
-        
+
         result = await notification_service.create_notification(
             user_id=uuid4(),
             type=NotificationType.INFO,
@@ -373,7 +376,7 @@ class TestNotificationServiceCreate:
             message="Has extra data",
             metadata=metadata,
         )
-        
+
         assert result.metadata == metadata
 
     @pytest.mark.asyncio
@@ -388,5 +391,5 @@ class TestNotificationServiceCreate:
             message="Check your inbox",
             action_url="/messages/inbox",
         )
-        
+
         assert result.action_url == "/messages/inbox"

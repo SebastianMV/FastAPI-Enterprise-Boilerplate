@@ -5,19 +5,14 @@
 
 from __future__ import annotations
 
-from uuid import uuid4
-from datetime import datetime, UTC
-import pytest
-from pydantic import ValidationError
-
 from app.api.v1.endpoints.search import (
-    SearchRequest,
-    SearchHitResponse,
-    SearchResponse,
-    SuggestResponse,
-    SearchFilterRequest,
-    SearchSortRequest,
     HealthResponse,
+    SearchFilterRequest,
+    SearchHitResponse,
+    SearchRequest,
+    SearchResponse,
+    SearchSortRequest,
+    SuggestResponse,
 )
 
 
@@ -219,9 +214,11 @@ class TestSearchRouter:
     def test_router_exists(self) -> None:
         """Test router exists."""
         from app.api.v1.endpoints.search import router
+
         assert router is not None
 
     def test_router_has_routes(self) -> None:
         """Test router has routes."""
         from app.api.v1.endpoints.search import router
+
         assert len(router.routes) > 0

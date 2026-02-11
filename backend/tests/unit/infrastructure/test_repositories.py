@@ -7,8 +7,8 @@ Unit tests for repository implementations.
 Tests the conversion methods and basic logic without database.
 """
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -42,7 +42,7 @@ class TestAuditLogRepository:
         """Create a sample audit log entity."""
         return AuditLog(
             id=uuid4(),
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             actor_id=uuid4(),
             actor_email="test@example.com",
             actor_ip="192.168.1.1",
@@ -191,7 +191,7 @@ class TestAuditLogWithoutMetadata:
         """Test conversion handles None metadata."""
         audit_log = AuditLog(
             id=uuid4(),
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             actor_id=None,
             actor_email="system",
             actor_ip=None,
@@ -216,7 +216,7 @@ class TestAuditLogWithoutMetadata:
         """Test conversion handles None actor_id."""
         audit_log = AuditLog(
             id=uuid4(),
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             actor_id=None,
             actor_email="anonymous",
             actor_ip=None,
@@ -238,6 +238,7 @@ class TestAuditLogWithoutMetadata:
         assert entity.actor_id is None
         assert entity.tenant_id is None
 
+
 class TestRoleRepository:
     """Tests for SQLAlchemyRoleRepository."""
 
@@ -258,12 +259,14 @@ class TestRoleRepository:
         from app.infrastructure.database.repositories.role_repository import (
             SQLAlchemyRoleRepository,
         )
+
         return SQLAlchemyRoleRepository(mock_session)
 
     @pytest.fixture
     def sample_role_model(self):
         """Create a sample role model (not entity) for testing."""
         from app.infrastructure.database.models.role import RoleModel
+
         return RoleModel(
             id=uuid4(),
             tenant_id=uuid4(),
@@ -273,8 +276,8 @@ class TestRoleRepository:
             is_system=False,
             is_deleted=False,
             deleted_at=None,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
             created_by=uuid4(),
             updated_by=None,
         )
@@ -316,9 +319,7 @@ class TestRoleRepository:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_list_by_ids_returns_empty_for_empty_list(
-        self, repository
-    ) -> None:
+    async def test_list_by_ids_returns_empty_for_empty_list(self, repository) -> None:
         """Test list_by_ids returns empty list for empty input."""
         result = await repository.list_by_ids([])
 
@@ -327,7 +328,7 @@ class TestRoleRepository:
     def test_role_permission_strings(self) -> None:
         """Test permission_strings property on Role entity."""
         from app.domain.entities.role import Permission, Role
-        
+
         role = Role(
             id=uuid4(),
             tenant_id=uuid4(),
@@ -340,7 +341,7 @@ class TestRoleRepository:
             is_system=False,
         )
         strings = role.permission_strings
-        
+
         assert "users:read" in strings
         assert "users:create" in strings
 
@@ -365,12 +366,14 @@ class TestTenantRepository:
         from app.infrastructure.database.repositories.tenant_repository import (
             SQLAlchemyTenantRepository,
         )
+
         return SQLAlchemyTenantRepository(mock_session)
 
     @pytest.fixture
     def sample_tenant(self):
         """Create a sample tenant entity."""
         from app.domain.entities.tenant import Tenant, TenantSettings
+
         return Tenant(
             id=uuid4(),
             name="Test Tenant",
@@ -386,8 +389,8 @@ class TestTenantRepository:
             ),
             timezone="America/New_York",
             locale="en",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
             created_by=uuid4(),
         )
 
@@ -523,15 +526,15 @@ class TestTenantSettings:
     def test_to_dict(self) -> None:
         """Test conversion to dictionary."""
         from app.domain.entities.tenant import TenantSettings
-        
+
         settings = TenantSettings(
             enable_2fa=True,
             max_users=200,
             primary_color="#FF0000",
         )
-        
+
         result = settings.to_dict()
-        
+
         assert result["enable_2fa"] is True
         assert result["max_users"] == 200
         assert result["primary_color"] == "#FF0000"
@@ -539,15 +542,15 @@ class TestTenantSettings:
     def test_from_dict(self) -> None:
         """Test creation from dictionary."""
         from app.domain.entities.tenant import TenantSettings
-        
+
         data = {
             "enable_2fa": True,
             "max_users": 200,
             "primary_color": "#FF0000",
         }
-        
+
         settings = TenantSettings.from_dict(data)
-        
+
         assert settings.enable_2fa is True
         assert settings.max_users == 200
         assert settings.primary_color == "#FF0000"
@@ -555,9 +558,9 @@ class TestTenantSettings:
     def test_from_dict_with_defaults(self) -> None:
         """Test creation from empty dictionary uses defaults."""
         from app.domain.entities.tenant import TenantSettings
-        
+
         settings = TenantSettings.from_dict({})
-        
+
         assert settings.enable_2fa is False
         assert settings.max_users == 100
         assert settings.enable_api_keys is True

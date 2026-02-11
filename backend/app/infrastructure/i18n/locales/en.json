@@ -170,6 +170,17 @@
       "warning": "Your account is now less secure. We recommend re-enabling MFA.",
       "not_you": "If you did not disable two-factor authentication, please secure your account immediately."
     },
+    "email_otp": {
+      "subject": "Your Verification Code",
+      "preheader": "Your one-time verification code for login",
+      "title": "Your Verification Code",
+      "greeting": "Hi {name},",
+      "body": "You've requested a one-time verification code to sign in to your account. Use the code below:",
+      "expires": "This code expires in {minutes} minutes.",
+      "security_warning_title": "Security Notice",
+      "security_warning": "Never share this code with anyone. Our team will never ask for it.",
+      "ignore_note": "If you didn't request this code, please ignore this email and consider changing your password."
+    },
     "tenant_invitation": {
       "subject": "You've Been Invited to Join {tenant_name}",
       "preheader": "You have a pending invitation to join {tenant_name}",

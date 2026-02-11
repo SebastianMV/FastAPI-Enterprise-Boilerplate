@@ -50,6 +50,8 @@ export default function SearchPage() {
 
   // Perform search
   useEffect(() => {
+    const abortController = new AbortController();
+    
     const performSearch = async () => {
       if (!query) {
         setResults(null);
@@ -61,7 +63,7 @@ export default function SearchPage() {
         let response: SearchResponse;
         
         if (filters.index === 'all') {
-          response = await searchService.quickSearch(query);
+          response = await searchService.quickSearch(query, abortController.signal);
         } else {
           const request: SearchRequest = {
             query,
@@ -110,19 +112,26 @@ export default function SearchPage() {
             ];
           }
 
-          response = await searchService.search(request);
+          response = await searchService.search(request, abortController.signal);
         }
 
         setResults(response);
       } catch (error) {
-        console.error('Search error:', error);
+        if (abortController.signal.aborted) return;
+        // Search failed — don't log error details in production
         setResults(null);
       } finally {
-        setIsLoading(false);
+        if (!abortController.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     };
 
     performSearch();
+    
+    return () => {
+      abortController.abort();
+    };
   }, [query, filters, page]);
 
   // Update URL when search changes
@@ -162,7 +171,7 @@ export default function SearchPage() {
       return `${source.first_name} ${source.last_name}`;
     }
     if (source.action && source.resource_type) {
-      return `${source.action} on ${source.resource_type}`;
+      return t('search.actionOnResource', { action: source.action, resource: source.resource_type });
     }
     if (source.title) return String(source.title);
     if (source.name) return String(source.name);
@@ -171,7 +180,7 @@ export default function SearchPage() {
 
   const getResultDescription = (source: Record<string, unknown>): string => {
     if (source.email) return String(source.email);
-    if (source.actor_email) return `By: ${source.actor_email}`;
+    if (source.actor_email) return t('search.byActor', { email: source.actor_email });
     if (source.description) return String(source.description);
     if (source.content) return String(source.content).slice(0, 150) + '...';
     return '';
@@ -179,12 +188,12 @@ export default function SearchPage() {
 
   const handleResultClick = (hit: { id: string; source: Record<string, unknown> }) => {
     if ('email' in hit.source) {
-      navigate(`/users/${hit.id}`);
+      navigate(`/users/${encodeURIComponent(hit.id)}`);
     } else if ('action' in hit.source && 'actor_id' in hit.source) {
       // Audit log entry - could navigate to audit details if available
-      navigate(`/security/audit?id=${hit.id}`);
+      navigate(`/security/audit?id=${encodeURIComponent(hit.id)}`);
     } else {
-      navigate(`/documents/${hit.id}`);
+      navigate(`/documents/${encodeURIComponent(hit.id)}`);
     }
   };
 
@@ -324,7 +333,10 @@ export default function SearchPage() {
               {results.hits.map((hit) => (
                 <div
                   key={hit.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleResultClick({ id: hit.id, source: hit.source })}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleResultClick({ id: hit.id, source: hit.source }); } }}
                   className="card p-4 hover:border-primary-300 cursor-pointer transition-colors"
                 >
                   <div className="flex items-start gap-4">
@@ -358,7 +370,7 @@ export default function SearchPage() {
                       <Calendar className="w-4 h-4 inline mr-1" />
                       {hit.source.created_at 
                         ? new Date(hit.source.created_at as string).toLocaleDateString()
-                        : 'N/A'
+                        : t('common.na')
                       }
                     </div>
                   </div>

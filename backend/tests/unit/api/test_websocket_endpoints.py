@@ -88,19 +88,18 @@ class TestGetWsManager:
     """Tests for get_ws_manager function."""
 
     def test_get_ws_manager_creates_memory_manager(self) -> None:
-        """Test that get_ws_manager creates memory manager when redis disabled."""
+        """Test that get_ws_manager creates memory manager."""
         from app.api.v1.endpoints import websocket as ws_module
 
         # Reset global manager
         ws_module._ws_manager = None
 
-        with patch.object(ws_module.settings, "WEBSOCKET_BACKEND", "memory"):
-            manager = ws_module.get_ws_manager()
+        manager = ws_module.get_ws_manager()
 
-            assert manager is not None
-            from app.infrastructure.websocket import MemoryWebSocketManager
+        assert manager is not None
+        from app.infrastructure.websocket import MemoryWebSocketManager
 
-            assert isinstance(manager, MemoryWebSocketManager)
+        assert isinstance(manager, MemoryWebSocketManager)
 
         # Reset again
         ws_module._ws_manager = None
@@ -119,7 +118,9 @@ class TestRegisterDefaultHandlers:
 
         # Verify handlers were registered (only PING after chat removal)
         assert mock_manager.register_handler.call_count >= 1
-        registered_types = [call[0][0] for call in mock_manager.register_handler.call_args_list]
+        registered_types = [
+            call[0][0] for call in mock_manager.register_handler.call_args_list
+        ]
         assert MessageType.PING in registered_types
 
 
@@ -138,8 +139,10 @@ class TestDefaultMessageHandlers:
 
         # Capture handlers
         handlers = {}
+
         def capture_handler(msg_type, handler):
             handlers[msg_type] = handler
+
         mock_manager.register_handler = capture_handler
 
         _register_default_handlers(mock_manager)
@@ -168,7 +171,7 @@ class TestWebSocketMessage:
 
     def test_message_from_dict(self) -> None:
         """Test creating message from dictionary."""
-        from app.domain.ports.websocket import WebSocketMessage, MessageType
+        from app.domain.ports.websocket import MessageType, WebSocketMessage
 
         data = {
             "type": "ping",
@@ -181,7 +184,7 @@ class TestWebSocketMessage:
 
     def test_message_to_dict(self) -> None:
         """Test converting message to dictionary."""
-        from app.domain.ports.websocket import WebSocketMessage, MessageType
+        from app.domain.ports.websocket import MessageType, WebSocketMessage
 
         message = WebSocketMessage(
             type=MessageType.NOTIFICATION,
@@ -196,7 +199,7 @@ class TestWebSocketMessage:
 
     def test_message_with_recipient(self) -> None:
         """Test message with recipient_id."""
-        from app.domain.ports.websocket import WebSocketMessage, MessageType
+        from app.domain.ports.websocket import MessageType, WebSocketMessage
 
         recipient = uuid4()
         message = WebSocketMessage(

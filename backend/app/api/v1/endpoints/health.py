@@ -4,11 +4,22 @@
 """Health check endpoints."""
 
 from fastapi import APIRouter
+from sqlalchemy import text
 
 from app.api.v1.schemas.common import HealthResponse
 from app.config import settings
 
 router = APIRouter()
+
+
+def _health_base_fields() -> dict[str, str]:
+    """Return version and environment only in non-production."""
+    if settings.is_production:
+        return {}
+    return {
+        "version": settings.APP_VERSION,
+        "environment": settings.ENVIRONMENT,
+    }
 
 
 @router.get(
@@ -21,13 +32,12 @@ router = APIRouter()
 async def health_check() -> HealthResponse:
     """
     Basic health check for load balancers.
-    
+
     Returns application status and version.
     """
     return HealthResponse(
         status="healthy",
-        version=settings.APP_VERSION,
-        environment=settings.ENVIRONMENT,
+        **_health_base_fields(),
     )
 
 
@@ -41,33 +51,41 @@ async def health_check() -> HealthResponse:
 async def readiness_check() -> HealthResponse:
     """
     Kubernetes readiness probe.
-    
+
     Checks:
     - Database connection
     - Redis connection
     """
     from app.infrastructure.monitoring import get_metrics_service, get_uptime_tracker
-    
+
     # Check Redis health
     metrics = get_metrics_service()
     redis_healthy, redis_response_ms = await metrics.check_redis_health()
     redis_status = "healthy" if redis_healthy else "unhealthy"
-    
+
     # Record health ping for uptime tracking
     uptime_tracker = get_uptime_tracker()
     await uptime_tracker.record_ping(redis_healthy)
-    
-    # DB status - for now just report healthy (real check is in dashboard)
-    db_status = "healthy"
-    
-    overall_status = "ready" if redis_healthy else "degraded"
-    
+
+    # Check database health with a real query
+    db_healthy = True
+    try:
+        from app.infrastructure.database.connection import async_session_maker
+
+        async with async_session_maker() as session:
+            await session.execute(text("SELECT 1"))
+        db_status = "healthy"
+    except Exception:
+        db_healthy = False
+        db_status = "unhealthy"
+
+    overall_status = "ready" if (redis_healthy and db_healthy) else "degraded"
+
     return HealthResponse(
         status=overall_status,
-        version=settings.APP_VERSION,
-        environment=settings.ENVIRONMENT,
         database=db_status,
         redis=redis_status,
+        **_health_base_fields(),
     )
 
 
@@ -81,11 +99,10 @@ async def readiness_check() -> HealthResponse:
 async def liveness_check() -> HealthResponse:
     """
     Kubernetes liveness probe.
-    
+
     Simple check that application process is running.
     """
     return HealthResponse(
         status="alive",
-        version=settings.APP_VERSION,
-        environment=settings.ENVIRONMENT,
+        **_health_base_fields(),
     )

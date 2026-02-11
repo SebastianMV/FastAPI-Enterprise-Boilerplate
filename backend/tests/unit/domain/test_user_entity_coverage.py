@@ -6,10 +6,9 @@ Comprehensive tests for User entity to achieve 100% coverage.
 Focuses on 8 uncovered lines in app/domain/entities/user.py
 """
 
-import pytest
-from datetime import datetime, timedelta, UTC
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 from app.domain.entities.user import User
 from app.domain.value_objects.email import Email
@@ -29,14 +28,14 @@ class TestUserSetPassword:
             last_name="User",
             password_hash="old_hash",
             is_active=True,
-            is_superuser=False
+            is_superuser=False,
         )
-        
+
         mock_hasher = MagicMock(return_value="new_hashed_value")
         password = Password("NewSecureP@ss123")
-        
+
         user.set_password(password, mock_hasher)
-        
+
         mock_hasher.assert_called_once_with("NewSecureP@ss123")
         assert user.password_hash == "new_hashed_value"
 
@@ -50,19 +49,19 @@ class TestUserSetPassword:
             last_name="User",
             password_hash="",
             is_active=True,
-            is_superuser=False
+            is_superuser=False,
         )
-        
+
         # Simulate hasher that just prefixes with "hash_"
         def simple_hasher(password: str) -> str:
             return f"hash_{password}"
-        
+
         def simple_verifier(plain: str, hashed: str) -> bool:
             return hashed == f"hash_{plain}"
-        
+
         password = Password("MySecure@Pass456")
         user.set_password(password, simple_hasher)
-        
+
         assert user.verify_password("MySecure@Pass456", simple_verifier) == True
         assert user.verify_password("WrongPassword", simple_verifier) == False
 
@@ -81,11 +80,11 @@ class TestUserEmailVerification:
             password_hash="hash",
             is_active=True,
             is_superuser=False,
-            email_verified=True
+            email_verified=True,
         )
-        
+
         result = user.verify_email("any_token")
-        
+
         assert result == True
 
     def test_verify_email_wrong_token(self):
@@ -101,11 +100,11 @@ class TestUserEmailVerification:
             is_superuser=False,
             email_verified=False,
             email_verification_token="correct_token_123",
-            email_verification_sent_at=datetime.now(UTC)
+            email_verification_sent_at=datetime.now(UTC),
         )
-        
+
         result = user.verify_email("wrong_token")
-        
+
         assert result == False
         assert user.email_verified == False
 
@@ -122,11 +121,11 @@ class TestUserEmailVerification:
             is_superuser=False,
             email_verified=False,
             email_verification_token="valid_token_456",
-            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=1)
+            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=1),
         )
-        
+
         result = user.verify_email("valid_token_456", token_expire_hours=24)
-        
+
         assert result == True
         assert user.email_verified == True
         assert user.email_verification_token is None
@@ -144,11 +143,11 @@ class TestUserEmailVerification:
             is_superuser=False,
             email_verified=False,
             email_verification_token="expired_token",
-            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=48)
+            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=48),
         )
-        
+
         result = user.verify_email("expired_token", token_expire_hours=24)
-        
+
         assert result == False
         assert user.email_verified == False
 
@@ -165,12 +164,12 @@ class TestUserEmailVerification:
             is_superuser=False,
             email_verified=False,
             email_verification_token="valid_token",
-            email_verification_sent_at=None  # This triggers line 166
+            email_verification_sent_at=None,  # This triggers line 166
         )
-        
+
         # Even with correct token, should fail if sent_at is None
         result = user.verify_email("valid_token")
-        
+
         assert result == False
         assert user.email_verified == False
 
@@ -189,11 +188,11 @@ class TestUserVerificationTokenExpiry:
             password_hash="hash",
             is_active=True,
             is_superuser=False,
-            email_verification_sent_at=None
+            email_verification_sent_at=None,
         )
-        
+
         result = user.is_verification_token_expired(token_expire_hours=24)
-        
+
         assert result == True
 
     def test_is_verification_token_expired_not_expired(self):
@@ -207,11 +206,11 @@ class TestUserVerificationTokenExpiry:
             password_hash="hash",
             is_active=True,
             is_superuser=False,
-            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=1)
+            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=1),
         )
-        
+
         result = user.is_verification_token_expired(token_expire_hours=24)
-        
+
         assert result == False
 
     def test_is_verification_token_expired_is_expired(self):
@@ -225,11 +224,11 @@ class TestUserVerificationTokenExpiry:
             password_hash="hash",
             is_active=True,
             is_superuser=False,
-            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=48)
+            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=48),
         )
-        
+
         result = user.is_verification_token_expired(token_expire_hours=24)
-        
+
         assert result == True
 
     def test_is_verification_token_expired_boundary_case(self):
@@ -243,11 +242,12 @@ class TestUserVerificationTokenExpiry:
             password_hash="hash",
             is_active=True,
             is_superuser=False,
-            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=24, minutes=1)
+            email_verification_sent_at=datetime.now(UTC)
+            - timedelta(hours=24, minutes=1),
         )
-        
+
         result = user.is_verification_token_expired(token_expire_hours=24)
-        
+
         assert result == True
 
 
@@ -264,11 +264,11 @@ class TestUserGenerateVerificationToken:
             last_name="Token",
             password_hash="hash",
             is_active=True,
-            is_superuser=False
+            is_superuser=False,
         )
-        
+
         token = user.generate_verification_token()
-        
+
         assert token is not None
         assert len(token) > 0
         assert user.email_verification_token == token
@@ -286,9 +286,9 @@ class TestUserGenerateVerificationToken:
             password_hash="hash",
             is_active=True,
             is_superuser=False,
-            email_verification_sent_at=old_time
+            email_verification_sent_at=old_time,
         )
-        
+
         user.generate_verification_token()
-        
+
         assert user.email_verification_sent_at > old_time

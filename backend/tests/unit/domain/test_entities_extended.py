@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from uuid import uuid4
-from datetime import datetime, UTC, timedelta
 
 import pytest
 
@@ -119,7 +118,11 @@ class TestAuditLogEntity:
 
     def test_audit_log_entity_import(self) -> None:
         """Test AuditLog entity can be imported."""
-        from app.domain.entities.audit_log import AuditLog, AuditAction, AuditResourceType
+        from app.domain.entities.audit_log import (
+            AuditAction,
+            AuditLog,
+            AuditResourceType,
+        )
 
         assert AuditLog is not None
         assert AuditAction is not None

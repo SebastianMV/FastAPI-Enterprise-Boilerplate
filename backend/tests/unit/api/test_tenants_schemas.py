@@ -3,19 +3,20 @@
 
 """Unit tests for tenant endpoint schemas."""
 
-import pytest
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 from pydantic import ValidationError
 
 from app.api.v1.schemas.tenants import (
-    TenantSettingsSchema,
-    TenantCreate,
-    TenantUpdate,
-    TenantResponse,
-    TenantListResponse,
     TenantActivateRequest,
+    TenantCreate,
+    TenantListResponse,
     TenantPlanUpdate,
+    TenantResponse,
+    TenantSettingsSchema,
+    TenantUpdate,
     TenantVerifyRequest,
 )
 
@@ -51,7 +52,7 @@ class TestTenantSettingsSchema:
             logo_url="https://example.com/logo.png",
             password_min_length=12,
             session_timeout_minutes=120,
-            require_email_verification=False
+            require_email_verification=False,
         )
         assert settings.enable_2fa is True
         assert settings.max_users == 500
@@ -96,7 +97,7 @@ class TestTenantCreate:
             timezone="America/New_York",
             locale="en-US",
             plan="enterprise",
-            settings=settings
+            settings=settings,
         )
         assert tenant.email == "admin@enterprise.com"
         assert tenant.plan == "enterprise"
@@ -131,7 +132,7 @@ class TestTenantCreate:
         for plan in valid_plans:
             tenant = TenantCreate(name="Test", slug="test-slug", plan=plan)
             assert tenant.plan == plan
-        
+
         with pytest.raises(ValidationError):
             TenantCreate(name="Test", slug="test-slug", plan="invalid")
 
@@ -165,7 +166,7 @@ class TestTenantUpdate:
             timezone="Europe/London",
             locale="en-GB",
             plan="professional",
-            settings=settings
+            settings=settings,
         )
         assert update.plan == "professional"
         assert update.settings is not None and update.settings.max_users == 200
@@ -176,7 +177,7 @@ class TestTenantResponse:
 
     def test_tenant_response_valid(self):
         """Test valid tenant response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = TenantResponse(
             id=uuid4(),
             name="Test Tenant",
@@ -192,14 +193,14 @@ class TestTenantResponse:
             timezone="UTC",
             locale="en",
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         assert response.is_active is True
         assert response.plan == "starter"
 
     def test_tenant_response_inactive_unverified(self):
         """Test inactive and unverified tenant."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = TenantResponse(
             id=uuid4(),
             name="Pending Tenant",
@@ -211,7 +212,7 @@ class TestTenantResponse:
             timezone="UTC",
             locale="en",
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         assert response.is_active is False
         assert response.is_verified is False
@@ -222,7 +223,7 @@ class TestTenantListResponse:
 
     def test_tenant_list_response(self):
         """Test tenant list response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = TenantListResponse(
             items=[
                 TenantResponse(
@@ -236,12 +237,12 @@ class TestTenantListResponse:
                     timezone="UTC",
                     locale="en",
                     created_at=now,
-                    updated_at=now
+                    updated_at=now,
                 )
             ],
             total=1,
             skip=0,
-            limit=20
+            limit=20,
         )
         assert len(response.items) == 1
         assert response.total == 1
@@ -271,7 +272,7 @@ class TestTenantPlanUpdate:
 
     def test_plan_update(self):
         """Test plan update."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         update = TenantPlanUpdate(plan="enterprise", expires_at=now)
         assert update.plan == "enterprise"
         assert update.expires_at == now

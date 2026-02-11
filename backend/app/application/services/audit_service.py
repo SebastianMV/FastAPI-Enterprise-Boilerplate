@@ -8,7 +8,7 @@ Provides a centralized way to create audit log entries
 throughout the application.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -19,21 +19,21 @@ from app.domain.ports.audit_log_repository import AuditLogRepository
 class AuditService:
     """
     Service for creating and managing audit logs.
-    
+
     This service provides a high-level API for logging actions
     throughout the application. It handles the creation of
     properly formatted audit log entries.
     """
-    
+
     def __init__(self, repository: AuditLogRepository) -> None:
         """
         Initialize the audit service.
-        
+
         Args:
             repository: The audit log repository for persistence
         """
         self._repository = repository
-    
+
     async def log(
         self,
         action: AuditAction,
@@ -53,7 +53,7 @@ class AuditService:
     ) -> AuditLog:
         """
         Create a new audit log entry.
-        
+
         Args:
             action: The type of action performed
             resource_type: The type of resource affected
@@ -68,7 +68,7 @@ class AuditService:
             new_value: State after the action
             metadata: Additional context
             reason: Optional reason for sensitive actions
-            
+
         Returns:
             The created audit log entry
         """
@@ -88,9 +88,9 @@ class AuditService:
             metadata=metadata or {},
             reason=reason,
         )
-        
+
         return await self._repository.create(audit_log)
-    
+
     async def log_create(
         self,
         resource_type: AuditResourceType,
@@ -117,7 +117,7 @@ class AuditService:
             new_value=new_value,
             metadata=metadata,
         )
-    
+
     async def log_update(
         self,
         resource_type: AuditResourceType,
@@ -146,7 +146,7 @@ class AuditService:
             new_value=new_value,
             metadata=metadata,
         )
-    
+
     async def log_delete(
         self,
         resource_type: AuditResourceType,
@@ -175,7 +175,7 @@ class AuditService:
             reason=reason,
             metadata=metadata,
         )
-    
+
     async def log_login(
         self,
         actor_id: UUID | None,
@@ -202,7 +202,7 @@ class AuditService:
             reason=failure_reason if not success else None,
             metadata=metadata,
         )
-    
+
     async def log_logout(
         self,
         actor_id: UUID,
@@ -221,7 +221,7 @@ class AuditService:
             actor_ip=actor_ip,
             tenant_id=tenant_id,
         )
-    
+
     async def log_password_change(
         self,
         actor_id: UUID,
@@ -240,7 +240,7 @@ class AuditService:
             actor_ip=actor_ip,
             tenant_id=tenant_id,
         )
-    
+
     async def log_mfa_change(
         self,
         actor_id: UUID,
@@ -261,7 +261,7 @@ class AuditService:
             actor_ip=actor_ip,
             tenant_id=tenant_id,
         )
-    
+
     async def log_api_key_created(
         self,
         api_key_id: str,
@@ -285,7 +285,7 @@ class AuditService:
             tenant_id=tenant_id,
             new_value={"scopes": scopes} if scopes else None,
         )
-    
+
     async def log_api_key_revoked(
         self,
         api_key_id: str,
@@ -309,7 +309,7 @@ class AuditService:
             tenant_id=tenant_id,
             reason=reason,
         )
-    
+
     async def log_role_assignment(
         self,
         user_id: UUID,
@@ -334,7 +334,7 @@ class AuditService:
             tenant_id=tenant_id,
             new_value={"role_id": str(role_id), "role_name": role_name},
         )
-    
+
     async def log_export(
         self,
         resource_type: AuditResourceType,

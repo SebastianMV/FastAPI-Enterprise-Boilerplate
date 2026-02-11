@@ -12,11 +12,9 @@ Commands:
 """
 
 import asyncio
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
 from app.cli.utils import confirm_action
 
@@ -26,14 +24,22 @@ console = Console()
 
 @app.command("seed")
 def seed_database(
-    include_users: bool = typer.Option(True, "--users/--no-users", help="Seed sample users"),
-    include_roles: bool = typer.Option(True, "--roles/--no-roles", help="Seed default roles"),
-    include_tenants: bool = typer.Option(True, "--tenants/--no-tenants", help="Seed sample tenants"),
-    clear_existing: bool = typer.Option(False, "--clear", "-c", help="Clear existing data first"),
+    include_users: bool = typer.Option(
+        True, "--users/--no-users", help="Seed sample users"
+    ),
+    include_roles: bool = typer.Option(
+        True, "--roles/--no-roles", help="Seed default roles"
+    ),
+    include_tenants: bool = typer.Option(
+        True, "--tenants/--no-tenants", help="Seed sample tenants"
+    ),
+    clear_existing: bool = typer.Option(
+        False, "--clear", "-c", help="Clear existing data first"
+    ),
 ) -> None:
     """
     Seed the database with sample data.
-    
+
     Example:
         cli db seed --users --roles
         cli db seed --clear  # Clear and reseed
@@ -41,8 +47,10 @@ def seed_database(
     if clear_existing:
         if not confirm_action("This will delete existing data. Continue?"):
             raise typer.Exit(0)
-    
-    asyncio.run(_seed_database(include_users, include_roles, include_tenants, clear_existing))
+
+    asyncio.run(
+        _seed_database(include_users, include_roles, include_tenants, clear_existing)
+    )
 
 
 async def _seed_database(
@@ -52,38 +60,42 @@ async def _seed_database(
     clear_existing: bool,
 ) -> None:
     """Async implementation of seed command."""
-    from datetime import datetime, UTC
-    from uuid import uuid4
-    
-    from app.infrastructure.database.connection import async_session_maker
-    from app.infrastructure.database.repositories.user_repository import SQLAlchemyUserRepository
-    from app.infrastructure.database.repositories.role_repository import SQLAlchemyRoleRepository
-    from app.infrastructure.database.repositories.tenant_repository import SQLAlchemyTenantRepository
-    from app.infrastructure.auth.jwt_handler import hash_password
-    from app.domain.entities.user import User
-    from app.domain.entities.role import Role, Permission
+
+    from app.domain.entities.role import Permission, Role
     from app.domain.entities.tenant import Tenant
+    from app.domain.entities.user import User
     from app.domain.value_objects.email import Email
-    
+    from app.infrastructure.auth.jwt_handler import hash_password
+    from app.infrastructure.database.connection import async_session_maker
+    from app.infrastructure.database.repositories.role_repository import (
+        SQLAlchemyRoleRepository,
+    )
+    from app.infrastructure.database.repositories.tenant_repository import (
+        SQLAlchemyTenantRepository,
+    )
+    from app.infrastructure.database.repositories.user_repository import (
+        SQLAlchemyUserRepository,
+    )
+
     console.print("\n[bold]Seeding database...[/bold]\n")
-    
+
     async with async_session_maker() as session:
         tenant_repo = SQLAlchemyTenantRepository(session)
         role_repo = SQLAlchemyRoleRepository(session)
         user_repo = SQLAlchemyUserRepository(session)
-        
+
         created_counts = {"tenants": 0, "roles": 0, "users": 0}
-        
+
         # 1. Seed Tenants
         if include_tenants:
             console.print("[cyan]Creating tenants...[/cyan]")
-            
+
             sample_tenants = [
                 Tenant(name="Acme Corporation", slug="acme", is_active=True),
                 Tenant(name="TechStart Inc", slug="techstart", is_active=True),
                 Tenant(name="Demo Company", slug="demo", is_active=True),
             ]
-            
+
             for tenant in sample_tenants:
                 try:
                     existing = await tenant_repo.get_by_slug(tenant.slug)
@@ -93,22 +105,25 @@ async def _seed_database(
                         console.print(f"  ✓ Created tenant: {tenant.name}")
                     else:
                         console.print(f"  - Skipped (exists): {tenant.name}")
-                except Exception as e:
-                    console.print(f"  [red]✗ Failed: {tenant.name} - {e}[/red]")
-        
+                except Exception:
+                    console.print(
+                        f"  [red]✗ Failed to create tenant: {tenant.name}[/red]"
+                    )
+
         # Get first tenant for roles (roles are tenant-scoped)
         tenants = await tenant_repo.list(limit=1)
         first_tenant_id = tenants[0].id if tenants else None
-        
+
         if not first_tenant_id and (include_roles or include_users):
             console.print("  [yellow]No tenant found, creating default...[/yellow]")
             from app.cli.utils import get_or_create_default_tenant
+
             first_tenant_id = await get_or_create_default_tenant()
-        
+
         # 2. Seed Roles
         if include_roles:
             console.print("\n[cyan]Creating roles...[/cyan]")
-            
+
             sample_roles = [
                 {
                     "name": "Administrator",
@@ -145,16 +160,21 @@ async def _seed_database(
                     "is_system": True,
                 },
             ]
-            
+
             for role_data in sample_roles:
                 try:
-                    existing = await role_repo.get_by_name(role_data["name"], first_tenant_id)
+                    existing = await role_repo.get_by_name(
+                        role_data["name"], first_tenant_id
+                    )
                     if not existing:
                         role = Role(
                             tenant_id=first_tenant_id,
                             name=role_data["name"],
                             description=role_data["description"],
-                            permissions=[Permission.from_string(p) for p in role_data["permissions"]],
+                            permissions=[
+                                Permission.from_string(p)
+                                for p in role_data["permissions"]
+                            ],
                             is_system=role_data["is_system"],
                         )
                         await role_repo.create(role)
@@ -162,16 +182,18 @@ async def _seed_database(
                         console.print(f"  ✓ Created role: {role.name}")
                     else:
                         console.print(f"  - Skipped (exists): {role_data['name']}")
-                except Exception as e:
-                    console.print(f"  [red]✗ Failed: {role_data['name']} - {e}[/red]")
-        
+                except Exception:
+                    console.print(
+                        f"  [red]✗ Failed to create role: {role_data['name']}[/red]"
+                    )
+
         # 3. Seed Users
         if include_users:
             console.print("\n[cyan]Creating sample users...[/cyan]")
-            
+
             # Use first_tenant_id from above
             tenant_id = first_tenant_id
-            
+
             sample_users = [
                 {
                     "email": "demo@example.com",
@@ -195,7 +217,7 @@ async def _seed_database(
                     "is_superuser": False,
                 },
             ]
-            
+
             for user_data in sample_users:
                 try:
                     existing = await user_repo.get_by_email(user_data["email"])
@@ -211,14 +233,16 @@ async def _seed_database(
                         )
                         await user_repo.create(user)
                         created_counts["users"] += 1
-                        console.print(f"  ✓ Created user: {user_data['email']}")
+                        console.print("  ✓ Created a sample user")
                     else:
                         console.print(f"  - Skipped (exists): {user_data['email']}")
-                except Exception as e:
-                    console.print(f"  [red]✗ Failed: {user_data['email']} - {e}[/red]")
-        
+                except Exception:
+                    console.print(
+                        f"  [red]✗ Failed to create user: {user_data['email']}[/red]"
+                    )
+
         await session.commit()
-        
+
         # Summary
         console.print("\n[bold green]✓ Seeding complete![/bold green]")
         console.print(f"  Tenants created: {created_counts['tenants']}")
@@ -230,7 +254,7 @@ async def _seed_database(
 def database_info() -> None:
     """
     Show database connection information.
-    
+
     Example:
         cli db info
     """
@@ -240,32 +264,33 @@ def database_info() -> None:
 async def _database_info() -> None:
     """Async implementation of info command."""
     from sqlalchemy import text
-    from app.infrastructure.database.connection import async_session_maker
+
     from app.config import settings
-    
+    from app.infrastructure.database.connection import async_session_maker
+
     console.print("\n[bold]Database Information[/bold]\n")
-    
+
     # Connection info (masked)
     db_url = str(settings.DATABASE_URL)
     masked_url = db_url.replace(db_url.split("@")[0].split("://")[1], "***:***")
     console.print(f"Connection: {masked_url}")
     console.print(f"Pool Size: {settings.DB_POOL_SIZE}")
     console.print(f"Max Overflow: {settings.DB_MAX_OVERFLOW}")
-    
+
     try:
         async with async_session_maker() as session:
             # PostgreSQL version
             result = await session.execute(text("SELECT version()"))
             version = result.scalar()
             console.print(f"Server: {version}")
-            
+
             # Database size
             result = await session.execute(
                 text("SELECT pg_size_pretty(pg_database_size(current_database()))")
             )
             size = result.scalar()
             console.print(f"Database Size: {size}")
-            
+
             # Table count
             result = await session.execute(
                 text("""
@@ -275,11 +300,11 @@ async def _database_info() -> None:
             )
             table_count = result.scalar()
             console.print(f"Tables: {table_count}")
-            
+
             console.print("\n[green]✓ Database connection successful[/green]")
-            
-    except Exception as e:
-        console.print(f"\n[red]✗ Database connection failed: {e}[/red]")
+
+    except Exception:
+        console.print("\n[red]✗ Database connection failed (check DATABASE_URL)[/red]")
         raise typer.Exit(1)
 
 
@@ -289,15 +314,20 @@ def run_migrations(
 ) -> None:
     """
     Run database migrations using Alembic.
-    
+
     Example:
         cli db migrate
         cli db migrate --revision abc123
     """
+    import re
     import subprocess
-    
+
+    if not re.match(r"^[a-zA-Z0-9_]+$", revision):
+        console.print("[red]Invalid revision format[/red]")
+        raise typer.Exit(1)
+
     console.print(f"[cyan]Running migrations to revision: {revision}[/cyan]")
-    
+
     try:
         result = subprocess.run(
             ["alembic", "upgrade", revision],
@@ -308,7 +338,7 @@ def run_migrations(
         console.print(result.stdout)
         console.print("[green]✓ Migrations complete[/green]")
     except subprocess.CalledProcessError as e:
-        console.print(f"[red]Migration failed:[/red]")
+        console.print("[red]Migration failed:[/red]")
         console.print(e.stderr)
         raise typer.Exit(1)
 
@@ -319,32 +349,34 @@ def reset_database(
 ) -> None:
     """
     Reset the database (DEVELOPMENT ONLY).
-    
+
     This will drop all tables and re-run migrations.
-    
+
     Example:
         cli db reset --force
     """
     from app.config import settings
-    
-    if settings.ENVIRONMENT == "production":
-        console.print("[red]Cannot reset database in production![/red]")
+
+    if settings.ENVIRONMENT in ("production", "staging"):
+        console.print("[red]Cannot reset database in production or staging![/red]")
         raise typer.Exit(1)
-    
+
     if not force and not confirm_action("This will DELETE all data. Are you sure?"):
         raise typer.Exit(0)
-    
+
     asyncio.run(_reset_database())
 
 
 async def _reset_database() -> None:
     """Async implementation of reset command."""
     import subprocess
+
     from sqlalchemy import text
+
     from app.infrastructure.database.connection import engine
-    
+
     console.print("[yellow]Resetting database...[/yellow]")
-    
+
     try:
         # Drop all tables
         console.print("  Dropping all tables...")
@@ -352,13 +384,13 @@ async def _reset_database() -> None:
             await conn.execute(text("DROP SCHEMA public CASCADE"))
             await conn.execute(text("CREATE SCHEMA public"))
             await conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
-        
+
         # Run migrations
         console.print("  Running migrations...")
         subprocess.run(["alembic", "upgrade", "head"], check=True)
-        
+
         console.print("[green]✓ Database reset complete[/green]")
-        
-    except Exception as e:
-        console.print(f"[red]Reset failed: {e}[/red]")
+
+    except Exception:
+        console.print("[red]Reset failed (check logs)[/red]")
         raise typer.Exit(1)

@@ -3,7 +3,6 @@
 
 """SQLAlchemy implementation of Tenant repository."""
 
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -17,14 +16,14 @@ from app.infrastructure.database.models.tenant import TenantModel
 class SQLAlchemyTenantRepository(TenantRepositoryPort):
     """
     SQLAlchemy implementation of TenantRepositoryPort.
-    
+
     Note: Tenant queries bypass RLS since tenants are the root
     of the multi-tenant hierarchy.
     """
-    
+
     def __init__(self, session: AsyncSession):
         self.session = session
-    
+
     def _to_entity(self, model: TenantModel) -> Tenant:
         """Convert SQLAlchemy model to domain entity."""
         return Tenant(
@@ -49,7 +48,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
             deleted_at=model.deleted_at,
             deleted_by=model.deleted_by,
         )
-    
+
     def _to_model(self, entity: Tenant) -> TenantModel:
         """Convert domain entity to SQLAlchemy model."""
         return TenantModel(
@@ -74,40 +73,40 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
             deleted_at=entity.deleted_at,
             deleted_by=entity.deleted_by,
         )
-    
-    async def get_by_id(self, tenant_id: UUID) -> Optional[Tenant]:
+
+    async def get_by_id(self, tenant_id: UUID) -> Tenant | None:
         """Get tenant by ID."""
         stmt = select(TenantModel).where(
             TenantModel.id == tenant_id,
-            TenantModel.is_deleted == False,
+            TenantModel.is_deleted.is_(False),
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._to_entity(model) if model else None
-    
-    async def get_by_slug(self, slug: str) -> Optional[Tenant]:
+
+    async def get_by_slug(self, slug: str) -> Tenant | None:
         """Get tenant by URL slug."""
         stmt = select(TenantModel).where(
             TenantModel.slug == slug,
-            TenantModel.is_deleted == False,
+            TenantModel.is_deleted.is_(False),
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._to_entity(model) if model else None
-    
-    async def get_by_domain(self, domain: str) -> Optional[Tenant]:
+
+    async def get_by_domain(self, domain: str) -> Tenant | None:
         """Get tenant by custom domain."""
         stmt = select(TenantModel).where(
             TenantModel.domain == domain,
-            TenantModel.is_deleted == False,
+            TenantModel.is_deleted.is_(False),
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._to_entity(model) if model else None
-    
+
     async def create(self, tenant: Tenant) -> Tenant:
         """Create a new tenant."""
         model = self._to_model(tenant)
@@ -115,16 +114,16 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         await self.session.flush()
         await self.session.refresh(model)
         return self._to_entity(model)
-    
+
     async def update(self, tenant: Tenant) -> Tenant:
         """Update an existing tenant."""
         stmt = select(TenantModel).where(TenantModel.id == tenant.id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         if not model:
-            raise ValueError(f"Tenant {tenant.id} not found")
-        
+            raise ValueError("Tenant not found")
+
         # Update fields
         model.name = tenant.name
         model.slug = tenant.slug
@@ -139,109 +138,114 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         model.timezone = tenant.timezone
         model.locale = tenant.locale
         model.updated_by = tenant.updated_by
-        
+
         await self.session.flush()
         await self.session.refresh(model)
         return self._to_entity(model)
-    
+
     async def delete(self, tenant_id: UUID) -> bool:
         """Hard delete a tenant."""
         stmt = select(TenantModel).where(TenantModel.id == tenant_id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         if not model:
             return False
-        
+
         await self.session.delete(model)
         await self.session.flush()
         return True
-    
+
     async def list_all(
         self,
         *,
         skip: int = 0,
         limit: int = 100,
-        is_active: Optional[bool] = None,
+        is_active: bool | None = None,
     ) -> list[Tenant]:
         """List all tenants with pagination."""
-        stmt = select(TenantModel).where(TenantModel.is_deleted == False)
-        
+        stmt = select(TenantModel).where(TenantModel.is_deleted.is_(False))
+
         if is_active is not None:
             stmt = stmt.where(TenantModel.is_active == is_active)
-        
+
         stmt = stmt.offset(skip).limit(limit).order_by(TenantModel.created_at.desc())
-        
+
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        
+
         return [self._to_entity(m) for m in models]
-    
-    async def count(self, *, is_active: Optional[bool] = None) -> int:
+
+    async def count(self, *, is_active: bool | None = None) -> int:
         """Count total tenants."""
-        stmt = select(func.count(TenantModel.id)).where(
-            TenantModel.is_deleted == False
-        )
-        
+        stmt = select(func.count(TenantModel.id)).where(TenantModel.is_deleted.is_(False))
+
         if is_active is not None:
             stmt = stmt.where(TenantModel.is_active == is_active)
-        
+
         result = await self.session.execute(stmt)
         return result.scalar() or 0
-    
-    async def slug_exists(self, slug: str, exclude_id: Optional[UUID] = None) -> bool:
+
+    async def slug_exists(self, slug: str, exclude_id: UUID | None = None) -> bool:
         """Check if slug already exists."""
         stmt = select(func.count(TenantModel.id)).where(
             TenantModel.slug == slug,
-            TenantModel.is_deleted == False,
+            TenantModel.is_deleted.is_(False),
         )
-        
+
         if exclude_id:
             stmt = stmt.where(TenantModel.id != exclude_id)
-        
+
         result = await self.session.execute(stmt)
         count = result.scalar() or 0
         return count > 0
-    
-    async def domain_exists(self, domain: str, exclude_id: Optional[UUID] = None) -> bool:
+
+    async def domain_exists(
+        self, domain: str, exclude_id: UUID | None = None
+    ) -> bool:
         """Check if domain already exists."""
         stmt = select(func.count(TenantModel.id)).where(
             TenantModel.domain == domain,
-            TenantModel.is_deleted == False,
+            TenantModel.is_deleted.is_(False),
         )
-        
+
         if exclude_id:
             stmt = stmt.where(TenantModel.id != exclude_id)
-        
+
         result = await self.session.execute(stmt)
         count = result.scalar() or 0
         return count > 0
-    
-    async def get_default_tenant(self) -> Optional[Tenant]:
+
+    async def get_default_tenant(self) -> Tenant | None:
         """
         Get the default tenant for new user registration.
-        
+
         Returns the first tenant with slug='default', or the first active tenant.
         """
         # First try to find a tenant with slug='default'
         stmt = select(TenantModel).where(
             TenantModel.slug == "default",
-            TenantModel.is_deleted == False,
-            TenantModel.is_active == True,
+            TenantModel.is_deleted.is_(False),
+            TenantModel.is_active.is_(True),
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         if model:
             return self._to_entity(model)
-        
+
         # Fallback: get any active tenant
-        stmt = select(TenantModel).where(
-            TenantModel.is_deleted == False,
-            TenantModel.is_active == True,
-        ).order_by(TenantModel.created_at.asc()).limit(1)
-        
+        stmt = (
+            select(TenantModel)
+            .where(
+                TenantModel.is_deleted.is_(False),
+                TenantModel.is_active.is_(True),
+            )
+            .order_by(TenantModel.created_at.asc())
+            .limit(1)
+        )
+
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._to_entity(model) if model else None

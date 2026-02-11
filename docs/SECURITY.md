@@ -1,7 +1,7 @@
 # Security Documentation
 
-**FastAPI Enterprise Boilerplate v1.3.0**  
-**Last Updated:** January 2026
+**FastAPI Enterprise Boilerplate v0.9.0**  
+**Last Updated:** February 2026
 
 ---
 

@@ -8,14 +8,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-
 # ===========================================
 # Request Schemas
 # ===========================================
 
+
 class LoginRequest(BaseModel):
     """Login request with email and password."""
-    
+
     email: EmailStr = Field(
         ...,
         description="User's email address",
@@ -31,15 +31,15 @@ class LoginRequest(BaseModel):
     mfa_code: str | None = Field(
         None,
         min_length=6,
-        max_length=6,
-        description="Six-digit MFA code (required if MFA is enabled)",
+        max_length=8,
+        description="MFA code: 6-digit TOTP or 8-char backup code",
         examples=["123456"],
     )
 
 
 class RegisterRequest(BaseModel):
     """User registration request."""
-    
+
     email: EmailStr = Field(
         ...,
         description="User's email address",
@@ -70,18 +70,20 @@ class RegisterRequest(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     """Request to refresh access token."""
-    
+
     refresh_token: str = Field(
-        ...,
-        description="Valid refresh token",
+        default="",
+        max_length=2048,
+        description="Valid refresh token (optional if sent via HttpOnly cookie)",
     )
 
 
 class ChangePasswordRequest(BaseModel):
     """Request to change user's password."""
-    
+
     current_password: str = Field(
         ...,
+        max_length=128,
         description="Current password for verification",
     )
     new_password: str = Field(
@@ -94,7 +96,7 @@ class ChangePasswordRequest(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     """Request to initiate password reset."""
-    
+
     email: EmailStr = Field(
         ...,
         description="Email address to send reset link",
@@ -104,9 +106,10 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     """Request to reset password with token."""
-    
+
     token: str = Field(
         ...,
+        max_length=256,
         description="Password reset token from email",
     )
     new_password: str = Field(
@@ -120,9 +123,10 @@ class ResetPasswordRequest(BaseModel):
 
 class VerifyResetTokenRequest(BaseModel):
     """Request to verify a password reset token."""
-    
+
     token: str = Field(
         ...,
+        max_length=256,
         description="Password reset token to verify",
     )
 
@@ -131,9 +135,10 @@ class VerifyResetTokenRequest(BaseModel):
 # Response Schemas
 # ===========================================
 
+
 class TokenResponse(BaseModel):
     """Authentication token response."""
-    
+
     access_token: str = Field(
         ...,
         description="JWT access token (short-lived)",
@@ -154,9 +159,9 @@ class TokenResponse(BaseModel):
 
 class UserResponse(BaseModel):
     """User information response."""
-    
+
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     email: str
     first_name: str
@@ -166,7 +171,7 @@ class UserResponse(BaseModel):
     email_verified: bool = False
     created_at: datetime
     last_login: datetime | None = None
-    
+
     @property
     def full_name(self) -> str:
         """Get user's full name."""
@@ -175,13 +180,10 @@ class UserResponse(BaseModel):
 
 class AuthResponse(BaseModel):
     """Combined auth response with tokens and user info."""
-    
-    tokens: TokenResponse
+
+    tokens: TokenResponse | None = None
     user: UserResponse
 
 
-class MessageResponse(BaseModel):
-    """Simple message response."""
-    
-    message: str
-    success: bool = True
+# Note: MessageResponse moved to common.py - import from there instead
+# from app.api.v1.schemas.common import MessageResponse

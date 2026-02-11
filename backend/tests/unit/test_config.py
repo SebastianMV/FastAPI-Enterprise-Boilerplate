@@ -3,10 +3,7 @@
 
 """Tests for application configuration module."""
 
-import os
-from unittest.mock import patch
 
-import pytest
 
 
 class TestSettingsDefaults:

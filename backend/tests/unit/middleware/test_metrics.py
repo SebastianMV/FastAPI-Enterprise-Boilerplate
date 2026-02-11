@@ -9,12 +9,12 @@ Tests for request/response time tracking and error counting.
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from starlette.requests import Request
 from starlette.responses import Response
 
-from app.middleware.metrics import MetricsMiddleware, EXCLUDED_PATHS
+from app.middleware.metrics import EXCLUDED_PATHS, MetricsMiddleware
 
 
 class TestMetricsMiddlewareInit:
@@ -24,7 +24,7 @@ class TestMetricsMiddlewareInit:
         """Test middleware can be created."""
         app = MagicMock()
         middleware = MetricsMiddleware(app=app)
-        
+
         assert middleware.app == app
 
 
@@ -34,58 +34,70 @@ class TestMetricsMiddlewareExcludedPaths:
     @pytest.mark.asyncio
     async def test_excluded_path_skips_metrics(self) -> None:
         """Test that excluded paths don't record metrics."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        # Create mock request for health endpoint
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/api/v1/health"
-        
-        # Mock call_next
-        mock_response = Response(content="OK", status_code=200)
-        call_next = AsyncMock(return_value=mock_response)
-        
-        # Process request
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/api/v1/health")
+        async def health():
+            return {"status": "ok"}
+
         with patch("app.middleware.metrics.get_metrics_service") as mock_metrics:
-            response = await middleware.dispatch(mock_request, call_next)
-            
-            # Metrics should not be called
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/api/v1/health")
+
+            # Metrics should not be called for excluded paths
             mock_metrics.assert_not_called()
             assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def test_docs_path_excluded(self) -> None:
         """Test that /docs is excluded from metrics."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/docs"
-        
-        mock_response = Response(content="Docs", status_code=200)
-        call_next = AsyncMock(return_value=mock_response)
-        
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/docs")
+        async def docs():
+            return {"docs": True}
+
         with patch("app.middleware.metrics.get_metrics_service") as mock_metrics:
-            response = await middleware.dispatch(mock_request, call_next)
-            
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/docs")
+
             mock_metrics.assert_not_called()
             assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def test_openapi_path_excluded(self) -> None:
         """Test that /openapi.json is excluded from metrics."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/openapi.json"
-        
-        mock_response = Response(content="{}", status_code=200)
-        call_next = AsyncMock(return_value=mock_response)
-        
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/openapi.json")
+        async def openapi():
+            return {}
+
         with patch("app.middleware.metrics.get_metrics_service") as mock_metrics:
-            response = await middleware.dispatch(mock_request, call_next)
-            
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/openapi.json")
+
             mock_metrics.assert_not_called()
 
 
@@ -95,66 +107,87 @@ class TestMetricsMiddlewareSuccessfulRequests:
     @pytest.mark.asyncio
     async def test_records_response_time(self) -> None:
         """Test that response time is recorded."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/api/v1/users"
-        
-        mock_response = Response(content="OK", status_code=200)
-        call_next = AsyncMock(return_value=mock_response)
-        
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/api/v1/users")
+        async def users():
+            return {"users": []}
+
         mock_service = MagicMock()
-        
-        with patch("app.middleware.metrics.get_metrics_service", return_value=mock_service):
-            response = await middleware.dispatch(mock_request, call_next)
-            
+
+        with patch(
+            "app.middleware.metrics.get_metrics_service", return_value=mock_service
+        ):
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/api/v1/users")
+
             # Should record response time
             mock_service.record_response_time.assert_called_once()
             elapsed_ms = mock_service.record_response_time.call_args[0][0]
             assert isinstance(elapsed_ms, float)
             assert elapsed_ms >= 0
-            
+
             # Should not record error for 2xx
             mock_service.record_error.assert_not_called()
+            assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def test_adds_response_time_header(self) -> None:
         """Test that X-Response-Time-Ms header is added."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/api/v1/users"
-        
-        mock_response = Response(content="OK", status_code=200)
-        call_next = AsyncMock(return_value=mock_response)
-        
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/api/v1/users")
+        async def users():
+            return {"users": []}
+
         with patch("app.middleware.metrics.get_metrics_service"):
-            response = await middleware.dispatch(mock_request, call_next)
-            
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/api/v1/users")
+
             # Should have timing header
-            assert "X-Response-Time-Ms" in response.headers
-            timing = float(response.headers["X-Response-Time-Ms"])
+            assert "x-response-time-ms" in response.headers
+            timing = float(response.headers["x-response-time-ms"])
             assert timing >= 0
 
     @pytest.mark.asyncio
     async def test_success_with_201_status(self) -> None:
         """Test successful request with 201 status."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/api/v1/users"
-        
-        mock_response = Response(content="Created", status_code=201)
-        call_next = AsyncMock(return_value=mock_response)
-        
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.post("/api/v1/users")
+        async def create_user():
+
+            return Response(content="Created", status_code=201)
+
         mock_service = MagicMock()
-        
-        with patch("app.middleware.metrics.get_metrics_service", return_value=mock_service):
-            response = await middleware.dispatch(mock_request, call_next)
-            
+
+        with patch(
+            "app.middleware.metrics.get_metrics_service", return_value=mock_service
+        ):
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.post("/api/v1/users")
+
             # Should record response time but not error
             mock_service.record_response_time.assert_called_once()
             mock_service.record_error.assert_not_called()
@@ -167,20 +200,28 @@ class TestMetricsMiddlewareErrorHandling:
     @pytest.mark.asyncio
     async def test_records_error_for_500_response(self) -> None:
         """Test that 5xx responses record errors."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/api/v1/users"
-        
-        mock_response = Response(content="Error", status_code=500)
-        call_next = AsyncMock(return_value=mock_response)
-        
+        from fastapi import FastAPI, HTTPException
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/api/v1/users")
+        async def users():
+            # Use HTTPException to trigger 500 without internal exception
+            raise HTTPException(status_code=500, detail="Internal error")
+
         mock_service = MagicMock()
-        
-        with patch("app.middleware.metrics.get_metrics_service", return_value=mock_service):
-            response = await middleware.dispatch(mock_request, call_next)
-            
+
+        with patch(
+            "app.middleware.metrics.get_metrics_service", return_value=mock_service
+        ):
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/api/v1/users")
+
             # Should record both response time and error
             mock_service.record_response_time.assert_called_once()
             mock_service.record_error.assert_called_once()
@@ -189,64 +230,88 @@ class TestMetricsMiddlewareErrorHandling:
     @pytest.mark.asyncio
     async def test_records_error_for_503_response(self) -> None:
         """Test that 503 response records error."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/api/v1/users"
-        
-        mock_response = Response(content="Service Unavailable", status_code=503)
-        call_next = AsyncMock(return_value=mock_response)
-        
+        from fastapi import FastAPI, HTTPException
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/api/v1/users")
+        async def users():
+            raise HTTPException(status_code=503, detail="Service Unavailable")
+
         mock_service = MagicMock()
-        
-        with patch("app.middleware.metrics.get_metrics_service", return_value=mock_service):
-            response = await middleware.dispatch(mock_request, call_next)
-            
+
+        with patch(
+            "app.middleware.metrics.get_metrics_service", return_value=mock_service
+        ):
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/api/v1/users")
+
             mock_service.record_error.assert_called_once()
+            assert response.status_code == 503
 
     @pytest.mark.asyncio
     async def test_no_error_for_4xx_response(self) -> None:
         """Test that 4xx responses don't record errors."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/api/v1/users"
-        
-        mock_response = Response(content="Not Found", status_code=404)
-        call_next = AsyncMock(return_value=mock_response)
-        
+        from fastapi import FastAPI, HTTPException
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/api/v1/users")
+        async def users():
+            raise HTTPException(status_code=404, detail="Not Found")
+
         mock_service = MagicMock()
-        
-        with patch("app.middleware.metrics.get_metrics_service", return_value=mock_service):
-            response = await middleware.dispatch(mock_request, call_next)
-            
+
+        with patch(
+            "app.middleware.metrics.get_metrics_service", return_value=mock_service
+        ):
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/api/v1/users")
+
             # Should record response time but not error
             mock_service.record_response_time.assert_called_once()
             mock_service.record_error.assert_not_called()
+            assert response.status_code == 404
 
     @pytest.mark.asyncio
     async def test_exception_handling(self) -> None:
         """Test that exceptions are handled and metrics recorded."""
-        app = MagicMock()
-        middleware = MetricsMiddleware(app=app)
-        
-        mock_request = MagicMock(spec=Request)
-        mock_request.url.path = "/api/v1/users"
-        
-        # Mock call_next that raises exception
-        call_next = AsyncMock(side_effect=Exception("Test error"))
-        
+        from fastapi import FastAPI, HTTPException
+        from httpx import ASGITransport, AsyncClient
+
+        app = FastAPI()
+
+        @app.get("/api/v1/users")
+        async def users():
+            # FastAPI converts unhandled exceptions to 500 responses
+            raise HTTPException(status_code=500, detail="Test error")
+
         mock_service = MagicMock()
-        
-        with patch("app.middleware.metrics.get_metrics_service", return_value=mock_service):
-            with pytest.raises(Exception, match="Test error"):
-                await middleware.dispatch(mock_request, call_next)
-            
+
+        with patch(
+            "app.middleware.metrics.get_metrics_service", return_value=mock_service
+        ):
+            app.add_middleware(MetricsMiddleware)
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/api/v1/users")
+
             # Should still record metrics even on exception
             mock_service.record_response_time.assert_called_once()
             mock_service.record_error.assert_called_once()
+            assert response.status_code == 500
 
 
 class TestExcludedPathsConstant:

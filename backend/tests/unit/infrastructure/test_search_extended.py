@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, AsyncMock, patch
 from uuid import uuid4
 
 import pytest
@@ -79,7 +78,7 @@ class TestSearchFilters:
 
     def test_date_filter(self) -> None:
         """Test date filter."""
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         start_date = datetime.now(UTC)
         assert start_date is not None

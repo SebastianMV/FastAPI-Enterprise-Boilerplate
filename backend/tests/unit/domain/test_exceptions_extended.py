@@ -57,8 +57,8 @@ class TestDomainExceptions:
         from app.domain.exceptions.base import (
             AuthenticationError,
             AuthorizationError,
-            EntityNotFoundError,
             ConflictError,
+            EntityNotFoundError,
             ValidationError,
         )
 

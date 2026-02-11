@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 
@@ -21,7 +21,7 @@ class TestAuthValidation:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/auth/login",
-                data={"username": "test@test.com", "password": "password123"}
+                data={"username": "test@test.com", "password": "password123"},
             )
             # May return validation error or auth failure
             assert response.status_code in [400, 401, 422]
@@ -32,8 +32,7 @@ class TestAuthValidation:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/api/v1/auth/register",
-                json={"email": "test@example.com"}
+                "/api/v1/auth/register", json={"email": "test@example.com"}
             )
             assert response.status_code == 422
 
@@ -48,8 +47,8 @@ class TestAuthValidation:
                     "email": "test@example.com",
                     "password": "weakpassword123",
                     "first_name": "Test",
-                    "last_name": "User"
-                }
+                    "last_name": "User",
+                },
             )
             # Depends on password policy
             assert response.status_code in [400, 422, 500]
@@ -68,8 +67,7 @@ class TestAuthValidation:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/api/v1/auth/refresh",
-                json={"refresh_token": "invalid-token"}
+                "/api/v1/auth/refresh", json={"refresh_token": "invalid-token"}
             )
             assert response.status_code in [401, 422]
 
@@ -228,7 +226,7 @@ class TestMFAEndpointValidation:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/mfa/verify",
-                json={"code": "abc"}  # Should be numeric
+                json={"code": "abc"},  # Should be numeric
             )
             assert response.status_code in [401, 403, 422]
 

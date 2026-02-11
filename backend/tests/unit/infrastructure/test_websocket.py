@@ -7,8 +7,8 @@ Unit tests for WebSocket endpoint module.
 Tests for WebSocket authentication and message handling.
 """
 
-from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
@@ -18,30 +18,28 @@ class TestGetWsManager:
 
     def test_get_ws_manager_returns_manager(self) -> None:
         """Test getting WebSocket manager returns a manager instance."""
-        from app.api.v1.endpoints.websocket import get_ws_manager
-        
         # Reset global manager
         import app.api.v1.endpoints.websocket as ws_module
+        from app.api.v1.endpoints.websocket import get_ws_manager
+
         ws_module._ws_manager = None
-        
-        with patch.object(ws_module.settings, 'WEBSOCKET_BACKEND', 'memory'):
-            manager = get_ws_manager()
-        
+
+        manager = get_ws_manager()
+
         assert manager is not None
         # Cleanup
         ws_module._ws_manager = None
 
     def test_get_ws_manager_singleton(self) -> None:
         """Test that get_ws_manager returns same instance."""
-        from app.api.v1.endpoints.websocket import get_ws_manager
-        
         import app.api.v1.endpoints.websocket as ws_module
+        from app.api.v1.endpoints.websocket import get_ws_manager
+
         ws_module._ws_manager = None
-        
-        with patch.object(ws_module.settings, 'WEBSOCKET_BACKEND', 'memory'):
-            manager1 = get_ws_manager()
-            manager2 = get_ws_manager()
-        
+
+        manager1 = get_ws_manager()
+        manager2 = get_ws_manager()
+
         assert manager1 is manager2
         ws_module._ws_manager = None
 
@@ -56,7 +54,7 @@ class TestAuthenticateWebsocket:
 
         mock_websocket = AsyncMock()
         result = await authenticate_websocket(mock_websocket, token=None)
-        
+
         assert result is None
 
     @pytest.mark.asyncio
@@ -75,9 +73,9 @@ class TestAuthenticateWebsocket:
                 "sub": str(user_id),
                 "tenant_id": str(tenant_id),
             }
-            
+
             result = await authenticate_websocket(mock_websocket, token="valid-token")
-        
+
         assert result is not None
         assert result[0] == user_id
         assert result[1] == tenant_id
@@ -97,9 +95,9 @@ class TestAuthenticateWebsocket:
                 "sub": str(user_id),
                 "tenant_id": None,
             }
-            
+
             result = await authenticate_websocket(mock_websocket, token="valid-token")
-        
+
         assert result is not None
         assert result[0] == user_id
         assert result[1] is None
@@ -115,9 +113,9 @@ class TestAuthenticateWebsocket:
             "app.api.v1.endpoints.websocket.validate_access_token"
         ) as mock_validate:
             mock_validate.side_effect = Exception("Invalid token")
-            
+
             result = await authenticate_websocket(mock_websocket, token="invalid-token")
-        
+
         assert result is None
 
     @pytest.mark.asyncio
@@ -131,9 +129,9 @@ class TestAuthenticateWebsocket:
             "app.api.v1.endpoints.websocket.validate_access_token"
         ) as mock_validate:
             mock_validate.side_effect = Exception("Token expired")
-            
+
             result = await authenticate_websocket(mock_websocket, token="expired-token")
-        
+
         assert result is None
 
 
@@ -175,7 +173,7 @@ class TestDefaultMessageHandlers:
 
         # Capture the registered handler
         handlers = {}
-        
+
         def mock_register(msg_type, handler):
             handlers[msg_type] = handler
 
@@ -236,7 +234,7 @@ class TestWebSocketMessageTypes:
 
         recipient_id = uuid4()
         sender_id = uuid4()
-        
+
         message = WebSocketMessage(
             type=MessageType.NOTIFICATION,
             payload={"text": "DM"},
@@ -329,13 +327,13 @@ class TestWebSocketEndpointFlow:
     @pytest.mark.asyncio
     async def test_websocket_disabled(self) -> None:
         """Test WebSocket connection when disabled."""
-        from app.api.v1.endpoints.websocket import websocket_endpoint
         import app.api.v1.endpoints.websocket as ws_module
+        from app.api.v1.endpoints.websocket import websocket_endpoint
 
         mock_websocket = AsyncMock()
         mock_websocket.close = AsyncMock()
 
-        with patch.object(ws_module.settings, 'WEBSOCKET_ENABLED', False):
+        with patch.object(ws_module.settings, "WEBSOCKET_ENABLED", False):
             await websocket_endpoint(mock_websocket, token="some-token")
 
         mock_websocket.close.assert_called_once()
@@ -343,18 +341,17 @@ class TestWebSocketEndpointFlow:
     @pytest.mark.asyncio
     async def test_websocket_no_auth(self) -> None:
         """Test WebSocket connection without authentication."""
-        from app.api.v1.endpoints.websocket import websocket_endpoint
         import app.api.v1.endpoints.websocket as ws_module
+        from app.api.v1.endpoints.websocket import websocket_endpoint
 
         mock_websocket = AsyncMock()
         mock_websocket.close = AsyncMock()
 
-        with patch.object(ws_module.settings, 'WEBSOCKET_ENABLED', True):
-            with patch(
-                "app.api.v1.endpoints.websocket.authenticate_websocket",
-                return_value=None,
-            ):
-                await websocket_endpoint(mock_websocket, token=None)
+        with patch.object(ws_module.settings, "WEBSOCKET_ENABLED", True), patch(
+            "app.api.v1.endpoints.websocket.authenticate_websocket",
+            return_value=None,
+        ):
+            await websocket_endpoint(mock_websocket, token=None)
 
         mock_websocket.close.assert_called_once()
 
@@ -365,30 +362,29 @@ class TestWebSocketModuleImports:
     def test_memory_manager_import(self) -> None:
         """Test MemoryWebSocketManager can be imported."""
         from app.infrastructure.websocket import MemoryWebSocketManager
+
         assert MemoryWebSocketManager is not None
 
     def test_connection_info_import(self) -> None:
         """Test ConnectionInfo can be imported."""
         from app.infrastructure.websocket import ConnectionInfo
+
         assert ConnectionInfo is not None
 
     def test_message_type_import(self) -> None:
         """Test MessageType can be imported."""
         from app.infrastructure.websocket import MessageType
+
         assert MessageType is not None
 
     def test_websocket_message_import(self) -> None:
         """Test WebSocketMessage can be imported."""
         from app.infrastructure.websocket import WebSocketMessage
+
         assert WebSocketMessage is not None
 
     def test_websocket_port_import(self) -> None:
         """Test WebSocketPort can be imported."""
         from app.infrastructure.websocket import WebSocketPort
+
         assert WebSocketPort is not None
-
-    def test_get_redis_manager_function(self) -> None:
-        """Test get_redis_manager function exists."""
-        from app.infrastructure.websocket import get_redis_manager
-        assert callable(get_redis_manager)
-

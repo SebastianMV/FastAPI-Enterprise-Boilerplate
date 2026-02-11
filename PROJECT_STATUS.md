@@ -1,239 +1,187 @@
-# 📊 Project Status & Roadmap
+﻿# Project Status & Roadmap
 
-**Version:** v1.3.7  
-**Date:** January 27, 2026  
-**Status:** ✅ Production Ready
+**Version:** v0.9.5
+**Date:** February 11, 2026
+**Status:** Beta  feature-complete, 22 security audits passed
 
 ---
 
-## 🎯 Executive Summary
+## Executive Summary
 
-**FastAPI Enterprise Boilerplate** is **100% functional and production-ready**.
+**FastAPI Enterprise Boilerplate** is a full-stack enterprise boilerplate with
+JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.
+The backend has 99% test coverage and has undergone **22 security audit cycles**
+covering 700+ individual hardening items. The React frontend is fully functional
+with 568 tests passing.
 
 ### Quality Metrics
 
 | Metric | Value | Status |
-| ------- | ----- | ------ |
-| Tests Passing | 3,858 | ✅ |
-| Code Coverage | 99% | ✅ |
-| Critical Modules | 100% | ✅ |
-| Type Errors | 0 | ✅ |
-| Security Vulnerabilities | 0 | ✅ |
-| Docker Services | 4/4 healthy | ✅ |
-| Migrations Applied | 12/12 | ✅ |
-| Frontend Bundle (gzip) | 159KB | ✅ |
+| ------ | ----- | ------ |
+| Backend Unit Tests | ~3,500 passing | OK |
+| Backend Integration Tests | ~247 passing | OK |
+| Backend E2E Tests | 20/84 passing (63 skipped) | Partial |
+| Frontend Unit Tests | 568/568 passing | OK |
+| Backend Coverage | 99% | OK |
+| Frontend Coverage | ~32% statements | Partial |
+| Type Errors (Python) | 0 | OK |
+| Type Errors (TypeScript) | 0 | OK |
+| Docker Services | 4/4 healthy | OK |
+| Alembic Migrations | 12 applied | OK |
+| Security Audits Passed | 22 cycles | OK |
 
 ---
 
-## 📦 Version History
-
-| Version | Date | Highlights |
-| ------- | ----- | ---------- |
-| v1.0.0 | Jan 7, 2026 | Initial release with core features |
-| v1.0.1 | Jan 7, 2026 | Security patch: LTS versions |
-| v1.1.0 | Jan 8, 2026 | Complete Frontend UI + Password Recovery |
-| v1.1.1 | Jan 8, 2026 | Code Quality & First-Time Deployment |
-| v1.2.0 | Jan 9, 2026 | OAuth, Chat, Notifications, Search UI |
-| v1.2.1 | Jan 10, 2026 | i18n Expansion (FR, DE) + JWT Migration |
-| v1.3.0 | Jan 12, 2026 | Avatar Upload + Code Splitting |
-| v1.3.1 | Jan 14, 2026 | Test Coverage Improvements (84% → 86%) |
-| v1.3.2 | Jan 15, 2026 | Coverage 86% → 87% (+50 tests: CLI, OAuth, Sessions) |
-| v1.3.3 | Jan 15, 2026 | Major Coverage Boost: 87% → 94% (WebSocket 87%, Storage 99%) |
-| v1.3.4 | Jan 19, 2026 | Auth & Users Tests: 91% → 92% (+24 tests, self-deletion fix) |
-| v1.3.5 | Jan 25, 2026 | Coverage 92% → 97% (Critical modules 95%+) |
-| v1.3.6 | Jan 27, 2026 | 99% Critical Modules (mfa, oauth, roles, tenants, users at 100%) |
-| **v1.3.7** | Jan 27, 2026 | **99% Global Coverage** (+22 test files, 3,858 tests) |
-
----
-
-## 🏗️ Architecture
-
-### Backend (Python 3.13 + FastAPI)
-
-```text
-app/
-├── api/           # REST + WebSocket endpoints
-├── application/   # Use cases and services
-├── domain/        # Entities and ports (Hexagonal)
-└── infrastructure/ # DB, Cache, Email, Storage
-```
-
-### Frontend (React 18.3.1 LTS + TypeScript)
-
-```text
-src/
-├── components/   # UI components
-├── pages/        # App pages
-├── services/     # API client
-└── stores/       # Zustand state
-```
-
----
-
-## ✅ Implemented Features
+## What's Implemented
 
 ### Core Features
 
-| Feature | Status |
-| ------- | ------ |
-| JWT + Refresh Tokens | ✅ |
-| MFA/2FA (TOTP) | ✅ |
-| API Keys | ✅ |
-| Password Recovery | ✅ |
-| Multi-tenant RLS | ✅ |
-| OAuth2/SSO (Google, GitHub, Microsoft, Discord) | ✅ |
-| WebSocket + Chat + Notifications | ✅ |
-| Full-Text Search (PostgreSQL + Elasticsearch) | ✅ |
-| Storage Pluggable (Local/S3/MinIO) | ✅ |
-| Email Pluggable (SMTP/SendGrid) | ✅ |
-| i18n (EN, ES, PT, FR, DE) | ✅ |
-| Avatar Upload | ✅ |
+| Feature | Notes |
+| ------- | ----- |
+| JWT Auth (access + refresh) | HttpOnly cookies + Bearer fallback + audience validation |
+| MFA/2FA (TOTP + Email OTP) | Fernet-encrypted secrets, SHA-256 hashed OTPs |
+| API Keys | CRUD + scoped permissions + ACL |
+| Password Recovery | Redis-backed tokens (SHA-256 hashed) + rate limiting |
+| Multi-tenant RLS | PostgreSQL Row-Level Security + cross-tenant isolation |
+| OAuth2 SSO | Google, GitHub, Microsoft, Discord (encrypted client secrets) |
+| WebSocket + Notifications | Real-time push via Redis pub/sub, cookie-based auth |
+| Full-Text Search | PostgreSQL tsvector with parameterized queries |
+| Pluggable Storage | Local / S3 / MinIO (async I/O, path traversal protection) |
+| Pluggable Email | SMTP / Console / SendGrid |
+| i18n | EN 100%, ES ~96%, PT ~96% (3 locales) |
+| Data Exchange | Import / Export / PDF & Excel reports (formula injection protection) |
+| Bulk Operations API | Batch CRUD with tenant isolation |
+| CSRF Protection | Double-submit cookie with per-request rotation |
+| ErrorBoundary | React class component catch-all |
+| Global Exception Handlers | Domain exceptions mapped to HTTP responses |
 
-### Backend Endpoints
+### Security Hardening (22 Audit Cycles)
 
-| Endpoint | Status |
-| -------- | ------ |
-| `/api/v1/auth/*` | ✅ |
-| `/api/v1/users/*` | ✅ |
-| `/api/v1/roles/*` | ✅ |
-| `/api/v1/tenants/*` | ✅ |
-| `/api/v1/api-keys/*` | ✅ |
-| `/api/v1/mfa/*` | ✅ |
-| `/api/v1/health/*` | ✅ |
-| `/api/v1/ws` | ✅ |
-| `/api/v1/notifications/*` | ✅ |
-| `/api/v1/oauth/*` | ✅ |
-| `/api/v1/search/*` | ✅ |
-| `/api/v1/dashboard/*` | ✅ |
+| Category | Items Resolved |
+| -------- | -------------- |
+| Backend security | ~200 issues (sev 6-10) |
+| Frontend security | ~120 issues (sev 6-10) |
+| Infrastructure | ~100 issues (sev 6-10) |
+| i18n hardcoding | ~150 strings to i18n calls |
+| Tests updated | ~40 test files |
 
-### Infrastructure
+Key areas: tenant isolation, timing-safe comparisons, generic error messages,
+CSV/Excel formula injection, HTML/XSS escaping, PII redaction in logs, encrypted
+secrets, container hardening, supply chain pinning, Semgrep rules, WCAG accessibility.
 
-| Module | Status |
-| ------ | ------ |
-| Database (SQLAlchemy + Alembic) | ✅ |
-| Auth (JWT + Password + API Keys) | ✅ |
-| OAuth2/SSO (4 providers) | ✅ |
-| Cache (Redis) | ✅ |
-| Storage (Local/S3/MinIO) | ✅ |
-| Email (SMTP/Console/SendGrid) | ✅ |
-| WebSocket (Memory/Redis) | ✅ |
-| i18n (5 languages) | ✅ |
-| Observability (OpenTelemetry) | ✅ |
-| Background Jobs (ARQ) | ✅ |
-| Full-Text Search | ✅ |
+### Backend Endpoints (15 groups)
 
-### Frontend Components
+auth, users, roles, tenants, api-keys, mfa, health, ws, notifications,
+oauth, search, dashboard, data, bulk, report-templates
 
-| Component | Status |
-| ---------- | ------ |
-| Auth (Login, Register, Password Recovery) | ✅ |
-| Dashboard | ✅ |
-| Users Management | ✅ |
-| Profile + Avatar | ✅ |
-| Settings | ✅ |
-| API Keys | ✅ |
-| MFA Configuration | ✅ |
-| OAuth Social Login | ✅ |
-| Notifications | ✅ |
-| Search | ✅ |
-| Dark Mode | ✅ |
-| i18n (5 languages) | ✅ |
+### Frontend (18 pages, all lazy-loaded)
+
+Auth (Login, Register, Forgot/Reset Password, OAuth callback, Email verify),
+Dashboard, Users, Profile + Avatar, Settings, API Keys, MFA, Sessions,
+Audit Log, Notifications, Search, Roles (admin), Tenants (admin),
+Data Exchange (admin)
 
 ---
 
-## 🐳 Docker Stack
+## What's NOT Implemented
 
-| Service | Port | Status |
-| ------- | ------ | ------ |
-| backend | 8000 | ✅ Healthy |
-| frontend | 3000 | ✅ Healthy |
-| db (PostgreSQL 17) | 5432 | ✅ Healthy |
-| redis | 6379 | ✅ Healthy |
+| Feature | Reality |
+| ------- | ------- |
+| SAML 2.0 SSO | Fully deleted in v0.9.0 |
+| LDAP / Active Directory | Fully deleted in v0.9.0 |
+| SMS 2FA | Not implemented (extension point only) |
+| Webhooks | Not implemented |
+| GraphQL | Not implemented |
+| Payments | Not implemented |
 
 ---
 
-## 🔐 Development Credentials
+## Docker Stack
+
+| Service | Port (dev) | Port (prod) |
+| ------- | ---------- | ----------- |
+| backend | 127.0.0.1:8000 | expose only (nginx proxy) |
+| frontend (Vite / Nginx) | 3000 | 80 |
+| PostgreSQL 17.2 | 127.0.0.1:5432 | 127.0.0.1:5432 |
+| Redis 7.4 | 127.0.0.1:6379 | 127.0.0.1:6379 |
+| Test DB | 127.0.0.1:5433 | -- |
+| Test Redis | 127.0.0.1:6380 | -- |
+
+All containers run with security_opt: no-new-privileges, cap_drop: ALL,
+pids_limit, and pinned image tags.
+
+---
+
+## Roadmap to v1.0.0
+
+### Completed Milestones
+
+| Milestone | Status |
+|---|---|
+| v0.9.1 -- Security Hardening | Done |
+| v0.9.2 -- Frontend Quality | Done (568 tests, i18n ~96%) |
+| v0.9.3 -- Backend Hardening | Done |
+| v0.9.4 -- DevOps & CI | Done |
+| v0.9.5 -- Security Audit Cycle (22 audits) | Done |
+
+### v1.0.0 -- Production Release
+
+| Prerequisite | Status |
+| ------------ | ------ |
+| All severity >= 5 items resolved | Done |
+| 22 security audit cycles passed | Done |
+| Frontend tests >= 50% coverage | Pending (~32%) |
+| All i18n locales >= 95% | Done |
+| Container hardening (non-root, caps, pids) | Done |
+| Supply chain pinning (images, CI actions) | Done |
+| Semgrep automated rules | Done |
+
+**Remaining blocker:** Frontend statement coverage target (~32% to 50%).
+
+---
+
+## Pre-Production Security Checklist
+
+- Set a strong, unique JWT_SECRET_KEY (>= 32 chars)
+- Set a strong, unique ENCRYPTION_KEY
+- Set a strong REDIS_PASSWORD
+- Set POSTGRES_PASSWORD (no defaults)
+- Set APP_USER_PASSWORD for RLS enforcement
+- Disable /docs and /redoc (ENVIRONMENT=production)
+- Configure CORS_ORIGINS to exact frontend domain
+- Set AUTH_COOKIE_SECURE=true + AUTH_COOKIE_SAMESITE=strict
+- Set CSRF_ENABLED=true
+- Enable HTTPS (TLS termination at Nginx or LB)
+- Change seed user passwords
+- Run alembic upgrade head post-deploy
+- Review and tune rate limits
+- Enable OpenTelemetry + Prometheus monitoring
+
+---
+
+## Development Credentials
 
 | Email | Password | Role |
-| ----- | -------- | --- |
-| `admin@example.com` | Admin123! | Superadmin |
-| `manager@example.com` | Manager123! | Manager |
-| `user@example.com` | User123! | User |
+| ----- | -------- | ---- |
+| admin@example.com | Admin123! | Superadmin |
+| manager@example.com | Manager123! | Manager |
+| user@example.com | User123! | User |
 
-> ⚠️ **Change in production**
-
----
-
-## 🧪 Testing Metrics
-
-| Metric | Value |
-| ------- | ----- |
-| Backend Tests | 3,151 passing |
-| Code Coverage | 94% |
-| Modules < 95% Coverage | 63 modules |
-| Frontend E2E Tests | ~25 tests |
-| Type Errors (Python) | 0 |
-| Type Errors (TypeScript) | 0 |
-| ESLint Errors | 0 |
+Change these in production.
 
 ---
 
-## 📅 Future Roadmap
-
-### v1.4.0 - Testing & Coverage (In Progress)
-
-| Task | Priority | Status |
-| ----- | --------- | ------ |
-| Backend coverage 94% → 95%+ | High | 🔄 In Progress |
-| Coverage for Auth endpoints (58%) | High | Pending |
-| Coverage for CLI commands (16-32%) | Medium | Pending |
-| Coverage for MFA endpoints (43%) | High | Pending |
-| Frontend unit tests (Vitest) | Medium | Pending |
-| Additional E2E tests | Low | Pending |
-
-### v1.5.0 - Advanced Features
-
-| Task | Priority |
-| ----- | --------- |
-| Two-Factor Auth via SMS | Medium |
-| ~~Audit Log UI~~ | ~~Medium~~ ✅ Completed in v1.3.1 |
-| ~~Complete Admin Panel~~ | ~~High~~ ✅ Completed in v1.3.1 |
-| Bulk operations API | Medium |
-
-### v2.0.0 - Enterprise Features
-
-| Task | Priority |
-| ----- | --------- |
-| SAML SSO Integration | High |
-| LDAP/Active Directory | High |
-| Kubernetes Helm Charts | High |
-| Terraform Infrastructure | Medium |
-
----
-
-## 🔐 Pre-Production Security Checklist
-
-- [ ] Change `JWT_SECRET_KEY`
-- [ ] Disable `/docs` and `/redoc` in production
-- [ ] Configure CORS properly
-- [ ] Enable HTTPS
-- [ ] Change seed user passwords
-- [ ] Use `app_user` for RLS enforcement
-- [ ] Review and set proper rate limits
-- [ ] Enable monitoring and alerting
-
----
-
-## 📚 Documentation
+## Documentation
 
 | Document | Description |
-| --------- | ----------- |
-| [README.md](README.md) | Quick start guide |
-| [CHANGELOG.md](CHANGELOG.md) | Change history |
-| [docs/](docs/README.md) | Complete technical documentation |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
+| -------- | ----------- |
+| README.md | Quick start guide |
+| CHANGELOG.md | Version history |
+| CONTRIBUTING.md | Contribution guidelines |
+| MAKEFILE.md | Make / PowerShell commands |
+| docs/ | Full technical documentation (16 docs) |
 
 ---
 
-**Maintained by:** Sebastián Muñoz  
+**Maintained by:** Sebastian Munoz
 **License:** MIT

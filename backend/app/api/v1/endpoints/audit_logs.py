@@ -8,19 +8,17 @@ Provides read-only access to audit log entries for compliance and security monit
 """
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status  # noqa: F811
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentTenantId, CurrentUserId
+from app.api.deps import CurrentTenantId, CurrentUserId, require_permission
 from app.api.v1.schemas.audit_logs import (
     AuditLogListResponse,
     AuditLogResponse,
-    AuditLogStatsResponse,
 )
-from app.domain.entities.audit_log import AuditAction, AuditResourceType
+from app.domain.entities.audit_log import AuditAction, AuditLog, AuditResourceType
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.database.repositories.audit_log_repository import (
     SQLAlchemyAuditLogRepository,
@@ -36,13 +34,15 @@ def get_audit_repository(
     return SQLAlchemyAuditLogRepository(session)
 
 
-def _to_response(log) -> AuditLogResponse:
+def _to_response(log: AuditLog) -> AuditLogResponse:
     """Convert audit log entity to response schema."""
     return AuditLogResponse(
         id=log.id,
         timestamp=log.timestamp,
-        action=log.action.value if hasattr(log.action, 'value') else log.action,
-        resource_type=log.resource_type.value if hasattr(log.resource_type, 'value') else log.resource_type,
+        action=log.action.value if hasattr(log.action, "value") else log.action,
+        resource_type=log.resource_type.value
+        if hasattr(log.resource_type, "value")
+        else log.resource_type,
         resource_id=log.resource_id,
         resource_name=log.resource_name,
         actor_id=log.actor_id,
@@ -64,14 +64,20 @@ def _to_response(log) -> AuditLogResponse:
     description="List audit logs for the current tenant with optional filters.",
 )
 async def list_audit_logs(
-    current_user_id: CurrentUserId,
-    tenant_id: CurrentTenantId,
+    current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
+    tenant_id: CurrentTenantId = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
-    action: Optional[str] = Query(default=None, description="Filter by action type"),
-    resource_type: Optional[str] = Query(default=None, description="Filter by resource type"),
-    start_date: Optional[datetime] = Query(default=None, description="Filter from this date"),
-    end_date: Optional[datetime] = Query(default=None, description="Filter until this date"),
+    action: str | None = Query(default=None, description="Filter by action type"),
+    resource_type: str | None = Query(
+        default=None, description="Filter by resource type"
+    ),
+    start_date: datetime | None = Query(
+        default=None, description="Filter from this date"
+    ),
+    end_date: datetime | None = Query(
+        default=None, description="Filter until this date"
+    ),
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
 ) -> AuditLogListResponse:
     """List audit logs for the current tenant."""
@@ -80,7 +86,7 @@ async def list_audit_logs(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "NO_TENANT", "message": "Tenant context required"},
         )
-    
+
     # Parse action if provided
     action_enum = None
     if action:
@@ -89,9 +95,9 @@ async def list_audit_logs(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "INVALID_ACTION", "message": f"Invalid action: {action}"},
-            )
-    
+                detail={"code": "INVALID_ACTION", "message": "Invalid action type"},
+            ) from None
+
     # Parse resource_type if provided
     resource_type_enum = None
     if resource_type:
@@ -100,9 +106,12 @@ async def list_audit_logs(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "INVALID_RESOURCE_TYPE", "message": f"Invalid resource type: {resource_type}"},
-            )
-    
+                detail={
+                    "code": "INVALID_RESOURCE_TYPE",
+                    "message": "Invalid resource type",
+                },
+            ) from None
+
     logs = await repo.list_by_tenant(
         tenant_id=tenant_id,
         limit=limit,
@@ -112,7 +121,7 @@ async def list_audit_logs(
         start_date=start_date,
         end_date=end_date,
     )
-    
+
     total = await repo.count_by_tenant(
         tenant_id=tenant_id,
         action=action_enum,
@@ -120,7 +129,7 @@ async def list_audit_logs(
         start_date=start_date,
         end_date=end_date,
     )
-    
+
     return AuditLogListResponse(
         items=[_to_response(log) for log in logs],
         total=total,
@@ -137,10 +146,11 @@ async def list_audit_logs(
 )
 async def get_my_activity(
     current_user_id: CurrentUserId,
+    tenant_id: CurrentTenantId = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
-    start_date: Optional[datetime] = Query(default=None),
-    end_date: Optional[datetime] = Query(default=None),
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
 ) -> AuditLogListResponse:
     """Get audit logs for the current user."""
@@ -150,11 +160,13 @@ async def get_my_activity(
         offset=skip,
         start_date=start_date,
         end_date=end_date,
+        tenant_id=tenant_id,
     )
-    
+
     return AuditLogListResponse(
         items=[_to_response(log) for log in logs],
-        total=len(logs),  # Simplified - would need count method for accuracy
+        # TODO: Implement count method in repository for accurate pagination totals
+        total=len(logs),
         skip=skip,
         limit=limit,
     )
@@ -167,10 +179,12 @@ async def get_my_activity(
     description="Get recent login attempts for the tenant.",
 )
 async def get_recent_logins(
-    current_user_id: CurrentUserId,
-    tenant_id: CurrentTenantId,
+    current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
+    tenant_id: CurrentTenantId = None,
     limit: int = Query(default=50, ge=1, le=100),
-    include_failed: bool = Query(default=True, description="Include failed login attempts"),
+    include_failed: bool = Query(
+        default=True, description="Include failed login attempts"
+    ),
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
 ) -> AuditLogListResponse:
     """Get recent login attempts."""
@@ -179,7 +193,7 @@ async def get_recent_logins(
         limit=limit,
         include_failed=include_failed,
     )
-    
+
     return AuditLogListResponse(
         items=[_to_response(log) for log in logs],
         total=len(logs),
@@ -197,7 +211,8 @@ async def get_recent_logins(
 async def get_resource_history(
     resource_type: str,
     resource_id: str,
-    current_user_id: CurrentUserId,
+    current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
+    tenant_id: CurrentTenantId = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
@@ -208,16 +223,20 @@ async def get_resource_history(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_RESOURCE_TYPE", "message": f"Invalid resource type: {resource_type}"},
-        )
-    
+            detail={
+                "code": "INVALID_RESOURCE_TYPE",
+                "message": "Invalid resource type",
+            },
+        ) from None
+
     logs = await repo.list_by_resource(
         resource_type=resource_type_enum,
         resource_id=resource_id,
         limit=limit,
         offset=skip,
+        tenant_id=tenant_id,
     )
-    
+
     return AuditLogListResponse(
         items=[_to_response(log) for log in logs],
         total=len(logs),
@@ -234,18 +253,26 @@ async def get_resource_history(
 )
 async def get_audit_log(
     audit_id: UUID,
-    current_user_id: CurrentUserId,
+    current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
+    tenant_id: CurrentTenantId = None,
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
 ) -> AuditLogResponse:
     """Get a specific audit log entry."""
     log = await repo.get_by_id(audit_id)
-    
+
     if not log:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT_FOUND", "message": f"Audit log {audit_id} not found"},
+            detail={"code": "NOT_FOUND", "message": "Audit log not found"},
         )
-    
+
+    # Tenant isolation: ensure log belongs to the current tenant
+    if tenant_id and log.tenant_id and log.tenant_id != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOT_FOUND", "message": "Audit log not found"},
+        )
+
     return _to_response(log)
 
 

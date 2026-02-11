@@ -5,13 +5,17 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 from uuid import uuid4
-from datetime import datetime, UTC
+
 import pytest
 
 from app.application.services.notification_service import NotificationService
-from app.domain.entities.notification import Notification, NotificationType, NotificationPriority
+from app.domain.entities.notification import (
+    Notification,
+    NotificationPriority,
+    NotificationType,
+)
 
 
 class TestNotificationServiceCreation:
@@ -42,7 +46,7 @@ class TestNotificationEntity:
             user_id=user_id,
             title="Test",
             message="Test message",
-            type=NotificationType.INFO
+            type=NotificationType.INFO,
         )
         assert notification.title == "Test"
         assert notification.user_id == user_id
@@ -70,7 +74,7 @@ class TestNotificationEntity:
             user_id=user_id,
             title="Test",
             message="Test message",
-            type=NotificationType.INFO
+            type=NotificationType.INFO,
         )
         notification.mark_read()
         assert notification.is_read is True
@@ -85,7 +89,7 @@ class TestNotificationServiceQuery:
         """Test get_user_notifications method exists."""
         mock_session = AsyncMock()
         service = NotificationService(session=mock_session)
-        
+
         assert hasattr(service, "get_user_notifications")
 
     @pytest.mark.asyncio
@@ -93,7 +97,7 @@ class TestNotificationServiceQuery:
         """Test get_unread_count method exists."""
         mock_session = AsyncMock()
         service = NotificationService(session=mock_session)
-        
+
         assert hasattr(service, "get_unread_count")
 
     @pytest.mark.asyncio
@@ -101,5 +105,7 @@ class TestNotificationServiceQuery:
         """Test send method exists."""
         mock_session = AsyncMock()
         service = NotificationService(session=mock_session)
-        
-        assert hasattr(service, "send_notification") or hasattr(service, "create_notification")
+
+        assert hasattr(service, "send_notification") or hasattr(
+            service, "create_notification"
+        )

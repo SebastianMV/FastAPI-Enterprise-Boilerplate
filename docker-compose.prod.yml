@@ -7,6 +7,10 @@
 # 
 # Usage:
 #   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+#
+# IMPORTANT: Run migrations after first deploy and after each code update.
+# The `make deploy` target automates both steps.
 #
 # Features:
 #   - Multi-stage optimized builds
@@ -26,30 +30,52 @@ services:
       dockerfile: Dockerfile.prod
     container_name: boilerplate-backend
     restart: unless-stopped
+    stop_grace_period: 30s
     environment:
       # SECURITY: Use app_user (non-owner) for RLS enforcement in production
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://app_user:app_password@db:5432/boilerplate}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
+      - REDIS_URL=${REDIS_URL:-redis://:${REDIS_PASSWORD:?REDIS_PASSWORD must be set}@redis:6379/0}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set}
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=15
       - REFRESH_TOKEN_EXPIRE_DAYS=7
       - ENVIRONMENT=production
-    ports:
-      - "8000:8000"
+      - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL must be set}
+      - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-true}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY must be set}
+      - RATE_LIMIT_ENABLED=true
+      - CSRF_ENABLED=true
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    expose:
+      - "8000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    pids_limit: 200
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
-      - boilerplate-network
+      - boilerplate-frontend
+      - boilerplate-backend
     deploy:
       resources:
         limits:
@@ -68,10 +94,21 @@ services:
       dockerfile: Dockerfile
     container_name: boilerplate-frontend
     restart: unless-stopped
+    stop_grace_period: 15s
+    # NOTE: In production, restrict to 127.0.0.1:80:80 if behind a load balancer.
+    # Exposed on 0.0.0.0 for standalone deploys where nginx IS the edge proxy.
     ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=http://localhost:8000
+      - "${FRONTEND_BIND:-0.0.0.0}:80:80"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    pids_limit: 100
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid,nodev
+      - /var/cache/nginx:size=128m,noexec,nosuid,nodev
+      - /var/run:size=8m,noexec,nosuid,nodev
     depends_on:
       - backend
     healthcheck:
@@ -80,34 +117,52 @@ services:
       timeout: 10s
       start_period: 5s
       retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
-      - boilerplate-network
+      - boilerplate-frontend
     deploy:
       resources:
         limits:
           cpus: "0.5"
-          memory: 1G
+          memory: 256M
 
   # ===========================================
   # PostgreSQL Database
   # ===========================================
   db:
-    image: postgres:17-alpine
+    image: postgres:17.7-alpine
     container_name: boilerplate-db
     restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 200
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-boilerplate}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       POSTGRES_DB: ${POSTGRES_DB:-boilerplate}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?APP_USER_PASSWORD must be set}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/alembic/init_prod.sh:/docker-entrypoint-initdb.d/init_prod.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-boilerplate}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
-      - boilerplate-network
+      - boilerplate-backend
     deploy:
       resources:
         limits:
@@ -118,19 +173,30 @@ services:
   # Redis Cache
   # ===========================================
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: boilerplate-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 100
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} --no-auth-warning ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
-      - boilerplate-network
+      - boilerplate-backend
     deploy:
       resources:
         limits:
@@ -138,8 +204,11 @@ services:
           memory: 512M
 
 networks:
-  boilerplate-network:
+  boilerplate-frontend:
     driver: bridge
+  boilerplate-backend:
+    driver: bridge
+    internal: true
 
 volumes:
   postgres_data:

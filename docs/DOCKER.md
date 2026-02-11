@@ -129,13 +129,13 @@ services:
 
 ```dockerfile
 # Vite dev server with hot-reload
-FROM node:20-alpine
+FROM node:22-alpine
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 ```
 
 **Characteristics:**
 
-- Base: `node:20-alpine`
+- Base: `node:22-alpine`
 - Server: Vite dev server
 - Port: 3000 (configurable in vite.config.ts)
 - Hot-reload: ✅ Enabled
@@ -152,7 +152,7 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 **Characteristics:**
 
-- Base: `node:20-alpine` → `nginx:alpine`
+- Base: `node:22-alpine` → `nginx:1.28-alpine`
 - Multi-stage: Dependencies → Builder → Nginx
 - Output: Optimized static files in `/usr/share/nginx/html`
 - Size: ~25MB

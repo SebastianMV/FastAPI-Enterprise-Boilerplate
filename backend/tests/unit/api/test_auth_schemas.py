@@ -3,24 +3,25 @@
 
 """Unit tests for auth endpoint schemas."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 from pydantic import ValidationError
 
 from app.api.v1.schemas.auth import (
-    LoginRequest,
-    RegisterRequest,
-    RefreshTokenRequest,
+    AuthResponse,
     ChangePasswordRequest,
     ForgotPasswordRequest,
+    LoginRequest,
+    RefreshTokenRequest,
+    RegisterRequest,
     ResetPasswordRequest,
-    VerifyResetTokenRequest,
     TokenResponse,
     UserResponse,
-    AuthResponse,
-    MessageResponse,
+    VerifyResetTokenRequest,
 )
+from app.api.v1.schemas.common import MessageResponse
 
 
 class TestLoginRequest:
@@ -28,10 +29,7 @@ class TestLoginRequest:
 
     def test_login_request_valid(self):
         """Test valid login request."""
-        request = LoginRequest(
-            email="user@example.com",
-            password="SecureP@ss123"
-        )
+        request = LoginRequest(email="user@example.com", password="SecureP@ss123")
         assert request.email == "user@example.com"
         assert request.password == "SecureP@ss123"
 
@@ -65,7 +63,7 @@ class TestRegisterRequest:
             email="newuser@example.com",
             password="SecureP@ss123",
             first_name="John",
-            last_name="Doe"
+            last_name="Doe",
         )
         assert request.email == "newuser@example.com"
         assert request.first_name == "John"
@@ -78,7 +76,7 @@ class TestRegisterRequest:
                 email="user@example.com",
                 password="password123",
                 first_name="",
-                last_name="Doe"
+                last_name="Doe",
             )
 
     def test_register_request_last_name_max_length(self):
@@ -88,7 +86,7 @@ class TestRegisterRequest:
                 email="user@example.com",
                 password="password123",
                 first_name="John",
-                last_name="x" * 101
+                last_name="x" * 101,
             )
 
 
@@ -112,8 +110,7 @@ class TestChangePasswordRequest:
     def test_change_password_valid(self):
         """Test valid change password request."""
         request = ChangePasswordRequest(
-            current_password="oldpassword",
-            new_password="newpassword123"
+            current_password="oldpassword", new_password="newpassword123"
         )
         assert request.current_password == "oldpassword"
         assert request.new_password == "newpassword123"
@@ -121,10 +118,7 @@ class TestChangePasswordRequest:
     def test_change_password_new_password_min_length(self):
         """Test new_password minimum length."""
         with pytest.raises(ValidationError):
-            ChangePasswordRequest(
-                current_password="oldpassword",
-                new_password="short"
-            )
+            ChangePasswordRequest(current_password="oldpassword", new_password="short")
 
 
 class TestForgotPasswordRequest:
@@ -147,8 +141,7 @@ class TestResetPasswordRequest:
     def test_reset_password_valid(self):
         """Test valid reset password request."""
         request = ResetPasswordRequest(
-            token="reset-token-123",
-            new_password="newpassword123"
+            token="reset-token-123", new_password="newpassword123"
         )
         assert request.token == "reset-token-123"
         assert request.new_password == "newpassword123"
@@ -181,7 +174,7 @@ class TestTokenResponse:
         response = TokenResponse(
             access_token="access.jwt.token",
             refresh_token="refresh.jwt.token",
-            expires_in=3600
+            expires_in=3600,
         )
         assert response.access_token == "access.jwt.token"
         assert response.token_type == "bearer"
@@ -193,7 +186,7 @@ class TestTokenResponse:
             access_token="token",
             refresh_token="refresh",
             token_type="custom",
-            expires_in=7200
+            expires_in=7200,
         )
         assert response.token_type == "custom"
 
@@ -203,7 +196,7 @@ class TestUserResponse:
 
     def test_user_response_valid(self):
         """Test valid user response."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = UserResponse(
             id=uuid4(),
             email="user@example.com",
@@ -212,7 +205,7 @@ class TestUserResponse:
             is_active=True,
             is_superuser=False,
             created_at=now,
-            last_login=None
+            last_login=None,
         )
         assert response.email == "user@example.com"
         assert response.full_name == "John Doe"
@@ -220,7 +213,7 @@ class TestUserResponse:
 
     def test_user_response_superuser(self):
         """Test superuser response."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         response = UserResponse(
             id=uuid4(),
             email="admin@example.com",
@@ -229,7 +222,7 @@ class TestUserResponse:
             is_active=True,
             is_superuser=True,
             created_at=now,
-            last_login=now
+            last_login=now,
         )
         assert response.is_superuser is True
         assert response.last_login == now
@@ -240,11 +233,9 @@ class TestAuthResponse:
 
     def test_auth_response_valid(self):
         """Test valid auth response."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         tokens = TokenResponse(
-            access_token="access",
-            refresh_token="refresh",
-            expires_in=3600
+            access_token="access", refresh_token="refresh", expires_in=3600
         )
         user = UserResponse(
             id=uuid4(),
@@ -253,7 +244,7 @@ class TestAuthResponse:
             last_name="Doe",
             is_active=True,
             is_superuser=False,
-            created_at=now
+            created_at=now,
         )
         response = AuthResponse(tokens=tokens, user=user)
         assert response.tokens.access_token == "access"

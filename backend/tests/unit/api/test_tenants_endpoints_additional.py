@@ -1,10 +1,10 @@
 """Additional tenant endpoint tests for coverage."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
-from datetime import datetime, UTC
 
+import pytest
 from fastapi import HTTPException
 
 
@@ -25,7 +25,7 @@ class TestUpdateTenantEndpoint:
     def mock_tenant(self):
         """Create mock tenant entity."""
         from app.domain.entities.tenant import TenantSettings
-        
+
         tenant = MagicMock()
         tenant.id = uuid4()
         tenant.name = "Test Tenant"
@@ -57,12 +57,12 @@ class TestUpdateTenantEndpoint:
         """Test updating non-existent tenant."""
         from app.api.v1.endpoints.tenants import update_tenant
         from app.api.v1.schemas.tenants import TenantUpdate
-        
+
         tenant_id = uuid4()
         mock_repo.get_by_id.return_value = None
-        
+
         data = TenantUpdate(name="Updated Tenant")
-        
+
         with pytest.raises(HTTPException) as exc:
             await update_tenant(
                 tenant_id=tenant_id,
@@ -70,7 +70,7 @@ class TestUpdateTenantEndpoint:
                 current_user_id=uuid4(),
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == 404
         assert "Tenant not found" in exc.value.detail
 
@@ -79,12 +79,12 @@ class TestUpdateTenantEndpoint:
         """Test updating tenant with conflicting slug."""
         from app.api.v1.endpoints.tenants import update_tenant
         from app.api.v1.schemas.tenants import TenantUpdate
-        
+
         mock_repo.get_by_id.return_value = mock_tenant
         mock_repo.slug_exists.return_value = True
-        
+
         data = TenantUpdate(slug="existing-slug")
-        
+
         with pytest.raises(HTTPException) as exc:
             await update_tenant(
                 tenant_id=mock_tenant.id,
@@ -92,7 +92,7 @@ class TestUpdateTenantEndpoint:
                 current_user_id=uuid4(),
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == 409
         assert "already exists" in exc.value.detail
 
@@ -101,13 +101,13 @@ class TestUpdateTenantEndpoint:
         """Test updating tenant with conflicting domain."""
         from app.api.v1.endpoints.tenants import update_tenant
         from app.api.v1.schemas.tenants import TenantUpdate
-        
+
         mock_repo.get_by_id.return_value = mock_tenant
         mock_repo.slug_exists.return_value = False
         mock_repo.domain_exists.return_value = True
-        
+
         data = TenantUpdate(domain="existing.example.com")
-        
+
         with pytest.raises(HTTPException) as exc:
             await update_tenant(
                 tenant_id=mock_tenant.id,
@@ -115,7 +115,7 @@ class TestUpdateTenantEndpoint:
                 current_user_id=uuid4(),
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == 409
         assert "already exists" in exc.value.detail
 
@@ -124,25 +124,25 @@ class TestUpdateTenantEndpoint:
         """Test successful tenant update."""
         from app.api.v1.endpoints.tenants import update_tenant
         from app.api.v1.schemas.tenants import TenantUpdate
-        
+
         mock_repo.get_by_id.return_value = mock_tenant
         mock_repo.slug_exists.return_value = False
         mock_repo.domain_exists.return_value = False
         mock_repo.update.return_value = mock_tenant
-        
+
         data = TenantUpdate(
             name="Updated Tenant",
             email="updated@example.com",
             phone="+9876543210",
         )
-        
+
         result = await update_tenant(
             tenant_id=mock_tenant.id,
             data=data,
             current_user_id=uuid4(),
             repo=mock_repo,
         )
-        
+
         assert result.id == mock_tenant.id
         mock_repo.update.assert_called_once()
 
@@ -150,11 +150,11 @@ class TestUpdateTenantEndpoint:
     async def test_update_tenant_with_settings(self, mock_repo, mock_tenant):
         """Test updating tenant settings."""
         from app.api.v1.endpoints.tenants import update_tenant
-        from app.api.v1.schemas.tenants import TenantUpdate, TenantSettingsSchema
-        
+        from app.api.v1.schemas.tenants import TenantSettingsSchema, TenantUpdate
+
         mock_repo.get_by_id.return_value = mock_tenant
         mock_repo.update.return_value = mock_tenant
-        
+
         settings = TenantSettingsSchema(
             enable_2fa=False,
             enable_api_keys=False,
@@ -163,16 +163,16 @@ class TestUpdateTenantEndpoint:
             max_api_keys_per_user=5,
             max_storage_mb=5000,
         )
-        
+
         data = TenantUpdate(settings=settings)
-        
+
         result = await update_tenant(
             tenant_id=mock_tenant.id,
             data=data,
             current_user_id=uuid4(),
             repo=mock_repo,
         )
-        
+
         assert result is not None
         mock_repo.update.assert_called_once()
 
@@ -192,7 +192,7 @@ class TestUpdateTenantPlanEndpoint:
     def mock_tenant(self):
         """Create mock tenant entity."""
         from app.domain.entities.tenant import TenantSettings
-        
+
         tenant = MagicMock()
         tenant.id = uuid4()
         tenant.name = "Test Tenant"
@@ -225,12 +225,12 @@ class TestUpdateTenantPlanEndpoint:
         """Test updating plan for non-existent tenant."""
         from app.api.v1.endpoints.tenants import update_tenant_plan
         from app.api.v1.schemas.tenants import TenantPlanUpdate
-        
+
         tenant_id = uuid4()
         mock_repo.get_by_id.return_value = None
-        
+
         data = TenantPlanUpdate(plan="enterprise")
-        
+
         with pytest.raises(HTTPException) as exc:
             await update_tenant_plan(
                 tenant_id=tenant_id,
@@ -238,7 +238,7 @@ class TestUpdateTenantPlanEndpoint:
                 current_user_id=uuid4(),
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
@@ -246,19 +246,19 @@ class TestUpdateTenantPlanEndpoint:
         """Test successful plan update."""
         from app.api.v1.endpoints.tenants import update_tenant_plan
         from app.api.v1.schemas.tenants import TenantPlanUpdate
-        
+
         mock_repo.get_by_id.return_value = mock_tenant
         mock_repo.update.return_value = mock_tenant
-        
+
         data = TenantPlanUpdate(plan="enterprise")
-        
+
         result = await update_tenant_plan(
             tenant_id=mock_tenant.id,
             data=data,
             current_user_id=uuid4(),
             repo=mock_repo,
         )
-        
+
         assert result is not None
         mock_tenant.update_plan.assert_called_once()
         mock_tenant.mark_updated.assert_called_once()
@@ -268,20 +268,20 @@ class TestUpdateTenantPlanEndpoint:
         """Test plan update with expiry date."""
         from app.api.v1.endpoints.tenants import update_tenant_plan
         from app.api.v1.schemas.tenants import TenantPlanUpdate
-        
+
         mock_repo.get_by_id.return_value = mock_tenant
         mock_repo.update.return_value = mock_tenant
-        
+
         expires_at = datetime.now(UTC)
         data = TenantPlanUpdate(plan="professional", expires_at=expires_at)
-        
+
         result = await update_tenant_plan(
             tenant_id=mock_tenant.id,
             data=data,
             current_user_id=uuid4(),
             repo=mock_repo,
         )
-        
+
         assert result is not None
         mock_tenant.update_plan.assert_called_with("professional", expires_at)
 
@@ -293,7 +293,7 @@ class TestTenantResponseHelper:
         """Test _to_response helper function."""
         from app.api.v1.endpoints.tenants import _to_response
         from app.domain.entities.tenant import Tenant, TenantSettings
-        
+
         tenant = Tenant(
             id=uuid4(),
             name="Test Tenant",
@@ -313,9 +313,9 @@ class TestTenantResponseHelper:
                 max_storage_mb=10000,
             ),
         )
-        
+
         response = _to_response(tenant)
-        
+
         assert response.id == tenant.id
         assert response.name == "Test Tenant"
         assert response.slug == "test-tenant"
@@ -328,17 +328,17 @@ class TestTenantSchemas:
     def test_tenant_update_minimal(self):
         """Test TenantUpdate with minimal data."""
         from app.api.v1.schemas.tenants import TenantUpdate
-        
+
         update = TenantUpdate()
-        
+
         assert update.name is None
         assert update.slug is None
         assert update.domain is None
 
     def test_tenant_update_full(self):
         """Test TenantUpdate with all fields."""
-        from app.api.v1.schemas.tenants import TenantUpdate, TenantSettingsSchema
-        
+        from app.api.v1.schemas.tenants import TenantSettingsSchema, TenantUpdate
+
         settings = TenantSettingsSchema(
             enable_2fa=True,
             enable_api_keys=True,
@@ -347,7 +347,7 @@ class TestTenantSchemas:
             max_api_keys_per_user=10,
             max_storage_mb=10000,
         )
-        
+
         update = TenantUpdate(
             name="Updated Name",
             slug="updated-slug",
@@ -359,7 +359,7 @@ class TestTenantSchemas:
             plan="enterprise",
             settings=settings,
         )
-        
+
         assert update.name == "Updated Name"
         assert update.slug == "updated-slug"
         assert update.settings is not None and update.settings.max_users == 100
@@ -367,16 +367,16 @@ class TestTenantSchemas:
     def test_tenant_plan_update(self):
         """Test TenantPlanUpdate schema."""
         from app.api.v1.schemas.tenants import TenantPlanUpdate
-        
+
         update = TenantPlanUpdate(plan="professional")
-        
+
         assert update.plan == "professional"
         assert update.expires_at is None
 
     def test_tenant_settings_schema(self):
         """Test TenantSettingsSchema."""
         from app.api.v1.schemas.tenants import TenantSettingsSchema
-        
+
         settings = TenantSettingsSchema(
             enable_2fa=True,
             enable_api_keys=True,
@@ -388,7 +388,7 @@ class TestTenantSchemas:
             logo_url="https://example.com/logo.png",
             password_min_length=12,
         )
-        
+
         assert settings.enable_2fa is True
         assert settings.enable_webhooks is False
         assert settings.max_users == 50

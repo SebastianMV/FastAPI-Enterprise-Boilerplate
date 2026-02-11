@@ -1,0 +1,24 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+{{ t('email.email_otp.title') }}
+{{ '=' * t('email.email_otp.title')|length }}
+
+{{ t('email.email_otp.greeting', name=recipient_name) }}
+
+{{ t('email.email_otp.body') }}
+
+Your verification code:
+
+    {{ otp_code }}
+
+{{ t('email.email_otp.expires', minutes=expires_in_minutes|default(10)) }}
+
+{{ t('email.email_otp.security_warning_title') }}
+{{ t('email.email_otp.security_warning') }}
+
+{% endblock %}
+
+{% block footer_extra %}
+{{ t('email.email_otp.ignore_note') }}
+{% endblock %}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, Control } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { rolesService, type Role } from '@/services/api';
 import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
@@ -82,11 +82,11 @@ export default function RolesPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('roles.createError'),
+        message: t('roles.createError'),
         variant: 'error',
       });
     },
@@ -107,11 +107,11 @@ export default function RolesPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('roles.updateError'),
+        message: t('roles.updateError'),
         variant: 'error',
       });
     },
@@ -131,11 +131,11 @@ export default function RolesPage() {
         variant: 'success',
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       setAlertModal({
         isOpen: true,
         title: t('common.error'),
-        message: error.message || t('roles.deleteError'),
+        message: t('roles.deleteError'),
         variant: 'error',
       });
     },
@@ -216,13 +216,12 @@ export default function RolesPage() {
     name,
     disabled = false,
   }: {
-    control: unknown;
+    control: Control<CreateRoleFormData> | Control<EditRoleFormData>;
     name: 'permissions';
     disabled?: boolean;
   }) => (
     <Controller
-      // @ts-expect-error - control type complexity
-      control={control}
+      control={control as Control<CreateRoleFormData>}
       name={name}
       render={({ field }) => (
         <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
@@ -272,13 +271,13 @@ export default function RolesPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{t('roles.loadingRoles')}</p>
+          <p className="text-red-500 mb-4">{t('roles.loadError')}</p>
           <button
             onClick={() => refetch()}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
-            {t('common.submit')}
+            {t('common.retry')}
           </button>
         </div>
       </div>
@@ -366,14 +365,14 @@ export default function RolesPage() {
                     <button
                       onClick={() => openEditModal(role)}
                       className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                      title="Edit role"
+                      title={t('roles.editRole')}
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => openDeleteModal(role)}
                       className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                      title="Delete role"
+                      title={t('roles.deleteRole')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -447,7 +446,7 @@ export default function RolesPage() {
                 maxLength: { value: 100, message: t('validation.maxLength', { max: 100 }) },
               })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Editor, Viewer, Manager"
+              placeholder={t('roles.namePlaceholder')}
             />
             {createErrors.name && (
               <p className="mt-1 text-sm text-red-500">{createErrors.name.message}</p>

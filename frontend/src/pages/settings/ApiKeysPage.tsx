@@ -98,7 +98,10 @@ export default function ApiKeysPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [showRevokedKeys, t]);
+    // t is intentionally excluded: stable ref in production (i18next),
+    // but unstable in tests causing infinite re-render loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showRevokedKeys]);
 
   // Fetch API keys on mount
   useEffect(() => {
@@ -131,7 +134,7 @@ export default function ApiKeysPage() {
   const handleRevokeKey = async (keyId: string) => {
     setDeletingKeyId(keyId);
     try {
-      await api.delete(`/api-keys/${keyId}`);
+      await api.delete(`/api-keys/${encodeURIComponent(keyId)}`);
       setShowRevokeModal(false);
       setKeyToRevoke(null);
       setAlertModal({
@@ -165,7 +168,7 @@ export default function ApiKeysPage() {
       setCopiedKeyId(keyId);
       setTimeout(() => setCopiedKeyId(null), 2000);
     } catch {
-      console.error('Failed to copy');
+      // Clipboard write failed — silently ignore
     }
   };
 
@@ -179,7 +182,7 @@ export default function ApiKeysPage() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t('apiKeys.never');
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -585,7 +588,7 @@ export default function ApiKeysPage() {
           <div>
             <p className="font-medium mb-1">{t('apiKeys.usageExample')}</p>
             <code className="block p-3 bg-slate-100 dark:bg-slate-900 rounded-lg text-xs overflow-x-auto">
-              curl -H "X-API-Key: your_api_key_here" https://api.example.com/v1/users
+              {t('apiKeys.usageExampleCommand')}
             </code>
           </div>
           <p>

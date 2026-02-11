@@ -12,32 +12,32 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.entities.notification import NotificationPriority, NotificationType
 from app.infrastructure.database.connection import Base
-from app.infrastructure.database.models.custom_types import JSONEncodedList, JSONBCompat
+from app.infrastructure.database.models.custom_types import JSONBCompat, JSONEncodedList
 
 
 class NotificationModel(Base):
     """
     Notification database model.
-    
+
     Table: notifications
     """
-    
+
     __tablename__ = "notifications"
-    
+
     # Primary key
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
-    
+
     # Tenant isolation
     tenant_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         nullable=True,  # Null for system-wide notifications
         index=True,
     )
-    
+
     # Target user
     user_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -45,7 +45,7 @@ class NotificationModel(Base):
         nullable=False,
         index=True,
     )
-    
+
     # Notification content
     type: Mapped[str] = mapped_column(
         String(50),
@@ -61,7 +61,7 @@ class NotificationModel(Base):
         Text,
         nullable=False,
     )
-    
+
     # Rich content metadata
     extra_data: Mapped[dict] = mapped_column(
         "metadata",  # Column name in DB
@@ -69,7 +69,7 @@ class NotificationModel(Base):
         nullable=False,
         server_default="{}",
     )
-    
+
     # Priority and categorization
     priority: Mapped[str] = mapped_column(
         String(20),
@@ -81,21 +81,21 @@ class NotificationModel(Base):
         nullable=True,
         index=True,
     )
-    
+
     # Delivery channels
     channels: Mapped[list[str]] = mapped_column(
         JSONEncodedList,
         nullable=False,
         server_default="{}",
     )
-    
+
     # Delivery status per channel
     delivery_status: Mapped[dict] = mapped_column(
         JSONBCompat,
         nullable=False,
         server_default="{}",
     )
-    
+
     # Read status
     is_read: Mapped[bool] = mapped_column(
         Boolean,
@@ -107,20 +107,20 @@ class NotificationModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    
+
     # Expiration
     expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    
+
     # Grouping
     group_key: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         index=True,
     )
-    
+
     # Action tracking
     action_url: Mapped[str | None] = mapped_column(
         String(500),
@@ -135,7 +135,7 @@ class NotificationModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -149,7 +149,7 @@ class NotificationModel(Base):
         server_default=text("CURRENT_TIMESTAMP"),
         onupdate=text("CURRENT_TIMESTAMP"),
     )
-    
+
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(
         Boolean,

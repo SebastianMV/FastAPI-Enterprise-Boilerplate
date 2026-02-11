@@ -10,23 +10,22 @@ Includes RLS (Row Level Security) support for multi-tenant isolation.
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import event, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase, Session
+from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
-    pass
+
 
 
 # Create async engine
@@ -36,7 +35,8 @@ engine = create_async_engine(
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_timeout=settings.DB_POOL_TIMEOUT,
     pool_pre_ping=True,  # Verify connections before use
-    echo=settings.DEBUG,  # Log SQL in debug mode
+    pool_recycle=settings.DB_POOL_RECYCLE,
+    echo=settings.DB_ECHO,  # Log SQL queries (separate from DEBUG)
 )
 
 # Session factory
@@ -55,16 +55,16 @@ async_session_maker = async_sessionmaker(
 # def receive_after_begin(session, transaction, connection):
 #     """
 #     SQLAlchemy event: Set RLS tenant context after transaction begins.
-#     
+#
 #     This ensures the PostgreSQL session variable is set BEFORE any
 #     queries execute, making RLS policies work correctly with asyncpg.
-#     
+#
 #     The tenant_id is retrieved from the context variable set by
 #     TenantMiddleware.
 #     """
 #     # Import here to avoid circular dependency
 #     from app.middleware.tenant import get_current_tenant_id
-#     
+#
 #     tenant_id = get_current_tenant_id()
 #     if tenant_id:
 #         # Use exec_driver_sql to avoid parameterization issues with SET
@@ -73,36 +73,37 @@ async_session_maker = async_sessionmaker(
 #         )
 
 
-async def set_tenant_context(session: AsyncSession, tenant_id: Optional[UUID]) -> None:
+async def set_tenant_context(session: AsyncSession, tenant_id: UUID | None) -> None:
     """
     Set PostgreSQL session variable for RLS filtering.
-    
+
     This sets app.current_tenant_id which is used by RLS policies
     to filter queries automatically by tenant.
-    
+
     Note: asyncpg doesn't support bind parameters in SET commands,
     so we use string formatting (tenant_id is already a UUID object,
     so SQL injection is not possible).
-    
+
     Args:
         session: Active database session
         tenant_id: Tenant UUID to set (None clears the context)
     """
     if tenant_id:
-        # Use string formatting because asyncpg doesn't support params in SET
-        await session.execute(
-            text(f"SET LOCAL app.current_tenant_id = '{tenant_id}'")
-        )
+        # Validate UUID before interpolation (asyncpg doesn't support params in SET)
+        from uuid import UUID as _UUID
+
+        validated = str(_UUID(str(tenant_id)))
+        await session.execute(text(f"SET LOCAL app.current_tenant_id = '{validated}'"))
     else:
         await session.execute(text("RESET app.current_tenant_id"))
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession]:
     """
     Dependency that provides a database session with RLS context.
-    
+
     Automatically sets tenant context from middleware if available.
-    
+
     Usage in FastAPI:
         @router.get("/users")
         async def get_users(session: AsyncSession = Depends(get_db_session)):
@@ -110,14 +111,14 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     # Import here to avoid circular dependency
     from app.middleware.tenant import get_current_tenant_id
-    
+
     async with async_session_maker() as session:
         try:
             # Set RLS context from middleware
             tenant_id = get_current_tenant_id()
             if tenant_id:
                 await set_tenant_context(session, tenant_id)
-            
+
             yield session
             await session.commit()
         except Exception:
@@ -128,14 +129,16 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @asynccontextmanager
-async def get_db_context(tenant_id: Optional[UUID] = None) -> AsyncGenerator[AsyncSession, None]:
+async def get_db_context(
+    tenant_id: UUID | None = None,
+) -> AsyncGenerator[AsyncSession]:
     """
     Context manager for database session with optional tenant context.
-    
+
     Usage:
         async with get_db_context(tenant_id) as session:
             ...
-    
+
     Args:
         tenant_id: Optional tenant UUID for RLS context
     """
@@ -143,7 +146,7 @@ async def get_db_context(tenant_id: Optional[UUID] = None) -> AsyncGenerator[Asy
         try:
             if tenant_id:
                 await set_tenant_context(session, tenant_id)
-            
+
             yield session
             await session.commit()
         except Exception:
@@ -156,45 +159,69 @@ async def get_db_context(tenant_id: Optional[UUID] = None) -> AsyncGenerator[Asy
 async def init_database() -> None:
     """
     Initialize database by running Alembic migrations.
-    
+
     Should be called during application startup.
     Uses Alembic for proper migration tracking instead of create_all.
+    Uses asyncio subprocess to avoid blocking the event loop.
     """
-    import subprocess
-    import logging
+    import asyncio
     import os
-    
-    logger = logging.getLogger(__name__)
-    
+
+    from app.infrastructure.observability.logging import get_logger
+
+    logger = get_logger(__name__)
+
     # Get the backend directory (where alembic.ini is located)
-    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    
+    backend_dir = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
+
     try:
-        # Run alembic upgrade head
-        result = subprocess.run(
-            ["alembic", "upgrade", "head"],
+        # Run alembic upgrade head (non-blocking)
+        process = await asyncio.create_subprocess_exec(
+            "alembic",
+            "upgrade",
+            "head",
             cwd=backend_dir,
-            capture_output=True,
-            text=True,
-            timeout=60,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-        
-        if result.returncode != 0:
-            logger.error(f"Alembic migration failed: {result.stderr}")
-            # Fallback to create_all if migrations fail
-            logger.warning("Falling back to Base.metadata.create_all()")
+
+        migration_timeout_seconds = 60
+
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(), timeout=migration_timeout_seconds
+            )
+        except TimeoutError:
+            process.kill()
+            await process.wait()
+            logger.error("Alembic migration timed out")
+            raise
+
+        if process.returncode != 0:
+            logger.error("Alembic migration failed: %s", stderr.decode())
+            if settings.ENVIRONMENT in ("production", "staging"):
+                raise RuntimeError(
+                    "Alembic migration failed in %s — refusing to fall back "
+                    "to create_all() (no RLS/triggers)" % settings.ENVIRONMENT
+                )
+            # Development/testing: fallback to create_all for convenience
+            logger.warning("Falling back to Base.metadata.create_all() (dev only)")
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
         else:
             logger.info("Alembic migrations applied successfully")
-            if result.stdout:
-                for line in result.stdout.strip().split('\n'):
-                    logger.info(f"  {line}")
-    except subprocess.TimeoutExpired:
-        logger.error("Alembic migration timed out")
-        raise
+            if stdout:
+                for line in stdout.decode().strip().split("\n"):
+                    logger.info("  %s", line)
     except FileNotFoundError:
-        logger.warning("Alembic not found, using Base.metadata.create_all()")
+        if settings.ENVIRONMENT in ("production", "staging"):
+            raise RuntimeError(
+                "Alembic not found in %s — refusing to fall back "
+                "to create_all() (no RLS/triggers)" % settings.ENVIRONMENT
+            )
+        logger.warning("Alembic not found, using Base.metadata.create_all() (dev only)")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
@@ -202,8 +229,7 @@ async def init_database() -> None:
 async def close_database() -> None:
     """
     Close database connections.
-    
+
     Should be called during application shutdown.
     """
     await engine.dispose()
-

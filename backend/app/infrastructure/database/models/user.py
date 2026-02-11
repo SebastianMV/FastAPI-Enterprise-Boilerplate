@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,26 +19,26 @@ from app.infrastructure.database.connection import Base
 from app.infrastructure.database.models.custom_types import JSONEncodedUUIDList
 
 if TYPE_CHECKING:
-    from app.infrastructure.database.models.tenant import TenantModel
     from app.infrastructure.database.models.oauth import OAuthConnectionModel
+    from app.infrastructure.database.models.tenant import TenantModel
 
 
 class UserModel(Base):
     """
     User database model.
-    
+
     Table: users (in public schema by default, or tenant-specific schema)
     """
-    
+
     __tablename__ = "users"
-    
+
     # Primary key
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
-    
+
     # Tenant isolation
     tenant_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -46,7 +46,7 @@ class UserModel(Base):
         nullable=False,
         index=True,
     )
-    
+
     # Authentication
     email: Mapped[str] = mapped_column(
         String(255),
@@ -58,7 +58,7 @@ class UserModel(Base):
         String(255),
         nullable=False,
     )
-    
+
     # Profile
     first_name: Mapped[str] = mapped_column(
         String(100),
@@ -75,7 +75,7 @@ class UserModel(Base):
         nullable=True,
         default=None,
     )
-    
+
     # Status
     is_active: Mapped[bool] = mapped_column(
         Boolean,
@@ -87,14 +87,14 @@ class UserModel(Base):
         nullable=False,
         default=False,
     )
-    
+
     # Authorization
     roles: Mapped[list[UUID]] = mapped_column(
         JSONEncodedUUIDList,
         nullable=False,
         default=list,
     )
-    
+
     # Timestamps
     last_login: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
@@ -111,7 +111,7 @@ class UserModel(Base):
         server_default=text("CURRENT_TIMESTAMP"),
         onupdate=text("CURRENT_TIMESTAMP"),
     )
-    
+
     # Account Lockout
     failed_login_attempts: Mapped[int] = mapped_column(
         nullable=False,
@@ -121,7 +121,7 @@ class UserModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    
+
     # Email Verification
     email_verified: Mapped[bool] = mapped_column(
         Boolean,
@@ -136,7 +136,7 @@ class UserModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    
+
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(
         Boolean,
@@ -147,7 +147,7 @@ class UserModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    
+
     # Audit
     created_by: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -161,7 +161,7 @@ class UserModel(Base):
         UUID(as_uuid=True),
         nullable=True,
     )
-    
+
     # Relationships
     tenant: Mapped["TenantModel"] = relationship(
         "TenantModel",
@@ -175,7 +175,7 @@ class UserModel(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    
+
     def __repr__(self) -> str:
         """String representation for debugging."""
         return f"<User(id={self.id}, email={self.email})>"

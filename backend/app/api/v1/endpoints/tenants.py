@@ -8,7 +8,6 @@ These endpoints are superuser-only for managing tenants (organizations).
 Optimized with Redis caching for frequently accessed tenant data.
 """
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -26,14 +25,13 @@ from app.api.v1.schemas.tenants import (
     TenantVerifyRequest,
 )
 from app.domain.entities.tenant import Tenant, TenantSettings
-from app.domain.exceptions.base import ConflictError, EntityNotFoundError
 from app.infrastructure.database.connection import get_db_session
-from app.infrastructure.database.repositories.tenant_repository import (
-    SQLAlchemyTenantRepository,
-)
 from app.infrastructure.database.repositories.cached_tenant_repository import (
     CachedTenantRepository,
     get_cached_tenant_repository,
+)
+from app.infrastructure.database.repositories.tenant_repository import (
+    SQLAlchemyTenantRepository,
 )
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
@@ -61,14 +59,14 @@ def get_tenant_repository(
 async def list_tenants(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    is_active: Optional[bool] = Query(default=None),
+    is_active: bool | None = Query(default=None),
     _: UUID = Depends(require_superuser),
     repo: CachedTenantRepository = Depends(get_tenant_repository),
 ) -> TenantListResponse:
     """List all tenants."""
     tenants = await repo.list_all(skip=skip, limit=limit, is_active=is_active)
     total = await repo.count(is_active=is_active)
-    
+
     return TenantListResponse(
         items=[_to_response(t) for t in tenants],
         total=total,
@@ -94,16 +92,16 @@ async def create_tenant(
     if await repo.slug_exists(data.slug):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Slug '{data.slug}' already exists",
+            detail={"code": "SLUG_EXISTS", "message": "A tenant with this slug already exists"},
         )
-    
+
     # Check domain uniqueness
     if data.domain and await repo.domain_exists(data.domain):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Domain '{data.domain}' already exists",
+            detail={"code": "DOMAIN_EXISTS", "message": "A tenant with this domain already exists"},
         )
-    
+
     # Create tenant entity
     settings = TenantSettings()
     if data.settings:
@@ -120,7 +118,7 @@ async def create_tenant(
             session_timeout_minutes=data.settings.session_timeout_minutes,
             require_email_verification=data.settings.require_email_verification,
         )
-    
+
     tenant = Tenant(
         name=data.name,
         slug=data.slug,
@@ -134,7 +132,7 @@ async def create_tenant(
         created_by=current_user_id,
         updated_by=current_user_id,
     )
-    
+
     created = await repo.create(tenant)
     return _to_response(created)
 
@@ -152,13 +150,13 @@ async def get_tenant(
 ) -> TenantResponse:
     """Get tenant by ID."""
     tenant = await repo.get_by_id(tenant_id)
-    
+
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found",
+            detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"},
         )
-    
+
     return _to_response(tenant)
 
 
@@ -175,13 +173,13 @@ async def get_tenant_by_slug(
 ) -> TenantResponse:
     """Get tenant by slug."""
     tenant = await repo.get_by_slug(slug)
-    
+
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found",
+            detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"},
         )
-    
+
     return _to_response(tenant)
 
 
@@ -199,31 +197,31 @@ async def update_tenant(
 ) -> TenantResponse:
     """Update tenant."""
     tenant = await repo.get_by_id(tenant_id)
-    
+
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found",
+            detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"},
         )
-    
+
     # Check slug uniqueness
     if data.slug and data.slug != tenant.slug:
         if await repo.slug_exists(data.slug, exclude_id=tenant_id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Slug '{data.slug}' already exists",
+                detail={"code": "SLUG_EXISTS", "message": "A tenant with this slug already exists"},
             )
         tenant.slug = data.slug
-    
+
     # Check domain uniqueness
     if data.domain and data.domain != tenant.domain:
         if await repo.domain_exists(data.domain, exclude_id=tenant_id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Domain '{data.domain}' already exists",
+                detail={"code": "DOMAIN_EXISTS", "message": "A tenant with this domain already exists"},
             )
         tenant.domain = data.domain
-    
+
     # Update fields
     if data.name is not None:
         tenant.name = data.name
@@ -251,9 +249,9 @@ async def update_tenant(
             session_timeout_minutes=data.settings.session_timeout_minutes,
             require_email_verification=data.settings.require_email_verification,
         )
-    
+
     tenant.mark_updated(by_user=current_user_id)
-    
+
     updated = await repo.update(tenant)
     return _to_response(updated)
 
@@ -271,11 +269,11 @@ async def delete_tenant(
 ) -> None:
     """Delete tenant."""
     deleted = await repo.delete(tenant_id)
-    
+
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found",
+            detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"},
         )
 
 
@@ -298,20 +296,20 @@ async def set_tenant_active(
 ) -> TenantResponse:
     """Activate or deactivate tenant."""
     tenant = await repo.get_by_id(tenant_id)
-    
+
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found",
+            detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"},
         )
-    
+
     if data.is_active:
         tenant.activate()
     else:
         tenant.deactivate()
-    
+
     tenant.mark_updated(by_user=current_user_id)
-    
+
     updated = await repo.update(tenant)
     return _to_response(updated)
 
@@ -330,18 +328,18 @@ async def set_tenant_verified(
 ) -> TenantResponse:
     """Verify tenant."""
     tenant = await repo.get_by_id(tenant_id)
-    
+
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found",
+            detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"},
         )
-    
+
     if data.is_verified:
         tenant.verify()
-    
+
     tenant.mark_updated(by_user=current_user_id)
-    
+
     updated = await repo.update(tenant)
     return _to_response(updated)
 
@@ -360,16 +358,16 @@ async def update_tenant_plan(
 ) -> TenantResponse:
     """Update tenant plan."""
     tenant = await repo.get_by_id(tenant_id)
-    
+
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found",
+            detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"},
         )
-    
+
     tenant.update_plan(data.plan, data.expires_at)
     tenant.mark_updated(by_user=current_user_id)
-    
+
     updated = await repo.update(tenant)
     return _to_response(updated)
 

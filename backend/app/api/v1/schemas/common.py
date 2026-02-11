@@ -12,7 +12,7 @@ T = TypeVar("T")
 
 class ErrorDetail(BaseModel):
     """Error detail in response."""
-    
+
     code: str = Field(..., description="Error code")
     message: str = Field(..., description="Human-readable error message")
     field: str | None = Field(None, description="Field that caused the error")
@@ -20,27 +20,27 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Standard error response."""
-    
+
     error: ErrorDetail
     request_id: str | None = Field(None, description="Request ID for debugging")
 
 
 class ValidationErrorResponse(BaseModel):
     """Validation error response with multiple errors."""
-    
+
     errors: list[ErrorDetail]
     request_id: str | None = None
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response."""
-    
+
     items: list[T]
     total: int = Field(..., description="Total number of items")
     page: int = Field(..., ge=1, description="Current page number")
     page_size: int = Field(..., ge=1, le=100, description="Items per page")
     pages: int = Field(..., ge=0, description="Total number of pages")
-    
+
     @classmethod
     def create(
         cls,
@@ -62,11 +62,15 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
 class HealthResponse(BaseModel):
     """Health check response."""
-    
+
     status: str = Field(..., description="Service status")
-    version: str = Field(..., description="Application version")
-    environment: str = Field(..., description="Deployment environment")
-    
+    version: str | None = Field(
+        None, description="Application version (hidden in production)"
+    )
+    environment: str | None = Field(
+        None, description="Deployment environment (hidden in production)"
+    )
+
     # Optional component health
     database: str | None = Field(None, description="Database connection status")
     redis: str | None = Field(None, description="Redis connection status")
@@ -74,7 +78,7 @@ class HealthResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     """Simple message response."""
-    
+
     message: str
     success: bool = True
     data: dict[str, Any] | None = None

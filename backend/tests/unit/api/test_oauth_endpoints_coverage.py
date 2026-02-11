@@ -5,18 +5,19 @@
 Comprehensive tests for OAuth endpoints to improve coverage.
 """
 
-import pytest
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from datetime import datetime, timezone
+
+import pytest
 
 from app.api.v1.endpoints.oauth import (
+    OAuthConnectionResponse,
     authorize,
     authorize_redirect,
     callback,
     callback_redirect,
     list_connections,
-    OAuthConnectionResponse,
 )
 from app.domain.entities.oauth import OAuthProvider
 
@@ -54,6 +55,7 @@ class TestAuthorizeEndpoint:
     ) -> None:
         """Test authorize with invalid provider."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc:
             await authorize(
                 provider="invalid_provider",
@@ -63,7 +65,7 @@ class TestAuthorizeEndpoint:
                 redirect_uri=None,
                 scope=None,
             )
-        
+
         assert exc.value.status_code == 400
         assert "Unsupported OAuth provider" in exc.value.detail
 
@@ -79,7 +81,7 @@ class TestAuthorizeEndpoint:
                 "random-state-string",
             )
             mock_service_cls.return_value = mock_service
-            
+
             result = await authorize(
                 provider="google",
                 request=mock_request,
@@ -88,7 +90,7 @@ class TestAuthorizeEndpoint:
                 redirect_uri="http://localhost:3000/callback",
                 scope="email profile",
             )
-            
+
             assert result.authorization_url.startswith("https://")
             assert result.state == "random-state-string"
 
@@ -104,7 +106,7 @@ class TestAuthorizeEndpoint:
                 "github-state",
             )
             mock_service_cls.return_value = mock_service
-            
+
             result = await authorize(
                 provider="github",
                 request=mock_request,
@@ -113,7 +115,7 @@ class TestAuthorizeEndpoint:
                 redirect_uri=None,
                 scope=None,
             )
-            
+
             assert result.state == "github-state"
 
 
@@ -126,6 +128,7 @@ class TestAuthorizeRedirectEndpoint:
     ) -> None:
         """Test authorize redirect with invalid provider."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc:
             await authorize_redirect(
                 provider="invalid",
@@ -135,7 +138,7 @@ class TestAuthorizeRedirectEndpoint:
                 redirect_uri=None,
                 scope=None,
             )
-        
+
         assert exc.value.status_code == 400
 
     @pytest.mark.asyncio
@@ -150,7 +153,7 @@ class TestAuthorizeRedirectEndpoint:
                 "state",
             )
             mock_service_cls.return_value = mock_service
-            
+
             result = await authorize_redirect(
                 provider="google",
                 request=mock_request,
@@ -159,7 +162,7 @@ class TestAuthorizeRedirectEndpoint:
                 redirect_uri=None,
                 scope=None,
             )
-            
+
             assert result.status_code == 302
 
 
@@ -170,6 +173,7 @@ class TestCallbackEndpoint:
     async def test_callback_with_error(self, mock_session: MagicMock) -> None:
         """Test callback with error from provider."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc:
             await callback(
                 provider="google",
@@ -179,7 +183,7 @@ class TestCallbackEndpoint:
                 error="access_denied",
                 error_description="User denied access",
             )
-        
+
         assert exc.value.status_code == 400
         assert "User denied access" in exc.value.detail
 
@@ -187,6 +191,7 @@ class TestCallbackEndpoint:
     async def test_callback_invalid_provider(self, mock_session: MagicMock) -> None:
         """Test callback with invalid provider."""
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc:
             await callback(
                 provider="invalid",
@@ -196,7 +201,7 @@ class TestCallbackEndpoint:
                 error=None,
                 error_description=None,
             )
-        
+
         assert exc.value.status_code == 400
         assert "Unsupported OAuth provider" in exc.value.detail
 
@@ -207,8 +212,9 @@ class TestCallbackEndpoint:
             mock_service = AsyncMock()
             mock_service.handle_callback.side_effect = ValueError("Invalid state")
             mock_service_cls.return_value = mock_service
-            
+
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc:
                 await callback(
                     provider="google",
@@ -218,7 +224,7 @@ class TestCallbackEndpoint:
                     error=None,
                     error_description=None,
                 )
-            
+
             assert exc.value.status_code == 400
 
     @pytest.mark.asyncio
@@ -228,19 +234,23 @@ class TestCallbackEndpoint:
         """Test successful callback."""
         mock_connection = MagicMock()
         mock_connection.id = uuid4()
-        
+
         with patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls:
             mock_service = AsyncMock()
             mock_service.handle_callback.return_value = (
-                mock_user, mock_connection, True
+                mock_user,
+                mock_connection,
+                True,
             )
             mock_service_cls.return_value = mock_service
-            
+
             with patch("app.api.v1.endpoints.oauth.create_access_token") as mock_access:
-                with patch("app.api.v1.endpoints.oauth.create_refresh_token") as mock_refresh:
+                with patch(
+                    "app.api.v1.endpoints.oauth.create_refresh_token"
+                ) as mock_refresh:
                     mock_access.return_value = "access_token"
                     mock_refresh.return_value = "refresh_token"
-                    
+
                     result = await callback(
                         provider="google",
                         session=mock_session,
@@ -249,7 +259,7 @@ class TestCallbackEndpoint:
                         error=None,
                         error_description=None,
                     )
-                    
+
                     assert result.access_token == "access_token"
                     assert result.refresh_token == "refresh_token"
                     assert result.is_new_user is True
@@ -270,7 +280,7 @@ class TestCallbackRedirectEndpoint:
             error_description="User denied",
             frontend_url="http://localhost:3000",
         )
-        
+
         assert result.status_code == 302
         assert "error=access_denied" in str(result.headers.get("location", ""))
 
@@ -288,7 +298,7 @@ class TestCallbackRedirectEndpoint:
             error_description=None,
             frontend_url="http://localhost:3000",
         )
-        
+
         assert result.status_code == 302
         assert "error=invalid_provider" in str(result.headers.get("location", ""))
 
@@ -301,7 +311,7 @@ class TestCallbackRedirectEndpoint:
             mock_service = AsyncMock()
             mock_service.handle_callback.side_effect = ValueError("Auth failed")
             mock_service_cls.return_value = mock_service
-            
+
             result = await callback_redirect(
                 provider="google",
                 session=mock_session,
@@ -311,7 +321,7 @@ class TestCallbackRedirectEndpoint:
                 error_description=None,
                 frontend_url="http://localhost:3000",
             )
-            
+
             assert result.status_code == 302
             assert "error=auth_failed" in str(result.headers.get("location", ""))
 
@@ -322,19 +332,23 @@ class TestCallbackRedirectEndpoint:
         """Test successful callback redirect."""
         mock_connection = MagicMock()
         mock_connection.id = uuid4()
-        
+
         with patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls:
             mock_service = AsyncMock()
             mock_service.handle_callback.return_value = (
-                mock_user, mock_connection, False
+                mock_user,
+                mock_connection,
+                False,
             )
             mock_service_cls.return_value = mock_service
-            
+
             with patch("app.api.v1.endpoints.oauth.create_access_token") as mock_access:
-                with patch("app.api.v1.endpoints.oauth.create_refresh_token") as mock_refresh:
+                with patch(
+                    "app.api.v1.endpoints.oauth.create_refresh_token"
+                ) as mock_refresh:
                     mock_access.return_value = "token123"
                     mock_refresh.return_value = "refresh123"
-                    
+
                     result = await callback_redirect(
                         provider="google",
                         session=mock_session,
@@ -344,7 +358,7 @@ class TestCallbackRedirectEndpoint:
                         error_description=None,
                         frontend_url="http://localhost:3000",
                     )
-                    
+
                     assert result.status_code == 302
                     location = str(result.headers.get("location", ""))
                     assert "access_token=token123" in location
@@ -362,12 +376,12 @@ class TestListConnectionsEndpoint:
             mock_service = AsyncMock()
             mock_service.get_user_connections.return_value = []
             mock_service_cls.return_value = mock_service
-            
+
             result = await list_connections(
                 session=mock_session,
                 current_user=mock_user,
             )
-            
+
             assert result == []
 
     @pytest.mark.asyncio
@@ -383,19 +397,19 @@ class TestListConnectionsEndpoint:
         mock_connection.provider_display_name = "Test User"
         mock_connection.provider_avatar_url = "https://example.com/avatar.jpg"
         mock_connection.is_primary = True
-        mock_connection.last_used_at = datetime.now(timezone.utc)
-        mock_connection.created_at = datetime.now(timezone.utc)
-        
+        mock_connection.last_used_at = datetime.now(UTC)
+        mock_connection.created_at = datetime.now(UTC)
+
         with patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls:
             mock_service = AsyncMock()
             mock_service.get_user_connections.return_value = [mock_connection]
             mock_service_cls.return_value = mock_service
-            
+
             result = await list_connections(
                 session=mock_session,
                 current_user=mock_user,
             )
-            
+
             assert len(result) == 1
             assert result[0].provider == "google"
             assert result[0].is_primary is True
@@ -415,8 +429,8 @@ class TestOAuthSchemas:
             provider_avatar_url=None,
             is_primary=True,
             last_used_at=None,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
-        
+
         assert response.provider == "google"
         assert response.is_primary is True

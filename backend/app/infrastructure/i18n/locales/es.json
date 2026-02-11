@@ -170,6 +170,17 @@
       "warning": "Su cuenta ahora es menos segura. Recomendamos reactivar MFA.",
       "not_you": "Si usted no desactivó la autenticación de dos factores, por favor asegure su cuenta inmediatamente."
     },
+    "email_otp": {
+      "subject": "Tu Código de Verificación",
+      "preheader": "Tu código único de verificación para iniciar sesión",
+      "title": "Tu Código de Verificación",
+      "greeting": "Hola {name},",
+      "body": "Has solicitado un código de verificación único para iniciar sesión en tu cuenta. Usa el código a continuación:",
+      "expires": "Este código expira en {minutes} minutos.",
+      "security_warning_title": "Aviso de Seguridad",
+      "security_warning": "Nunca compartas este código con nadie. Nuestro equipo nunca te lo pedirá.",
+      "ignore_note": "Si no solicitaste este código, ignora este correo y considera cambiar tu contraseña."
+    },
     "tenant_invitation": {
       "subject": "Ha Sido Invitado a Unirse a {tenant_name}",
       "preheader": "Tiene una invitación pendiente para unirse a {tenant_name}",

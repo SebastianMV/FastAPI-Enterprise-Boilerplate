@@ -9,6 +9,7 @@ import {
   type SystemHealth,
   type StatItem,
 } from '@/services/api';
+import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import {
   Users,
   Activity,
@@ -28,6 +29,14 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+
+/** Map API stat names to i18n keys for localized display. */
+const STAT_NAME_I18N: Record<string, string> = {
+  'Total Users': 'dashboard.statTotalUsers',
+  'Active Users': 'dashboard.statActiveUsers',
+  'API Keys': 'dashboard.statApiKeys',
+  'Roles': 'dashboard.statRoles',
+};
 
 /**
  * Dashboard overview page with real-time statistics and activity.
@@ -72,14 +81,14 @@ export default function DashboardPage() {
       setActivity(activityData);
       setHealth(healthData);
     } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
-      setError('Failed to load dashboard data. Please try again.');
+      // Don't log error details in production
+      setError(t('dashboard.failedToLoad'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
       isFetchingRef.current = false;
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     // Only fetch once on mount
@@ -122,20 +131,13 @@ export default function DashboardPage() {
     }
   };
 
-  const formatRelativeTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
+  const formatTime = (timestamp: string) =>
+    formatRelativeTime(timestamp, {
+      justNow: t('dashboard.justNow'),
+      minutesAgo: (count) => t('dashboard.minAgo', { count }),
+      hoursAgo: (count) => t('dashboard.hAgo', { count }),
+      daysAgo: (count) => t('dashboard.dAgo', { count }),
+    });
 
   const getActivityIcon = (action: string) => {
     switch (action) {
@@ -152,28 +154,28 @@ export default function DashboardPage() {
 
   const quickActions = [
     {
-      label: 'Add User',
+      label: t('dashboard.addUser'),
       icon: UserPlus,
       onClick: () => navigate('/users'),
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
     },
     {
-      label: 'API Keys',
+      label: t('dashboard.apiKeys'),
       icon: Key,
       onClick: () => navigate('/settings/api-keys'),
       color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
     },
     {
-      label: 'Settings',
+      label: t('dashboard.settings'),
       icon: Settings,
       onClick: () => navigate('/settings'),
       color: 'text-slate-600 dark:text-slate-400',
       bgColor: 'bg-slate-50 dark:bg-slate-800',
     },
     {
-      label: 'Security',
+      label: t('dashboard.security'),
       icon: Shield,
       onClick: () => navigate('/security/mfa'),
       color: 'text-green-600 dark:text-green-400',
@@ -219,7 +221,7 @@ export default function DashboardPage() {
             {t('dashboard.welcome', { name: user?.first_name })}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Here's what's happening with your application today.
+            {t('dashboard.overview')}
           </p>
         </div>
         <button
@@ -242,7 +244,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {stat.name}
+                    {STAT_NAME_I18N[stat.name] ? t(STAT_NAME_I18N[stat.name]) : stat.name}
                   </p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
                     {stat.value}
@@ -274,7 +276,7 @@ export default function DashboardPage() {
                   {stat.change}
                 </span>
                 <span className="text-sm text-slate-500 dark:text-slate-400 ml-2">
-                  vs last month
+                  {t('dashboard.vsLastMonth')}
                 </span>
               </div>
             </div>
@@ -289,7 +291,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Database className="w-5 h-5 text-slate-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">Database:</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.database')}:</span>
                 {health.database_status === 'healthy' ? (
                   <span className="flex items-center text-green-600 dark:text-green-400 text-sm font-medium">
                     <CheckCircle className="w-4 h-4 mr-1" />
@@ -304,7 +306,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-slate-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">Cache:</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.cache')}:</span>
                 {health.cache_status === 'healthy' ? (
                   <span className="flex items-center text-green-600 dark:text-green-400 text-sm font-medium">
                     <CheckCircle className="w-4 h-4 mr-1" />
@@ -319,7 +321,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-slate-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">Avg Response:</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.avgResponseTime')}:</span>
                 <span className="text-sm font-medium text-slate-900 dark:text-white">
                   {health.avg_response_time_ms}ms
                 </span>
@@ -328,13 +330,13 @@ export default function DashboardPage() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Activity className="w-5 h-5 text-slate-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">Active Sessions:</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.activeSessions')}:</span>
                 <span className="text-sm font-medium text-slate-900 dark:text-white">
                   {health.active_sessions}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Uptime:</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.uptime')}:</span>
                 <span className="text-sm font-medium text-green-600 dark:text-green-400">
                   {health.uptime_percentage}%
                 </span>
@@ -350,10 +352,10 @@ export default function DashboardPage() {
         <div className="card">
           <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Recent Activity
+              {t('dashboard.recentActivity')}
             </h2>
             <span className="text-sm text-slate-500 dark:text-slate-400">
-              {activity?.total || 0} events
+              {activity?.total || 0} {t('dashboard.events')}
             </span>
           </div>
           <div className="p-6">
@@ -380,7 +382,7 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                        {formatRelativeTime(item.timestamp)}
+                        {formatTime(item.timestamp)}
                       </span>
                     </div>
                   );
@@ -390,7 +392,7 @@ export default function DashboardPage() {
               <div className="text-center py-8">
                 <Activity className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  No recent activity
+                  {t('dashboard.noRecentActivity')}
                 </p>
               </div>
             )}
@@ -401,7 +403,7 @@ export default function DashboardPage() {
         <div className="card">
           <div className="p-6 border-b border-slate-200 dark:border-slate-700">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Quick Actions
+              {t('dashboard.quickActions')}
             </h2>
           </div>
           <div className="p-6">
@@ -426,12 +428,12 @@ export default function DashboardPage() {
             {stats && (
               <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
                 <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">
-                  User Overview
+                  {t('dashboard.userOverview')}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                      New users (last 7 days)
+                      {t('dashboard.newUsersLast7Days')}
                     </span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white">
                       {stats.users_created_last_7_days}
@@ -439,7 +441,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                      New users (last 30 days)
+                      {t('dashboard.newUsersLast30Days')}
                     </span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white">
                       {stats.users_created_last_30_days}
@@ -447,7 +449,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                      Active / Inactive
+                      {t('dashboard.activeInactive')}
                     </span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white">
                       {stats.active_users} / {stats.inactive_users}

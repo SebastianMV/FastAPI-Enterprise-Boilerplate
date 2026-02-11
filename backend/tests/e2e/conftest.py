@@ -7,16 +7,18 @@ E2E Test Fixtures.
 Provides fixtures for end-to-end testing.
 """
 
+from uuid import uuid4
+
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from uuid import uuid4
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.fixture(autouse=True)
 def disable_rate_limiting(monkeypatch):
     """Disable rate limiting for all E2E tests."""
     from app import config
+
     monkeypatch.setattr(config.settings, "RATE_LIMIT_ENABLED", False)
 
 
@@ -24,7 +26,7 @@ def disable_rate_limiting(monkeypatch):
 async def client():
     """Create async HTTP client for testing."""
     from app.main import app
-    
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
@@ -35,7 +37,7 @@ async def registered_user(client: AsyncClient) -> dict:
     """Create a registered user for testing."""
     email = f"test_{uuid4().hex[:8]}@example.com"
     password = "TestPassword123!"
-    
+
     response = await client.post(
         "/api/v1/auth/register",
         json={
@@ -44,14 +46,14 @@ async def registered_user(client: AsyncClient) -> dict:
             "full_name": "Test User",
         },
     )
-    
+
     if response.status_code == 201:
         return {
             "email": email,
             "password": password,
             **response.json(),
         }
-    
+
     # If registration endpoint doesn't exist, return mock data
     return {
         "email": email,
@@ -70,11 +72,11 @@ async def auth_headers(client: AsyncClient, registered_user: dict) -> dict:
             "password": registered_user["password"],
         },
     )
-    
+
     if response.status_code == 200:
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
-    
+
     # Return empty headers if login fails
     return {}
 
@@ -96,11 +98,11 @@ async def admin_headers(client: AsyncClient) -> dict:
             "password": "AdminPassword123!",
         },
     )
-    
+
     if response.status_code == 200:
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
-    
+
     return {}
 
 
@@ -114,11 +116,11 @@ async def superuser_headers(client: AsyncClient) -> dict:
             "password": "SuperuserPassword123!",
         },
     )
-    
+
     if response.status_code == 200:
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
-    
+
     return {}
 
 
@@ -132,11 +134,11 @@ async def tenant_a_admin_headers(client: AsyncClient) -> dict:
             "password": "TenantAAdmin123!",
         },
     )
-    
+
     if response.status_code == 200:
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
-    
+
     return {}
 
 
@@ -150,9 +152,9 @@ async def tenant_b_admin_headers(client: AsyncClient) -> dict:
             "password": "TenantBAdmin123!",
         },
     )
-    
+
     if response.status_code == 200:
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
-    
+
     return {}

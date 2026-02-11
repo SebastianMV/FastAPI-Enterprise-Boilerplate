@@ -7,9 +7,9 @@ Unit tests for Audit Service.
 Tests for audit logging functionality.
 """
 
-from uuid import uuid4
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
-from datetime import datetime, UTC
+from uuid import uuid4
 
 import pytest
 
@@ -24,9 +24,11 @@ class TestAuditService:
     def mock_repository(self) -> AsyncMock:
         """Create mock audit log repository."""
         repo = AsyncMock()
+
         # Make create return the passed audit log
         async def mock_create(audit_log: AuditLog) -> AuditLog:
             return audit_log
+
         repo.create.side_effect = mock_create
         return repo
 
@@ -42,7 +44,7 @@ class TestAuditService:
         """Test that log creates an audit entry."""
         user_id = uuid4()
         tenant_id = uuid4()
-        
+
         result = await audit_service.log(
             action=AuditAction.CREATE,
             resource_type=AuditResourceType.USER,
@@ -53,7 +55,7 @@ class TestAuditService:
             actor_ip="192.168.1.1",
             tenant_id=tenant_id,
         )
-        
+
         assert isinstance(result, AuditLog)
         assert result.action == AuditAction.CREATE
         assert result.resource_type == AuditResourceType.USER
@@ -69,7 +71,7 @@ class TestAuditService:
         """Test logging with old and new values for update."""
         old_value = {"name": "Old Name", "email": "old@example.com"}
         new_value = {"name": "New Name", "email": "new@example.com"}
-        
+
         result = await audit_service.log(
             action=AuditAction.UPDATE,
             resource_type=AuditResourceType.USER,
@@ -77,30 +79,26 @@ class TestAuditService:
             old_value=old_value,
             new_value=new_value,
         )
-        
+
         assert result.old_value == old_value
         assert result.new_value == new_value
 
     @pytest.mark.asyncio
-    async def test_log_with_metadata(
-        self, audit_service: AuditService
-    ) -> None:
+    async def test_log_with_metadata(self, audit_service: AuditService) -> None:
         """Test logging with additional metadata."""
         metadata = {"source": "api", "version": "v1"}
-        
+
         result = await audit_service.log(
             action=AuditAction.CREATE,
             resource_type=AuditResourceType.API_KEY,
             resource_id="key-123",
             metadata=metadata,
         )
-        
+
         assert result.metadata == metadata
 
     @pytest.mark.asyncio
-    async def test_log_with_reason(
-        self, audit_service: AuditService
-    ) -> None:
+    async def test_log_with_reason(self, audit_service: AuditService) -> None:
         """Test logging with reason for sensitive actions."""
         result = await audit_service.log(
             action=AuditAction.DELETE,
@@ -108,7 +106,7 @@ class TestAuditService:
             resource_id="user-123",
             reason="User requested account deletion",
         )
-        
+
         assert result.reason == "User requested account deletion"
 
 
@@ -119,8 +117,10 @@ class TestAuditServiceConvenienceMethods:
     def mock_repository(self) -> AsyncMock:
         """Create mock audit log repository."""
         repo = AsyncMock()
+
         async def mock_create(audit_log: AuditLog) -> AuditLog:
             return audit_log
+
         repo.create.side_effect = mock_create
         return repo
 
@@ -130,67 +130,59 @@ class TestAuditServiceConvenienceMethods:
         return AuditService(repository=mock_repository)
 
     @pytest.mark.asyncio
-    async def test_log_create(
-        self, audit_service: AuditService
-    ) -> None:
+    async def test_log_create(self, audit_service: AuditService) -> None:
         """Test log_create convenience method."""
         new_value = {"email": "new@example.com", "name": "New User"}
-        
+
         result = await audit_service.log_create(
             resource_type=AuditResourceType.USER,
             resource_id="user-123",
             new_value=new_value,
             resource_name="New User",
         )
-        
+
         assert result.action == AuditAction.CREATE
         assert result.resource_type == AuditResourceType.USER
         assert result.new_value == new_value
 
     @pytest.mark.asyncio
-    async def test_log_update(
-        self, audit_service: AuditService
-    ) -> None:
+    async def test_log_update(self, audit_service: AuditService) -> None:
         """Test log_update convenience method."""
         old_value = {"name": "Old"}
         new_value = {"name": "New"}
-        
+
         result = await audit_service.log_update(
             resource_type=AuditResourceType.USER,
             resource_id="user-123",
             old_value=old_value,
             new_value=new_value,
         )
-        
+
         assert result.action == AuditAction.UPDATE
         assert result.old_value == old_value
         assert result.new_value == new_value
 
     @pytest.mark.asyncio
-    async def test_log_delete(
-        self, audit_service: AuditService
-    ) -> None:
+    async def test_log_delete(self, audit_service: AuditService) -> None:
         """Test log_delete convenience method."""
         old_value = {"email": "deleted@example.com"}
-        
+
         result = await audit_service.log_delete(
             resource_type=AuditResourceType.USER,
             resource_id="user-123",
             old_value=old_value,
             reason="GDPR request",
         )
-        
+
         assert result.action == AuditAction.DELETE
         assert result.old_value == old_value
         assert result.reason == "GDPR request"
 
     @pytest.mark.asyncio
-    async def test_log_login_success(
-        self, audit_service: AuditService
-    ) -> None:
+    async def test_log_login_success(self, audit_service: AuditService) -> None:
         """Test log_login for successful login."""
         user_id = uuid4()
-        
+
         result = await audit_service.log_login(
             actor_id=user_id,
             actor_email="user@example.com",
@@ -198,15 +190,13 @@ class TestAuditServiceConvenienceMethods:
             actor_ip="192.168.1.1",
             actor_user_agent="Mozilla/5.0",
         )
-        
+
         assert result.action == AuditAction.LOGIN
         assert result.actor_email == "user@example.com"
         assert result.actor_ip == "192.168.1.1"
 
     @pytest.mark.asyncio
-    async def test_log_login_failure(
-        self, audit_service: AuditService
-    ) -> None:
+    async def test_log_login_failure(self, audit_service: AuditService) -> None:
         """Test log_login for failed login."""
         result = await audit_service.log_login(
             actor_id=None,
@@ -215,7 +205,7 @@ class TestAuditServiceConvenienceMethods:
             actor_ip="192.168.1.100",
             failure_reason="Invalid password",
         )
-        
+
         assert result.action == AuditAction.LOGIN_FAILED
         assert result.actor_id is None
 
@@ -268,7 +258,7 @@ class TestAuditLog:
         """Test creating an audit log entry."""
         user_id = uuid4()
         tenant_id = uuid4()
-        
+
         log = AuditLog(
             timestamp=datetime.now(UTC),
             action=AuditAction.CREATE,
@@ -280,7 +270,7 @@ class TestAuditLog:
             actor_ip="192.168.1.1",
             tenant_id=tenant_id,
         )
-        
+
         assert log.action == AuditAction.CREATE
         assert log.resource_type == AuditResourceType.USER
         assert log.actor_id == user_id
@@ -296,7 +286,7 @@ class TestAuditLog:
             old_value={"status": "active"},
             new_value={"status": "inactive"},
         )
-        
+
         assert log.old_value == {"status": "active"}
         assert log.new_value == {"status": "inactive"}
 
@@ -307,5 +297,5 @@ class TestAuditLog:
             action=AuditAction.CREATE,
             resource_type=AuditResourceType.USER,
         )
-        
+
         assert log.id is not None

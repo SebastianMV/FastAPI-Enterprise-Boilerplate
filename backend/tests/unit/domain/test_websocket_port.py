@@ -6,15 +6,12 @@
 from __future__ import annotations
 
 from uuid import uuid4
-from datetime import datetime, UTC
-import pytest
 
 from app.domain.ports.websocket import (
-    WebSocketPort,
     ConnectionInfo,
-    WebSocketMessage,
     MessageType,
-    MessageHandler,
+    WebSocketMessage,
+    WebSocketPort,
 )
 
 
@@ -26,13 +23,13 @@ class TestConnectionInfo:
         user_id = uuid4()
         tenant_id = uuid4()
         conn_id = str(uuid4())
-        
+
         info = ConnectionInfo(
             connection_id=conn_id,
             user_id=user_id,
             tenant_id=tenant_id,
         )
-        
+
         assert info.connection_id == conn_id
         assert info.user_id == user_id
         assert info.tenant_id == tenant_id
@@ -42,14 +39,14 @@ class TestConnectionInfo:
         user_id = uuid4()
         tenant_id = uuid4()
         conn_id = str(uuid4())
-        
+
         info = ConnectionInfo(
             connection_id=conn_id,
             user_id=user_id,
             tenant_id=tenant_id,
             metadata={"client": "web"},
         )
-        
+
         assert info.metadata == {"client": "web"}
 
     def test_connection_info_with_rooms(self) -> None:
@@ -58,14 +55,14 @@ class TestConnectionInfo:
         tenant_id = uuid4()
         conn_id = str(uuid4())
         room_id = uuid4()
-        
+
         info = ConnectionInfo(
             connection_id=conn_id,
             user_id=user_id,
             tenant_id=tenant_id,
             rooms={room_id},
         )
-        
+
         assert room_id in info.rooms
 
 
@@ -78,7 +75,7 @@ class TestWebSocketMessage:
             type=MessageType.NOTIFICATION,
             payload={"content": "Hello"},
         )
-        
+
         assert message.type == MessageType.NOTIFICATION
         assert message.payload["content"] == "Hello"
 
@@ -88,7 +85,7 @@ class TestWebSocketMessage:
             type=MessageType.NOTIFICATION,
             payload={"title": "New message"},
         )
-        
+
         assert message.type == MessageType.NOTIFICATION
 
     def test_message_with_room(self) -> None:
@@ -99,7 +96,7 @@ class TestWebSocketMessage:
             payload={"text": "Hi"},
             room_id=room_id,
         )
-        
+
         assert message.room_id == room_id
 
     def test_message_with_sender(self) -> None:
@@ -110,7 +107,7 @@ class TestWebSocketMessage:
             payload={"status": "online"},
             sender_id=sender_id,
         )
-        
+
         assert message.sender_id == sender_id
 
     def test_message_to_dict(self) -> None:
@@ -119,7 +116,7 @@ class TestWebSocketMessage:
             type=MessageType.NOTIFICATION,
             payload={"content": "Test"},
         )
-        
+
         if hasattr(message, "to_dict"):
             data = message.to_dict()
             assert "type" in data
@@ -170,7 +167,10 @@ class TestWebSocketPort:
     def test_port_is_abstract(self) -> None:
         """Test WebSocketPort is an abstract class."""
         from abc import ABC
-        assert issubclass(WebSocketPort, ABC) or hasattr(WebSocketPort, '__abstractmethods__')
+
+        assert issubclass(WebSocketPort, ABC) or hasattr(
+            WebSocketPort, "__abstractmethods__"
+        )
 
     def test_port_has_connect_method(self) -> None:
         """Test WebSocketPort has connect method."""

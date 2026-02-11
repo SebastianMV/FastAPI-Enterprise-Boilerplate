@@ -18,6 +18,7 @@ class TestGetCurrentUserId:
     async def test_missing_credentials_raises_401(self) -> None:
         """Test missing credentials raises 401."""
         from fastapi import HTTPException
+
         from app.api.deps import get_current_user_id
 
         with pytest.raises(HTTPException) as exc_info:
@@ -45,6 +46,7 @@ class TestGetCurrentUserId:
     async def test_invalid_token_raises_401(self) -> None:
         """Test invalid token raises 401."""
         from fastapi import HTTPException
+
         from app.api.deps import get_current_user_id
 
         mock_credentials = MagicMock()
@@ -126,6 +128,7 @@ class TestRequireSuperuser:
     async def test_missing_credentials_raises_401(self) -> None:
         """Test missing credentials raises 401."""
         from fastapi import HTTPException
+
         from app.api.deps import require_superuser
 
         with pytest.raises(HTTPException) as exc_info:
@@ -137,6 +140,7 @@ class TestRequireSuperuser:
     async def test_non_superuser_raises_403(self) -> None:
         """Test non-superuser raises 403."""
         from fastapi import HTTPException
+
         from app.api.deps import require_superuser
 
         mock_credentials = MagicMock()
@@ -188,6 +192,7 @@ class TestRequirePermission:
     async def test_permission_checker_missing_credentials_raises_401(self) -> None:
         """Test permission checker with missing credentials raises 401."""
         from fastapi import HTTPException
+
         from app.api.deps import require_permission
 
         checker = require_permission("users", "read")

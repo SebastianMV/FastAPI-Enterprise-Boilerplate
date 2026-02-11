@@ -9,8 +9,7 @@ for machine-to-machine authentication.
 """
 
 import secrets
-from datetime import datetime, timedelta, UTC
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -34,38 +33,38 @@ API_KEY_LENGTH = 32
 class APIKeyHandler:
     """
     Handler class for API Key operations.
-    
+
     Provides methods for API key generation, validation, and management.
     """
-    
+
     def generate_api_key(self) -> tuple[str, str, str]:
         """
         Generate a new API key.
-        
+
         Returns:
             Tuple of (full_key, prefix, key_hash)
         """
         return generate_api_key()
-    
+
     def validate_format(self, key: str) -> bool:
         """Validate API key format."""
         return validate_api_key_format(key)
-    
+
     def hash_key(self, key: str) -> str:
         """Hash an API key for storage."""
         return hash_password(key)
-    
+
     def verify_key(self, plain_key: str, hashed_key: str) -> bool:
         """Verify an API key against its hash."""
         return verify_password(plain_key, hashed_key)
-    
+
     def extract_prefix(self, key: str) -> str:
         """
         Extract prefix from an API key.
-        
+
         Args:
             key: Full API key
-            
+
         Returns:
             Key prefix (first 12 characters)
         """
@@ -78,76 +77,76 @@ class APIKeyHandler:
 def generate_api_key() -> tuple[str, str, str]:
     """
     Generate a new API key.
-    
+
     Returns:
         Tuple of (full_key, prefix, key_hash)
-        
+
     Note: The full_key should only be shown once to the user,
     then only the prefix is stored for identification.
     """
     # Generate random key
     random_part = secrets.token_urlsafe(API_KEY_LENGTH)
     full_key = f"{API_KEY_PREFIX}_{random_part}"
-    
+
     # Extract prefix (first 8 chars of random part)
     prefix = random_part[:8]
-    
+
     # Hash the full key for storage
     key_hash = hash_password(full_key)
-    
+
     return full_key, prefix, key_hash
 
 
 def validate_api_key_format(key: str) -> bool:
     """
     Validate API key format.
-    
+
     Args:
         key: The API key to validate
-        
+
     Returns:
         True if format is valid
     """
     if not key:
         return False
-    
+
     if not key.startswith(f"{API_KEY_PREFIX}_"):
         return False
-    
+
     # Check minimum length
     if len(key) < len(API_KEY_PREFIX) + 1 + 20:
         return False
-    
+
     return True
 
 
 async def authenticate_api_key(
     session: AsyncSession,
     key: str,
-    required_scopes: Optional[list[str]] = None,
+    required_scopes: list[str] | None = None,
 ) -> APIKey:
     """
     Authenticate an API key and return the key entity.
-    
+
     Args:
         session: Database session
         key: The API key to authenticate
         required_scopes: Optional list of required scopes
-        
+
     Returns:
         Authenticated APIKey entity
-        
+
     Raises:
         AuthenticationError: If key is invalid
         AuthorizationError: If key lacks required scopes
     """
     if not validate_api_key_format(key):
         raise AuthenticationError(message="Invalid API key format")
-    
+
     # Extract prefix for lookup
-    random_part = key[len(API_KEY_PREFIX) + 1:]
+    random_part = key[len(API_KEY_PREFIX) + 1 :]
     prefix = random_part[:8]
-    
+
     # Find keys with matching prefix
     stmt = select(APIKeyModel).where(
         APIKeyModel.prefix == prefix,
@@ -156,46 +155,52 @@ async def authenticate_api_key(
     )
     result = await session.execute(stmt)
     key_models = result.scalars().all()
-    
+
     # Verify against each potential match
     valid_model = None
     for model in key_models:
         if verify_password(key, model.key_hash):
             valid_model = model
             break
-    
+
     if not valid_model:
-        logger.warning(f"API key authentication failed: prefix={prefix}")
+        logger.warning("API key authentication failed: prefix=%s", prefix)
         raise AuthenticationError(message="Invalid API key")
-    
+
     # Check expiration
     if valid_model.expires_at and datetime.now(UTC) > valid_model.expires_at:
-        logger.warning(f"API key expired: id={valid_model.id}")
+        logger.warning("API key expired: id=%s", valid_model.id)
         raise AuthenticationError(message="API key has expired")
-    
+
     # Convert to entity
     api_key = _model_to_entity(valid_model)
-    
+
     # Check scopes if required
     if required_scopes:
         if not api_key.has_all_scopes(required_scopes):
             logger.warning(
-                f"API key lacks required scopes: id={api_key.id}, "
-                f"required={required_scopes}, has={api_key.scopes}"
+                "API key lacks required scopes: id=%s, required=%s, has=%s",
+                api_key.id,
+                required_scopes,
+                api_key.scopes,
             )
             raise AuthorizationError(
                 message="API key lacks required permissions",
-                resource=required_scopes[0].split(":")[0] if required_scopes else "unknown",
-                action=required_scopes[0].split(":")[1] if required_scopes and ":" in required_scopes[0] else "unknown",
+                resource=required_scopes[0].split(":")[0]
+                if required_scopes
+                else "unknown",
+                action=required_scopes[0].split(":")[1]
+                if required_scopes and ":" in required_scopes[0]
+                else "unknown",
             )
-    
+
     # Update usage stats
     valid_model.last_used_at = datetime.now(UTC)
     valid_model.usage_count += 1
     await session.flush()
-    
-    logger.info(f"API key authenticated: id={api_key.id}, name={api_key.name}")
-    
+
+    logger.info("API key authenticated: id=%s, name=%s", api_key.id, api_key.name)
+
     return api_key
 
 
@@ -206,11 +211,11 @@ async def create_api_key(
     user_id: UUID,
     name: str,
     scopes: list[str],
-    expires_in_days: Optional[int] = None,
+    expires_in_days: int | None = None,
 ) -> tuple[str, APIKey]:
     """
     Create a new API key.
-    
+
     Args:
         session: Database session
         tenant_id: Tenant ID
@@ -218,20 +223,20 @@ async def create_api_key(
         name: Human-readable name
         scopes: Permission scopes
         expires_in_days: Days until expiration (None = never)
-        
+
     Returns:
         Tuple of (plain_key, APIKey entity)
-        
+
     Note: The plain_key is only returned once. Store it securely.
     """
     # Generate key
     full_key, prefix, key_hash = generate_api_key()
-    
+
     # Calculate expiration
     expires_at = None
     if expires_in_days:
         expires_at = datetime.now(UTC) + timedelta(days=expires_in_days)
-    
+
     # Create model
     model = APIKeyModel(
         tenant_id=tenant_id,
@@ -243,13 +248,13 @@ async def create_api_key(
         expires_at=expires_at,
         created_by=user_id,
     )
-    
+
     session.add(model)
     await session.flush()
     await session.refresh(model)
-    
-    logger.info(f"API key created: id={model.id}, name={name}, user={user_id}")
-    
+
+    logger.info("API key created: id=%s, name=%s, user=%s", model.id, name, user_id)
+
     return full_key, _model_to_entity(model)
 
 
@@ -260,33 +265,34 @@ async def revoke_api_key(
 ) -> bool:
     """
     Revoke an API key.
-    
+
     Args:
         session: Database session
         key_id: API key ID to revoke
         user_id: User performing the revocation
-        
+
     Returns:
         True if revoked, False if not found
     """
     stmt = select(APIKeyModel).where(
         APIKeyModel.id == key_id,
+        APIKeyModel.user_id == user_id,
         APIKeyModel.is_deleted == False,
     )
     result = await session.execute(stmt)
     model = result.scalar_one_or_none()
-    
+
     if not model:
         return False
-    
+
     model.is_active = False
     model.deleted_at = datetime.now(UTC)
     model.is_deleted = True
-    
+
     await session.flush()
-    
-    logger.info(f"API key revoked: id={key_id}, by={user_id}")
-    
+
+    logger.info("API key revoked: id=%s, by=%s", key_id, user_id)
+
     return True
 
 
@@ -297,28 +303,28 @@ async def list_user_api_keys(
 ) -> list[APIKey]:
     """
     List API keys for a user.
-    
+
     Args:
         session: Database session
         user_id: User ID
         include_revoked: Include revoked/deleted keys
-        
+
     Returns:
         List of APIKey entities
     """
     stmt = select(APIKeyModel).where(APIKeyModel.user_id == user_id)
-    
+
     if not include_revoked:
         stmt = stmt.where(
             APIKeyModel.is_active == True,
             APIKeyModel.is_deleted == False,
         )
-    
+
     stmt = stmt.order_by(APIKeyModel.created_at.desc())
-    
+
     result = await session.execute(stmt)
     models = result.scalars().all()
-    
+
     return [_model_to_entity(m) for m in models]
 
 

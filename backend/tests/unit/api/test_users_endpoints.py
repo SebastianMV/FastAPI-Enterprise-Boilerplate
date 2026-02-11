@@ -7,9 +7,9 @@ Unit tests for Users API endpoints.
 Tests for user CRUD operations.
 """
 
-from datetime import datetime, UTC
-from uuid import uuid4
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -186,6 +186,7 @@ class TestCreateUserEndpoint:
     def test_create_user_invalid_email_pydantic(self) -> None:
         """Test creating user with invalid email fails at Pydantic."""
         from pydantic import ValidationError
+
         from app.api.v1.schemas.users import UserCreate
 
         with pytest.raises(ValidationError) as exc_info:

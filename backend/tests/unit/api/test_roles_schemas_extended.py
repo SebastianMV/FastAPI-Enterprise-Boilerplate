@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 
@@ -18,7 +19,7 @@ from app.api.v1.schemas.roles import (
     RoleUpdate,
     UserPermissionsResponse,
 )
-from app.domain.entities.role import Permission, Role
+from app.domain.entities.role import Permission
 
 
 class TestPermissionFromString:
@@ -61,16 +62,14 @@ class TestRoleCreate:
         data = RoleCreate(
             name="Admin",
             description="Administrator role",
-            permissions=["users:read", "users:write"]
+            permissions=["users:read", "users:write"],
         )
         assert data.name == "Admin"
         assert len(data.permissions) == 2
 
     def test_role_create_minimal(self) -> None:
         """Test minimal RoleCreate."""
-        data = RoleCreate(
-            name="Viewer"
-        )
+        data = RoleCreate(name="Viewer")
         assert data.name == "Viewer"
 
     def test_role_create_empty_name(self) -> None:
@@ -97,7 +96,7 @@ class TestRoleUpdate:
         data = RoleUpdate(
             name="Updated Role",
             description="Updated description",
-            permissions=["users:read"]
+            permissions=["users:read"],
         )
         assert data.name == "Updated Role"
         assert data.description == "Updated description"
@@ -108,8 +107,8 @@ class TestRoleResponse:
 
     def test_role_response_creation(self) -> None:
         """Test RoleResponse creation."""
-        from datetime import datetime, UTC
-        
+        from datetime import UTC, datetime
+
         role_id = uuid4()
         data = RoleResponse(
             id=role_id,
@@ -125,8 +124,8 @@ class TestRoleResponse:
 
     def test_role_response_with_description(self) -> None:
         """Test RoleResponse with description."""
-        from datetime import datetime, UTC
-        
+        from datetime import UTC, datetime
+
         data = RoleResponse(
             id=uuid4(),
             name="Described Role",
@@ -150,8 +149,8 @@ class TestRoleListResponse:
 
     def test_role_list_response_with_items(self) -> None:
         """Test RoleListResponse with items."""
-        from datetime import datetime, UTC
-        
+        from datetime import UTC, datetime
+
         role1 = RoleResponse(
             id=uuid4(),
             name="Role 1",
@@ -204,8 +203,8 @@ class TestUserPermissionsResponse:
 
     def test_user_permissions_response(self) -> None:
         """Test UserPermissionsResponse."""
-        from datetime import datetime, UTC
-        
+        from datetime import UTC, datetime
+
         user_id = uuid4()
         role = RoleResponse(
             id=uuid4(),
@@ -219,7 +218,7 @@ class TestUserPermissionsResponse:
         data = UserPermissionsResponse(
             user_id=user_id,
             permissions=["users:read", "roles:read", "tenants:*"],
-            roles=[role]
+            roles=[role],
         )
         assert "users:read" in data.permissions
         assert len(data.roles) == 1
@@ -238,14 +237,17 @@ class TestRolesRouter:
     def test_router_exists(self) -> None:
         """Test router exists."""
         from app.api.v1.endpoints.roles import router
+
         assert router is not None
 
     def test_router_has_routes(self) -> None:
         """Test router has routes."""
         from app.api.v1.endpoints.roles import router
+
         assert len(router.routes) > 0
 
     def test_get_role_repository_dependency(self) -> None:
         """Test get_role_repository dependency exists."""
         from app.api.v1.endpoints.roles import get_role_repository
+
         assert callable(get_role_repository)

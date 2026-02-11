@@ -12,7 +12,6 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        args: [--unsafe]
       - id: check-json
       - id: check-toml
       - id: check-added-large-files
@@ -23,7 +22,7 @@ repos:
 
   # Python - Ruff (linting + formatting)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0
+    rev: v0.15.0
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -33,29 +32,40 @@ repos:
 
   # Python - MyPy (type checking)
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+    rev: v1.19.1
     hooks:
       - id: mypy
         additional_dependencies:
-          - pydantic>=2.10.0
-          - fastapi>=0.115.0
+          - pydantic>=2.12.0
+          - fastapi>=0.128.0
           - sqlalchemy>=2.0.0
           - types-redis
         args: [--config-file=backend/pyproject.toml]
         files: ^backend/
 
-  # Security scanning
+  # Security scanning — Bandit (Python)
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.10
+    rev: 1.9.3
     hooks:
       - id: bandit
         args: [-c, pyproject.toml]
         additional_dependencies: ["bandit[toml]"]
         files: ^backend/app/
 
+  # Security scanning — Semgrep (custom rules from 18 audits)
+  # These rules codify patterns found in 18 consecutive security audits:
+  # str(e) in HTTP responses, f-strings in logger, tokens in localStorage,
+  # ungated console.error, raw fetch() instead of axios, eval(), etc.
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.151.0
+    hooks:
+      - id: semgrep
+        args: ['--config', '.semgrep/', '--error', '--quiet']
+        types_or: [python, typescript, javascript, yaml]
+
   # Markdown
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.43.0
+    rev: v0.47.0
     hooks:
       - id: markdownlint
         args: [--fix, --disable, MD013, MD033, MD041]

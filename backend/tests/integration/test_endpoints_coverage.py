@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 
@@ -27,10 +27,7 @@ class TestAPIKeyEndpoints:
         """Test create API key without auth."""
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.post(
-                "/api/v1/api-keys",
-                json={"name": "Test Key"}
-            )
+            response = await client.post("/api/v1/api-keys", json={"name": "Test Key"})
             assert response.status_code in [401, 403, 422]
 
     @pytest.mark.asyncio
@@ -90,10 +87,7 @@ class TestMFAEndpoints:
         """Test MFA enable without auth."""
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.post(
-                "/api/v1/mfa/enable",
-                json={"code": "123456"}
-            )
+            response = await client.post("/api/v1/mfa/enable", json={"code": "123456"})
             assert response.status_code in [401, 403, 404]
 
     @pytest.mark.asyncio
@@ -101,10 +95,7 @@ class TestMFAEndpoints:
         """Test MFA disable without auth."""
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.post(
-                "/api/v1/mfa/disable",
-                json={"code": "123456"}
-            )
+            response = await client.post("/api/v1/mfa/disable", json={"code": "123456"})
             assert response.status_code in [401, 403]
 
     @pytest.mark.asyncio
@@ -138,8 +129,8 @@ class TestUserEndpoints:
                     "email": "test@example.com",
                     "password": "Password123!",
                     "first_name": "Test",
-                    "last_name": "User"
-                }
+                    "last_name": "User",
+                },
             )
             assert response.status_code in [401, 403]
 
@@ -160,7 +151,7 @@ class TestUserEndpoints:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.patch(
                 "/api/v1/users/00000000-0000-0000-0000-000000000000",
-                json={"first_name": "Updated"}
+                json={"first_name": "Updated"},
             )
             assert response.status_code in [401, 403]
 
@@ -200,8 +191,7 @@ class TestRoleEndpoints:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/api/v1/roles",
-                json={"name": "Test Role", "permissions": []}
+                "/api/v1/roles", json={"name": "Test Role", "permissions": []}
             )
             assert response.status_code in [401, 403]
 
@@ -243,8 +233,7 @@ class TestTenantEndpoints:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/api/v1/tenants",
-                json={"name": "Test Tenant", "slug": "test-tenant"}
+                "/api/v1/tenants", json={"name": "Test Tenant", "slug": "test-tenant"}
             )
             assert response.status_code in [401, 403]
 
@@ -265,7 +254,7 @@ class TestTenantEndpoints:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.patch(
                 "/api/v1/tenants/00000000-0000-0000-0000-000000000000",
-                json={"name": "Updated Tenant"}
+                json={"name": "Updated Tenant"},
             )
             assert response.status_code in [401, 403]
 
@@ -346,7 +335,7 @@ class TestChatEndpoints:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/chat/conversations/direct",
-                json={"user_id": "00000000-0000-0000-0000-000000000000"}
+                json={"user_id": "00000000-0000-0000-0000-000000000000"},
             )
             assert response.status_code in [401, 403, 404]
 
@@ -357,7 +346,7 @@ class TestChatEndpoints:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/chat/conversations/group",
-                json={"name": "Test Group", "user_ids": []}
+                json={"name": "Test Group", "user_ids": []},
             )
             assert response.status_code in [401, 403, 404, 422]
 
@@ -388,7 +377,7 @@ class TestChatEndpoints:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/chat/conversations/00000000-0000-0000-0000-000000000000/messages",
-                json={"content": "Hello"}
+                json={"content": "Hello"},
             )
             assert response.status_code in [401, 403, 404]
 
@@ -420,8 +409,7 @@ class TestSearchEndpoints:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/api/v1/search",
-                json={"query": "test", "filters": {}}
+                "/api/v1/search", json={"query": "test", "filters": {}}
             )
             assert response.status_code in [200, 401, 403, 422, 500]
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import api from '@/services/api';
 import { 
   Lock, 
   ArrowLeft, 
@@ -49,6 +50,8 @@ export default function ResetPasswordPage() {
 
   // Validate token on mount
   useEffect(() => {
+    const controller = new AbortController();
+
     const validateToken = async () => {
       if (!resetToken) {
         setIsTokenValid(false);
@@ -57,17 +60,28 @@ export default function ResetPasswordPage() {
       }
 
       try {
-        const response = await fetch(`/auth/verify-reset-token?token=${resetToken}`);
-        setIsTokenValid(response.ok);
+        await api.get('/auth/verify-reset-token', {
+          params: { token: resetToken },
+          signal: controller.signal,
+        });
+        if (!controller.signal.aborted) {
+          setIsTokenValid(true);
+        }
       } catch {
-        // If endpoint doesn't exist, assume token is valid and let reset fail if invalid
-        setIsTokenValid(true);
+        // Token invalid or endpoint unavailable — fail-closed
+        if (!controller.signal.aborted) {
+          setIsTokenValid(false);
+        }
       } finally {
-        setIsValidating(false);
+        if (!controller.signal.aborted) {
+          setIsValidating(false);
+        }
       }
     };
 
     validateToken();
+
+    return () => controller.abort();
   }, [resetToken]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
@@ -77,29 +91,14 @@ export default function ResetPasswordPage() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: resetToken,
-          new_password: data.password,
-        }),
+      await api.post('/auth/reset-password', {
+        token: resetToken,
+        new_password: data.password,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail?.message || 'Failed to reset password');
-      }
-
       setIsSuccess(true);
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error 
-          ? error.message 
-          : 'Failed to reset password. The link may have expired.'
-      );
+    } catch {
+      setErrorMessage(t('auth.resetFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -127,14 +126,14 @@ export default function ResetPasswordPage() {
               <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              Invalid Reset Link
+              {t('auth.invalidResetLink')}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mb-6">
-              This password reset link is invalid or has expired. Please request a new one.
+              {t('auth.resetLinkExpired')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/forgot-password" className="btn-primary">
-                Request New Link
+                {t('auth.requestNewLink')}
               </Link>
               <Link to="/login" className="btn-secondary">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -224,7 +223,7 @@ export default function ResetPasswordPage() {
                       message: t('validation.passwordMin', { min: 8 }),
                     },
                     pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
                       message: t('validation.passwordStrength'),
                     },
                   })}
@@ -232,6 +231,7 @@ export default function ResetPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
@@ -273,6 +273,7 @@ export default function ResetPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showConfirmPassword ? (
@@ -290,20 +291,23 @@ export default function ResetPasswordPage() {
             {/* Password requirements */}
             <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-                Password requirements:
+                {t('auth.passwordRequirements')}
               </p>
               <ul className="text-xs text-slate-500 dark:text-slate-500 space-y-1">
                 <li className={password?.length >= 8 ? 'text-green-600' : ''}>
-                  • At least 8 characters
+                  • {t('auth.passwordReqMinChars')}
                 </li>
                 <li className={password && /[A-Z]/.test(password) ? 'text-green-600' : ''}>
-                  • One uppercase letter
+                  • {t('auth.passwordReqUppercase')}
                 </li>
                 <li className={password && /[a-z]/.test(password) ? 'text-green-600' : ''}>
-                  • One lowercase letter
+                  • {t('auth.passwordReqLowercase')}
                 </li>
                 <li className={password && /\d/.test(password) ? 'text-green-600' : ''}>
-                  • One number
+                  • {t('auth.passwordReqNumber')}
+                </li>
+                <li className={password && /[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-600' : ''}>
+                  • {t('auth.passwordReqSpecial')}
                 </li>
               </ul>
             </div>

@@ -1,18 +1,15 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
 # Licensed under the MIT License
 
-"""
-Register user use case.
-
-Handles user registration with validation.
-"""
+"""Register use case — creates new user account."""
 
 from dataclasses import dataclass
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
+from uuid import uuid4
 
+from app.config import settings
 from app.domain.entities.user import User
 from app.domain.exceptions.base import ConflictError, ValidationError
-from app.domain.ports.user_repository import UserRepositoryPort
 from app.domain.value_objects.email import Email
 from app.domain.value_objects.password import Password
 from app.infrastructure.auth.jwt_handler import (
@@ -20,113 +17,159 @@ from app.infrastructure.auth.jwt_handler import (
     create_refresh_token,
     hash_password,
 )
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True)
 class RegisterRequest:
-    """Registration request data."""
-    
+    """Input for register use case."""
+
     email: str
     password: str
     first_name: str
     last_name: str
-    tenant_id: UUID | None = None
 
 
-@dataclass
-class RegisterResponse:
-    """Registration response with tokens and user."""
-    
-    access_token: str
-    refresh_token: str
+@dataclass(frozen=True)
+class RegisterResult:
+    """Output of register use case."""
+
     user: User
+    access_token: str | None = None
+    refresh_token: str | None = None
+    token_type: str = "bearer"
+    expires_in: int = 0
+    requires_verification: bool = False
 
 
 class RegisterUseCase:
-    """
-    Use case for user registration.
-    
-    Validates input, creates user, and returns tokens.
-    """
-    
-    def __init__(self, user_repository: UserRepositoryPort) -> None:
-        """
-        Initialize use case.
-        
-        Args:
-            user_repository: Repository for user data access
-        """
-        self._user_repository = user_repository
-    
-    async def execute(self, request: RegisterRequest) -> RegisterResponse:
-        """
-        Execute registration flow.
-        
-        Args:
-            request: Registration data
-            
-        Returns:
-            RegisterResponse with tokens and user
-            
-        Raises:
-            ValidationError: If email or password is invalid
-            ConflictError: If email already exists
-        """
-        # 1. Validate email
+    """Create a new user, optionally send verification email, issue tokens."""
+
+    def __init__(self, user_repository, tenant_repository, db_session) -> None:
+        self._user_repo = user_repository
+        self._tenant_repo = tenant_repository
+        self._db_session = db_session
+
+    async def execute(self, request: RegisterRequest) -> RegisterResult:
+        # Validate email
         try:
             email = Email(request.email)
-        except ValueError as e:
+        except ValueError:
             raise ValidationError(
-                message=str(e),
+                message="Invalid email format",
+                code="INVALID_EMAIL",
                 field="email",
-            )
-        
-        # 2. Validate password
+            ) from None
+
+        # Validate password strength
         try:
-            password = Password(request.password)
-        except ValueError as e:
+            Password(request.password)
+        except ValueError:
             raise ValidationError(
-                message=str(e),
+                message="Password does not meet security requirements",
+                code="WEAK_PASSWORD",
                 field="password",
-            )
-        
-        # 3. Check email uniqueness
-        if await self._user_repository.exists_by_email(request.email):
+            ) from None
+
+        # Uniqueness check
+        existing = await self._user_repo.get_by_email(request.email)
+        if existing:
             raise ConflictError(
-                message=f"Email '{request.email}' is already registered",
-                conflicting_field="email",
+                message="Email already registered",
+                code="EMAIL_EXISTS",
             )
-        
-        # 4. Create user entity
-        tenant_id = request.tenant_id or uuid4()
-        
-        user = User(
+
+        # Ensure a default tenant exists
+        default_tenant = await self._tenant_repo.get_default_tenant()
+        if not default_tenant:
+            from app.domain.entities.tenant import Tenant
+
+            default_tenant = Tenant(
+                id=uuid4(),
+                name="Default",
+                slug="default",
+                is_active=True,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+            default_tenant = await self._tenant_repo.create(default_tenant)
+
+        # Build user entity
+        now = datetime.now(UTC)
+        new_user = User(
             id=uuid4(),
-            tenant_id=tenant_id,
+            tenant_id=default_tenant.id,
             email=email,
-            password_hash=hash_password(password.value),
+            password_hash=hash_password(request.password),
             first_name=request.first_name,
             last_name=request.last_name,
             is_active=True,
             is_superuser=False,
+            roles=[],
+            created_at=now,
+            updated_at=now,
+            last_login=None,
+            email_verified=False,
         )
-        
-        # 5. Persist user
-        created_user = await self._user_repository.create(user)
-        
-        # 6. Generate tokens
-        access_token = create_access_token(
-            user_id=created_user.id,
-            tenant_id=tenant_id,
-        )
-        
-        refresh_token = create_refresh_token(
-            user_id=created_user.id,
-            tenant_id=tenant_id,
-        )
-        
-        return RegisterResponse(
+
+        # Generate verification token
+        verification_token = None
+        if settings.EMAIL_VERIFICATION_REQUIRED:
+            verification_token = new_user.generate_verification_token()
+
+        created_user = await self._user_repo.create(new_user)
+        await self._db_session.commit()
+
+        # Send verification email (fire-and-forget)
+        if settings.EMAIL_VERIFICATION_REQUIRED and verification_token:
+            await self._send_verification_email(created_user, verification_token)
+
+        # Issue tokens only when email verification is NOT required
+        access_token: str | None = None
+        refresh_token: str | None = None
+        expires_in = 0
+
+        if not settings.EMAIL_VERIFICATION_REQUIRED:
+            access_token = create_access_token(
+                user_id=created_user.id,
+                tenant_id=created_user.tenant_id,
+                extra_claims={
+                    "is_superuser": created_user.is_superuser,
+                    "roles": [str(r) for r in created_user.roles],
+                },
+            )
+            refresh_token = create_refresh_token(
+                user_id=created_user.id,
+                tenant_id=created_user.tenant_id,
+            )
+            expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+        return RegisterResult(
+            user=created_user,
             access_token=access_token,
             refresh_token=refresh_token,
-            user=created_user,
+            token_type="bearer",
+            expires_in=expires_in,
+            requires_verification=settings.EMAIL_VERIFICATION_REQUIRED,
         )
+
+    # ------------------------------------------------------------------
+    async def _send_verification_email(self, user: User, token: str) -> None:
+        try:
+            from app.infrastructure.email import get_email_service
+
+            verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+            email_service = get_email_service()
+            await email_service.send_verification_email(
+                to_email=str(user.email),
+                to_name=user.first_name,
+                verification_url=verification_url,
+                expires_in_hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to send verification email during registration",
+                exc_info=True,
+            )

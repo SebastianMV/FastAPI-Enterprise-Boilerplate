@@ -17,12 +17,12 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/tests-3858%20passing-brightgreen.svg" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-3500%2B%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="#"><img src="https://img.shields.io/badge/coverage-99%25-brightgreen.svg" alt="Coverage"></a>
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
   <a href="#"><img src="https://img.shields.io/badge/vulnerabilities-0-brightgreen.svg" alt="Security"></a>
-  <a href="PROJECT_STATUS.md"><img src="https://img.shields.io/badge/status-production%20ready-brightgreen.svg" alt="Production Ready"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.3.7-blue.svg" alt="v1.3.7"></a>
+  <a href="PROJECT_STATUS.md"><img src="https://img.shields.io/badge/status-beta-orange.svg" alt="Beta"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.9.5-blue.svg" alt="v0.9.5"></a>
 </p>
 
 ---
@@ -148,13 +148,13 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 4. **Registra nuevos usuarios**: <http://localhost:3000/register>
    - Los nuevos usuarios tendrán rol "user" por defecto
 
-5. **Explora la arquitectura**: Lee [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+5. **Explora la documentación**: Lee [docs/README.md](docs/README.md) para el índice completo
 
 6. **Ejecuta los tests**:
 
    ```bash
    make test              # Linux/Mac
-   Run-AllTests           # Windows PowerShell
+   Invoke-AllTests           # Windows PowerShell
    ```
 
 #### Credenciales de Desarrollo
@@ -194,7 +194,7 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 
 - ✅ **OpenTelemetry** - Traces, metrics, structured logs
 - ✅ **Audit Logging** - Complete action trail for compliance
-- ✅ **i18n Support (100%)** - Multi-language with lazy loading ([EN/ES/PT active](docs/I18N.md), FR/DE available)
+- ✅ **i18n Support (100%)** - Multi-language with lazy loading ([EN/ES/PT](docs/I18N.md))
 - ✅ **Health Checks** - Kubernetes liveness/readiness probes
 - ✅ **Rate Limiting** - Redis-based API protection
 - ✅ **Background Jobs** - Async task processing with retry
@@ -205,7 +205,7 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 
 > 🚨 **Production Security**: Development users with known passwords are created automatically by migrations for testing. [**Delete them before production deployment!**](docs/DEPLOYMENT.md#production-security--initial-setup)
 
-- ✅ **508 Tests Passing** - 81.9% coverage with E2E validation
+- ✅ **4000+ Tests Passing** - 99% backend coverage, 568 frontend tests
 - ✅ **E2E Validated** - Login flow + WebSocket tested
 - ✅ **Docker Compose** - One-command dev environment
 - ✅ **Auto-generated Docs** - OpenAPI with examples
@@ -222,7 +222,7 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 - ✅ **Zustand** - Client state management
 - ✅ **i18n (react-i18next)** - Multi-language support (100% coverage, lazy loading)
 
-### Frontend Pages (v1.3.0) 🆕
+### Frontend Pages
 
 **Authentication & Security:**
 
@@ -252,7 +252,7 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 - ✅ **Search** - Full-text search across resources
 - ✅ **Tenant Management** - Multi-tenant administration (superadmin)
 
-> **🌍 i18n:** All pages are fully translated to 3 languages (EN/ES/PT active, FR/DE available). See [docs/I18N.md](docs/I18N.md) for details.
+> **🌍 i18n:** All pages are fully translated to 3 languages (EN/ES/PT). See [docs/I18N.md](docs/I18N.md) for details.
 
 ## 📁 Project Structure
 
@@ -468,62 +468,39 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete deployment guide.
 
 | Document | Description |
 | -------- | ----------- |
-| [📖 Technical Overview](docs/TECHNICAL_OVERVIEW.md) | **Complete technical documentation (START HERE)** |
-| [� Project Status](PROJECT_STATUS.md) | Project status, versions, and roadmap |
-| [Getting Started](docs/GETTING_STARTED.md) | Quick setup guide |
-| [🐳 Docker Guide](docs/DOCKER.md) | Complete Docker setup and troubleshooting |
-| [Architecture](docs/ARCHITECTURE.md) | Hexagonal architecture overview |
-| [API Reference](docs/API_REFERENCE.md) | Complete API documentation |
-| [Deployment](docs/DEPLOYMENT.md) | Production deployment guide |
-| [RLS Setup](docs/RLS_SETUP.md) | Multi-tenant isolation implementation |
-| [Production DB Config](docs/PRODUCTION_DATABASE_CONFIG.md) | Database setup for production |
-| [OAuth2/SSO](docs/OAUTH2_SSO.md) | OAuth2 provider configuration |
-| [WebSocket](docs/WEBSOCKET.md) | Real-time features guide |
-| [Full-Text Search](docs/FULL_TEXT_SEARCH.md) | Search implementation |
-| [i18n Guide](docs/I18N.md) | Internationalization (100% coverage) |
-| [Security Features](docs/SECURITY.md) | Security audit and best practices |
-| [Windows Commands](MAKEFILE.md) | PowerShell equivalent of Makefile |
+| [⭐ Getting Started](docs/GETTING_STARTED.md) | **Complete setup guide (START HERE)** |
+| [📋 Project Status](PROJECT_STATUS.md) | Project status, metrics, and roadmap to v1.0.0 |
+| [🔐 Security](docs/SECURITY.md) | Security audit, OWASP compliance, best practices |
+| [🐳 Docker Guide](docs/DOCKER.md) | Docker setup, environments, and troubleshooting |
+| [📡 API Reference](docs/API_REFERENCE.md) | Complete REST API documentation |
+| [🚀 Deployment](docs/DEPLOYMENT.md) | Production deployment guide (Docker, K8s) |
+| [🔒 RLS Setup](docs/RLS_SETUP.md) | Row-Level Security for multi-tenant isolation |
+| [🔗 OAuth2/SSO](docs/OAUTH2_SSO.md) | Social login (Google, GitHub, Microsoft, Discord) |
+| [⚡ WebSocket](docs/WEBSOCKET.md) | Real-time features and WebSocket guide |
+| [🔍 Full-Text Search](docs/FULL_TEXT_SEARCH.md) | PostgreSQL FTS implementation |
+| [🌐 i18n Guide](docs/I18N.md) | Internationalization (EN/ES/PT) |
+| [📧 Email Templates](docs/EMAIL_TEMPLATES.md) | Email system and template guide |
+| [📊 Data Exchange](docs/DATA_EXCHANGE.md) | Import/Export/Reports system |
+| [📦 Bulk Operations](docs/BULK_OPERATIONS.md) | Batch CRUD API |
+| [📄 PDF/Excel](docs/PDF_EXCEL_FEATURES.md) | Advanced PDF & Excel generation |
+| [⚙️ Commands](MAKEFILE.md) | Cross-platform Make/PowerShell reference |
 
 ## 🎯 Project Status
 
-**Version:** 1.0.0 ✅ **PRODUCTION READY** (January 2026)
-
-### ✅ Validation Results
-
-**Backend:**
-
-- ✅ **508 tests passing** (81.9% coverage, 0 failures)
-- ✅ **0 type errors** (Pyright strict mode)
-- ✅ **8 database migrations** applied successfully
-- ✅ **Multi-tenant RLS** verified (Defense in Depth)
-- ✅ **WebSocket** E2E tested with JWT authentication
-
-**Frontend:**
-
-- ✅ **Production build** validated (365KB gzipped)
-- ✅ **0 TypeScript errors** (strict mode)
-- ✅ **0 security vulnerabilities** (npm audit)
-- ✅ **Login flow** E2E tested
-
-**Infrastructure:**
-
-- ✅ **Docker stack** operational (PostgreSQL 17 + Redis 7)
-- ✅ **Health checks** passing (liveness + readiness)
-- ✅ **CORS** configured for development + production
-- ✅ **Windows compatible** (PowerShell scripts `make.ps1`)
+**Version:** v0.9.5 🔶 **Beta** — feature-complete, 22 security audits passed (Feb 2026)
 
 ### 📊 Metrics
 
 | Metric | Value |
 | ------ | ----- |
-| Tests Passing | 508 / 620 (81.9%) |
-| Code Coverage | 57% |
-| Backend Lines | 7,120 |
-| Frontend Bundle | 365KB (gzipped: 117KB) |
+| Backend Tests | 3,500+ passing |
+| Backend Coverage | 99% |
+| Frontend Tests | 568 passing |
+| Migrations | 12 applied |
+| Security Audits | 22 cycles (700+ items) |
 | Docker Build | < 2 minutes |
-| Security Issues | 0 |
 
-See [PROJECT_STATUS.md](PROJECT_STATUS.md) for complete validation results and [CHANGELOG.md](CHANGELOG.md) for release notes.
+See [PROJECT_STATUS.md](PROJECT_STATUS.md) for complete roadmap and [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## 📝 License
 

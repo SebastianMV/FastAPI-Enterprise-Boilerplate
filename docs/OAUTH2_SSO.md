@@ -13,7 +13,6 @@ The boilerplate supports multiple OAuth2 providers out of the box:
 | Microsoft | ✅ Ready | Azure AD, multi-tenant |
 | Apple | 🔜 Planned | OIDC with SIWA |
 | Facebook | 🔜 Planned | Email, profile |
-| SAML 2.0 | 🔜 Planned | Enterprise SSO |
 
 ## Quick Start
 
@@ -353,7 +352,3 @@ class CustomOAuthProvider(OAuthProviderBase):
         # Implement user info fetching
         ...
 ```
-
-### SAML 2.0 (Enterprise)
-
-SAML support is planned for enterprise deployments. Contact support for early access.

@@ -8,7 +8,7 @@ Provides email templates with i18n support and email sending capabilities.
 """
 
 from app.infrastructure.email.service import EmailService, get_email_service
-from app.infrastructure.email.templates import EmailTemplateEngine, EmailTemplate
+from app.infrastructure.email.templates import EmailTemplate, EmailTemplateEngine
 
 __all__ = [
     "EmailService",

@@ -1,0 +1,36 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.email_otp.preheader') }}{% endblock %}
+
+{% block content %}
+<h1>{{ t('email.email_otp.title') }}</h1>
+
+<p>{{ t('email.email_otp.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.email_otp.body') }}</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; display: inline-block;">
+        <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1f2937; font-family: 'Courier New', monospace;">{{ otp_code }}</span>
+    </div>
+</div>
+
+<p style="text-align: center; color: #6b7280;">
+    {{ t('email.email_otp.expires', minutes=expires_in_minutes|default(10)) }}
+</p>
+{% endblock %}
+
+{% block cta %}
+<div class="info-box" style="background-color: #fef3c7; border-left: 4px solid #f59e0b;">
+    <p style="margin: 0; color: #92400e;">
+        <strong>⚠️ {{ t('email.email_otp.security_warning_title') }}</strong><br>
+        {{ t('email.email_otp.security_warning') }}
+    </p>
+</div>
+{% endblock %}
+
+{% block footer_extra %}
+<p style="color: #9ca3af; font-size: 12px;">
+    {{ t('email.email_otp.ignore_note') }}
+</p>
+{% endblock %}

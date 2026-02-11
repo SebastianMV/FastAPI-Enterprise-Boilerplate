@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, AsyncMock
-from uuid import uuid4
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -26,9 +25,7 @@ class TestNotificationServiceImport:
 
         assert NotificationService is not None
 
-    def test_notification_service_instantiation(
-        self, mock_session: MagicMock
-    ) -> None:
+    def test_notification_service_instantiation(self, mock_session: MagicMock) -> None:
         """Test notification service can be instantiated."""
         from app.application.services.notification_service import NotificationService
 
@@ -62,7 +59,11 @@ class TestNotificationDelivery:
         from app.application.services.notification_service import NotificationService
 
         service = NotificationService(session=mock_session)
-        assert hasattr(service, "send") or hasattr(service, "create_notification") or service is not None
+        assert (
+            hasattr(service, "send")
+            or hasattr(service, "create_notification")
+            or service is not None
+        )
 
     def test_batch_notifications(self, mock_session: MagicMock) -> None:
         """Test sending batch notifications."""

@@ -7,9 +7,9 @@ Unit tests for OAuth Service.
 Tests the OAuth authentication service with mocked dependencies.
 """
 
-from datetime import datetime, timedelta, UTC
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
@@ -259,10 +259,14 @@ class TestOAuthServiceInitiateFlow:
 
         mock_provider = MagicMock()
         mock_provider.redirect_uri = "https://example.com/callback"
-        mock_provider.get_authorization_url.return_value = "https://oauth.example.com/auth"
+        mock_provider.get_authorization_url.return_value = (
+            "https://oauth.example.com/auth"
+        )
         mock_provider.generate_pkce.return_value = ("verifier", "challenge")
 
-        with patch("app.application.services.oauth_service.get_cache") as mock_get_cache:
+        with patch(
+            "app.application.services.oauth_service.get_cache"
+        ) as mock_get_cache:
             mock_get_cache.return_value = mock_cache
             service = OAuthService(session=mock_session)
             service._get_provider = AsyncMock(return_value=mock_provider)

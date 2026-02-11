@@ -1,0 +1,74 @@
+# Dependabot configuration
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Python (pip) — backend
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "backend"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "sebastian-munoz"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # npm — frontend
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "frontend"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "sebastian-munoz"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci"
+    reviewers:
+      - "sebastian-munoz"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # Docker — base images
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "sebastian-munoz"
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "sebastian-munoz"

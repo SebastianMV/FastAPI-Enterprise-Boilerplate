@@ -19,7 +19,7 @@ interface ConfigState extends FeatureConfig {
 export const useConfigStore = create<ConfigState>()(
   persist(
     (set) => ({
-      // Initial state - all features disabled until fetched
+      // Initial state — features use production defaults until fetched
       websocket_enabled: true,
       websocket_notifications: true,
       isLoading: false,
@@ -38,7 +38,7 @@ export const useConfigStore = create<ConfigState>()(
         } catch (error) {
           set({
             isLoading: false,
-            error: error instanceof Error ? error.message : 'Failed to fetch features',
+            error: 'config.fetchError',
           });
         }
       },

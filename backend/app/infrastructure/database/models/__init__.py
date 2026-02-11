@@ -7,7 +7,10 @@ from app.infrastructure.database.models.api_key import APIKeyModel
 from app.infrastructure.database.models.audit_log import AuditLogModel
 from app.infrastructure.database.models.mfa import MFAConfigModel
 from app.infrastructure.database.models.notification import NotificationModel
-from app.infrastructure.database.models.oauth import OAuthConnectionModel, SSOConfigurationModel
+from app.infrastructure.database.models.oauth import (
+    OAuthConnectionModel,
+    SSOConfigurationModel,
+)
 from app.infrastructure.database.models.role import RoleModel
 from app.infrastructure.database.models.session import UserSessionModel
 from app.infrastructure.database.models.tenant import TenantModel

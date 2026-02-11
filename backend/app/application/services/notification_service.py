@@ -10,11 +10,11 @@ Provides business logic for:
 - Batch operations (mark read, delete)
 """
 
-import logging
-from datetime import datetime, UTC
+import html as html_mod
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import and_, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.notification import (
@@ -25,17 +25,18 @@ from app.domain.entities.notification import (
 )
 from app.domain.ports.websocket import MessageType, WebSocketMessage, WebSocketPort
 from app.infrastructure.database.models.notification import NotificationModel
+from app.infrastructure.observability.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class NotificationService:
     """
     Service for managing notifications.
-    
+
     Handles notification creation, delivery, and lifecycle management.
     """
-    
+
     def __init__(
         self,
         session: AsyncSession,
@@ -43,14 +44,14 @@ class NotificationService:
     ) -> None:
         """
         Initialize the notification service.
-        
+
         Args:
             session: Database session
             ws_manager: WebSocket manager for real-time delivery
         """
         self._session = session
         self._ws_manager = ws_manager
-    
+
     async def create_notification(
         self,
         user_id: UUID,
@@ -69,7 +70,7 @@ class NotificationService:
     ) -> Notification:
         """
         Create and deliver a notification.
-        
+
         Args:
             user_id: Target user ID
             type: Notification type
@@ -83,14 +84,14 @@ class NotificationService:
             channels: Delivery channels
             expires_at: Expiration time
             group_key: Grouping key
-            
+
         Returns:
             Created notification entity
         """
         notification_id = uuid4()
         now = datetime.now(UTC)
         channels = channels or [NotificationChannel.IN_APP]
-        
+
         # Create database record
         notification_model = NotificationModel(
             id=notification_id,
@@ -110,10 +111,10 @@ class NotificationService:
             created_at=now,
             updated_at=now,
         )
-        
+
         self._session.add(notification_model)
         await self._session.flush()
-        
+
         notification = Notification(
             id=notification_id,
             tenant_id=tenant_id,  # type: ignore[arg-type]
@@ -131,35 +132,35 @@ class NotificationService:
             created_at=now,
             updated_at=now,
         )
-        
+
         # Deliver via WebSocket if available
         if NotificationChannel.IN_APP in channels and self._ws_manager:
             await self._deliver_via_websocket(notification)
-        
+
         return notification
-    
+
     async def _deliver_via_websocket(self, notification: Notification) -> None:
         """Deliver notification via WebSocket."""
         if not self._ws_manager:
             return
-        
+
         ws_message = WebSocketMessage(
             type=MessageType.NOTIFICATION,
             payload=notification.to_websocket_payload(),
         )
-        
+
         sent = await self._ws_manager.send_to_user(notification.user_id, ws_message)
-        
+
         if sent > 0:
             notification.mark_delivered(NotificationChannel.IN_APP)
-            
+
             # Update delivery status in DB
             await self._session.execute(
                 update(NotificationModel)
                 .where(NotificationModel.id == notification.id)
                 .values(delivery_status=notification.delivery_status)
             )
-    
+
     async def get_notification(
         self,
         notification_id: UUID,
@@ -167,11 +168,11 @@ class NotificationService:
     ) -> Notification | None:
         """
         Get a notification by ID.
-        
+
         Args:
             notification_id: Notification ID
             user_id: User ID (for access control)
-            
+
         Returns:
             Notification entity or None
         """
@@ -180,12 +181,12 @@ class NotificationService:
             NotificationModel.user_id == user_id,
             NotificationModel.is_deleted == False,
         )
-        
+
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._to_entity(model) if model else None
-    
+
     async def get_user_notifications(
         self,
         user_id: UUID,
@@ -197,14 +198,14 @@ class NotificationService:
     ) -> list[Notification]:
         """
         Get notifications for a user.
-        
+
         Args:
             user_id: User ID
             unread_only: Filter to unread only
             category: Filter by category
             limit: Max results
             offset: Pagination offset
-            
+
         Returns:
             List of notifications
         """
@@ -212,21 +213,21 @@ class NotificationService:
             NotificationModel.user_id == user_id,
             NotificationModel.is_deleted == False,
         )
-        
+
         if unread_only:
             stmt = stmt.where(NotificationModel.is_read == False)
-        
+
         if category:
             stmt = stmt.where(NotificationModel.category == category)
-        
+
         stmt = stmt.order_by(NotificationModel.created_at.desc())
         stmt = stmt.limit(limit).offset(offset)
-        
+
         result = await self._session.execute(stmt)
         models = result.scalars().all()
-        
+
         return [self._to_entity(m) for m in models]
-    
+
     async def get_unread_count(
         self,
         user_id: UUID,
@@ -234,28 +235,28 @@ class NotificationService:
     ) -> int:
         """
         Get count of unread notifications.
-        
+
         Args:
             user_id: User ID
             category: Optional category filter
-            
+
         Returns:
             Count of unread notifications
         """
         from sqlalchemy import func
-        
+
         stmt = select(func.count(NotificationModel.id)).where(
             NotificationModel.user_id == user_id,
             NotificationModel.is_read == False,
             NotificationModel.is_deleted == False,
         )
-        
+
         if category:
             stmt = stmt.where(NotificationModel.category == category)
-        
+
         result = await self._session.execute(stmt)
         return result.scalar() or 0
-    
+
     async def mark_as_read(
         self,
         notification_id: UUID,
@@ -263,16 +264,16 @@ class NotificationService:
     ) -> bool:
         """
         Mark a notification as read.
-        
+
         Args:
             notification_id: Notification ID
             user_id: User ID
-            
+
         Returns:
             True if updated
         """
         now = datetime.now(UTC)
-        
+
         result = await self._session.execute(
             update(NotificationModel)
             .where(
@@ -282,9 +283,9 @@ class NotificationService:
             )
             .values(is_read=True, read_at=now, updated_at=now)
         )
-        
+
         return result.rowcount > 0  # type: ignore
-    
+
     async def mark_all_as_read(
         self,
         user_id: UUID,
@@ -292,16 +293,16 @@ class NotificationService:
     ) -> int:
         """
         Mark all notifications as read for a user.
-        
+
         Args:
             user_id: User ID
             category: Optional category filter
-            
+
         Returns:
             Number of notifications marked
         """
         now = datetime.now(UTC)
-        
+
         stmt = (
             update(NotificationModel)
             .where(
@@ -311,13 +312,13 @@ class NotificationService:
             )
             .values(is_read=True, read_at=now, updated_at=now)
         )
-        
+
         if category:
             stmt = stmt.where(NotificationModel.category == category)
-        
+
         result = await self._session.execute(stmt)
         return result.rowcount  # type: ignore
-    
+
     async def delete_notification(
         self,
         notification_id: UUID,
@@ -325,16 +326,16 @@ class NotificationService:
     ) -> bool:
         """
         Soft delete a notification.
-        
+
         Args:
             notification_id: Notification ID
             user_id: User ID
-            
+
         Returns:
             True if deleted
         """
         now = datetime.now(UTC)
-        
+
         result = await self._session.execute(
             update(NotificationModel)
             .where(
@@ -344,24 +345,24 @@ class NotificationService:
             )
             .values(is_deleted=True, deleted_at=now, updated_at=now)
         )
-        
+
         return result.rowcount > 0  # type: ignore
-    
+
     async def delete_all_read(
         self,
         user_id: UUID,
     ) -> int:
         """
         Soft delete all read notifications.
-        
+
         Args:
             user_id: User ID
-            
+
         Returns:
             Number deleted
         """
         now = datetime.now(UTC)
-        
+
         result = await self._session.execute(
             update(NotificationModel)
             .where(
@@ -371,13 +372,13 @@ class NotificationService:
             )
             .values(is_deleted=True, deleted_at=now, updated_at=now)
         )
-        
+
         return result.rowcount  # type: ignore
-    
+
     # =========================================
     # Convenience methods for common notifications
     # =========================================
-    
+
     async def notify_welcome(
         self,
         user_id: UUID,
@@ -388,12 +389,12 @@ class NotificationService:
             user_id=user_id,
             tenant_id=tenant_id,
             type=NotificationType.WELCOME,
-            title="Welcome!",
-            message="Welcome to the platform. We're glad to have you!",
+            title="notification.welcome.title",
+            message="notification.welcome.message",
             priority=NotificationPriority.NORMAL,
             action_url="/getting-started",
         )
-    
+
     async def notify_password_changed(
         self,
         user_id: UUID,
@@ -404,12 +405,12 @@ class NotificationService:
             user_id=user_id,
             tenant_id=tenant_id,
             type=NotificationType.PASSWORD_CHANGED,
-            title="Password Changed",
-            message="Your password was recently changed. If this wasn't you, please contact support.",
+            title="notification.passwordChanged.title",
+            message="notification.passwordChanged.message",
             priority=NotificationPriority.HIGH,
             category="security",
         )
-    
+
     async def notify_login_alert(
         self,
         user_id: UUID,
@@ -418,21 +419,17 @@ class NotificationService:
         tenant_id: UUID | None = None,
     ) -> Notification:
         """Send login alert notification."""
-        message = f"New login detected from {ip_address}"
-        if location:
-            message += f" ({location})"
-        
         return await self.create_notification(
             user_id=user_id,
             tenant_id=tenant_id,
             type=NotificationType.LOGIN_ALERT,
-            title="New Login Detected",
-            message=message,
+            title="notification.loginAlert.title",
+            message="notification.loginAlert.message",
             priority=NotificationPriority.HIGH,
             category="security",
             metadata={"ip_address": ip_address, "location": location},
         )
-    
+
     async def notify_mention(
         self,
         user_id: UUID,
@@ -442,22 +439,25 @@ class NotificationService:
         tenant_id: UUID | None = None,
     ) -> Notification:
         """Send mention notification."""
+        safe_mentioned_by = html_mod.escape(mentioned_by)
+        safe_context = html_mod.escape(context)
         return await self.create_notification(
             user_id=user_id,
             tenant_id=tenant_id,
             type=NotificationType.MENTION,
-            title="You were mentioned",
-            message=f"{mentioned_by} mentioned you in {context}",
+            title="notification.mention.title",
+            message="notification.mention.message",
+            metadata={"mentioned_by": safe_mentioned_by, "context": safe_context},
             priority=NotificationPriority.NORMAL,
             action_url=action_url,
             group_key=f"mentions:{user_id}",
         )
-    
+
     def _to_entity(self, model: NotificationModel) -> Notification:
         """Convert NotificationModel to Notification entity."""
         return Notification(
             id=UUID(str(model.id)),
-            tenant_id=UUID(str(model.tenant_id)) if model.tenant_id else UUID(str(model.id)),  # fallback
+            tenant_id=UUID(str(model.tenant_id)) if model.tenant_id else None,
             user_id=UUID(str(model.user_id)),
             type=NotificationType(model.type),
             title=model.title,

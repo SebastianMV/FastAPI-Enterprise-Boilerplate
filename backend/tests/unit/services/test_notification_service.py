@@ -3,14 +3,14 @@
 
 """Unit tests for NotificationService."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
-from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from app.application.services.notification_service import NotificationService
 from app.domain.entities.notification import (
-    Notification,
     NotificationChannel,
     NotificationPriority,
     NotificationType,
@@ -67,17 +67,19 @@ class TestCreateNotification:
     """Tests for create_notification method."""
 
     @pytest.mark.asyncio
-    async def test_create_notification_minimal(self, notification_service, mock_session):
+    async def test_create_notification_minimal(
+        self, notification_service, mock_session
+    ):
         """Test creating notification with minimal parameters."""
         user_id = uuid4()
-        
+
         result = await notification_service.create_notification(
             user_id=user_id,
             type=NotificationType.INFO,
             title="Test Title",
-            message="Test message"
+            message="Test message",
         )
-        
+
         assert result is not None
         assert result.user_id == user_id
         assert result.title == "Test Title"
@@ -87,12 +89,14 @@ class TestCreateNotification:
         mock_session.flush.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_notification_with_all_params(self, notification_service, mock_session):
+    async def test_create_notification_with_all_params(
+        self, notification_service, mock_session
+    ):
         """Test creating notification with all parameters."""
         user_id = uuid4()
         tenant_id = uuid4()
-        expires = datetime.now(timezone.utc)
-        
+        expires = datetime.now(UTC)
+
         result = await notification_service.create_notification(
             user_id=user_id,
             type=NotificationType.WARNING,
@@ -105,9 +109,9 @@ class TestCreateNotification:
             action_url="/action",
             channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
             expires_at=expires,
-            group_key="group-1"
+            group_key="group-1",
         )
-        
+
         assert result.priority == NotificationPriority.HIGH
         assert result.category == "system"
         assert result.metadata == {"key": "value"}
@@ -119,15 +123,15 @@ class TestCreateNotification:
     ):
         """Test notification is delivered via WebSocket."""
         user_id = uuid4()
-        
+
         await notification_service.create_notification(
             user_id=user_id,
             type=NotificationType.INFO,
             title="Test",
             message="Message",
-            channels=[NotificationChannel.IN_APP]
+            channels=[NotificationChannel.IN_APP],
         )
-        
+
         mock_ws_manager.send_to_user.assert_called_once()
 
     @pytest.mark.asyncio
@@ -136,28 +140,22 @@ class TestCreateNotification:
     ):
         """Test notification without WebSocket manager doesn't fail."""
         user_id = uuid4()
-        
+
         result = await notification_service_no_ws.create_notification(
-            user_id=user_id,
-            type=NotificationType.INFO,
-            title="Test",
-            message="Message"
+            user_id=user_id, type=NotificationType.INFO, title="Test", message="Message"
         )
-        
+
         assert result is not None
 
     @pytest.mark.asyncio
     async def test_create_notification_default_priority(self, notification_service):
         """Test default priority is NORMAL."""
         user_id = uuid4()
-        
+
         result = await notification_service.create_notification(
-            user_id=user_id,
-            type=NotificationType.INFO,
-            title="Test",
-            message="Message"
+            user_id=user_id, type=NotificationType.INFO, title="Test", message="Message"
         )
-        
+
         assert result.priority == NotificationPriority.NORMAL
 
 
@@ -171,7 +169,7 @@ class TestNotificationTypes:
             user_id=uuid4(),
             type=NotificationType.INFO,
             title="Info",
-            message="Info message"
+            message="Info message",
         )
         assert result.type == NotificationType.INFO
 
@@ -182,7 +180,7 @@ class TestNotificationTypes:
             user_id=uuid4(),
             type=NotificationType.WARNING,
             title="Warning",
-            message="Warning message"
+            message="Warning message",
         )
         assert result.type == NotificationType.WARNING
 
@@ -193,7 +191,7 @@ class TestNotificationTypes:
             user_id=uuid4(),
             type=NotificationType.ERROR,
             title="Error",
-            message="Error message"
+            message="Error message",
         )
         assert result.type == NotificationType.ERROR
 
@@ -204,7 +202,7 @@ class TestNotificationTypes:
             user_id=uuid4(),
             type=NotificationType.SUCCESS,
             title="Success",
-            message="Success message"
+            message="Success message",
         )
         assert result.type == NotificationType.SUCCESS
 
@@ -220,7 +218,7 @@ class TestNotificationPriorities:
             type=NotificationType.INFO,
             title="Test",
             message="Message",
-            priority=NotificationPriority.LOW
+            priority=NotificationPriority.LOW,
         )
         assert result.priority == NotificationPriority.LOW
 
@@ -232,7 +230,7 @@ class TestNotificationPriorities:
             type=NotificationType.INFO,
             title="Test",
             message="Message",
-            priority=NotificationPriority.HIGH
+            priority=NotificationPriority.HIGH,
         )
         assert result.priority == NotificationPriority.HIGH
 
@@ -244,7 +242,7 @@ class TestNotificationPriorities:
             type=NotificationType.INFO,
             title="Test",
             message="Message",
-            priority=NotificationPriority.URGENT
+            priority=NotificationPriority.URGENT,
         )
         assert result.priority == NotificationPriority.URGENT
 
@@ -260,19 +258,21 @@ class TestNotificationChannels:
             type=NotificationType.INFO,
             title="Test",
             message="Message",
-            channels=[NotificationChannel.IN_APP]
+            channels=[NotificationChannel.IN_APP],
         )
         mock_ws_manager.send_to_user.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_email_channel_no_ws_delivery(self, notification_service, mock_ws_manager):
+    async def test_email_channel_no_ws_delivery(
+        self, notification_service, mock_ws_manager
+    ):
         """Test EMAIL only channel doesn't trigger WebSocket."""
         await notification_service.create_notification(
             user_id=uuid4(),
             type=NotificationType.INFO,
             title="Test",
             message="Message",
-            channels=[NotificationChannel.EMAIL]
+            channels=[NotificationChannel.EMAIL],
         )
         mock_ws_manager.send_to_user.assert_not_called()
 
@@ -284,7 +284,7 @@ class TestNotificationChannels:
             type=NotificationType.INFO,
             title="Test",
             message="Message",
-            channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL]
+            channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         )
         assert NotificationChannel.IN_APP in result.channels
         assert NotificationChannel.EMAIL in result.channels

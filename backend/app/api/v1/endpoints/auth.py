@@ -1,21 +1,21 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
 # Licensed under the MIT License
 
-"""Authentication endpoints - Connected to PostgreSQL."""
+"""Authentication endpoints."""
 
-from datetime import datetime, timedelta, UTC
-from uuid import UUID, uuid4
+import hashlib
 import secrets
+from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, status, Header
+from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 
-from app.api.deps import CurrentUserId, CurrentUser, DbSession
+from app.api.deps import CurrentUser, CurrentUserId, DbSession
 from app.api.v1.schemas.auth import (
     AuthResponse,
     ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
-    MessageResponse,
     RefreshTokenRequest,
     RegisterRequest,
     ResetPasswordRequest,
@@ -23,25 +23,85 @@ from app.api.v1.schemas.auth import (
     UserResponse,
     VerifyResetTokenRequest,
 )
+from app.api.v1.schemas.common import MessageResponse
 from app.config import settings
-from app.domain.entities.user import User
 from app.domain.exceptions.base import (
     AuthenticationError,
     ConflictError,
-    EntityNotFoundError,
+    ValidationError,
 )
-from app.domain.value_objects.email import Email
 from app.domain.value_objects.password import Password
 from app.infrastructure.auth.jwt_handler import (
-    create_access_token,
-    create_refresh_token,
     hash_password,
-    validate_refresh_token,
     verify_password,
 )
-from app.infrastructure.database.repositories.user_repository import SQLAlchemyUserRepository
+from app.infrastructure.database.repositories.user_repository import (
+    SQLAlchemyUserRepository,
+)
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter()
+
+# Time conversion constants (seconds)
+SECONDS_PER_MINUTE = 60
+SECONDS_PER_HOUR = 3600
+SECONDS_PER_DAY = 86400
+
+# Password reset token size (bytes of randomness)
+PASSWORD_RESET_TOKEN_BYTES = 32
+
+
+# =============================================================================
+# Cookie helpers
+# =============================================================================
+
+
+def _set_auth_cookies(
+    response: Response, access_token: str, refresh_token: str
+) -> None:
+    """Set HttpOnly cookies for access and refresh tokens."""
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        domain=settings.AUTH_COOKIE_DOMAIN,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * SECONDS_PER_MINUTE,
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        domain=settings.AUTH_COOKIE_DOMAIN,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * SECONDS_PER_DAY,
+        path="/api/v1/auth/refresh",  # Only sent to refresh endpoint
+    )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """Clear auth cookies on logout."""
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        domain=settings.AUTH_COOKIE_DOMAIN,
+        path="/",
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        domain=settings.AUTH_COOKIE_DOMAIN,
+        path="/api/v1/auth/refresh",
+    )
 
 
 @router.post(
@@ -54,172 +114,74 @@ async def login(
     request: LoginRequest,
     session: DbSession,
     http_request: Request,
+    response: Response = None,  # type: ignore[assignment]  # FastAPI injects Response
 ) -> TokenResponse:
     """
     Authenticate user and return tokens.
-    
+
     - **email**: User's email address
     - **password**: User's password
-    
+
     Returns access token (15 min) and refresh token (7 days).
-    
+
     Account will be locked after multiple failed attempts.
     """
-    # Validate email format
-    try:
-        Email(request.email)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_EMAIL", "message": str(e)},
-        )
-    
-    # Lookup user in database
+    from app.application.use_cases.auth.login import LoginRequest as LoginInput
+    from app.application.use_cases.auth.login import LoginUseCase
+    from app.infrastructure.database.repositories.session_repository import (
+        SQLAlchemySessionRepository,
+    )
+
     user_repository = SQLAlchemyUserRepository(session)
-    user = await user_repository.get_by_email(request.email)
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"},
-        )
-    
-    # Check if account is locked
-    if settings.ACCOUNT_LOCKOUT_ENABLED and user.is_locked():
-        remaining = user.locked_until - datetime.now(UTC)
-        minutes = max(1, int(remaining.total_seconds() / 60))
-        raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
-            detail={
-                "code": "ACCOUNT_LOCKED",
-                "message": f"Account is locked. Try again in {minutes} minute(s).",
-            },
-        )
-    
-    # Verify password
-    if not verify_password(request.password, user.password_hash):
-        # Record failed attempt
-        if settings.ACCOUNT_LOCKOUT_ENABLED:
-            is_now_locked = user.record_failed_login(
-                settings.ACCOUNT_LOCKOUT_THRESHOLD,
-                settings.ACCOUNT_LOCKOUT_DURATION_MINUTES,
-            )
-            await user_repository.update(user)
-            await session.commit()
-            
-            if is_now_locked:
-                raise HTTPException(
-                    status_code=status.HTTP_423_LOCKED,
-                    detail={
-                        "code": "ACCOUNT_LOCKED",
-                        "message": f"Account locked after {settings.ACCOUNT_LOCKOUT_THRESHOLD} failed attempts. Try again in {settings.ACCOUNT_LOCKOUT_DURATION_MINUTES} minutes.",
-                    },
-                )
-        
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"},
-        )
-    
-    # Check if user is active
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "USER_INACTIVE", "message": "User account is disabled"},
-        )
-    
-    # Check if MFA is required
-    from app.api.v1.endpoints.mfa import get_mfa_config
-    mfa_config = get_mfa_config(str(user.id))
-    
-    if mfa_config and mfa_config.is_enabled:
-        # MFA is enabled, verify code
-        if not request.mfa_code:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "MFA_REQUIRED", "message": "MFA code is required"},
-            )
-        
-        # Verify MFA code
-        from app.application.services.mfa_service import get_mfa_service
-        mfa_service = get_mfa_service()
-        
-        is_valid, was_backup = mfa_service.verify_code(
-            mfa_config, 
-            request.mfa_code,
-            allow_backup=True
-        )
-        
-        if not is_valid:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "INVALID_MFA_CODE", "message": "Invalid MFA code"},
-            )
-        
-        # Save updated config (in case backup code was used)
-        from app.api.v1.endpoints.mfa import save_mfa_config
-        save_mfa_config(mfa_config)
-    
-    # Update last login and reset failed attempts
-    user.last_login = datetime.now(UTC)
-    user.reset_failed_attempts()
-    await user_repository.update(user)
-    
-    # Create tokens
-    access_token = create_access_token(
-        user_id=user.id,
-        tenant_id=user.tenant_id,
-        extra_claims={
-            "is_superuser": user.is_superuser,
-            "roles": [str(r) for r in user.roles],
-        },
-    )
-    
-    refresh_token = create_refresh_token(
-        user_id=user.id,
-        tenant_id=user.tenant_id,
-    )
-    
-    # Decode refresh token to get jti for session tracking
-    from app.infrastructure.auth.jwt_handler import decode_token, hash_password
-    payload = decode_token(refresh_token)
-    jti = payload.get("jti", "")
-    
-    # Create session record
-    from app.infrastructure.database.repositories.session_repository import SQLAlchemySessionRepository
-    from app.domain.entities.session import UserSession
-    
     session_repo = SQLAlchemySessionRepository(session)
-    
-    # Extract device info from User-Agent
+    use_case = LoginUseCase(user_repository, session_repo, session)
+
+    # Extract real client IP (nginx sets X-Forwarded-For)
+    # Only trust proxy headers if connection comes from a trusted proxy network
+    direct_ip = http_request.client.host if http_request.client else "Unknown"
+    forwarded_for = http_request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        from app.middleware.rate_limit import RateLimitMiddleware
+        if RateLimitMiddleware._is_trusted_proxy(direct_ip):
+            ip_address = forwarded_for.split(",")[0].strip()
+        else:
+            ip_address = direct_ip
+    else:
+        ip_address = direct_ip
     user_agent = http_request.headers.get("User-Agent", "Unknown")
-    device_name = user_agent[:100] if user_agent else "Unknown"
-    
-    # Get IP address
-    ip_address = http_request.client.host if http_request.client else "Unknown"
-    
-    # Create session entity
-    user_session = UserSession(
-        user_id=user.id,
-        tenant_id=user.tenant_id,
-        refresh_token_hash=hash_password(jti),  # Hash the jti as identifier
-        device_name=device_name,
-        device_type="desktop",  # Could parse from User-Agent
-        browser="",
-        os="",
-        ip_address=ip_address,
-        location="",
-        last_activity=datetime.now(UTC),
-    )
-    
-    await session_repo.create(user_session)
-    await session.commit()
-    
+
+    try:
+        result = use_case.execute(
+            LoginInput(
+                email=request.email,
+                password=request.password,
+                mfa_code=request.mfa_code,
+                user_agent=user_agent,
+                ip_address=ip_address,
+            )
+        )
+        result = await result
+    except AuthenticationError as exc:
+        status_map = {
+            "ACCOUNT_LOCKED": status.HTTP_423_LOCKED,
+            "MFA_REQUIRED": status.HTTP_403_FORBIDDEN,
+            "INVALID_MFA_CODE": status.HTTP_403_FORBIDDEN,
+            "USER_INACTIVE": status.HTTP_403_FORBIDDEN,
+        }
+        raise HTTPException(
+            status_code=status_map.get(exc.code, status.HTTP_401_UNAUTHORIZED),
+            detail={"code": exc.code, "message": exc.message},
+        ) from None
+
+    # Set HttpOnly cookies
+    if response is not None:
+        _set_auth_cookies(response, result.access_token, result.refresh_token)
+
     return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        access_token=result.access_token,
+        refresh_token=result.refresh_token,
+        token_type=result.token_type,
+        expires_in=result.expires_in,
     )
 
 
@@ -233,10 +195,11 @@ async def login(
 async def register(
     request: RegisterRequest,
     session: DbSession,
+    response: Response = None,  # type: ignore[assignment]  # FastAPI injects Response
 ) -> AuthResponse:
     """
     Register a new user.
-    
+
     Password requirements:
     - Minimum 8 characters
     - At least one uppercase letter
@@ -244,131 +207,60 @@ async def register(
     - At least one digit
     - At least one special character
     """
-    # Validate email format
-    try:
-        email = Email(request.email)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_EMAIL", "message": str(e)},
-        )
-    
-    # Validate password strength
-    try:
-        password = Password(request.password)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "WEAK_PASSWORD", "message": str(e)},
-        )
-    
-    # Check if email already exists
+    from app.application.use_cases.auth.register import RegisterRequest as RegInput
+    from app.application.use_cases.auth.register import RegisterUseCase
+    from app.infrastructure.database.repositories.tenant_repository import (
+        SQLAlchemyTenantRepository,
+    )
+
     user_repository = SQLAlchemyUserRepository(session)
-    existing_user = await user_repository.get_by_email(request.email)
-    
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"code": "EMAIL_EXISTS", "message": "Email already registered"},
-        )
-    
-    # For new users, we need a default tenant or create one
-    # In production, you'd either: assign to existing tenant, or create new tenant
-    from app.infrastructure.database.repositories.tenant_repository import SQLAlchemyTenantRepository
-    
     tenant_repo = SQLAlchemyTenantRepository(session)
-    default_tenant = await tenant_repo.get_default_tenant()
-    
-    if not default_tenant:
-        # Create default tenant if it doesn't exist
-        from app.domain.entities.tenant import Tenant
-        default_tenant = Tenant(
-            id=uuid4(),
-            name="Default",
-            slug="default",
-            is_active=True,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        default_tenant = await tenant_repo.create(default_tenant)
-    
-    # Create user in database
-    now = datetime.now(UTC)
-    new_user = User(
-        id=uuid4(),
-        tenant_id=default_tenant.id,
-        email=email,
-        password_hash=hash_password(request.password),
-        first_name=request.first_name,
-        last_name=request.last_name,
-        is_active=True,
-        is_superuser=False,
-        roles=[],
-        created_at=now,
-        updated_at=now,
-        last_login=None,
-        email_verified=False,  # Require verification
-    )
-    
-    # Generate verification token if required
-    verification_token = None
-    if settings.EMAIL_VERIFICATION_REQUIRED:
-        verification_token = new_user.generate_verification_token()
-    
+    use_case = RegisterUseCase(user_repository, tenant_repo, session)
+
     try:
-        created_user = await user_repository.create(new_user)
-        await session.commit()
-    except ConflictError as e:
+        result = await use_case.execute(
+            RegInput(
+                email=request.email,
+                password=request.password,
+                first_name=request.first_name,
+                last_name=request.last_name,
+            )
+        )
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except ConflictError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"code": "EMAIL_EXISTS", "message": str(e)},
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+
+    # Set HttpOnly cookies (only if tokens were issued)
+    if response is not None and result.access_token and result.refresh_token:
+        _set_auth_cookies(response, result.access_token, result.refresh_token)
+
+    tokens = None
+    if result.access_token:
+        tokens = TokenResponse(
+            access_token=result.access_token,
+            refresh_token=result.refresh_token or "",
+            token_type=result.token_type,
+            expires_in=result.expires_in,
         )
-    
-    # Send verification email if required
-    if settings.EMAIL_VERIFICATION_REQUIRED and verification_token:
-        try:
-            from app.infrastructure.email import get_email_service
-            
-            frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:3000"
-            verification_url = f"{frontend_url}/verify-email?token={verification_token}"
-            
-            email_service = get_email_service()
-            await email_service.send_verification_email(
-                to_email=str(created_user.email),
-                to_name=created_user.first_name,
-                verification_url=verification_url,
-                expires_in_hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS,
-            )
-        except Exception:
-            pass  # Don't fail registration if email fails
-    
-    # Create tokens
-    access_token = create_access_token(
-        user_id=created_user.id,
-        tenant_id=created_user.tenant_id,
-    )
-    
-    refresh_token = create_refresh_token(
-        user_id=created_user.id,
-        tenant_id=created_user.tenant_id,
-    )
-    
+
     return AuthResponse(
-        tokens=TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="bearer",
-            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        ),
+        tokens=tokens,
         user=UserResponse(
-            id=created_user.id,
-            email=str(created_user.email),
-            first_name=created_user.first_name,
-            last_name=created_user.last_name,
-            is_active=created_user.is_active,
-            is_superuser=created_user.is_superuser,
-            email_verified=created_user.email_verified,
-            created_at=created_user.created_at,
+            id=result.user.id,
+            email=str(result.user.email),
+            first_name=result.user.first_name,
+            last_name=result.user.last_name,
+            is_active=result.user.is_active,
+            is_superuser=result.user.is_superuser,
+            email_verified=result.user.email_verified,
+            created_at=result.user.created_at,
             last_login=None,
         ),
     )
@@ -383,99 +275,49 @@ async def register(
 async def refresh_token(
     request: RefreshTokenRequest,
     session: DbSession,
+    http_request: Request,
+    response: Response = None,  # type: ignore[assignment]  # FastAPI injects Response
 ) -> TokenResponse:
     """
     Refresh access token using a valid refresh token.
-    
+
     The refresh token remains valid until its expiration.
     """
-    try:
-        payload = validate_refresh_token(request.refresh_token)
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": e.code, "message": e.message},
-        )
-    
-    user_id = UUID(payload["sub"])
-    tenant_id = UUID(payload["tenant_id"]) if payload.get("tenant_id") else None
-    
-    # Verify user still exists and is active
+    from app.application.use_cases.auth.refresh import RefreshRequest as RefreshInput
+    from app.application.use_cases.auth.refresh import RefreshTokenUseCase
+    from app.infrastructure.database.repositories.session_repository import (
+        SQLAlchemySessionRepository,
+    )
+
+    # Accept refresh token from body or from HttpOnly cookie
+    token = request.refresh_token
+    if not token and http_request:
+        token = http_request.cookies.get("refresh_token", "")
+
     user_repository = SQLAlchemyUserRepository(session)
-    user = await user_repository.get_by_id(user_id)
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "USER_NOT_FOUND", "message": "User not found"},
-        )
-    
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "USER_INACTIVE", "message": "User account is disabled"},
-        )
-    
-    # Create new access token with current user info
-    new_access_token = create_access_token(
-        user_id=user.id,
-        tenant_id=user.tenant_id,
-        extra_claims={
-            "is_superuser": user.is_superuser,
-            "roles": [str(r) for r in user.roles],
-        },
-    )
-    
-    # Rotate refresh token
-    new_refresh_token = create_refresh_token(
-        user_id=user.id,
-        tenant_id=user.tenant_id,
-    )
-    
-    # Update session activity
-    from app.infrastructure.database.repositories.session_repository import SQLAlchemySessionRepository
-    from app.infrastructure.auth.jwt_handler import hash_password
-    
     session_repo = SQLAlchemySessionRepository(session)
-    old_jti = payload.get("jti", "")
-    
-    if old_jti:
-        # Find and revoke old session
-        old_session = await session_repo.get_by_token_hash(hash_password(old_jti))
-        if old_session:
-            await session_repo.revoke(old_session.id)
-        
-        # Decode new refresh token to get new jti
-        from app.infrastructure.auth.jwt_handler import decode_token
-        new_payload = decode_token(new_refresh_token)
-        new_jti = new_payload.get("jti", "")
-        
-        if new_jti:
-            # Create new session with rotated token
-            from app.domain.entities.session import UserSession
-            
-            user_session = UserSession(
-                user_id=user.id,
-                tenant_id=user.tenant_id,
-                refresh_token_hash=hash_password(new_jti),
-                device_name=old_session.device_name if old_session else "Unknown",
-                device_type=old_session.device_type if old_session else "desktop",
-                browser=old_session.browser if old_session else "",
-                os=old_session.os if old_session else "",
-                ip_address=old_session.ip_address if old_session else "",
-                location=old_session.location if old_session else "",
-                last_activity=datetime.now(UTC),
-            )
-            
-            await session_repo.create(user_session)
-    
-    await session.commit()
-    
+    use_case = RefreshTokenUseCase(user_repository, session_repo, session)
+
+    try:
+        result = await use_case.execute(RefreshInput(refresh_token=token or ""))
+    except AuthenticationError as exc:
+        status_map = {
+            "USER_INACTIVE": status.HTTP_403_FORBIDDEN,
+        }
+        raise HTTPException(
+            status_code=status_map.get(exc.code, status.HTTP_401_UNAUTHORIZED),
+            detail={"code": exc.code, "message": exc.message},
+        ) from None
+
+    # Set HttpOnly cookies
+    if response is not None:
+        _set_auth_cookies(response, result.access_token, result.refresh_token)
+
     return TokenResponse(
-        access_token=new_access_token,
-        refresh_token=new_refresh_token,
-        token_type="bearer",
-        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        access_token=result.access_token,
+        refresh_token=result.refresh_token,
+        token_type=result.token_type,
+        expires_in=result.expires_in,
     )
 
 
@@ -487,44 +329,45 @@ async def refresh_token(
 )
 async def logout(
     current_user_id: CurrentUserId,
-    authorization: str = Header(...),
+    request: Request,
+    response: Response,
+    authorization: str = Header(default=""),
 ) -> MessageResponse:
     """
     Logout current user.
-    
+
     Adds the refresh token to blacklist in Redis to prevent reuse.
     Client should also discard tokens locally.
     """
-    from app.infrastructure.cache import get_cache
-    from app.infrastructure.auth import decode_token
-    from app.config import settings
-    
-    try:
-        # Extract token from Authorization header
+    from app.application.use_cases.auth.logout import (
+        LogoutRequest as LogoutInput,
+    )
+    from app.application.use_cases.auth.logout import (
+        LogoutUseCase,
+    )
+
+    # Extract token: try Authorization header first, then HttpOnly cookie
+    token = ""
+    if authorization and authorization.startswith("Bearer "):
         token = authorization.replace("Bearer ", "")
-        
-        # Decode to get JTI (if present) or use token hash
-        payload = decode_token(token)
-        token_id = payload.get("jti", token[:32])  # Use first 32 chars if no JTI
-        
-        # Calculate TTL based on token expiration
-        exp = payload.get("exp")
-        if exp:
-            from datetime import datetime, UTC
-            ttl = int(exp - datetime.now(UTC).timestamp())
-            if ttl > 0:
-                # Add to blacklist with remaining TTL
-                cache = get_cache()
-                await cache.set(
-                    f"blacklist:token:{token_id}",
-                    {"user_id": str(current_user_id), "logout_at": datetime.now(UTC).isoformat()},
-                    ttl=ttl,
-                )
-    except Exception as e:
-        # Log error but don't fail logout
-        import logging
-        logging.warning(f"Failed to blacklist token: {e}")
-    
+    else:
+        cookie_token = request.cookies.get("access_token")
+        if cookie_token:
+            token = cookie_token
+
+    # Also extract refresh token from cookie for blacklisting
+    refresh_token = request.cookies.get("refresh_token") or None
+
+    use_case = LogoutUseCase()
+    await use_case.execute(
+        LogoutInput(
+            user_id=current_user_id, token=token or None, refresh_token=refresh_token
+        )
+    )
+
+    # Clear HttpOnly cookies
+    _clear_auth_cookies(response)
+
     return MessageResponse(
         message="Successfully logged out",
         success=True,
@@ -564,47 +407,75 @@ async def get_current_user_info(
 )
 async def change_password(
     request: ChangePasswordRequest,
-    current_user_id: CurrentUserId,
+    current_user: CurrentUser,
     session: DbSession,
 ) -> MessageResponse:
     """
     Change current user's password.
-    
+
     Requires current password for verification.
     """
+    current_user_id = current_user.id
+
     # Validate new password strength
     try:
         Password(request.new_password)
-    except ValueError as e:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "WEAK_PASSWORD", "message": str(e)},
-        )
-    
+            detail={
+                "code": "WEAK_PASSWORD",
+                "message": "Password does not meet security requirements. Must be 8+ characters with uppercase, lowercase, digit, and special character.",
+            },
+        ) from None
+
     # Get user from database
     user_repository = SQLAlchemyUserRepository(session)
     user = await user_repository.get_by_id(current_user_id)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     # Verify current password
     if not verify_password(request.current_password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_PASSWORD", "message": "Current password is incorrect"},
+            detail={
+                "code": "INVALID_PASSWORD",
+                "message": "Current password is incorrect",
+            },
         )
-    
+
     # Update password
     user.password_hash = hash_password(request.new_password)
     user.updated_at = datetime.now(UTC)
-    
+
     await user_repository.update(user)
     await session.commit()
-    
+
+    # Invalidate all existing sessions (tokens remain valid until blacklisted)
+    try:
+        from app.infrastructure.database.repositories.session_repository import (
+            SQLAlchemySessionRepository,
+        )
+
+        session_repo = SQLAlchemySessionRepository(session)
+        await session_repo.revoke_all(current_user_id)
+        await session.commit()
+    except Exception:
+        logger.error(
+            "Failed to revoke sessions after password change for user %s — rolling back",
+            current_user_id,
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"code": "SESSION_REVOCATION_FAILED", "message": "Password changed but failed to invalidate existing sessions. Please contact support."},
+        ) from None
+
     return MessageResponse(
         message="Password changed successfully",
         success=True,
@@ -612,16 +483,12 @@ async def change_password(
 
 
 # ===========================================
-# Password Recovery (In-Memory Token Store)
-# For production, use Redis or database table
+# Password Recovery (Redis-backed Token Store)
 # ===========================================
-
-# Simple in-memory store for password reset tokens
-# Format: {token: {"user_id": UUID, "email": str, "expires_at": datetime}}
-_password_reset_tokens: dict[str, dict] = {}
 
 # Token configuration
 PASSWORD_RESET_TOKEN_EXPIRE_HOURS = 1
+PASSWORD_RESET_MAX_TOKENS_PER_EMAIL = 3  # Max active tokens per email (rate limit)
 
 
 @router.post(
@@ -636,49 +503,71 @@ async def forgot_password(
 ) -> MessageResponse:
     """
     Request a password reset email.
-    
+
     For security, always returns success even if email doesn't exist.
     This prevents email enumeration attacks.
     """
     # Lookup user
     user_repository = SQLAlchemyUserRepository(session)
     user = await user_repository.get_by_email(request.email)
-    
+
     if user and user.is_active:
-        # Generate secure token
-        token = secrets.token_urlsafe(32)
-        expires_at = datetime.now(UTC) + timedelta(hours=PASSWORD_RESET_TOKEN_EXPIRE_HOURS)
-        
-        # Store token
-        _password_reset_tokens[token] = {
-            "user_id": user.id,
-            "email": str(user.email),
-            "expires_at": expires_at,
-        }
-        
-        # Clean up expired tokens
-        now = datetime.now(UTC)
-        expired = [t for t, data in _password_reset_tokens.items() if data["expires_at"] < now]
-        for t in expired:
-            del _password_reset_tokens[t]
-        
-        # Send email (async, don't wait for it)
-        try:
-            from app.infrastructure.email import get_email_service
-            
-            email_service = get_email_service()
-            reset_url = f"{settings.FRONTEND_URL}/reset-password/{token}"
-            
-            await email_service.send_password_reset_email(
-                to_email=str(user.email),
-                reset_url=reset_url,
-                to_name=user.first_name,
-                expires_in_hours=PASSWORD_RESET_TOKEN_EXPIRE_HOURS,
+        # Rate-limit: check how many active reset tokens this email has
+        from app.infrastructure.cache import get_cache
+
+        cache = get_cache()
+
+        rate_key = f"password_reset:rate:{str(user.email).lower()}"
+        rate_count_raw = await cache.get(rate_key)
+        rate_count = int(rate_count_raw) if rate_count_raw else 0
+
+        if rate_count >= PASSWORD_RESET_MAX_TOKENS_PER_EMAIL:
+            # Silently skip — don't reveal to client
+            logger.warning("Password reset rate limit hit for email hash %s", hashlib.sha256(str(user.email).lower().encode()).hexdigest()[:8])
+        else:
+            # Generate secure token
+            token = secrets.token_urlsafe(PASSWORD_RESET_TOKEN_BYTES)
+            ttl_seconds = PASSWORD_RESET_TOKEN_EXPIRE_HOURS * SECONDS_PER_HOUR
+
+            # Store token in Redis with TTL
+            token_data = {
+                "user_id": str(user.id),
+            }
+            await cache.set(
+                f"password_reset:token:{token}", token_data, ttl=ttl_seconds
             )
-        except Exception:
-            # Log error but don't fail the request
-            pass
-    
+
+            # Increment rate counter (with same TTL)
+
+            await cache.set(rate_key, rate_count + 1, ttl=ttl_seconds)
+
+            # Send email (async, don't wait for it)
+            try:
+                from app.infrastructure.email import get_email_service
+
+                email_service = get_email_service()
+                reset_url = f"{settings.FRONTEND_URL}/reset-password/{token}"
+
+                await email_service.send_password_reset_email(
+                    to_email=str(user.email),
+                    reset_url=reset_url,
+                    to_name=user.first_name,
+                    expires_in_hours=PASSWORD_RESET_TOKEN_EXPIRE_HOURS,
+                )
+            except Exception:
+                # Log error but don't fail the request (prevents email enumeration)
+                logger.warning(
+                    "Failed to send password reset email",
+                    exc_info=True,
+                )
+    else:
+        # Constant-time delay to prevent timing-based email enumeration.
+        # When user exists, the token generation + email sending takes ~0.3-0.6s.
+        # Without this delay, the "not found" path returns instantly, leaking existence.
+        import asyncio
+        import random
+        await asyncio.sleep(random.uniform(0.3, 0.6))
+
     # Always return success to prevent email enumeration
     return MessageResponse(
         message="If an account exists with this email, you will receive a password reset link.",
@@ -698,22 +587,21 @@ async def verify_reset_token(
     """
     Verify if a password reset token is still valid.
     """
-    token_data = _password_reset_tokens.get(request.token)
-    
+    from app.infrastructure.cache import get_cache
+
+    cache = get_cache()
+
+    token_data = await cache.get(f"password_reset:token:{request.token}")
+
     if not token_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_TOKEN", "message": "Invalid or expired reset token"},
+            detail={
+                "code": "INVALID_TOKEN",
+                "message": "Invalid or expired reset token",
+            },
         )
-    
-    # Check expiration
-    if token_data["expires_at"] < datetime.now(UTC):
-        del _password_reset_tokens[request.token]
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "TOKEN_EXPIRED", "message": "Reset token has expired"},
-        )
-    
+
     return MessageResponse(
         message="Token is valid",
         success=True,
@@ -733,63 +621,103 @@ async def reset_password(
     """
     Reset password using a valid reset token.
     """
-    token_data = _password_reset_tokens.get(request.token)
-    
+    # --- 1. Retrieve and validate reset token from cache ---
+    token_data = None
+    try:
+        from app.infrastructure.cache import get_cache
+
+        cache = get_cache()
+        token_data = await cache.get(f"password_reset:token:{request.token}")
+    except Exception:
+        logger.debug("Failed to retrieve reset token from cache", exc_info=True)
+
     if not token_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_TOKEN", "message": "Invalid or expired reset token"},
+            detail={
+                "code": "INVALID_TOKEN",
+                "message": "Invalid or expired reset token",
+            },
         )
-    
-    # Check expiration
-    if token_data["expires_at"] < datetime.now(UTC):
-        del _password_reset_tokens[request.token]
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "TOKEN_EXPIRED", "message": "Reset token has expired"},
-        )
-    
+
     # Validate new password strength
     try:
         Password(request.new_password)
-    except ValueError as e:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "WEAK_PASSWORD", "message": str(e)},
-        )
-    
-    # Get user
+            detail={
+                "code": "WEAK_PASSWORD",
+                "message": "Password does not meet security requirements. Must be 8+ characters with uppercase, lowercase, digit, and special character.",
+            },
+        ) from None
+
+    # --- 3. Get user and update password ---
     user_repository = SQLAlchemyUserRepository(session)
     user = await user_repository.get_by_id(token_data["user_id"])
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     # Update password
     user.password_hash = hash_password(request.new_password)
     user.updated_at = datetime.now(UTC)
-    
+
     await user_repository.update(user)
     await session.commit()
-    
-    # Remove used token
-    del _password_reset_tokens[request.token]
-    
-    # Send confirmation email
+
+    # --- 4. Clean up tokens and rate limits ---
+    try:
+        await cache.delete(f"password_reset:token:{request.token}")
+    except Exception:
+        logger.debug("Failed to delete reset token from cache", exc_info=True)
+
+    # Invalidate all other active reset tokens for this user's email
+    try:
+        email_lower = str(user.email).lower()
+        # Clear the rate limit counter so user can request new tokens if needed
+        await cache.delete(f"password_reset:rate:{email_lower}")
+    except Exception:
+        logger.debug("Failed to clear rate limit counter from cache", exc_info=True)
+
+    # --- 5. Invalidate all existing sessions for security ---
+    try:
+        from app.infrastructure.database.repositories.session_repository import (
+            SQLAlchemySessionRepository,
+        )
+
+        session_repo = SQLAlchemySessionRepository(session)
+        await session_repo.revoke_all(user.id)
+        await session.commit()
+    except Exception:
+        logger.error(
+            "Failed to revoke sessions after password reset for user %s — rolling back",
+            user.id,
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"code": "SESSION_REVOCATION_FAILED", "message": "Password reset but failed to invalidate existing sessions. Please contact support."},
+        ) from None
+
+    # --- 6. Send confirmation email ---
     try:
         from app.infrastructure.email import get_email_service
-        
+
         email_service = get_email_service()
         await email_service.send_password_changed_email(
             to_email=str(user.email),
             to_name=user.first_name,
         )
     except Exception:
-        pass
-    
+        logger.warning(
+            "Failed to send password changed email",
+            exc_info=True,
+        )
+
     return MessageResponse(
         message="Password reset successfully. You can now login with your new password.",
         success=True,
@@ -800,6 +728,7 @@ async def reset_password(
 # Email Verification Endpoints
 # ===========================================
 
+
 @router.post(
     "/send-verification",
     response_model=MessageResponse,
@@ -807,42 +736,43 @@ async def reset_password(
     description="Send or resend email verification link.",
 )
 async def send_verification_email(
-    user_id: CurrentUserId,
+    current_user: CurrentUser,
     session: DbSession,
 ) -> MessageResponse:
     """
     Send verification email to the current user.
-    
+
     Can be called multiple times to resend the verification link.
     """
+    user_id = current_user.id
     user_repository = SQLAlchemyUserRepository(session)
     user = await user_repository.get_by_id(user_id)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     if user.email_verified:
         return MessageResponse(
             message="Email is already verified.",
             success=True,
         )
-    
+
     # Generate verification token
     token = user.generate_verification_token()
     await user_repository.update(user)
     await session.commit()
-    
+
     # Send verification email
     try:
         from app.infrastructure.email import get_email_service
-        
+
         # Build verification URL
-        frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:3000"
+        frontend_url = settings.FRONTEND_URL
         verification_url = f"{frontend_url}/verify-email?token={token}"
-        
+
         email_service = get_email_service()
         await email_service.send_verification_email(
             to_email=str(user.email),
@@ -850,10 +780,12 @@ async def send_verification_email(
             verification_url=verification_url,
             expires_in_hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS,
         )
-    except Exception as e:
+    except Exception:
         # Log error but don't fail the request
-        pass
-    
+        logger.warning(
+            "Failed to send verification email", exc_info=True
+        )
+
     return MessageResponse(
         message="Verification email sent. Please check your inbox.",
         success=True,
@@ -867,54 +799,66 @@ async def send_verification_email(
     description="Verify email address with token.",
 )
 async def verify_email(
-    token: str,
+    request: VerifyResetTokenRequest,
     session: DbSession,
 ) -> MessageResponse:
     """
     Verify email address using the token from the verification email.
     """
-    # Find user by verification token
+    token = request.token
+    # Find user by verification token (SHA-256 hash lookup)
+    import hashlib
+
     from sqlalchemy import select
+
     from app.infrastructure.database.models.user import UserModel
-    
+
+    # Hash the input token and query by hash (O(1) indexed lookup)
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
     stmt = select(UserModel).where(
-        UserModel.email_verification_token == token,
-        UserModel.is_deleted == False,
+        UserModel.email_verification_token == token_hash,
+        UserModel.is_deleted.is_(False),
     )
     result = await session.execute(stmt)
-    user_model = result.scalar_one_or_none()
-    
+    user_model = result.scalars().first()
+
     if not user_model:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_TOKEN", "message": "Invalid or expired verification token"},
+            detail={
+                "code": "INVALID_TOKEN",
+                "message": "Invalid or expired verification token",
+            },
         )
-    
+
     # Get user entity
     user_repository = SQLAlchemyUserRepository(session)
     user = await user_repository.get_by_id(user_model.id)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     # Verify the email
     success = user.verify_email(
         token=token,
         token_expire_hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS,
     )
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "TOKEN_EXPIRED", "message": "Verification token has expired"},
+            detail={
+                "code": "TOKEN_EXPIRED",
+                "message": "Verification token has expired",
+            },
         )
-    
+
     await user_repository.update(user)
     await session.commit()
-    
+
     return MessageResponse(
         message="Email verified successfully!",
         success=True,
@@ -923,13 +867,13 @@ async def verify_email(
 
 @router.get(
     "/verification-status",
-    response_model=dict,
+    response_model=dict[str, Any],
     summary="Get email verification status",
     description="Check if current user's email is verified.",
 )
 async def get_verification_status(
     user: CurrentUser,
-) -> dict:
+) -> dict[str, Any]:
     """
     Get the email verification status for the current user.
     """
@@ -938,4 +882,3 @@ async def get_verification_status(
         "email_verified": user.email_verified,
         "verification_required": settings.EMAIL_VERIFICATION_REQUIRED,
     }
-

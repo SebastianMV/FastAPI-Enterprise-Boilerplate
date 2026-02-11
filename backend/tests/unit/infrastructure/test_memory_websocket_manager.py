@@ -7,9 +7,8 @@ Unit tests for MemoryWebSocketManager.
 Tests for the in-memory WebSocket connection manager.
 """
 
-from datetime import datetime, timezone, UTC
+from unittest.mock import AsyncMock
 from uuid import uuid4
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -291,8 +290,8 @@ class TestMemoryWebSocketManagerMessageHandlers:
 
     def test_register_handler(self) -> None:
         """Test registering a message handler."""
-        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
         from app.domain.ports.websocket import MessageType
+        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
 
         manager = MemoryWebSocketManager()
 
@@ -306,8 +305,8 @@ class TestMemoryWebSocketManagerMessageHandlers:
 
     def test_register_multiple_handlers_same_type(self) -> None:
         """Test registering multiple handlers for same message type."""
-        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
         from app.domain.ports.websocket import MessageType
+        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
 
         manager = MemoryWebSocketManager()
 
@@ -329,8 +328,8 @@ class TestMemoryWebSocketManagerSendMethods:
     @pytest.mark.asyncio
     async def test_send_to_connection(self) -> None:
         """Test sending message to specific connection."""
-        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
         from app.domain.ports.websocket import MessageType, WebSocketMessage
+        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
 
         manager = MemoryWebSocketManager()
         mock_websocket = AsyncMock()
@@ -353,8 +352,8 @@ class TestMemoryWebSocketManagerSendMethods:
     @pytest.mark.asyncio
     async def test_send_to_user(self) -> None:
         """Test sending message to all user connections."""
-        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
         from app.domain.ports.websocket import MessageType, WebSocketMessage
+        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
 
         manager = MemoryWebSocketManager()
         mock_ws1 = AsyncMock()
@@ -471,8 +470,8 @@ class TestMemoryWebSocketManagerEdgeCases:
     @pytest.mark.asyncio
     async def test_send_to_nonexistent_user(self) -> None:
         """Test sending to non-existent user doesn't error."""
-        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
         from app.domain.ports.websocket import MessageType, WebSocketMessage
+        from app.infrastructure.websocket.memory_manager import MemoryWebSocketManager
 
         manager = MemoryWebSocketManager()
         message = WebSocketMessage(
@@ -482,4 +481,3 @@ class TestMemoryWebSocketManagerEdgeCases:
 
         # Should not raise
         await manager.send_to_user(uuid4(), message)
-

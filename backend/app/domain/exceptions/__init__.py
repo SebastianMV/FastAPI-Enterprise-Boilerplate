@@ -2,3 +2,25 @@
 # Licensed under the MIT License
 
 """Domain exceptions package."""
+
+from app.domain.exceptions.base import (
+    AuthenticationError,
+    AuthorizationError,
+    BusinessRuleViolationError,
+    ConflictError,
+    DomainException,
+    EntityNotFoundError,
+    RateLimitExceededError,
+    ValidationError,
+)
+
+__all__ = [
+    "AuthenticationError",
+    "AuthorizationError",
+    "BusinessRuleViolationError",
+    "ConflictError",
+    "DomainException",
+    "EntityNotFoundError",
+    "RateLimitExceededError",
+    "ValidationError",
+]

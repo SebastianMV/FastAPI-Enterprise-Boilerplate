@@ -71,7 +71,11 @@ class TestPasswordValueObject:
         password = Password("SecureP@ss123")
         str_repr = str(password)
         # Should not expose the actual password
-        assert "SecureP@ss123" not in str_repr or "***" in str_repr or str_repr == "Password(***)"
+        assert (
+            "SecureP@ss123" not in str_repr
+            or "***" in str_repr
+            or str_repr == "Password(***)"
+        )
 
     def test_password_min_length_constant(self) -> None:
         """Test password min length constant."""
@@ -114,7 +118,7 @@ class TestPasswordValueObject:
 
         with pytest.raises(ValueError) as exc_info:
             Password("short")
-        
+
         error_msg = str(exc_info.value)
         # Should contain multiple error messages
         assert "characters" in error_msg.lower()

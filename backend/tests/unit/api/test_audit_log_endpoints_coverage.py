@@ -6,14 +6,14 @@ Unit tests for audit log endpoints to improve coverage.
 Target: app/api/v1/endpoints/audit_logs.py from 44% to 85%+
 """
 
-from datetime import datetime, UTC
-from unittest.mock import AsyncMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException, status
 
-from app.domain.entities.audit_log import AuditAction, AuditResourceType, AuditLog
+from app.domain.entities.audit_log import AuditAction, AuditLog, AuditResourceType
 
 
 @pytest.fixture
@@ -66,13 +66,13 @@ class TestListAuditLogs:
     async def test_list_audit_logs_success(self, mock_audit_logs):
         """Test listing audit logs successfully."""
         from app.api.v1.endpoints.audit_logs import list_audit_logs
-        
+
         tenant_id = mock_audit_logs[0].tenant_id
         user_id = uuid4()
         mock_repo = AsyncMock()
         mock_repo.list_by_tenant.return_value = mock_audit_logs
         mock_repo.count_by_tenant.return_value = 2
-        
+
         result = await list_audit_logs(
             current_user_id=user_id,
             tenant_id=tenant_id,
@@ -84,7 +84,7 @@ class TestListAuditLogs:
             end_date=None,
             repo=mock_repo,
         )
-        
+
         assert result.total == 2
         assert len(result.items) == 2
         assert result.skip == 0
@@ -94,10 +94,10 @@ class TestListAuditLogs:
     async def test_list_audit_logs_no_tenant(self):
         """Test listing audit logs without tenant context."""
         from app.api.v1.endpoints.audit_logs import list_audit_logs
-        
+
         user_id = uuid4()
         mock_repo = AsyncMock()
-        
+
         with pytest.raises(HTTPException) as exc:
             await list_audit_logs(
                 current_user_id=user_id,
@@ -110,7 +110,7 @@ class TestListAuditLogs:
                 end_date=None,
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
         assert "NO_TENANT" in str(exc.value.detail)
 
@@ -118,11 +118,11 @@ class TestListAuditLogs:
     async def test_list_audit_logs_invalid_action(self):
         """Test listing audit logs with invalid action filter."""
         from app.api.v1.endpoints.audit_logs import list_audit_logs
-        
+
         tenant_id = uuid4()
         user_id = uuid4()
         mock_repo = AsyncMock()
-        
+
         with pytest.raises(HTTPException) as exc:
             await list_audit_logs(
                 current_user_id=user_id,
@@ -135,7 +135,7 @@ class TestListAuditLogs:
                 end_date=None,
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
         assert "INVALID_ACTION" in str(exc.value.detail)
 
@@ -143,11 +143,11 @@ class TestListAuditLogs:
     async def test_list_audit_logs_invalid_resource_type(self):
         """Test listing audit logs with invalid resource type filter."""
         from app.api.v1.endpoints.audit_logs import list_audit_logs
-        
+
         tenant_id = uuid4()
         user_id = uuid4()
         mock_repo = AsyncMock()
-        
+
         with pytest.raises(HTTPException) as exc:
             await list_audit_logs(
                 current_user_id=user_id,
@@ -160,7 +160,7 @@ class TestListAuditLogs:
                 end_date=None,
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
         assert "INVALID_RESOURCE_TYPE" in str(exc.value.detail)
 
@@ -168,16 +168,16 @@ class TestListAuditLogs:
     async def test_list_audit_logs_with_filters(self, mock_audit_logs):
         """Test listing audit logs with date filters."""
         from app.api.v1.endpoints.audit_logs import list_audit_logs
-        
+
         tenant_id = mock_audit_logs[0].tenant_id
         user_id = uuid4()
         mock_repo = AsyncMock()
         mock_repo.list_by_tenant.return_value = [mock_audit_logs[0]]
         mock_repo.count_by_tenant.return_value = 1
-        
+
         start_date = datetime(2026, 1, 1, tzinfo=UTC)
         end_date = datetime(2026, 1, 31, tzinfo=UTC)
-        
+
         result = await list_audit_logs(
             current_user_id=user_id,
             tenant_id=tenant_id,
@@ -189,7 +189,7 @@ class TestListAuditLogs:
             end_date=end_date,
             repo=mock_repo,
         )
-        
+
         assert result.total == 1
         mock_repo.list_by_tenant.assert_awaited_once()
 
@@ -201,11 +201,11 @@ class TestGetMyActivity:
     async def test_get_my_activity_success(self, mock_audit_logs):
         """Test getting user's own activity."""
         from app.api.v1.endpoints.audit_logs import get_my_activity
-        
+
         user_id = mock_audit_logs[0].actor_id
         mock_repo = AsyncMock()
         mock_repo.list_by_actor.return_value = mock_audit_logs
-        
+
         result = await get_my_activity(
             current_user_id=user_id,
             skip=0,
@@ -214,7 +214,7 @@ class TestGetMyActivity:
             end_date=None,
             repo=mock_repo,
         )
-        
+
         assert len(result.items) == 2
         mock_repo.list_by_actor.assert_awaited_once_with(
             actor_id=user_id,
@@ -232,12 +232,12 @@ class TestGetRecentLogins:
     async def test_get_recent_logins_success(self, mock_audit_logs):
         """Test getting recent login attempts."""
         from app.api.v1.endpoints.audit_logs import get_recent_logins
-        
+
         tenant_id = mock_audit_logs[0].tenant_id
         user_id = uuid4()
         mock_repo = AsyncMock()
         mock_repo.list_recent_logins.return_value = mock_audit_logs
-        
+
         result = await get_recent_logins(
             current_user_id=user_id,
             tenant_id=tenant_id,
@@ -245,7 +245,7 @@ class TestGetRecentLogins:
             include_failed=True,
             repo=mock_repo,
         )
-        
+
         assert len(result.items) == 2
         mock_repo.list_recent_logins.assert_awaited_once_with(
             tenant_id=tenant_id,
@@ -261,12 +261,12 @@ class TestGetResourceHistory:
     async def test_get_resource_history_success(self, mock_audit_logs):
         """Test getting resource history."""
         from app.api.v1.endpoints.audit_logs import get_resource_history
-        
+
         user_id = uuid4()
         resource_id = str(uuid4())
         mock_repo = AsyncMock()
         mock_repo.list_by_resource.return_value = mock_audit_logs
-        
+
         result = await get_resource_history(
             resource_type="user",
             resource_id=resource_id,
@@ -275,7 +275,7 @@ class TestGetResourceHistory:
             limit=50,
             repo=mock_repo,
         )
-        
+
         assert len(result.items) == 2
         mock_repo.list_by_resource.assert_awaited_once()
 
@@ -283,11 +283,11 @@ class TestGetResourceHistory:
     async def test_get_resource_history_invalid_type(self):
         """Test getting resource history with invalid type."""
         from app.api.v1.endpoints.audit_logs import get_resource_history
-        
+
         user_id = uuid4()
         resource_id = str(uuid4())
         mock_repo = AsyncMock()
-        
+
         with pytest.raises(HTTPException) as exc:
             await get_resource_history(
                 resource_type="INVALID",
@@ -297,7 +297,7 @@ class TestGetResourceHistory:
                 limit=50,
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
         assert "INVALID_RESOURCE_TYPE" in str(exc.value.detail)
 
@@ -309,18 +309,18 @@ class TestGetAuditLog:
     async def test_get_audit_log_success(self, mock_audit_logs):
         """Test getting specific audit log by ID."""
         from app.api.v1.endpoints.audit_logs import get_audit_log
-        
+
         audit_log = mock_audit_logs[0]
         user_id = uuid4()
         mock_repo = AsyncMock()
         mock_repo.get_by_id.return_value = audit_log
-        
+
         result = await get_audit_log(
             audit_id=audit_log.id,
             current_user_id=user_id,
             repo=mock_repo,
         )
-        
+
         assert result.id == audit_log.id
         assert result.action == audit_log.action.value
 
@@ -328,19 +328,19 @@ class TestGetAuditLog:
     async def test_get_audit_log_not_found(self):
         """Test getting non-existent audit log."""
         from app.api.v1.endpoints.audit_logs import get_audit_log
-        
+
         audit_id = uuid4()
         user_id = uuid4()
         mock_repo = AsyncMock()
         mock_repo.get_by_id.return_value = None
-        
+
         with pytest.raises(HTTPException) as exc:
             await get_audit_log(
                 audit_id=audit_id,
                 current_user_id=user_id,
                 repo=mock_repo,
             )
-        
+
         assert exc.value.status_code == status.HTTP_404_NOT_FOUND
         assert "NOT_FOUND" in str(exc.value.detail)
 
@@ -352,11 +352,11 @@ class TestListActions:
     async def test_list_actions(self):
         """Test listing available audit actions."""
         from app.api.v1.endpoints.audit_logs import list_actions
-        
+
         user_id = uuid4()
-        
+
         result = await list_actions(current_user_id=user_id)
-        
+
         assert isinstance(result, list)
         assert len(result) > 0
         assert "CREATE" in result
@@ -371,11 +371,11 @@ class TestListResourceTypes:
     async def test_list_resource_types(self):
         """Test listing available resource types."""
         from app.api.v1.endpoints.audit_logs import list_resource_types
-        
+
         user_id = uuid4()
-        
+
         result = await list_resource_types(current_user_id=user_id)
-        
+
         assert isinstance(result, list)
         assert len(result) > 0
         assert "user" in result

@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from uuid import uuid4
+
 import pytest
 
 from app.application.services.acl_service import ACLService
-from app.domain.entities.role import Role, Permission
+from app.domain.entities.role import Permission, Role
 from app.domain.exceptions.base import AuthorizationError
 
 
@@ -22,15 +23,12 @@ class TestACLServiceCheckPermission:
         """Test that superuser always has permission."""
         mock_repo = AsyncMock()
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         result = await service.check_permission(
-            user_id=user_id,
-            resource="users",
-            action="delete",
-            is_superuser=True
+            user_id=user_id, resource="users", action="delete", is_superuser=True
         )
-        
+
         assert result is True
         # Repository should not be called for superuser
         mock_repo.get_user_roles.assert_not_called()
@@ -41,14 +39,12 @@ class TestACLServiceCheckPermission:
         mock_repo = AsyncMock()
         mock_repo.get_user_roles.return_value = []
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         result = await service.check_permission(
-            user_id=user_id,
-            resource="users",
-            action="delete"
+            user_id=user_id, resource="users", action="delete"
         )
-        
+
         assert result is False
 
     @pytest.mark.asyncio
@@ -59,18 +55,16 @@ class TestACLServiceCheckPermission:
         role = Role(
             tenant_id=tenant_id,
             name="Admin",
-            permissions=[Permission(resource="users", action="delete")]
+            permissions=[Permission(resource="users", action="delete")],
         )
         mock_repo.get_user_roles.return_value = [role]
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         result = await service.check_permission(
-            user_id=user_id,
-            resource="users",
-            action="delete"
+            user_id=user_id, resource="users", action="delete"
         )
-        
+
         assert result is True
 
     @pytest.mark.asyncio
@@ -81,18 +75,18 @@ class TestACLServiceCheckPermission:
         role = Role(
             tenant_id=tenant_id,
             name="Reader",
-            permissions=[Permission(resource="users", action="read")]
+            permissions=[Permission(resource="users", action="read")],
         )
         mock_repo.get_user_roles.return_value = [role]
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         result = await service.check_permission(
             user_id=user_id,
             resource="users",
-            action="delete"  # Different action
+            action="delete",  # Different action
         )
-        
+
         assert result is False
 
     @pytest.mark.asyncio
@@ -103,18 +97,16 @@ class TestACLServiceCheckPermission:
         role = Role(
             tenant_id=tenant_id,
             name="SuperAdmin",
-            permissions=[Permission(resource="*", action="*")]
+            permissions=[Permission(resource="*", action="*")],
         )
         mock_repo.get_user_roles.return_value = [role]
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         result = await service.check_permission(
-            user_id=user_id,
-            resource="any_resource",
-            action="any_action"
+            user_id=user_id, resource="any_resource", action="any_action"
         )
-        
+
         assert result is True
 
 
@@ -126,14 +118,11 @@ class TestACLServiceRequirePermission:
         """Test that superuser passes require_permission."""
         mock_repo = AsyncMock()
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         # Should not raise
         await service.require_permission(
-            user_id=user_id,
-            resource="users",
-            action="delete",
-            is_superuser=True
+            user_id=user_id, resource="users", action="delete", is_superuser=True
         )
 
     @pytest.mark.asyncio
@@ -142,15 +131,13 @@ class TestACLServiceRequirePermission:
         mock_repo = AsyncMock()
         mock_repo.get_user_roles.return_value = []
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         with pytest.raises(AuthorizationError) as exc_info:
             await service.require_permission(
-                user_id=user_id,
-                resource="users",
-                action="delete"
+                user_id=user_id, resource="users", action="delete"
             )
-        
+
         assert "Permission denied" in str(exc_info.value.message)
 
     @pytest.mark.asyncio
@@ -161,17 +148,15 @@ class TestACLServiceRequirePermission:
         role = Role(
             tenant_id=tenant_id,
             name="Admin",
-            permissions=[Permission(resource="users", action="delete")]
+            permissions=[Permission(resource="users", action="delete")],
         )
         mock_repo.get_user_roles.return_value = [role]
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         # Should not raise
         await service.require_permission(
-            user_id=user_id,
-            resource="users",
-            action="delete"
+            user_id=user_id, resource="users", action="delete"
         )
 
 
@@ -186,21 +171,19 @@ class TestACLServiceMultipleRoles:
         role1 = Role(
             tenant_id=tenant_id,
             name="Reader",
-            permissions=[Permission(resource="users", action="read")]
+            permissions=[Permission(resource="users", action="read")],
         )
         role2 = Role(
             tenant_id=tenant_id,
             name="Writer",
-            permissions=[Permission(resource="users", action="write")]
+            permissions=[Permission(resource="users", action="write")],
         )
         mock_repo.get_user_roles.return_value = [role1, role2]
         service = ACLService(role_repository=mock_repo)
-        
+
         user_id = uuid4()
         result = await service.check_permission(
-            user_id=user_id,
-            resource="users",
-            action="write"
+            user_id=user_id, resource="users", action="write"
         )
-        
+
         assert result is True

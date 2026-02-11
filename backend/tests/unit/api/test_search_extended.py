@@ -7,10 +7,6 @@ Extended unit tests for Search API endpoints.
 Tests for search endpoint schemas and functionality.
 """
 
-from datetime import datetime, timezone, UTC
-from uuid import uuid4
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Any
 
 import pytest
 from pydantic import ValidationError
@@ -37,7 +33,7 @@ class TestSearchFilterRequest:
         from app.api.v1.endpoints.search import SearchFilterRequest
 
         operators = ["eq", "ne", "gt", "gte", "lt", "lte", "in", "contains"]
-        
+
         for op in operators:
             filter_req = SearchFilterRequest(
                 field="test_field",
@@ -126,8 +122,8 @@ class TestSearchRequest:
     def test_search_request_full(self) -> None:
         """Test full search request with all fields."""
         from app.api.v1.endpoints.search import (
-            SearchRequest,
             SearchFilterRequest,
+            SearchRequest,
             SearchSortRequest,
         )
 
@@ -245,7 +241,7 @@ class TestSearchResponse:
 
     def test_search_response_with_hits(self) -> None:
         """Test search response with results."""
-        from app.api.v1.endpoints.search import SearchResponse, SearchHitResponse
+        from app.api.v1.endpoints.search import SearchHitResponse, SearchResponse
 
         hits = [
             SearchHitResponse(
@@ -309,7 +305,7 @@ class TestSearchIndex:
         from app.domain.ports.search import SearchIndex
 
         indexes = [i.value for i in SearchIndex]
-        
+
         assert "users" in indexes
         assert "audit_logs" in indexes
 
@@ -319,7 +315,7 @@ class TestSearchQuery:
 
     def test_search_query_creation(self) -> None:
         """Test creating SearchQuery."""
-        from app.domain.ports.search import SearchQuery, SearchIndex
+        from app.domain.ports.search import SearchIndex, SearchQuery
 
         query = SearchQuery(
             query="search term",
@@ -333,7 +329,7 @@ class TestSearchQuery:
 
     def test_search_query_with_filters(self) -> None:
         """Test SearchQuery with filters."""
-        from app.domain.ports.search import SearchQuery, SearchIndex, SearchFilter
+        from app.domain.ports.search import SearchFilter, SearchIndex, SearchQuery
 
         query = SearchQuery(
             query="test",

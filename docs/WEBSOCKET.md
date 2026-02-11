@@ -2,21 +2,19 @@
 
 ## Overview
 
-This document describes the pluggable WebSocket architecture for **real-time bidirectional communication**, used for:
+Simple WebSocket architecture for **real-time notifications**:
 
 - 🔔 **Real-time Notifications** - Instant delivery to connected clients
 - 📊 **Live Dashboard Updates** - Real-time metrics and status changes
-- 🔄 **Data Synchronization** - Keep UI in sync across tabs/devices
+- 👤 **Presence Tracking** - Online/offline status of users
 
-## Feature Flags
+## Configuration
 
 Control WebSocket features via environment variables:
 
 ```bash
-# WebSocket Core
-WEBSOCKET_ENABLED=true              # Enable/disable all WebSocket functionality
-WEBSOCKET_BACKEND=memory            # Backend: memory (dev) or redis (production)
-WEBSOCKET_NOTIFICATIONS=true        # Enable real-time notifications (recommended)
+WEBSOCKET_ENABLED=true              # Enable/disable WebSocket functionality
+WEBSOCKET_NOTIFICATIONS=true        # Enable real-time notifications
 ```
 
 ## Architecture
@@ -28,58 +26,26 @@ WEBSOCKET_NOTIFICATIONS=true        # Enable real-time notifications (recommende
 │  │ Browser  │  │ Mobile   │  │ Desktop  │  │   API    │        │
 │  │   App    │  │   App    │  │   App    │  │  Client  │        │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘        │
-│       │             │             │             │               │
-│       └─────────────┼─────────────┼─────────────┘               │
-│                     │             │                             │
-│              WebSocket Connections                              │
-└─────────────────────┼─────────────┼─────────────────────────────┘
-                      │             │
-                      ▼             ▼
+│       └─────────────┴─────────────┴─────────────┘               │
+│                           │                                     │
+│                  WebSocket Connections                          │
+└───────────────────────────┼─────────────────────────────────────┘
+                            │
+                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    FastAPI WebSocket Endpoints                   │
 │  ┌──────────────────────┐  ┌──────────────────────┐            │
 │  │        /ws           │  │  /ws/notifications   │            │
 │  │       (main)         │  │    (read-only)       │            │
 │  └──────────┬───────────┘  └──────────┬───────────┘            │
-│             │                         │                         │
 │             └────────────┬────────────┘                         │
-│                          │                                      │
 │                          ▼                                      │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │                   WebSocket Port (ABC)                    │  │
-│  │              domain/ports/websocket.py                    │  │
+│  │                MemoryWebSocketManager                     │  │
+│  │              (in-memory, single instance)                 │  │
 │  └──────────────────────────────────────────────────────────┘  │
-│                          │                                      │
-│             ┌────────────┼────────────┐                        │
-│             ▼                         ▼                        │
-│  ┌──────────────────────┐  ┌──────────────────────┐           │
-│  │   MemoryWebSocket    │  │   RedisWebSocket     │           │
-│  │      Manager         │  │      Manager         │           │
-│  │  (Single Instance)   │  │  (Horizontal Scale)  │           │
-│  └──────────────────────┘  └──────────────────────┘           │
 └─────────────────────────────────────────────────────────────────┘
 ```
-
-## Configuration
-
-Configure WebSocket features via environment variables:
-
-```env
-# Enable/Disable WebSocket features
-WEBSOCKET_ENABLED=true
-WEBSOCKET_BACKEND=memory  # "memory" or "redis"
-WEBSOCKET_NOTIFICATIONS=true
-
-# Redis URL (required for redis backend)
-REDIS_URL=redis://localhost:6379/0
-```
-
-### Backends
-
-| Backend | Use Case | Requirements |
-|---------|----------|--------------|
-| `memory` | Development, single instance | None |
-| `redis` | Production, horizontal scaling | Redis 7+ |
 
 ## WebSocket Endpoints
 
@@ -88,7 +54,7 @@ REDIS_URL=redis://localhost:6379/0
 Full-featured WebSocket supporting all message types.
 
 ```typescript
-// Connect
+// Connect with JWT token
 const ws = new WebSocket(`wss://api.example.com/api/v1/ws?token=${accessToken}`);
 
 // Handle messages
@@ -220,31 +186,6 @@ CREATE TABLE notifications (
 
 ## Production Deployment
 
-### Redis Backend
-
-For horizontal scaling, use the Redis backend:
-
-```yaml
-# docker-compose.prod.yml
-services:
-  api-1:
-    environment:
-      - WEBSOCKET_ENABLED=true
-      - WEBSOCKET_BACKEND=redis
-      - REDIS_URL=redis://redis:6379/0
-    
-  api-2:
-    environment:
-      - WEBSOCKET_ENABLED=true
-      - WEBSOCKET_BACKEND=redis
-      - REDIS_URL=redis://redis:6379/0
-  
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-```
-
 ### Load Balancer Configuration
 
 For WebSocket connections, configure sticky sessions:
@@ -253,8 +194,7 @@ For WebSocket connections, configure sticky sessions:
 # nginx.conf
 upstream api {
     ip_hash;  # Sticky sessions for WebSocket
-    server api-1:8000;
-    server api-2:8000;
+    server api:8000;
 }
 
 server {
@@ -305,41 +245,6 @@ await notification_service.create_notification(
 )
 ```
 
-## Extending the System
-
-### Custom WebSocket Backend
-
-Implement the `WebSocketPort` interface:
-
-```python
-from app.domain.ports.websocket import WebSocketPort
-
-class CustomWebSocketManager(WebSocketPort):
-    async def connect(self, connection_id, websocket, user_id, tenant_id):
-        # Custom connection logic
-        pass
-    
-    async def disconnect(self, connection_id):
-        # Custom disconnect logic
-        pass
-    
-    async def send_to_user(self, user_id, message, exclude_connection_id=None):
-        # Custom send logic
-        pass
-    
-    # ... implement remaining methods
-```
-
-### Custom Notification Types
-
-Add to `NotificationType` enum:
-
-```python
-class NotificationType(str, Enum):
-    # ... existing types
-    CUSTOM_EVENT = "custom_event"
-```
-
 ## Security Considerations
 
 1. **Authentication**: WebSocket connections require valid JWT token via query parameter
@@ -354,8 +259,9 @@ class NotificationType(str, Enum):
 ```python
 # Get WebSocket stats
 manager = get_websocket_manager()
-print(f"Total connections: {manager.total_connections}")
-print(f"Total users: {manager.total_users}")
+stats = manager.get_stats()
+print(f"Total connections: {stats['total_connections']}")
+print(f"Total users: {stats['total_users']}")
 ```
 
 ### Health Check
@@ -369,17 +275,8 @@ The `/api/v1/health` endpoint includes WebSocket status when enabled.
 1. Verify JWT token is valid
 2. Check CORS configuration allows WebSocket upgrades
 3. Verify load balancer supports WebSocket protocol
-4. Check Redis connection (if using Redis backend)
 
 ### Message Delivery Issues
 
-1. Check user is connected (`manager.is_user_connected(user_id)`)
+1. Check user is connected (`await manager.is_user_online(user_id)`)
 2. Verify tenant isolation matches
-3. Review Redis pub/sub connectivity
-
-### Performance Issues
-
-1. Monitor Redis memory usage
-2. Implement message batching for high-volume scenarios
-3. Consider message TTL for ephemeral notifications
-4. Use connection pooling for Redis

@@ -3,19 +3,20 @@
 
 """Unit tests for role endpoint schemas."""
 
-import pytest
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 from pydantic import ValidationError
 
 from app.api.v1.schemas.roles import (
-    PermissionSchema,
-    RoleCreate,
-    RoleUpdate,
     AssignRoleRequest,
+    PermissionSchema,
     RevokeRoleRequest,
-    RoleResponse,
+    RoleCreate,
     RoleListResponse,
+    RoleResponse,
+    RoleUpdate,
     UserPermissionsResponse,
 )
 
@@ -48,7 +49,7 @@ class TestRoleCreate:
         role = RoleCreate(
             name="Admin",
             description="Administrator role",
-            permissions=["users:read", "users:write"]
+            permissions=["users:read", "users:write"],
         )
         assert role.name == "Admin"
         assert role.description == "Administrator role"
@@ -90,7 +91,7 @@ class TestRoleUpdate:
         update = RoleUpdate(
             name="Updated Name",
             description="Updated description",
-            permissions=["new:permission"]
+            permissions=["new:permission"],
         )
         assert update.name == "Updated Name"
         assert update.description == "Updated description"
@@ -167,7 +168,7 @@ class TestRoleResponse:
 
     def test_role_response_valid(self):
         """Test valid role response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = RoleResponse(
             id=uuid4(),
             name="Admin",
@@ -175,7 +176,7 @@ class TestRoleResponse:
             permissions=["users:read", "users:write"],
             is_system=False,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         assert response.name == "Admin"
         assert len(response.permissions) == 2
@@ -183,7 +184,7 @@ class TestRoleResponse:
 
     def test_role_response_system_role(self):
         """Test system role response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = RoleResponse(
             id=uuid4(),
             name="superuser",
@@ -191,7 +192,7 @@ class TestRoleResponse:
             permissions=["*"],
             is_system=True,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         assert response.is_system is True
 
@@ -201,7 +202,7 @@ class TestRoleListResponse:
 
     def test_role_list_response(self):
         """Test role list response."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         response = RoleListResponse(
             items=[
                 RoleResponse(
@@ -211,10 +212,10 @@ class TestRoleListResponse:
                     permissions=[],
                     is_system=False,
                     created_at=now,
-                    updated_at=now
+                    updated_at=now,
                 )
             ],
-            total=1
+            total=1,
         )
         assert len(response.items) == 1
         assert response.total == 1
@@ -232,7 +233,7 @@ class TestUserPermissionsResponse:
     def test_user_permissions_response(self):
         """Test user permissions response."""
         user_id = uuid4()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         role = RoleResponse(
             id=uuid4(),
             name="admin",
@@ -240,12 +241,10 @@ class TestUserPermissionsResponse:
             permissions=["*"],
             is_system=False,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         response = UserPermissionsResponse(
-            user_id=user_id,
-            permissions=["users:read", "posts:write"],
-            roles=[role]
+            user_id=user_id, permissions=["users:read", "posts:write"], roles=[role]
         )
         assert response.user_id == user_id
         assert len(response.roles) == 1

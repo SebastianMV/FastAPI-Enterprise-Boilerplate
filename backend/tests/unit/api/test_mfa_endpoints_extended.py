@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest

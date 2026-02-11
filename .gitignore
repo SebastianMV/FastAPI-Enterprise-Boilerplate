@@ -126,6 +126,13 @@ tmp/
 temp/
 *.tmp
 *.temp
+tmpclaude-*
+nul
+
+# Test output artifacts
+vitest_output.txt
+vitest_verbose.txt
+coverage_output.txt
 
 # Test artifacts
 MagicMock/

@@ -7,9 +7,9 @@ Unit tests for MFA API endpoints.
 Tests for Multi-Factor Authentication endpoints.
 """
 
-from datetime import datetime, UTC
-from uuid import uuid4
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException

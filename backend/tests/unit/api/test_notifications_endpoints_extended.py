@@ -5,11 +5,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, AsyncMock, patch
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
-
-import pytest
 
 
 class TestNotificationsEndpointImport:
