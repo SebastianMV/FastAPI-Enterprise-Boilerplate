@@ -8,7 +8,7 @@
 
 # Stage 1: Dependencies
 # Pin to LTS minor; update patch periodically: docker pull node:22-alpine
-FROM node:22-alpine AS deps
+FROM node:25-alpine AS deps
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN npm ci --ignore-scripts
 
 
 # Stage 2: Builder
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
@@ -34,7 +34,7 @@ RUN npm run build
 # Stage 3: Production
 # Pin to specific version for reproducibility.
 # Update periodically and verify with: docker pull nginx:1.28-alpine
-FROM nginx:1.28-alpine AS production
+FROM nginx:1.29-alpine AS production
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
