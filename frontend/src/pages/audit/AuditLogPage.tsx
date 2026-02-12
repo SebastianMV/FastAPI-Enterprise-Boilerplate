@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { auditLogsService, type AuditLog, type AuditLogFilters } from '@/services/api';
+import { maskEmail, maskIpAddress, sanitizeText } from '@/utils/security';
 import {
   Shield,
   Filter,
@@ -94,6 +95,31 @@ export default function AuditLogPage() {
   // Calculate pagination info
   const currentPage = Math.floor((filters.skip || 0) / (filters.limit || 25)) + 1;
   const totalPages = data ? Math.ceil(data.total / (filters.limit || 25)) : 0;
+
+  /** Redact known-sensitive keys from audit log JSON values before display. */
+  const redactSensitiveFields = (obj: Record<string, unknown>): Record<string, unknown> => {
+    const SENSITIVE_KEYS = new Set(['password', 'password_hash', 'hashed_password', 'token', 'secret', 'api_key', 'access_token', 'refresh_token', 'totp_secret', 'backup_codes', 'current_password', 'new_password', 'old_password', 'confirm_password', 'mfa_secret', 'mfa_code']);
+    const redacted: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (SENSITIVE_KEYS.has(key.toLowerCase()) || SENSITIVE_KEYS.has(key.replace(/[-_]?password$/i, 'password').toLowerCase())) {
+        redacted[key] = '[REDACTED]';
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        redacted[key] = redactSensitiveFields(value as Record<string, unknown>);
+      } else {
+        redacted[key] = value;
+      }
+    }
+    return redacted;
+  };
+
+  /** Truncate user-agent to just browser name + version */
+  const truncateUserAgent = (ua: string): string => {
+    // Try to extract browser name from UA string
+    const match = ua.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)[/\s]([\d.]+)/);
+    if (match) return `${match[1]} ${match[2]}`;
+    // Fallback: first 60 chars
+    return ua.length > 60 ? ua.slice(0, 60) + '…' : ua;
+  };
 
   // View log details
   const viewLogDetails = (log: AuditLog) => {
@@ -304,7 +330,7 @@ export default function AuditLogPage() {
                         <div className="flex items-center">
                           <User className="h-4 w-4 mr-2 text-gray-400" />
                           <span className="text-sm text-gray-900 dark:text-white">
-                            {log.actor_email || t('audit.detailsModal.system')}
+                            {log.actor_email ? maskEmail(log.actor_email) : t('audit.detailsModal.system')}
                           </span>
                         </div>
                       </td>
@@ -315,7 +341,7 @@ export default function AuditLogPage() {
                           </span>
                           {log.resource_name && (
                             <span className="ml-2 text-gray-900 dark:text-white">
-                              {log.resource_name}
+                              {log.resource_type === 'user' ? maskEmail(log.resource_name) : sanitizeText(log.resource_name)}
                             </span>
                           )}
                         </div>
@@ -323,7 +349,7 @@ export default function AuditLogPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                           <Globe className="h-4 w-4 mr-2" />
-                          {log.actor_ip || t('common.na')}
+                          {log.actor_ip ? maskIpAddress(log.actor_ip) : t('common.na')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -413,32 +439,32 @@ export default function AuditLogPage() {
               </div>
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.actorEmail')}</label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.actor_email || t('audit.detailsModal.system')}</p>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.actor_email ? maskEmail(selectedLog.actor_email) : t('audit.detailsModal.system')}</p>
               </div>
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.ipAddress')}</label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.actor_ip || t('common.na')}</p>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.actor_ip ? maskIpAddress(selectedLog.actor_ip) : t('common.na')}</p>
               </div>
             </div>
 
             {selectedLog.resource_name && (
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.resourceName')}</label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.resource_name}</p>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.resource_type === 'user' ? maskEmail(selectedLog.resource_name!) : sanitizeText(selectedLog.resource_name!)}</p>
               </div>
             )}
 
             {selectedLog.reason && (
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.reason')}</label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedLog.reason}</p>
+                <p className="text-sm text-gray-900 dark:text-white">{sanitizeText(selectedLog.reason)}</p>
               </div>
             )}
 
             {selectedLog.actor_user_agent && (
               <div>
                 <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.userAgent')}</label>
-                <p className="text-sm text-gray-900 dark:text-white break-all">{selectedLog.actor_user_agent}</p>
+                <p className="text-sm text-gray-900 dark:text-white break-all">{truncateUserAgent(selectedLog.actor_user_agent)}</p>
               </div>
             )}
 
@@ -450,7 +476,7 @@ export default function AuditLogPage() {
                     <div>
                       <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.before')}</label>
                       <pre className="mt-1 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs overflow-auto max-h-40">
-                        {JSON.stringify(selectedLog.old_value, null, 2)}
+                        {JSON.stringify(redactSensitiveFields(selectedLog.old_value), null, 2)}
                       </pre>
                     </div>
                   )}
@@ -458,7 +484,7 @@ export default function AuditLogPage() {
                     <div>
                       <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.after')}</label>
                       <pre className="mt-1 p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs overflow-auto max-h-40">
-                        {JSON.stringify(selectedLog.new_value, null, 2)}
+                        {JSON.stringify(redactSensitiveFields(selectedLog.new_value), null, 2)}
                       </pre>
                     </div>
                   )}
@@ -470,7 +496,7 @@ export default function AuditLogPage() {
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <label className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('audit.detailsModal.metadata')}</label>
                 <pre className="mt-1 p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-40">
-                  {JSON.stringify(selectedLog.metadata, null, 2)}
+                  {JSON.stringify(redactSensitiveFields(selectedLog.metadata), null, 2)}
                 </pre>
               </div>
             )}

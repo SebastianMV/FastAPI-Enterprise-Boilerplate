@@ -30,17 +30,14 @@ const AVAILABLE_PERMISSIONS = [
   { resource: 'api_keys', actions: ['create', 'read', 'delete'] },
 ];
 
-interface CreateRoleFormData {
+interface RoleFormData {
   name: string;
   description: string;
   permissions: string[];
 }
 
-interface EditRoleFormData {
-  name: string;
-  description: string;
-  permissions: string[];
-}
+type CreateRoleFormData = RoleFormData;
+type EditRoleFormData = RoleFormData;
 
 /**
  * Roles management page with CRUD operations.
@@ -216,12 +213,12 @@ export default function RolesPage() {
     name,
     disabled = false,
   }: {
-    control: Control<CreateRoleFormData> | Control<EditRoleFormData>;
+    control: Control<RoleFormData>;
     name: 'permissions';
     disabled?: boolean;
   }) => (
     <Controller
-      control={control as Control<CreateRoleFormData>}
+      control={control}
       name={name}
       render={({ field }) => (
         <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
@@ -307,6 +304,7 @@ export default function RolesPage() {
             placeholder={t('roles.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            maxLength={200}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -460,6 +458,7 @@ export default function RolesPage() {
             <textarea
               {...registerCreate('description')}
               rows={2}
+              maxLength={500}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder={t('roles.descriptionPlaceholder')}
             />
@@ -530,6 +529,7 @@ export default function RolesPage() {
             <textarea
               {...registerEdit('description')}
               rows={2}
+              maxLength={500}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>

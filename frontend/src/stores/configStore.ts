@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { configService, type FeatureConfig } from '@/services/api';
 
 interface ConfigState extends FeatureConfig {
@@ -17,11 +16,11 @@ interface ConfigState extends FeatureConfig {
  * Manages feature flags like chat enabled, websocket enabled, etc.
  */
 export const useConfigStore = create<ConfigState>()(
-  persist(
     (set) => ({
-      // Initial state — features use production defaults until fetched
-      websocket_enabled: true,
-      websocket_notifications: true,
+      // Initial state — features disabled by default (fail-closed)
+      // until explicitly enabled by server response
+      websocket_enabled: false,
+      websocket_notifications: false,
       isLoading: false,
       error: null,
 
@@ -31,11 +30,16 @@ export const useConfigStore = create<ConfigState>()(
         try {
           const features = await configService.getFeatures();
           
+          // Only apply known properties (allowlist) to prevent state pollution
           set({
-            ...features,
+            websocket_enabled: Boolean(features.websocket_enabled),
+            websocket_notifications: Boolean(features.websocket_notifications),
             isLoading: false,
           });
         } catch (error) {
+          if (import.meta.env.DEV) {
+            console.error('[configStore] Failed to fetch features:', error);
+          }
           set({
             isLoading: false,
             error: 'config.fetchError',
@@ -47,12 +51,4 @@ export const useConfigStore = create<ConfigState>()(
         set({ error });
       },
     }),
-    {
-      name: 'config-storage',
-      partialize: (state) => ({
-        websocket_enabled: state.websocket_enabled,
-        websocket_notifications: state.websocket_notifications,
-      }),
-    }
-  )
 );

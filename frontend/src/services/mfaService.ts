@@ -1,5 +1,12 @@
 import api from './api';
 
+/** Validates that a code is a 6-digit numeric string */
+function validateMfaCode(code: string): void {
+  if (!/^\d{6}$/.test(code)) {
+    throw new Error('MFA code must be exactly 6 digits');
+  }
+}
+
 // MFA Types
 export interface MFAStatus {
   is_enabled: boolean;
@@ -33,16 +40,19 @@ export const mfaService = {
   },
 
   verify: async (code: string): Promise<{ message: string }> => {
+    validateMfaCode(code);
     const response = await api.post<{ message: string }>('/mfa/verify', { code });
     return response.data;
   },
 
   disable: async (code: string, password: string): Promise<{ message: string }> => {
+    validateMfaCode(code);
     const response = await api.post<{ message: string }>('/mfa/disable', { code, password });
     return response.data;
   },
 
   regenerateBackupCodes: async (code: string): Promise<{ backup_codes: string[] }> => {
+    validateMfaCode(code);
     const response = await api.post<{ backup_codes: string[] }>('/mfa/backup-codes/regenerate', { code });
     return response.data;
   },
@@ -53,6 +63,7 @@ export const mfaService = {
   },
 
   verifyEmailOTP: async (code: string): Promise<{ message: string; valid: boolean }> => {
+    validateMfaCode(code);
     const response = await api.post<{ message: string; valid: boolean }>('/mfa/email-otp/verify', { code });
     return response.data;
   },

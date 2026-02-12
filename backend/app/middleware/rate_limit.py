@@ -183,6 +183,8 @@ class RedisRateLimiter:
 
 # Global rate limiter instance
 _rate_limiter: InMemoryRateLimiter | RedisRateLimiter | None = None
+_rate_limiter_fallback_time: float | None = None
+_RATE_LIMITER_RETRY_INTERVAL = 60  # seconds
 
 
 def get_rate_limiter() -> InMemoryRateLimiter | RedisRateLimiter:
@@ -190,25 +192,43 @@ def get_rate_limiter() -> InMemoryRateLimiter | RedisRateLimiter:
 
     Uses Redis in production/staging for distributed rate limiting.
     Falls back to in-memory for development or if Redis is unavailable.
+    Periodically retries Redis if currently using in-memory fallback.
     """
-    global _rate_limiter
-    if _rate_limiter is None:
-        from app.config import settings
+    global _rate_limiter, _rate_limiter_fallback_time
 
-        if settings.ENVIRONMENT in ("production", "staging"):
-            try:
-                from app.infrastructure.cache import get_cache
+    if _rate_limiter is not None:
+        # If using in-memory fallback, retry Redis periodically
+        if _rate_limiter_fallback_time is not None:
+            import time
 
-                cache = get_cache()
-                _rate_limiter = RedisRateLimiter(cache.get_redis_client())
-            except Exception:
-                logger.warning(
-                    "Redis unavailable for rate limiting, falling back to in-memory",
-                    exc_info=True,
-                )
-                _rate_limiter = InMemoryRateLimiter()
+            if time.monotonic() - _rate_limiter_fallback_time > _RATE_LIMITER_RETRY_INTERVAL:
+                _rate_limiter = None
+                _rate_limiter_fallback_time = None
+            else:
+                return _rate_limiter
         else:
+            return _rate_limiter
+
+    from app.config import settings
+
+    if settings.ENVIRONMENT in ("production", "staging"):
+        try:
+            from app.infrastructure.cache import get_cache
+
+            cache = get_cache()
+            _rate_limiter = RedisRateLimiter(cache.get_redis_client())
+            _rate_limiter_fallback_time = None
+        except Exception:
+            import time
+
+            logger.warning(
+                "Redis unavailable for rate limiting, falling back to in-memory",
+                exc_info=True,
+            )
             _rate_limiter = InMemoryRateLimiter()
+            _rate_limiter_fallback_time = time.monotonic()
+    else:
+        _rate_limiter = InMemoryRateLimiter()
     return _rate_limiter
 
 
@@ -347,8 +367,9 @@ class RateLimitMiddleware:
         # Check for API key
         auth_header = headers.get(b"authorization", b"").decode()
         if auth_header.startswith("Bearer krs_"):
-            # API key authentication
-            key = auth_header[7:15]  # prefix
+            # Use a longer prefix (16 chars) to avoid bucket collisions
+            # between different API keys that share a short prefix.
+            key = auth_header[7:23]  # 16-char prefix after "Bearer "
             return f"apikey:{key}"
 
         # Fall back to IP address
@@ -428,11 +449,19 @@ def rate_limit(
                 request = kwargs.get("request")
 
             if request:
-                # Generate key
+                # Generate key — include per-user/IP context to avoid
+                # one user exhausting the limit for all users (B9).
                 if key_func:
                     key = key_func(request)
                 else:
-                    key = f"endpoint:{func.__name__}"
+                    # Build a per-client key from user or IP
+                    client_id = "anon"
+                    # Try to get user_id from request state (set by auth middleware)
+                    if hasattr(request.state, "user_id") and request.state.user_id:
+                        client_id = f"user:{request.state.user_id}"
+                    elif request.client:
+                        client_id = f"ip:{request.client.host}"
+                    key = f"endpoint:{func.__name__}:{client_id}"
 
                 # Check limit
                 limiter = get_rate_limiter()

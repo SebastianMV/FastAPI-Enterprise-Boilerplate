@@ -5,7 +5,7 @@
 
 from dataclasses import dataclass, field
 
-from app.domain.entities.base import SoftDeletableEntity
+from app.domain.entities.base import TenantSoftDeletableEntity
 
 
 @dataclass
@@ -68,7 +68,7 @@ class Permission:
 
 
 @dataclass
-class Role(SoftDeletableEntity):
+class Role(TenantSoftDeletableEntity):
     """
     Role domain entity.
 

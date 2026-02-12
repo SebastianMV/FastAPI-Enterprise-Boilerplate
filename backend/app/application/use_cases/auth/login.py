@@ -83,6 +83,13 @@ class LoginUseCase:
                 code="ACCOUNT_LOCKED",
             )
 
+        # Guard: OAuth-only accounts cannot login with password
+        if user.password_hash == "!oauth":
+            raise AuthenticationError(
+                code="INVALID_CREDENTIALS",
+                message="Invalid email or password",
+            )
+
         # Verify password
         if not verify_password(request.password, user.password_hash):
             if settings.ACCOUNT_LOCKOUT_ENABLED:
@@ -164,7 +171,12 @@ class LoginUseCase:
         from app.api.v1.endpoints.mfa import get_mfa_config, save_mfa_config
 
         mfa_config = await get_mfa_config(str(user.id))
-        if not mfa_config or not mfa_config.is_enabled:
+
+        if not mfa_config:
+            # No MFA configured for this user — DB is authoritative
+            return
+
+        if not mfa_config.is_enabled:
             return
 
         if not mfa_code:

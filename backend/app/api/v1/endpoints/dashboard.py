@@ -108,8 +108,16 @@ async def get_dashboard_stats(
     now = datetime.now(UTC)
     last_30_days = now - timedelta(days=30)
     last_7_days = now - timedelta(days=7)
-    last_month_start = now - timedelta(days=60)
-    last_month_end = now - timedelta(days=30)
+
+    # Use actual calendar month boundaries for accurate growth comparison
+    current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if current_month_start.month == 1:
+        prev_month_start = current_month_start.replace(year=current_month_start.year - 1, month=12)
+    else:
+        prev_month_start = current_month_start.replace(month=current_month_start.month - 1)
+    prev_month_end = current_month_start
+    last_month_start = prev_month_start
+    last_month_end = prev_month_end
 
     # Base tenant filter for UserModel
     tenant_filter_user = (UserModel.tenant_id == tenant_id,) if tenant_id else ()

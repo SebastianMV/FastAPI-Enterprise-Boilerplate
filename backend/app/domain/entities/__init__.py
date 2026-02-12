@@ -10,6 +10,7 @@ from app.domain.entities.base import (
     BaseEntity,
     SoftDeletableEntity,
     TenantEntity,
+    TenantSoftDeletableEntity,
 )
 from app.domain.entities.mfa import MFAConfig
 from app.domain.entities.notification import (
@@ -53,6 +54,7 @@ __all__ = [
     "Tenant",
     "TenantEntity",
     "TenantSettings",
+    "TenantSoftDeletableEntity",
     "User",
     "UserSession",
 ]

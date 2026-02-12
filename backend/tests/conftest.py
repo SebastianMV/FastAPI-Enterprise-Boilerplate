@@ -34,13 +34,16 @@ from app.main import app
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop]:
+def event_loop():
     """
     Create event loop for entire test session.
 
-    This ensures async fixtures work correctly with pytest-asyncio.
+    Note: Modern pytest-asyncio recommends asyncio_mode="auto" with
+    loop_scope config, but this fixture is kept for backward compat
+    with the current pytest-asyncio version.
     """
-    loop = asyncio.get_event_loop_policy().new_event_loop()
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
     yield loop
     loop.close()
 
@@ -124,7 +127,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession]:
         cleanup_queries = [
             "DELETE FROM sessions WHERE 1=1",
             "DELETE FROM api_keys WHERE 1=1",
-            "DELETE FROM mfa_secrets WHERE 1=1",
+            "DELETE FROM mfa_configs WHERE 1=1",
             "DELETE FROM oauth_connections WHERE 1=1",
             "DELETE FROM audit_logs WHERE 1=1",
             "DELETE FROM users WHERE email LIKE '%test%' OR email LIKE '%example%'",
@@ -271,12 +274,57 @@ async def test_user(db_session, user_factory) -> dict[str, Any]:
     """
     Create a test user in the database.
 
-    Returns the user data for use in tests.
-    Note: For integration tests that need actual DB persistence,
-    use the user_factory and save via SQLAlchemyUserRepository.
-    This fixture returns a dict for unit test mocking purposes.
+    Persists the user via the DB session so that endpoints checking
+    ``require_permission`` or ``get_current_user`` find a real record.
     """
     user_data = user_factory()
+
+    # Persist to DB for integration tests
+    try:
+        from app.infrastructure.database.models.user import UserModel
+        from app.infrastructure.database.models.tenant import TenantModel
+
+        # Ensure a tenant exists
+        tenant_id = user_data.get("tenant_id", uuid4())
+        user_data["tenant_id"] = tenant_id
+
+        from sqlalchemy import select
+
+        existing_tenant = (await db_session.execute(
+            select(TenantModel).where(TenantModel.id == tenant_id)
+        )).scalars().first()
+
+        if not existing_tenant:
+            from datetime import datetime, UTC
+
+            tenant = TenantModel(
+                id=tenant_id,
+                name="Test Tenant",
+                slug=f"test-{uuid4().hex[:8]}",
+                is_active=True,
+            )
+            db_session.add(tenant)
+            await db_session.flush()
+
+        from app.infrastructure.auth.jwt_handler import hash_password
+
+        user_model = UserModel(
+            id=user_data["id"],
+            email=user_data["email"],
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            password_hash=hash_password("TestPassword123!"),
+            is_active=user_data["is_active"],
+            is_superuser=user_data["is_superuser"],
+            tenant_id=tenant_id,
+            roles=[],
+        )
+        db_session.add(user_model)
+        await db_session.flush()
+    except Exception:
+        # SQLite or missing tables — fall back to dict-only
+        pass
+
     return user_data
 
 
@@ -285,11 +333,52 @@ async def test_superuser(db_session, user_factory) -> dict[str, Any]:
     """
     Create a test superuser in the database.
 
-    Note: For integration tests that need actual DB persistence,
-    use the user_factory and save via SQLAlchemyUserRepository.
-    This fixture returns a dict for unit test mocking purposes.
+    Persists the user via the DB session so that admin endpoints
+    find a real record.
     """
     user_data = user_factory(is_superuser=True, email="admin@example.com")
+
+    try:
+        from app.infrastructure.database.models.user import UserModel
+        from app.infrastructure.database.models.tenant import TenantModel
+
+        tenant_id = user_data.get("tenant_id", uuid4())
+        user_data["tenant_id"] = tenant_id
+
+        from sqlalchemy import select
+
+        existing_tenant = (await db_session.execute(
+            select(TenantModel).where(TenantModel.id == tenant_id)
+        )).scalars().first()
+
+        if not existing_tenant:
+            tenant = TenantModel(
+                id=tenant_id,
+                name="Test Tenant",
+                slug=f"test-{uuid4().hex[:8]}",
+                is_active=True,
+            )
+            db_session.add(tenant)
+            await db_session.flush()
+
+        from app.infrastructure.auth.jwt_handler import hash_password
+
+        user_model = UserModel(
+            id=user_data["id"],
+            email=user_data["email"],
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            password_hash=hash_password("TestPassword123!"),
+            is_active=True,
+            is_superuser=True,
+            tenant_id=tenant_id,
+            roles=[],
+        )
+        db_session.add(user_model)
+        await db_session.flush()
+    except Exception:
+        pass
+
     return user_data
 
 
@@ -357,11 +446,22 @@ def mock_cache_global(monkeypatch):
         async def get(self, key: str):
             return self._store.get(key)
 
-        async def set(self, key: str, value: str, ex: int = None):
+        async def set(self, key: str, value: str, ex: int = None, ttl: int = None):
             self._store[key] = value
+            return True
 
         async def delete(self, key: str):
             self._store.pop(key, None)
+            return True
+
+        async def exists(self, key: str) -> bool:
+            return key in self._store
+
+        async def get_and_delete(self, key: str):
+            return self._store.pop(key, None)
+
+        def get_redis_client(self):
+            return None
 
     # Create a mock that returns the same MockCache instance
     mock_instance = MockCache()

@@ -58,7 +58,12 @@ function getCookie(name: string): string | null {
   const match = document.cookie
     .split('; ')
     .find((row) => row.startsWith(`${name}=`));
-  return match ? match.substring(match.indexOf('=') + 1) : null;
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match.substring(match.indexOf('=') + 1));
+  } catch {
+    return match.substring(match.indexOf('=') + 1);
+  }
 }
 
 // =============================================================================
@@ -76,12 +81,18 @@ function emitLogout(): void {
 // Axios Instance & Interceptors
 // =============================================================================
 
+const configuredBaseURL = import.meta.env.VITE_API_URL;
+if (!configuredBaseURL && import.meta.env.PROD) {
+  // Silently fail — VITE_API_URL not configured; baseURL will fall back to '/'
+}
+
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/',
+  baseURL: configuredBaseURL || '/',
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true,  // Send HttpOnly cookies automatically
+  timeout: 30000,         // 30s timeout to prevent hanging requests
 });
 
 // Request interceptor to add CSRF header
@@ -90,10 +101,13 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // No need to read tokens from localStorage.
 
   // CSRF double-submit: read the non-HttpOnly csrf_token cookie and
-  // echo it back as X-CSRF-Token header on every state-changing request.
-  const csrfToken = getCookie('csrf_token');
-  if (csrfToken) {
-    config.headers['X-CSRF-Token'] = csrfToken;
+  // echo it back as X-CSRF-Token header only on state-changing requests.
+  const method = config.method?.toLowerCase();
+  if (method && ['post', 'put', 'patch', 'delete'].includes(method)) {
+    const csrfToken = getCookie('csrf_token');
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
   }
   
   return config;
@@ -116,20 +130,32 @@ api.interceptors.response.use(
         // If a refresh is already in progress, wait for it instead of starting another
         if (!refreshPromise) {
           refreshPromise = (async () => {
-            const refreshApi = axios.create({
-              baseURL: import.meta.env.VITE_API_URL || '/',
-              withCredentials: true,
-            });
-            await refreshApi.post<RefreshResponse>('/auth/refresh', {});
+            try {
+              // Include CSRF header on the refresh request for consistency
+              const csrfToken = getCookie('csrf_token');
+              const headers: Record<string, string> = {};
+              if (csrfToken) {
+                headers['X-CSRF-Token'] = csrfToken;
+              }
+              const refreshApi = axios.create({
+                baseURL: configuredBaseURL || '/',
+                withCredentials: true,
+                timeout: 15000,
+              });
+              await refreshApi.post<RefreshResponse>('/auth/refresh', {}, { headers });
+            } finally {
+              // Clear the promise only inside the creator to avoid race conditions
+              refreshPromise = null;
+            }
           })();
         }
 
         await refreshPromise;
-        refreshPromise = null;
         
         // Retry the original request — the new cookie will be sent automatically.
         return api(originalRequest);
       } catch (refreshError) {
+        // Ensure promise is cleared on error so future attempts can retry
         refreshPromise = null;
         
         if (import.meta.env.DEV) {

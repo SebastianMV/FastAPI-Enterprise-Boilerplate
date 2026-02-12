@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,35 +15,13 @@ import {
   Calendar,
   X
 } from 'lucide-react';
-import api from '@/services/api';
+import { apiKeysService, type ApiKey, type NewlyCreatedKey } from '@/services/apiKeysService';
 import { ConfirmModal, AlertModal } from '@/components/common/Modal';
-
-interface ApiKey {
-  id: string;
-  name: string;
-  prefix: string;
-  scopes: string[];
-  is_active: boolean;
-  expires_at: string | null;
-  last_used_at: string | null;
-  usage_count: number;
-  created_at: string;
-}
 
 interface CreateKeyFormData {
   name: string;
   scopes: string;
   expires_in_days: number | null;
-}
-
-interface NewlyCreatedKey {
-  id: string;
-  name: string;
-  prefix: string;
-  key: string;
-  scopes: string[];
-  expires_at: string | null;
-  created_at: string;
 }
 
 /**
@@ -53,14 +31,14 @@ interface NewlyCreatedKey {
 export default function ApiKeysPage() {
   const { t } = useTranslation();
   
-  const AVAILABLE_SCOPES = [
+  const AVAILABLE_SCOPES = useMemo(() => [
     { value: 'users:read', label: t('apiKeys.scopes.usersRead'), description: t('apiKeys.scopes.usersReadDesc') },
     { value: 'users:write', label: t('apiKeys.scopes.usersWrite'), description: t('apiKeys.scopes.usersWriteDesc') },
     { value: 'roles:read', label: t('apiKeys.scopes.rolesRead'), description: t('apiKeys.scopes.rolesReadDesc') },
     { value: 'roles:write', label: t('apiKeys.scopes.rolesWrite'), description: t('apiKeys.scopes.rolesWriteDesc') },
     { value: 'api-keys:read', label: t('apiKeys.scopes.apiKeysRead'), description: t('apiKeys.scopes.apiKeysReadDesc') },
     { value: 'api-keys:write', label: t('apiKeys.scopes.apiKeysWrite'), description: t('apiKeys.scopes.apiKeysWriteDesc') },
-  ];
+  ], [t]);
   
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +52,8 @@ export default function ApiKeysPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [keyToRevoke, setKeyToRevoke] = useState<ApiKey | null>(null);
+  const keyClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clipboardClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -91,8 +71,8 @@ export default function ApiKeysPage() {
   const fetchApiKeys = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/api-keys?include_revoked=${showRevokedKeys}`);
-      setApiKeys(response.data.items);
+      const response = await apiKeysService.list(showRevokedKeys);
+      setApiKeys(response.items);
     } catch {
       setErrorMessage(t('apiKeys.loadError'));
     } finally {
@@ -102,6 +82,22 @@ export default function ApiKeysPage() {
     // but unstable in tests causing infinite re-render loops.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRevokedKeys]);
+
+  // Cleanup timers and sensitive data on unmount
+  useEffect(() => {
+    return () => {
+      if (keyClearTimerRef.current) {
+        clearTimeout(keyClearTimerRef.current);
+        keyClearTimerRef.current = null;
+      }
+      if (clipboardClearTimerRef.current) {
+        clearTimeout(clipboardClearTimerRef.current);
+        clipboardClearTimerRef.current = null;
+      }
+      // Clear key from state on unmount
+      setNewlyCreatedKey(null);
+    };
+  }, []);
 
   // Fetch API keys on mount
   useEffect(() => {
@@ -113,13 +109,16 @@ export default function ApiKeysPage() {
     setErrorMessage(null);
 
     try {
-      const response = await api.post('/api-keys', {
+      const createdKey = await apiKeysService.create({
         name: data.name,
         scopes: selectedScopes,
         expires_in_days: data.expires_in_days || null,
       });
 
-      setNewlyCreatedKey(response.data);
+      setNewlyCreatedKey(createdKey);
+      // Auto-clear the key from memory after 5 minutes for security
+      if (keyClearTimerRef.current) clearTimeout(keyClearTimerRef.current);
+      keyClearTimerRef.current = setTimeout(() => setNewlyCreatedKey(null), 5 * 60 * 1000);
       setShowCreateModal(false);
       reset();
       setSelectedScopes([]);
@@ -134,7 +133,7 @@ export default function ApiKeysPage() {
   const handleRevokeKey = async (keyId: string) => {
     setDeletingKeyId(keyId);
     try {
-      await api.delete(`/api-keys/${encodeURIComponent(keyId)}`);
+      await apiKeysService.revoke(keyId);
       setShowRevokeModal(false);
       setKeyToRevoke(null);
       setAlertModal({
@@ -167,6 +166,16 @@ export default function ApiKeysPage() {
       await navigator.clipboard.writeText(text);
       setCopiedKeyId(keyId);
       setTimeout(() => setCopiedKeyId(null), 2000);
+      // Auto-clear clipboard after 60 seconds (defense-in-depth)
+      if (clipboardClearTimerRef.current) clearTimeout(clipboardClearTimerRef.current);
+      clipboardClearTimerRef.current = setTimeout(async () => {
+        try {
+          const current = await navigator.clipboard.readText();
+          if (current === text) {
+            await navigator.clipboard.writeText('');
+          }
+        } catch { /* clipboard read may be denied */ }
+      }, 60_000);
     } catch {
       // Clipboard write failed — silently ignore
     }
@@ -293,7 +302,10 @@ export default function ApiKeysPage() {
             </div>
 
             <button
-              onClick={() => setNewlyCreatedKey(null)}
+              onClick={() => {
+                if (keyClearTimerRef.current) clearTimeout(keyClearTimerRef.current);
+                setNewlyCreatedKey(null);
+              }}
               className="btn-primary w-full mt-6"
             >
               {t('apiKeys.savedKey')}
@@ -331,6 +343,7 @@ export default function ApiKeysPage() {
                   type="text"
                   className="input"
                   placeholder={t('apiKeys.keyNamePlaceholder')}
+                  maxLength={100}
                   {...register('name', { required: t('validation.required') })}
                 />
                 {errors.name && (

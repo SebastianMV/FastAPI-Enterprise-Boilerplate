@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Suspense, lazy, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/stores/authStore';
+import { useShallow } from 'zustand/react/shallow';
 import { AUTH_LOGOUT_EVENT } from '@/services/api';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -50,8 +51,9 @@ function PageLoader() {
  * Protected route wrapper — requires authentication.
  */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isInitializing = useAuthStore((state) => state.isInitializing);
+  const { isAuthenticated, isInitializing } = useAuthStore(
+    useShallow((s) => ({ isAuthenticated: s.isAuthenticated, isInitializing: s.isInitializing }))
+  );
 
   // Wait for session restoration before redirecting
   if (isInitializing) {
@@ -71,8 +73,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
  */
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const user = useAuthStore((state) => state.user);
+  const { isAuthenticated, user } = useAuthStore(
+    useShallow((s) => ({ isAuthenticated: s.isAuthenticated, user: s.user }))
+  );
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -84,7 +87,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center space-y-4">
           <p className="text-lg text-slate-600 dark:text-slate-400">{t('common.accessDenied')}</p>
-          <a href="/dashboard" className="text-primary-600 hover:underline">{t('navigation.dashboard')}</a>
+          <Link to="/dashboard" className="text-primary-600 hover:underline">{t('navigation.dashboard')}</Link>
         </div>
       </div>
     );
@@ -97,10 +100,14 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
  * Main application component.
  */
 export default function App() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const user = useAuthStore((state) => state.user);
-  const fetchUser = useAuthStore((state) => state.fetchUser);
-  const logout = useAuthStore((state) => state.logout);
+  const { isAuthenticated, user, fetchUser, logout } = useAuthStore(
+    useShallow((s) => ({
+      isAuthenticated: s.isAuthenticated,
+      user: s.user,
+      fetchUser: s.fetchUser,
+      logout: s.logout,
+    }))
+  );
   const navigate = useNavigate();
 
   // SPA-friendly redirect on 401 (fired by api.ts interceptor)
@@ -155,7 +162,7 @@ export default function App() {
         >
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/users" element={<UsersPage />} />
+          <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
           
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/search" element={<SearchPage />} />
@@ -164,7 +171,7 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security/mfa" element={<MFASettingsPage />} />
           <Route path="/security/sessions" element={<SessionsPage />} />
-          <Route path="/security/audit" element={<AuditLogPage />} />
+          <Route path="/security/audit" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
           
           {/* Admin-only routes — require superuser */}
           <Route path="/admin/tenants" element={<AdminRoute><TenantsPage /></AdminRoute>} />

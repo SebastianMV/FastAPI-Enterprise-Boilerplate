@@ -113,7 +113,9 @@ async def get_role(
             detail={"code": "ROLE_NOT_FOUND", "message": "Role not found"},
         )
     
-    # Validate tenant ownership — prevent cross-tenant role access
+    # Validate tenant ownership — prevent cross-tenant role access.
+    # When tenant_id is present, only allow roles that belong to this tenant
+    # or system roles (tenant_id=None) which are shared.
     if tenant_id and role.tenant_id and role.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -61,7 +61,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
 
 class HealthResponse(BaseModel):
-    """Health check response."""
+    """Basic health check response for /health and /health/live."""
 
     status: str = Field(..., description="Service status")
     version: str | None = Field(
@@ -71,9 +71,12 @@ class HealthResponse(BaseModel):
         None, description="Deployment environment (hidden in production)"
     )
 
-    # Optional component health
-    database: str | None = Field(None, description="Database connection status")
-    redis: str | None = Field(None, description="Redis connection status")
+
+class ReadinessResponse(HealthResponse):
+    """Readiness check response for /health/ready — includes component health."""
+
+    database: str = Field(..., description="Database connection status")
+    redis: str = Field(..., description="Redis connection status")
 
 
 class MessageResponse(BaseModel):

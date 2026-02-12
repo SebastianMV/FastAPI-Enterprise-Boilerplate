@@ -1,4 +1,5 @@
 import api from './api';
+import { clampPaginationParams } from '@/utils/security';
 
 // Notification Types
 export interface Notification {
@@ -23,7 +24,10 @@ export const notificationsService = {
     limit?: number; 
     unread_only?: boolean 
   }): Promise<NotificationsResponse> => {
-    const response = await api.get<NotificationsResponse>('/notifications', { params });
+    const { skip, limit } = clampPaginationParams(params);
+    const response = await api.get<NotificationsResponse>('/notifications', { 
+      params: { skip, limit, unread_only: params?.unread_only } 
+    });
     return response.data;
   },
 
@@ -32,7 +36,11 @@ export const notificationsService = {
     page_size?: number;
     unread_only?: boolean;
   }): Promise<NotificationsResponse> => {
-    const response = await api.get<NotificationsResponse>('/notifications', { params });
+    const safePage = Math.max(1, Math.min(1000, Math.floor(Number(params?.page) || 1)));
+    const safePageSize = Math.min(100, Math.max(1, Math.floor(Number(params?.page_size) || 20)));
+    const response = await api.get<NotificationsResponse>('/notifications', { 
+      params: { page: safePage, page_size: safePageSize, unread_only: params?.unread_only } 
+    });
     return response.data;
   },
 

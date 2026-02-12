@@ -21,8 +21,21 @@ _logger = get_logger(__name__)
 
 
 def _derive_fernet_key(secret: str) -> bytes:
-    """Derive a 32-byte URL-safe base64-encoded key from an arbitrary secret."""
-    raw = hashlib.sha256(secret.encode()).digest()
+    """Derive a 32-byte URL-safe base64-encoded key from an arbitrary secret.
+
+    Uses HKDF (HMAC-based Key Derivation Function) which is the
+    recommended approach for deriving encryption keys from secrets.
+    """
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+    from cryptography.hazmat.primitives import hashes as _hashes
+
+    hkdf = HKDF(
+        algorithm=_hashes.SHA256(),
+        length=32,
+        salt=None,
+        info=b"fernet-encryption-key",
+    )
+    raw = hkdf.derive(secret.encode())
     return base64.urlsafe_b64encode(raw)
 
 

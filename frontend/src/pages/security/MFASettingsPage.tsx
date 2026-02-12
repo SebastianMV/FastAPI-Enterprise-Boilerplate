@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { mfaService, type MFAStatus, type MFASetupResponse } from '@/services/api';
+import { isValidQrCodeUri } from '@/utils/security';
 
 interface VerifyFormData {
   code: string;
@@ -43,9 +44,46 @@ export default function MFASettingsPage() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [showBackupCodes, setShowBackupCodes] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
   const [showDisableForm, setShowDisableForm] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Persist MFA cooldown in sessionStorage to prevent bypass via component remount
+  const MFA_COOLDOWN_KEY = 'mfa_settings_cooldown';
+  const MFA_FAIL_KEY = 'mfa_settings_fails';
+  const getStoredCooldown = () => {
+    const stored = sessionStorage.getItem(MFA_COOLDOWN_KEY);
+    return stored && Number(stored) > Date.now() ? Number(stored) : null;
+  };
+  const getStoredFailCount = () => Number(sessionStorage.getItem(MFA_FAIL_KEY) || '0');
+  const [mfaFailCount, setMfaFailCount] = useState(getStoredFailCount);
+  const [mfaCooldownUntil, setMfaCooldownUntil] = useState<number | null>(getStoredCooldown);
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const clipboardTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Persist cooldown changes to sessionStorage
+  useEffect(() => {
+    if (mfaCooldownUntil) {
+      sessionStorage.setItem(MFA_COOLDOWN_KEY, String(mfaCooldownUntil));
+    } else {
+      sessionStorage.removeItem(MFA_COOLDOWN_KEY);
+    }
+  }, [mfaCooldownUntil]);
+  useEffect(() => {
+    sessionStorage.setItem(MFA_FAIL_KEY, String(mfaFailCount));
+  }, [mfaFailCount]);
+
+  // Cleanup on unmount: clear sensitive data and timers
+  useEffect(() => {
+    return () => {
+      setSetupData(null);
+      setShowSecret(false);
+      setShowBackupCodes(false);
+      clearTimeout(cooldownTimerRef.current);
+      clearTimeout(clipboardTimerRef.current);
+    };
+  }, []);
 
   const {
     register: registerVerify,
@@ -95,36 +133,68 @@ export default function MFASettingsPage() {
   };
 
   const onVerifySubmit = async (data: VerifyFormData) => {
+    // Client-side cooldown after repeated failures
+    if (mfaCooldownUntil && Date.now() < mfaCooldownUntil) {
+      const secs = Math.ceil((mfaCooldownUntil - Date.now()) / 1000);
+      setErrorMessage(t('mfa.cooldownMessage', { seconds: secs }));
+      return;
+    }
     try {
       setIsVerifying(true);
       setErrorMessage(null);
       
       await mfaService.verify(data.code);
       
+      setMfaFailCount(0);
       setSuccessMessage(t('mfa.enableSuccess'));
       setSetupData(null);
       resetVerifyForm();
       await fetchMFAStatus();
     } catch {
-      setErrorMessage(t('mfa.enableError'));
+      const newCount = mfaFailCount + 1;
+      setMfaFailCount(newCount);
+      if (newCount >= 5) {
+        const until = Date.now() + 30000;
+        setMfaCooldownUntil(until);
+        setErrorMessage(t('mfa.tooManyAttempts'));
+        cooldownTimerRef.current = setTimeout(() => { setMfaCooldownUntil(null); setMfaFailCount(0); }, 30000);
+      } else {
+        setErrorMessage(t('mfa.enableError'));
+      }
     } finally {
       setIsVerifying(false);
     }
   };
 
   const onDisableSubmit = async (data: DisableFormData) => {
+    // Client-side cooldown after repeated failures
+    if (mfaCooldownUntil && Date.now() < mfaCooldownUntil) {
+      const secs = Math.ceil((mfaCooldownUntil - Date.now()) / 1000);
+      setErrorMessage(t('mfa.cooldownMessage', { seconds: secs }));
+      return;
+    }
     try {
       setIsDisabling(true);
       setErrorMessage(null);
       
       await mfaService.disable(data.code, data.password);
       
+      setMfaFailCount(0);
       setSuccessMessage(t('mfa.disableSuccess'));
       setShowDisableForm(false);
       resetDisableForm();
       await fetchMFAStatus();
     } catch {
-      setErrorMessage(t('mfa.disableError'));
+      const newCount = mfaFailCount + 1;
+      setMfaFailCount(newCount);
+      if (newCount >= 5) {
+        const until = Date.now() + 30000;
+        setMfaCooldownUntil(until);
+        setErrorMessage(t('mfa.tooManyAttempts'));
+        cooldownTimerRef.current = setTimeout(() => { setMfaCooldownUntil(null); setMfaFailCount(0); }, 30000);
+      } else {
+        setErrorMessage(t('mfa.disableError'));
+      }
     } finally {
       setIsDisabling(false);
     }
@@ -140,6 +210,15 @@ export default function MFASettingsPage() {
         setCopiedSecret(true);
         setTimeout(() => setCopiedSecret(false), 2000);
       }
+      // Auto-clear clipboard after 60 seconds (defense-in-depth for TOTP secrets)
+      clearTimeout(clipboardTimerRef.current);
+      clipboardTimerRef.current = setTimeout(async () => {
+        try {
+          await navigator.clipboard.writeText('');
+        } catch {
+          // Clipboard API may not allow write without user gesture — ignore
+        }
+      }, 60000);
     } catch {
       // Clipboard write failed — silently ignore
     }
@@ -283,7 +362,7 @@ export default function MFASettingsPage() {
             </p>
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
-                {setupData.qr_code.startsWith('data:image/') ? (
+                {isValidQrCodeUri(setupData.qr_code) ? (
                 <img 
                   src={setupData.qr_code}
                   alt={t('mfa.qrCodeAlt')}
@@ -301,8 +380,19 @@ export default function MFASettingsPage() {
                 </p>
                 <div className="flex items-center space-x-2">
                   <code className="flex-1 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono break-all text-slate-900 dark:text-white">
-                    {setupData.secret}
+                    {showSecret ? setupData.secret : '•'.repeat(32)}
                   </code>
+                  <button
+                    onClick={() => setShowSecret(!showSecret)}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                    title={showSecret ? t('mfa.hideSecret') : t('mfa.showSecret')}
+                  >
+                    {showSecret ? (
+                      <EyeOff className="w-5 h-5 text-slate-400" />
+                    ) : (
+                      <Eye className="w-5 h-5 text-slate-400" />
+                    )}
+                  </button>
                   <button
                     onClick={() => copyToClipboard(setupData.secret)}
                     className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
@@ -422,6 +512,8 @@ export default function MFASettingsPage() {
                   pattern="[0-9]*"
                   maxLength={6}
                   placeholder="000000"
+                  autoComplete="one-time-code"
+                  spellCheck={false}
                   className="input max-w-xs text-center text-2xl tracking-widest font-mono"
                   {...registerVerify('code', { 
                     required: t('mfa.codeRequired'),
@@ -461,7 +553,11 @@ export default function MFASettingsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSetupData(null)}
+                  onClick={() => {
+                    setSetupData(null);
+                    setShowSecret(false);
+                    setShowBackupCodes(false);
+                  }}
                   className="btn-secondary"
                 >
                   {t('common.cancel')}
@@ -502,6 +598,8 @@ export default function MFASettingsPage() {
                   pattern="[0-9]*"
                   maxLength={6}
                   placeholder="000000"
+                  autoComplete="one-time-code"
+                  spellCheck={false}
                   className="input max-w-xs text-center tracking-widest font-mono"
                   {...registerDisable('code', { 
                     required: t('mfa.codeRequired'),
@@ -522,6 +620,8 @@ export default function MFASettingsPage() {
                 <input
                   type="password"
                   autoComplete="current-password"
+                  spellCheck={false}
+                  maxLength={128}
                   className="input max-w-xs"
                   {...registerDisable('password', { required: t('mfa.passwordRequired') })}
                 />

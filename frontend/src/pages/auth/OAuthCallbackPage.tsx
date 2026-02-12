@@ -28,6 +28,9 @@ export default function OAuthCallbackPage() {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     const handleCallback = async () => {
+      // Clean the OAuth code/state from the URL immediately
+      window.history.replaceState({}, '', '/oauth/callback');
+
       // Get params from URL
       const code = searchParams.get('code');
       const state = searchParams.get('state');
@@ -46,6 +49,17 @@ export default function OAuthCallbackPage() {
         setMessage(t('oauth.invalidCallback'));
         return;
       }
+
+      // Verify state against what we stored in sessionStorage (CSRF protection)
+      // Fail-closed: reject if no stored state or if it doesn't match
+      const storedState = sessionStorage.getItem('oauth_state');
+      if (!storedState || storedState !== state) {
+        setStatus('error');
+        setMessage(t('oauth.invalidCallback'));
+        return;
+      }
+      // Clean up stored state after verification
+      sessionStorage.removeItem('oauth_state');
 
       try {
         // Extract provider from state (format: provider_randomstring)
@@ -137,16 +151,10 @@ export default function OAuthCallbackPage() {
         {status === 'error' && (
           <div className="space-y-3">
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/login', { replace: true })}
               className="btn-primary w-full"
             >
               {t('oauth.backToLogin')}
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="btn-secondary w-full"
-            >
-              {t('oauth.tryAgain')}
             </button>
           </div>
         )}

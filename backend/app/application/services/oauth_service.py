@@ -482,7 +482,14 @@ class OAuthService:
         return f"{base_url}/api/v1/auth/oauth/{provider.value}/callback"
 
     async def _store_oauth_state(self, state: str, data: OAuthState) -> None:
-        """Store OAuth state in cache."""
+        """Store OAuth state in cache.
+
+        Raises ``HTTPException(503)`` if the cache is unavailable so that
+        the caller receives an immediate error instead of a confusing
+        failure on the callback leg.
+        """
+        from fastapi import HTTPException, status as _status
+
         cache_key = f"oauth_state:{state}"
         cache_data = {
             "state": data.state,
@@ -497,11 +504,19 @@ class OAuthService:
             else None,
         }
 
-        await self._cache.set(
+        stored = await self._cache.set(
             cache_key,
             cache_data,
             ttl=self.STATE_EXPIRATION_SECONDS,
         )
+        if stored is False:
+            raise HTTPException(
+                status_code=_status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={
+                    "code": "CACHE_UNAVAILABLE",
+                    "message": "Unable to initiate OAuth flow. Please try again later.",
+                },
+            )
 
     async def _get_oauth_state(self, state: str) -> OAuthState | None:
         """Get OAuth state from cache."""
@@ -755,10 +770,10 @@ class OAuthService:
 
         self._session.add(model)
         try:
-            await self._session.flush()
+            async with self._session.begin_nested():
+                await self._session.flush()
         except Exception:
             # Race condition: concurrent request may have created the user
-            await self._session.rollback()
             existing = await self._get_user_by_email(user_info.email, tenant_id)
             if existing:
                 return existing

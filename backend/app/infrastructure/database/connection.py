@@ -28,6 +28,14 @@ class Base(DeclarativeBase):
 
 
 
+# Build connect_args with optional SSL
+_connect_args: dict = {}
+if settings.DB_SSL_REQUIRED:
+    import ssl as _ssl
+
+    _ssl_ctx = _ssl.create_default_context()
+    _connect_args["ssl"] = _ssl_ctx
+
 # Create async engine
 engine = create_async_engine(
     str(settings.DATABASE_URL),
@@ -37,6 +45,7 @@ engine = create_async_engine(
     pool_pre_ping=True,  # Verify connections before use
     pool_recycle=settings.DB_POOL_RECYCLE,
     echo=settings.DB_ECHO,  # Log SQL queries (separate from DEBUG)
+    connect_args=_connect_args,
 )
 
 # Session factory

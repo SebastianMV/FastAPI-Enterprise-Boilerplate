@@ -188,6 +188,12 @@ async def get_recent_logins(
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
 ) -> AuditLogListResponse:
     """Get recent login attempts."""
+    if not tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "NO_TENANT", "message": "Tenant context required"},
+        )
+
     logs = await repo.list_recent_logins(
         tenant_id=tenant_id,
         limit=limit,
@@ -218,6 +224,12 @@ async def get_resource_history(
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
 ) -> AuditLogListResponse:
     """Get audit log history for a specific resource."""
+    if not tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "NO_TENANT", "message": "Tenant context required"},
+        )
+
     try:
         resource_type_enum = AuditResourceType(resource_type)
     except ValueError:
@@ -266,12 +278,14 @@ async def get_audit_log(
             detail={"code": "NOT_FOUND", "message": "Audit log not found"},
         )
 
-    # Tenant isolation: ensure log belongs to the current tenant
-    if tenant_id and log.tenant_id and log.tenant_id != tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT_FOUND", "message": "Audit log not found"},
-        )
+    # Tenant isolation: ensure log belongs to the current tenant.
+    # When tenant_id is set: reject entries from other tenants or entries with no tenant.
+    if tenant_id:
+        if log.tenant_id != tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "NOT_FOUND", "message": "Audit log not found"},
+            )
 
     return _to_response(log)
 

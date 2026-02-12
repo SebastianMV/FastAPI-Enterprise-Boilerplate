@@ -77,7 +77,9 @@ class LocalStorageAdapter(StoragePort):
         self._base_path.mkdir(parents=True, exist_ok=True)
 
         self._base_url = base_url or "/files"
-        self._secret_key = secret_key or settings.JWT_SECRET_KEY
+        self._secret_key = secret_key or hashlib.sha256(
+            f"storage-signing:{settings.JWT_SECRET_KEY}".encode()
+        ).hexdigest()
 
     @property
     def backend_name(self) -> str:

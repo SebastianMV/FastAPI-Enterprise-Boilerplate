@@ -124,12 +124,12 @@ class UserSessionModel(Base):
     # Relationships
     user: Mapped["UserModel"] = relationship(
         "UserModel",
-        lazy="selectin",
+        lazy="select",
     )
 
     tenant: Mapped["TenantModel"] = relationship(
         "TenantModel",
-        lazy="selectin",
+        lazy="select",
     )
 
     def __repr__(self) -> str:

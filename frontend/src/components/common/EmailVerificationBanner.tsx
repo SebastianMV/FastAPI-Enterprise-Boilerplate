@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
@@ -14,12 +14,40 @@ export default function EmailVerificationBanner() {
   const user = useAuthStore((state) => state.user);
   const [dismissed, setDismissed] = useState(false);
   const [sent, setSent] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup cooldown timer on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+        cooldownTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const startCooldown = useCallback(() => {
+    const COOLDOWN_SECONDS = 60;
+    setCooldownRemaining(COOLDOWN_SECONDS);
+    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    cooldownTimerRef.current = setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
   // Resend verification mutation
   const resendMutation = useMutation({
     mutationFn: emailVerificationService.sendVerification,
     onSuccess: () => {
       setSent(true);
+      startCooldown();
     },
   });
 
@@ -50,7 +78,7 @@ export default function EmailVerificationBanner() {
             ) : (
               <button
                 onClick={() => resendMutation.mutate()}
-                disabled={resendMutation.isPending}
+                disabled={resendMutation.isPending || cooldownRemaining > 0}
                 className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/40 hover:bg-yellow-200 dark:hover:bg-yellow-900/60 rounded-md transition-colors disabled:opacity-50"
               >
                 {resendMutation.isPending ? (

@@ -92,7 +92,7 @@ class MemoryWebSocketManager(WebSocketPort):
         user_id: UUID,
         tenant_id: UUID | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> str:
+    ) -> str | None:
         """Register a new WebSocket connection."""
         connection_id = str(uuid4())
 
@@ -110,14 +110,14 @@ class MemoryWebSocketManager(WebSocketPort):
             if len(self._connections) >= self.MAX_TOTAL_CONNECTIONS:
                 logger.warning("WebSocket global connection limit reached (%s)", self.MAX_TOTAL_CONNECTIONS)
                 await websocket.close(code=1013)  # Try Again Later
-                return ""
+                return None
 
             # Enforce per-user connection limit
             user_conns = self._user_connections.get(user_id, set())
             if len(user_conns) >= self.MAX_CONNECTIONS_PER_USER:
                 logger.warning("WebSocket per-user connection limit reached for user")
                 await websocket.close(code=1008)  # Policy Violation
-                return ""
+                return None
 
             # Store connection
             self._connections[connection_id] = (websocket, connection_info)

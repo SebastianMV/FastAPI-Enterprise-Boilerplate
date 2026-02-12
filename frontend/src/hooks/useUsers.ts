@@ -1,13 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersService, type User } from '@/services/api';
+import { clampPaginationParams } from '@/utils/security';
 
 /**
  * Hook for fetching users list.
  */
 export function useUsers(params?: { skip?: number; limit?: number }) {
+  const safeParams = clampPaginationParams(params);
   return useQuery({
-    queryKey: ['users', params],
-    queryFn: () => usersService.list(params),
+    queryKey: ['users', safeParams],
+    queryFn: () => usersService.list(safeParams),
   });
 }
 

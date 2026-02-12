@@ -1,4 +1,5 @@
 import api from './api';
+import { isValidOAuthUrl } from '@/utils/security';
 
 // OAuth Types
 export interface OAuthProvider {
@@ -40,11 +41,14 @@ export const oauthService = {
   },
 
   redirectToProvider: async (provider: string): Promise<void> => {
-    const { authorization_url } = await oauthService.getAuthorizationUrl(provider);
-    // Validate URL is HTTPS to prevent open redirect attacks
-    if (!authorization_url || !authorization_url.startsWith('https://')) {
+    const { authorization_url, state } = await oauthService.getAuthorizationUrl(provider);
+    // Validate URL is HTTPS and points to a trusted OAuth provider domain
+    if (!authorization_url || !isValidOAuthUrl(authorization_url)) {
       throw new Error('Invalid authorization URL');
     }
+    // Store state in sessionStorage for CSRF verification on callback
+    sessionStorage.setItem('oauth_state', state);
+    sessionStorage.setItem('oauth_flow', 'login');
     window.location.href = authorization_url;
   },
 
@@ -62,11 +66,14 @@ export const oauthService = {
       `/auth/oauth/${encodeURIComponent(provider)}/authorize`,
       { params: { link: true } }
     );
-    const { authorization_url } = response.data;
-    // Validate URL is HTTPS to prevent open redirect attacks
-    if (!authorization_url || !authorization_url.startsWith('https://')) {
+    const { authorization_url, state } = response.data;
+    // Validate URL is HTTPS and points to a trusted OAuth provider domain
+    if (!authorization_url || !isValidOAuthUrl(authorization_url)) {
       throw new Error('Invalid authorization URL');
     }
+    // Store state in sessionStorage for CSRF verification on callback
+    sessionStorage.setItem('oauth_state', state);
+    sessionStorage.setItem('oauth_flow', 'link');
     window.location.href = authorization_url;
   },
 };

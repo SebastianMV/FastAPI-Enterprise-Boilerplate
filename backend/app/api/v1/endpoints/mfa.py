@@ -89,24 +89,161 @@ def _dict_to_mfa_config(data: dict[str, Any]) -> MFAConfig:
     return config
 
 
-async def get_mfa_config(user_id: str) -> MFAConfig | None:
-    """Get MFA config for user from Redis."""
+async def get_mfa_config(
+    user_id: str,
+    session: Any | None = None,
+) -> MFAConfig | None:
+    """Get MFA config for user.
+
+    Uses Redis as a cache layer with DB (``mfa_configs`` table) as the
+    authoritative source of truth.  If the cache is empty the config is
+    loaded from the database and repopulated into Redis.
+    """
+    from app.infrastructure.observability.logging import get_logger as _get_logger
+
+    _logger = _get_logger(__name__)
+
+    # 1. Try Redis cache first
     cache = await _get_redis()
-    key = f"mfa:config:{user_id}"
-    data = await cache.get(key)
-    if not data:
+    cache_key = f"mfa:config:{user_id}"
+    data = await cache.get(cache_key)
+    if data:
+        if isinstance(data, str):
+            data = json.loads(data)
+        return _dict_to_mfa_config(data)
+
+    # 2. Cache miss — load from database
+    try:
+        from uuid import UUID as _UUID
+
+        from app.infrastructure.database.models.mfa import MFAConfigModel
+
+        _own_session = False
+        if session is None:
+            from app.infrastructure.database.connection import async_session_maker
+
+            session = async_session_maker()
+            _own_session = True
+
+        try:
+            from sqlalchemy import select
+
+            stmt = select(MFAConfigModel).where(
+                MFAConfigModel.user_id == _UUID(user_id)
+            )
+            result = await session.execute(stmt)
+            model = result.scalars().first()
+
+            if model is None:
+                return None
+
+            from app.infrastructure.auth.encryption import decrypt_value
+
+            config = MFAConfig(
+                id=model.id,
+                user_id=model.user_id,
+                secret=decrypt_value(model.secret),
+                is_enabled=model.is_enabled,
+                backup_codes=model.backup_codes or [],
+                created_at=model.created_at,
+                enabled_at=model.enabled_at,
+                last_used_at=model.last_used_at,
+            )
+
+            # Re-populate cache
+            cache_data = _mfa_config_to_dict(config)
+            await cache.set(cache_key, cache_data)
+
+            return config
+        finally:
+            if _own_session:
+                await session.close()
+    except Exception:
+        _logger.warning(
+            "Failed to load MFA config from DB for user %s",
+            user_id,
+            exc_info=True,
+        )
         return None
-    if isinstance(data, str):
-        data = json.loads(data)
-    return _dict_to_mfa_config(data)
 
 
-async def save_mfa_config(config: MFAConfig) -> None:
-    """Save MFA config to Redis (no TTL — MFA persists indefinitely)."""
-    cache = await _get_redis()
-    key = f"mfa:config:{config.user_id}"
-    data = _mfa_config_to_dict(config)
-    await cache.set(key, data)
+async def save_mfa_config(
+    config: MFAConfig,
+    session: Any | None = None,
+) -> None:
+    """Persist MFA config to the database and update the Redis cache.
+
+    The database is the source of truth; Redis is updated afterwards.
+    """
+    from app.infrastructure.observability.logging import get_logger as _get_logger
+
+    _logger = _get_logger(__name__)
+
+    from app.infrastructure.auth.encryption import encrypt_value
+    from app.infrastructure.database.models.mfa import MFAConfigModel
+
+    _own_session = False
+    if session is None:
+        from app.infrastructure.database.connection import async_session_maker
+
+        session = async_session_maker()
+        _own_session = True
+
+    try:
+        from sqlalchemy import select
+
+        stmt = select(MFAConfigModel).where(
+            MFAConfigModel.user_id == config.user_id
+        )
+        result = await session.execute(stmt)
+        model = result.scalars().first()
+
+        encrypted_secret = encrypt_value(config.secret)
+
+        if model is None:
+            model = MFAConfigModel(
+                id=config.id,
+                user_id=config.user_id,
+                secret=encrypted_secret,
+                is_enabled=config.is_enabled,
+                backup_codes=config.backup_codes,
+                created_at=config.created_at,
+                enabled_at=config.enabled_at,
+                last_used_at=config.last_used_at,
+            )
+            session.add(model)
+        else:
+            model.secret = encrypted_secret
+            model.is_enabled = config.is_enabled
+            model.backup_codes = config.backup_codes
+            model.enabled_at = config.enabled_at
+            model.last_used_at = config.last_used_at
+
+        await session.commit()
+        _logger.info("MFA config persisted to DB for user %s", config.user_id)
+    except Exception:
+        await session.rollback()
+        _logger.error(
+            "Failed to persist MFA config to DB for user %s",
+            config.user_id,
+            exc_info=True,
+        )
+        raise
+    finally:
+        if _own_session:
+            await session.close()
+
+    # Update Redis cache
+    try:
+        cache = await _get_redis()
+        cache_key = f"mfa:config:{config.user_id}"
+        cache_data = _mfa_config_to_dict(config)
+        await cache.set(cache_key, cache_data)
+    except Exception:
+        _logger.warning(
+            "Failed to update MFA Redis cache for user %s (DB is authoritative)",
+            config.user_id,
+        )
 
 
 @router.get(

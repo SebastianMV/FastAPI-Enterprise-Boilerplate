@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Install dependencies only when package files change
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 
 # Stage 2: Builder

@@ -35,6 +35,9 @@ class NotificationService:
     Service for managing notifications.
 
     Handles notification creation, delivery, and lifecycle management.
+
+    # TODO: Extract NotificationRepository to comply with hexagonal architecture.
+    # Currently uses direct SQLAlchemy queries for pragmatic reasons.
     """
 
     def __init__(

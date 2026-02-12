@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
+import { EMAIL_PATTERN } from '@/utils/validation';
 import { AlertCircle, Loader2, Shield } from 'lucide-react';
 import SocialLoginButtons from '@/components/auth/SocialLoginButtons';
 
@@ -22,6 +23,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [requiresMFA, setRequiresMFA] = useState(false);
 
+  // Persist MFA cooldown in sessionStorage to prevent bypass via component remount
+  const MFA_COOLDOWN_KEY = 'mfa_login_cooldown';
+  const MFA_FAIL_KEY = 'mfa_login_fails';
+  const storedCooldown = sessionStorage.getItem(MFA_COOLDOWN_KEY);
+  const mfaFailCountRef = useRef(Number(sessionStorage.getItem(MFA_FAIL_KEY) || '0'));
+  const [mfaCooldownUntil, setMfaCooldownUntil] = useState<number | null>(
+    storedCooldown && Number(storedCooldown) > Date.now() ? Number(storedCooldown) : null
+  );
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Cleanup timer on unmount
+  useEffect(() => () => clearTimeout(cooldownTimerRef.current), []);
+
   const {
     register,
     handleSubmit,
@@ -30,10 +44,19 @@ export default function LoginPage() {
   } = useForm<LoginFormData>();
 
   const onSubmit = async (data: LoginFormData) => {
+    // Client-side cooldown for MFA brute-force protection
+    if (requiresMFA && mfaCooldownUntil && Date.now() < mfaCooldownUntil) {
+      const secs = Math.ceil((mfaCooldownUntil - Date.now()) / 1000);
+      setError('mfa_code', { message: t('auth.mfa.cooldown', { seconds: secs }) });
+      return;
+    }
     try {
       clearError();
       await login(data);
-      navigate('/dashboard');
+      mfaFailCountRef.current = 0;
+      sessionStorage.removeItem(MFA_FAIL_KEY);
+      sessionStorage.removeItem(MFA_COOLDOWN_KEY);
+      navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       // Check if MFA is required
       if (err && typeof err === 'object' && 'response' in err) {
@@ -43,6 +66,21 @@ export default function LoginPage() {
           setError('root', {
             message: t('auth.mfa.enterCode'),
           });
+        } else if (requiresMFA) {
+          // MFA code was wrong — track failures for cooldown
+          mfaFailCountRef.current += 1;
+          sessionStorage.setItem(MFA_FAIL_KEY, String(mfaFailCountRef.current));
+          if (mfaFailCountRef.current >= 5) {
+            const until = Date.now() + 30000;
+            setMfaCooldownUntil(until);
+            sessionStorage.setItem(MFA_COOLDOWN_KEY, String(until));
+            cooldownTimerRef.current = setTimeout(() => {
+              setMfaCooldownUntil(null);
+              mfaFailCountRef.current = 0;
+              sessionStorage.removeItem(MFA_COOLDOWN_KEY);
+              sessionStorage.removeItem(MFA_FAIL_KEY);
+            }, 30000);
+          }
         }
       }
       // Error is handled by the store
@@ -79,7 +117,6 @@ export default function LoginPage() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-5 transition-transform duration-200 group-hover:translate-y-0"
-            noValidate
           >
             {/* Email */}
             <div className="transition-colors duration-200">
@@ -94,12 +131,14 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 autoFocus
+                spellCheck={false}
                 className="input shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                 placeholder={t('auth.enterEmail')}
+                maxLength={254}
                 {...register('email', {
                   required: t('validation.required'),
                   pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    value: EMAIL_PATTERN,
                     message: t('validation.emailInvalid'),
                   },
                 })}
@@ -122,8 +161,10 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
+                  spellCheck={false}
                   className="input pr-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                   placeholder="••••••••"
+                  maxLength={128}
                   {...register('password', {
                     required: t('validation.required'),
                     minLength: {
@@ -136,6 +177,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 </button>
@@ -170,6 +212,8 @@ export default function LoginPage() {
                   pattern="[0-9]*"
                   maxLength={6}
                   autoFocus
+                  autoComplete="one-time-code"
+                  spellCheck={false}
                   className="input text-center text-2xl tracking-widest font-mono shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                   placeholder="000000"
                   {...register('mfa_code', {

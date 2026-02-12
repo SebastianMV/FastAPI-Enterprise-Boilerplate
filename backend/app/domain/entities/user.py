@@ -9,13 +9,13 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from app.domain.entities.base import SoftDeletableEntity
+from app.domain.entities.base import TenantSoftDeletableEntity
 from app.domain.value_objects.email import Email
 from app.domain.value_objects.password import Password
 
 
 @dataclass
-class User(SoftDeletableEntity):
+class User(TenantSoftDeletableEntity):
     """
     User domain entity.
 

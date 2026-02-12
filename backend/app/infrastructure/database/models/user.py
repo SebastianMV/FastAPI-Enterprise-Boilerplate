@@ -50,9 +50,11 @@ class UserModel(Base):
     # Authentication
     email: Mapped[str] = mapped_column(
         String(255),
-        unique=True,
         nullable=False,
         index=True,
+        # NOTE: Global unique constraint intentionally removed.
+        # Multi-tenant uniqueness is enforced by the composite index
+        # ix_users_tenant_email (tenant_id, email) in migration 001.
     )
     password_hash: Mapped[str] = mapped_column(
         String(255),
@@ -131,6 +133,7 @@ class UserModel(Base):
     email_verification_token: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
+        index=True,
     )
     email_verification_sent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
@@ -166,14 +169,14 @@ class UserModel(Base):
     tenant: Mapped["TenantModel"] = relationship(
         "TenantModel",
         back_populates="users",
-        lazy="selectin",
+        lazy="raise",
     )
 
     oauth_connections: Mapped[list["OAuthConnectionModel"]] = relationship(
         "OAuthConnectionModel",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="raise",
     )
 
     def __repr__(self) -> str:

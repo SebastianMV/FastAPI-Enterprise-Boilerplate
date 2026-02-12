@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { validateTheme } from '../utils/security';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -8,7 +9,7 @@ type Theme = 'light' | 'dark' | 'system';
 export function useDarkMode() {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('theme') as Theme) || 'system';
+      return validateTheme(localStorage.getItem('theme'));
     }
     return 'system';
   });

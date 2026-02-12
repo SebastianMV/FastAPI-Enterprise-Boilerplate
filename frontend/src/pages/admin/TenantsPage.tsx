@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { tenantsService, type Tenant, type CreateTenantData, type UpdateTenantData } from '@/services/api';
+import { sanitizeCssColor, maskEmail, sanitizeText } from '@/utils/security';
 import { useAuthStore } from '@/stores/authStore';
 import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
 import {
@@ -335,6 +336,8 @@ export default function TenantsPage() {
               placeholder={t('tenants.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              maxLength={200}
+              autoComplete="off"
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -417,13 +420,13 @@ export default function TenantsPage() {
                 {tenant.email && (
                   <div className="flex items-center text-gray-600 dark:text-gray-300">
                     <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                    {tenant.email}
+                    {maskEmail(tenant.email)}
                   </div>
                 )}
                 {tenant.domain && (
                   <div className="flex items-center text-gray-600 dark:text-gray-300">
                     <Globe className="h-4 w-4 mr-2 text-gray-400" />
-                    {tenant.domain}
+                    {sanitizeText(tenant.domain)}
                   </div>
                 )}
                 <div className="flex items-center text-gray-500 dark:text-gray-400">
@@ -480,7 +483,8 @@ export default function TenantsPage() {
 
                 <button
                   onClick={() => toggleTenantStatus(tenant)}
-                  className={`text-xs px-2 py-1 rounded ${
+                  disabled={activateMutation.isPending || deactivateMutation.isPending}
+                  className={`text-xs px-2 py-1 rounded disabled:opacity-50 ${
                     tenant.is_active
                       ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
                       : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
@@ -524,6 +528,7 @@ export default function TenantsPage() {
                 {...registerCreate('name', { required: t('tenants.nameRequired') })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 placeholder={t('tenants.namePlaceholder')}
+                maxLength={200}
               />
               {createErrors.name && (
                 <p className="mt-1 text-sm text-red-500">{createErrors.name.message}</p>
@@ -545,6 +550,7 @@ export default function TenantsPage() {
                 })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 placeholder={t('tenants.slugPlaceholder')}
+                maxLength={100}
               />
               {createErrors.slug && (
                 <p className="mt-1 text-sm text-red-500">{createErrors.slug.message}</p>
@@ -575,6 +581,7 @@ export default function TenantsPage() {
                 {...registerCreate('email')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 placeholder={t('tenants.emailPlaceholder')}
+                maxLength={254}
               />
             </div>
 
@@ -587,6 +594,7 @@ export default function TenantsPage() {
                 {...registerCreate('domain')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 placeholder={t('tenants.domainPlaceholder')}
+                maxLength={253}
               />
             </div>
 
@@ -599,6 +607,7 @@ export default function TenantsPage() {
                 {...registerCreate('timezone')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 placeholder={t('tenants.timezonePlaceholder')}
+                maxLength={50}
               />
             </div>
 
@@ -659,6 +668,7 @@ export default function TenantsPage() {
                 type="text"
                 {...registerEdit('name', { required: t('tenants.nameRequired') })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                maxLength={200}
               />
             </div>
 
@@ -668,8 +678,14 @@ export default function TenantsPage() {
               </label>
               <input
                 type="text"
-                {...registerEdit('slug')}
+                {...registerEdit('slug', {
+                  pattern: {
+                    value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                    message: t('tenants.slugPattern'),
+                  },
+                })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                maxLength={100}
               />
             </div>
 
@@ -696,6 +712,7 @@ export default function TenantsPage() {
                 type="email"
                 {...registerEdit('email')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                maxLength={254}
               />
             </div>
 
@@ -707,6 +724,7 @@ export default function TenantsPage() {
                 type="text"
                 {...registerEdit('domain')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                maxLength={253}
               />
             </div>
           </div>
@@ -805,9 +823,9 @@ export default function TenantsPage() {
                 <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                   <span
                     className="w-4 h-4 rounded"
-                    style={{ backgroundColor: selectedTenant.settings.primary_color }}
+                    style={{ backgroundColor: sanitizeCssColor(selectedTenant.settings.primary_color) }}
                   />
-                  {selectedTenant.settings.primary_color}
+                  {sanitizeCssColor(selectedTenant.settings.primary_color)}
                 </p>
               </div>
             </div>

@@ -27,6 +27,34 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
+# Per-index allowed fields for filters, sort, suggest, and highlight.
+# Fields not in this set are rejected to prevent probing of sensitive columns.
+_ALLOWED_FIELDS: dict[str, set[str]] = {
+    "users": {
+        "email", "first_name", "last_name", "is_active",
+        "is_superuser", "created_at", "updated_at", "tenant_id",
+    },
+    "audit_logs": {
+        "action", "resource_type", "resource_id", "reason",
+        "actor_id", "actor_ip", "created_at", "tenant_id",
+    },
+}
+
+
+def _validate_field_name(field: str, index: str, context: str = "filter") -> None:
+    """Validate that *field* is in the allowed set for *index*."""
+    allowed = _ALLOWED_FIELDS.get(index.lower())
+    if allowed is None:
+        return  # Unknown index — let the index validator handle it
+    if field not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_FIELD",
+                "message": f"Field '{field}' is not allowed for {context} on index '{index}'",
+            },
+        )
+
 
 def _validate_search_index(index_name: str) -> SearchIndex:
     """Validate and convert a search index name, raising HTTP 400 on invalid input."""
@@ -148,6 +176,14 @@ async def search(
     """
     # Validate index
     search_index = _validate_search_index(request.index)
+
+    # Validate filter/sort fields against allowlist (B6)
+    for f in request.filters:
+        _validate_field_name(f.field, request.index, "filter")
+    for s in request.sort:
+        _validate_field_name(s.field, request.index, "sort")
+    for hf in request.highlight_fields:
+        _validate_field_name(hf, request.index, "highlight")
 
     # Build search query
     filters = [
@@ -292,6 +328,9 @@ async def suggest(
     Get search suggestions for autocomplete.
     """
     search_index = _validate_search_index(index)
+
+    # Validate suggest field against allowlist (B6)
+    _validate_field_name(field, index, "suggest")
 
     try:
         search_service = await get_search_backend(session=session)

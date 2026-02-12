@@ -64,12 +64,42 @@ class TenantEntity(AuditableEntity):
 
 
 @dataclass
-class SoftDeletableEntity(TenantEntity):
+class SoftDeletableEntity(AuditableEntity):
     """
     Entity with soft delete support.
 
     Instead of physical deletion, entities are marked as deleted
     and filtered out in queries.
+
+    Note: Does NOT require tenant scoping. Use ``TenantSoftDeletableEntity``
+    when both tenant isolation and soft delete are needed.
+    """
+
+    is_deleted: bool = False
+    deleted_at: datetime | None = None
+    deleted_by: UUID | None = None
+
+    def soft_delete(self, by_user: UUID | None = None) -> None:
+        """Mark entity as deleted without physical removal."""
+        self.is_deleted = True
+        self.deleted_at = datetime.now(UTC)
+        if by_user:
+            self.deleted_by = by_user
+
+    def restore(self) -> None:
+        """Restore a soft-deleted entity."""
+        self.is_deleted = False
+        self.deleted_at = None
+        self.deleted_by = None
+
+
+@dataclass
+class TenantSoftDeletableEntity(TenantEntity):
+    """
+    Entity with both tenant scoping and soft delete.
+
+    Use this when an entity needs multi-tenant isolation AND
+    soft-delete behaviour.
     """
 
     is_deleted: bool = False

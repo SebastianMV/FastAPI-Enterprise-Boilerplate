@@ -104,6 +104,7 @@ def create_access_token(
     payload = {
         "sub": str(user_id),
         "type": "access",
+        "iss": settings.APP_NAME,
         "aud": settings.APP_NAME,
         "jti": jti,  # Token ID for session identification
         "iat": now,
@@ -146,6 +147,7 @@ def create_refresh_token(
     payload = {
         "sub": str(user_id),
         "type": "refresh",
+        "iss": settings.APP_NAME,
         "aud": settings.APP_NAME,
         "jti": jti,  # Token ID for session identification
         "iat": now,
@@ -181,6 +183,7 @@ def decode_token(token: str) -> dict[str, Any]:
             settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
             audience=settings.APP_NAME,
+            issuer=settings.APP_NAME,
         )
         return payload
 

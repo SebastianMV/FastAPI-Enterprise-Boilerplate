@@ -1,15 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import {
   dashboardService,
-  type DashboardStats,
-  type RecentActivity,
-  type SystemHealth,
   type StatItem,
 } from '@/services/api';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
+import { maskEmail, sanitizeText } from '@/utils/security';
 import {
   Users,
   Activity,
@@ -45,65 +44,42 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const queryClient = useQueryClient();
 
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [activity, setActivity] = useState<RecentActivity | null>(null);
-  const [health, setHealth] = useState<SystemHealth | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Prevent duplicate API calls
-  const isFetchingRef = useRef(false);
-  const hasFetchedRef = useRef(false);
+  // ── React Query: stats, activity, health ──
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+    isFetching: statsRefreshing,
+  } = useQuery({
+    queryKey: ['dashboard', 'stats'],
+    queryFn: () => dashboardService.getStats(),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
 
-  const fetchDashboardData = useCallback(async (showRefreshing = false) => {
-    // Prevent duplicate calls
-    if (isFetchingRef.current) {
-      return;
-    }
-    
-    isFetchingRef.current = true;
-    
-    try {
-      if (showRefreshing) {
-        setIsRefreshing(true);
-      }
-      setError(null);
+  const { data: activity } = useQuery({
+    queryKey: ['dashboard', 'activity'],
+    queryFn: () => dashboardService.getActivity(10),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
 
-      const [statsData, activityData, healthData] = await Promise.all([
-        dashboardService.getStats(),
-        dashboardService.getActivity(10),
-        dashboardService.getHealth(),
-      ]);
+  const { data: health } = useQuery({
+    queryKey: ['dashboard', 'health'],
+    queryFn: () => dashboardService.getHealth(),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
 
-      setStats(statsData);
-      setActivity(activityData);
-      setHealth(healthData);
-    } catch (err) {
-      // Don't log error details in production
-      setError(t('dashboard.failedToLoad'));
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-      isFetchingRef.current = false;
-    }
-  }, [t]);
+  const isLoading = statsLoading;
+  const isRefreshing = statsRefreshing && !statsLoading;
+  const error = statsError ? t('dashboard.failedToLoad') : null;
 
-  useEffect(() => {
-    // Only fetch once on mount
-    if (!hasFetchedRef.current) {
-      hasFetchedRef.current = true;
-      fetchDashboardData();
-    }
-
-    // Auto-refresh every 60 seconds (reduced from 30 to avoid rate limiting)
-    const interval = setInterval(() => {
-      fetchDashboardData(false);
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  }, [queryClient]);
 
   const getStatIcon = (name: string) => {
     switch (name.toLowerCase()) {
@@ -201,7 +177,7 @@ export default function DashboardPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-slate-700 dark:text-slate-300 mb-4">{error}</p>
           <button
-            onClick={() => fetchDashboardData()}
+            onClick={handleRefresh}
             className="btn-primary"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -225,7 +201,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <button
-          onClick={() => fetchDashboardData(true)}
+          onClick={handleRefresh}
           disabled={isRefreshing}
           className="btn-secondary"
         >
@@ -244,10 +220,10 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {STAT_NAME_I18N[stat.name] ? t(STAT_NAME_I18N[stat.name]) : stat.name}
+                    {STAT_NAME_I18N[stat.name] ? t(STAT_NAME_I18N[stat.name]) : sanitizeText(stat.name)}
                   </p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-                    {stat.value}
+                    {sanitizeText(String(stat.value))}
                   </p>
                 </div>
                 <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
@@ -273,7 +249,7 @@ export default function DashboardPage() {
                         : 'text-slate-500'
                   }`}
                 >
-                  {stat.change}
+                  {sanitizeText(String(stat.change))}
                 </span>
                 <span className="text-sm text-slate-500 dark:text-slate-400 ml-2">
                   {t('dashboard.vsLastMonth')}
@@ -373,11 +349,11 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-slate-700 dark:text-slate-300 truncate">
-                          {item.description}
+                          {sanitizeText(item.description)}
                         </p>
                         {item.user_email && (
                           <p className="text-xs text-slate-500 dark:text-slate-500 truncate">
-                            {item.user_email}
+                            {maskEmail(item.user_email)}
                           </p>
                         )}
                       </div>

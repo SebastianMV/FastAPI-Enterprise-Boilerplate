@@ -16,6 +16,8 @@ import {
   FileEdit
 } from 'lucide-react';
 import { searchService, type SearchResponse, type SearchRequest } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
+import { sanitizeText, sanitizeSearchQuery, maskEmail } from '@/utils/security';
 
 type SearchIndex = 'users' | 'documents' | 'messages' | 'posts' | 'audit_logs' | 'all';
 
@@ -32,10 +34,12 @@ export default function SearchPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
 
   const initialQuery = searchParams.get('q') || '';
   const initialIndex = (searchParams.get('index') || 'all') as SearchIndex;
-  const initialPage = parseInt(searchParams.get('page') || '1', 10);
+  const rawPage = parseInt(searchParams.get('page') || '1', 10);
+  const initialPage = Math.max(1, Math.min(1000, isNaN(rawPage) ? 1 : rawPage));
 
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResponse | null>(null);
@@ -58,15 +62,22 @@ export default function SearchPage() {
         return;
       }
 
+      // Sanitize query to prevent search-engine operator injection
+      const sanitized = sanitizeSearchQuery(query);
+      if (!sanitized) {
+        setResults(null);
+        return;
+      }
+
       setIsLoading(true);
       try {
         let response: SearchResponse;
         
         if (filters.index === 'all') {
-          response = await searchService.quickSearch(query, abortController.signal);
+          response = await searchService.quickSearch(sanitized, abortController.signal);
         } else {
           const request: SearchRequest = {
-            query,
+            query: sanitized,
             index: filters.index,
             page,
             page_size: 20,
@@ -80,17 +91,23 @@ export default function SearchPage() {
             
             switch (filters.dateRange) {
               case 'day':
-                startDate = new Date(now.setDate(now.getDate() - 1));
+                startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
                 break;
               case 'week':
-                startDate = new Date(now.setDate(now.getDate() - 7));
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
                 break;
-              case 'month':
-                startDate = new Date(now.setMonth(now.getMonth() - 1));
+              case 'month': {
+                const d = new Date(now);
+                d.setMonth(d.getMonth() - 1);
+                startDate = d;
                 break;
-              case 'year':
-                startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+              }
+              case 'year': {
+                const d = new Date(now);
+                d.setFullYear(d.getFullYear() - 1);
+                startDate = d;
                 break;
+              }
             }
 
             request.filters = [
@@ -168,21 +185,21 @@ export default function SearchPage() {
 
   const getResultTitle = (source: Record<string, unknown>): string => {
     if (source.first_name && source.last_name) {
-      return `${source.first_name} ${source.last_name}`;
+      return sanitizeText(`${source.first_name} ${source.last_name}`);
     }
     if (source.action && source.resource_type) {
-      return t('search.actionOnResource', { action: source.action, resource: source.resource_type });
+      return t('search.actionOnResource', { action: sanitizeText(String(source.action)), resource: sanitizeText(String(source.resource_type)) });
     }
-    if (source.title) return String(source.title);
-    if (source.name) return String(source.name);
+    if (source.title) return sanitizeText(String(source.title));
+    if (source.name) return sanitizeText(String(source.name));
     return t('search.untitled');
   };
 
   const getResultDescription = (source: Record<string, unknown>): string => {
-    if (source.email) return String(source.email);
-    if (source.actor_email) return t('search.byActor', { email: source.actor_email });
-    if (source.description) return String(source.description);
-    if (source.content) return String(source.content).slice(0, 150) + '...';
+    if (source.email) return maskEmail(String(source.email));
+    if (source.actor_email) return t('search.byActor', { email: maskEmail(String(source.actor_email)) });
+    if (source.description) return sanitizeText(String(source.description));
+    if (source.content) return sanitizeText(String(source.content).slice(0, 150)) + '...';
     return '';
   };
 
@@ -203,7 +220,8 @@ export default function SearchPage() {
     { id: 'documents', label: t('search.indexes.documents'), icon: <FileText className="w-4 h-4" /> },
     { id: 'messages', label: t('search.indexes.messages'), icon: <MessageSquare className="w-4 h-4" /> },
     { id: 'posts', label: t('search.indexes.posts'), icon: <FileEdit className="w-4 h-4" /> },
-    { id: 'audit_logs', label: t('search.indexes.auditLogs'), icon: <Shield className="w-4 h-4" /> },
+    // Only show audit_logs tab to superusers
+    ...(user?.is_superuser ? [{ id: 'audit_logs' as SearchIndex, label: t('search.indexes.auditLogs'), icon: <Shield className="w-4 h-4" /> }] : []),
   ];
 
   return (
@@ -228,6 +246,7 @@ export default function SearchPage() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('search.searchPlaceholder')}
             className="input pl-10 w-full"
+            maxLength={500}
           />
         </div>
         <button
@@ -355,12 +374,12 @@ export default function SearchPage() {
                       <p className="text-slate-500 mt-1 line-clamp-2">
                         {getResultDescription(hit.source)}
                       </p>
-                      {/* Highlights */}
+                      {/* Highlights — sanitize server-returned fragments */}
                       {Object.keys(hit.highlights).length > 0 && (
                         <div className="mt-2 text-sm text-slate-600">
                           {Object.entries(hit.highlights).map(([field, fragments]) => (
                             <p key={field} className="italic">
-                              ...{fragments[0]}...
+                              ...{sanitizeText(fragments[0])}...
                             </p>
                           ))}
                         </div>

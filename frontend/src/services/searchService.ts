@@ -1,4 +1,5 @@
 import api from './api';
+import { sanitizeSearchQuery } from '@/utils/security';
 
 // Search Types
 export interface SearchFilter {
@@ -50,7 +51,10 @@ export interface SearchSuggestion {
 
 export const searchService = {
   search: async (request: SearchRequest, signal?: AbortSignal): Promise<SearchResponse> => {
-    const response = await api.post<SearchResponse>('/search', request, { signal });
+    const safePage = Math.max(1, Math.floor(Number(request.page) || 1));
+    const safePageSize = Math.min(100, Math.max(1, Math.floor(Number(request.page_size) || 20)));
+    const safeRequest = { ...request, query: sanitizeSearchQuery(request.query), page: safePage, page_size: safePageSize };
+    const response = await api.post<SearchResponse>('/search', safeRequest, { signal });
     return response.data;
   },
 
@@ -59,14 +63,14 @@ export const searchService = {
     index: string = 'users'
   ): Promise<string[]> => {
     const response = await api.get<SearchSuggestion>('/search/suggest', {
-      params: { query, index },
+      params: { query: sanitizeSearchQuery(query), index },
     });
     return response.data.suggestions;
   },
 
   quickSearch: async (query: string, signal?: AbortSignal): Promise<SearchResponse> => {
     const response = await api.get<SearchResponse>('/search/quick', {
-      params: { q: query },
+      params: { q: sanitizeSearchQuery(query) },
       signal,
     });
     return response.data;

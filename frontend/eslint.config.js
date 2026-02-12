@@ -37,7 +37,7 @@ export default tseslint.config(
 
       // Prevent console.log/error leaking to production (Audit 11, #346-350)
       // console.warn is allowed for dev-facing deprecation notices
-      'no-console': ['warn', { allow: ['warn'] }],
+      'no-console': ['error', { allow: ['warn'] }],
 
       // Prevent eval() and similar (CWE-95)
       'no-eval': 'error',
@@ -46,6 +46,13 @@ export default tseslint.config(
 
       // Prevent script injection via innerHTML (CWE-79)
       'no-script-url': 'error',
+
+      // Prevent dangerouslySetInnerHTML usage (CWE-79)
+      // Uses no-restricted-syntax since eslint-plugin-react is not installed
+      'no-restricted-syntax': ['error', {
+        selector: 'JSXAttribute[name.name="dangerouslySetInnerHTML"]',
+        message: 'Do not use dangerouslySetInnerHTML. Use sanitizeText() from @/utils/security instead.',
+      }],
     },
   },
   // =========================================================================

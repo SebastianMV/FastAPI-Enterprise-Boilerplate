@@ -1,5 +1,16 @@
 import api from './api';
 
+/** Validates that a verification token has a plausible format (non-empty, bounded length) */
+function validateTokenFormat(token: string): void {
+  if (!token || typeof token !== 'string' || token.length < 10 || token.length > 512) {
+    throw new Error('Invalid verification token format');
+  }
+  // Only allow URL-safe characters (alphanumeric, hyphens, underscores, dots, tildes)
+  if (!/^[A-Za-z0-9._~-]+$/.test(token)) {
+    throw new Error('Invalid verification token format');
+  }
+}
+
 // Email Verification Types
 export interface VerificationStatus {
   email: string;
@@ -14,6 +25,7 @@ export const emailVerificationService = {
   },
 
   verifyEmail: async (token: string): Promise<{ message: string; success: boolean }> => {
+    validateTokenFormat(token);
     const response = await api.post<{ message: string; success: boolean }>('/auth/verify-email', { token });
     return response.data;
   },

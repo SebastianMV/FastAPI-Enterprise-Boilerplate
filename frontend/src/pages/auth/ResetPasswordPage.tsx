@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '@/services/api';
+import { PASSWORD_PATTERN } from '@/utils/validation';
 import { 
   Lock, 
   ArrowLeft, 
@@ -39,6 +40,13 @@ export default function ResetPasswordPage() {
   // Get token from URL params or query string
   const resetToken = token || searchParams.get('token');
 
+  // Clean the token from the URL immediately (prevent leakage via browser history)
+  useEffect(() => {
+    if (resetToken) {
+      window.history.replaceState({}, '', '/reset-password');
+    }
+  }, [resetToken]);
+
   const {
     register,
     handleSubmit,
@@ -53,7 +61,8 @@ export default function ResetPasswordPage() {
     const controller = new AbortController();
 
     const validateToken = async () => {
-      if (!resetToken) {
+      // Validate token format before sending to backend (defense-in-depth)
+      if (!resetToken || !/^[A-Za-z0-9_-]{10,512}$/.test(resetToken)) {
         setIsTokenValid(false);
         setIsValidating(false);
         return;
@@ -85,7 +94,7 @@ export default function ResetPasswordPage() {
   }, [resetToken]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
-    if (!resetToken) return;
+    if (!resetToken || isLoading) return;
 
     setIsLoading(true);
     setErrorMessage(null);
@@ -215,7 +224,9 @@ export default function ResetPasswordPage() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   placeholder={t('auth.enterPassword')}
+                  spellCheck={false}
                   className="input pl-10 pr-10"
+                  maxLength={128}
                   {...register('password', {
                     required: t('validation.required'),
                     minLength: {
@@ -223,7 +234,7 @@ export default function ResetPasswordPage() {
                       message: t('validation.passwordMin', { min: 8 }),
                     },
                     pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
+                      value: PASSWORD_PATTERN,
                       message: t('validation.passwordStrength'),
                     },
                   })}
@@ -263,7 +274,9 @@ export default function ResetPasswordPage() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   placeholder={t('auth.enterPassword')}
+                  spellCheck={false}
                   className="input pl-10 pr-10"
+                  maxLength={128}
                   {...register('confirmPassword', {
                     required: t('validation.required'),
                     validate: value => 
