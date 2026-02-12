@@ -16,6 +16,14 @@ vi.mock('@/services/api', () => ({
 }));
 
 vi.mock('@/components/common/Modal', () => ({
+  Modal: ({ isOpen, onClose, title, children }: any) =>
+    isOpen ? (
+      <div data-testid="modal">
+        <h2>{title}</h2>
+        <button onClick={onClose} aria-label="Close">×</button>
+        <div>{children}</div>
+      </div>
+    ) : null,
   ConfirmModal: ({ isOpen, onConfirm, title }: any) =>
     isOpen ? (
       <div data-testid="confirm-modal">

@@ -166,7 +166,7 @@ describe('UsersPage', () => {
     mockUsersList.mockRejectedValue(new Error('Failed'));
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('users.loadingUsers')).toBeInTheDocument();
+      expect(screen.getByText('users.loadError')).toBeInTheDocument();
     });
   });
 

@@ -239,6 +239,7 @@
     "searchPlaceholder": "Search users by name or email...",
     "noUsersFound": "No users found",
     "loadingUsers": "Loading users...",
+    "loadError": "Failed to load users. Please try again.",
     "showingCount": "Showing {{showing}} of {{total}} users",
     "refreshUsers": "Refresh Users",
     "userCreated": "User Created",
@@ -530,7 +531,9 @@
       "of": "of",
       "showing": "Showing",
       "to": "to",
-      "entries": "entries"
+      "entries": "entries",
+      "range": "Showing {{from}} to {{to}} of {{total}} entries",
+      "pageOf": "Page {{page}} of {{totalPages}}"
     },
     "detailsModal": {
       "title": "Audit Log Details",
@@ -773,6 +776,8 @@
     "deleteSuccess": "The tenant has been deleted successfully.",
     "activateSuccess": "The tenant has been activated.",
     "deactivateSuccess": "The tenant has been deactivated.",
+    "activateError": "Failed to activate tenant. Please try again.",
+    "deactivateError": "Failed to deactivate tenant. Please try again.",
     "createError": "Failed to create tenant. Please try again.",
     "updateError": "Failed to update tenant. Please try again.",
     "deleteError": "Failed to delete tenant. Please try again.",

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
@@ -144,12 +144,12 @@ export default function LoginPage() {
                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
               )}
               <div className="flex justify-end">
-                <a
-                  href="/forgot-password"
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-primary-600 hover:text-primary-700"
                 >
                   {t('auth.forgotPassword')}
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -209,12 +209,12 @@ export default function LoginPage() {
           {/* Register link */}
           <p className="mt-4 text-center text-sm text-slate-500">
             {t('auth.dontHaveAccount')}{' '}
-            <a
-              href="/register"
+            <Link
+              to="/register"
               className="text-primary-600 hover:text-primary-700 font-medium"
             >
               {t('auth.signUp')}
-            </a>
+            </Link>
           </p>
 
           {/* Divider */}

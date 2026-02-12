@@ -123,7 +123,7 @@ describe('AuditLogPage', () => {
   it('shows pagination when there are results', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/audit.pagination.showing/)).toBeInTheDocument();
+      expect(screen.getByText(/audit.pagination.range/)).toBeInTheDocument();
     });
   });
 

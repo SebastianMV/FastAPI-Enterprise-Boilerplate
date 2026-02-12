@@ -235,6 +235,7 @@
     "searchPlaceholder": "Buscar usuários por nome ou e-mail...",
     "noUsersFound": "Nenhum usuário encontrado",
     "loadingUsers": "Carregando usuários...",
+    "loadError": "Falha ao carregar usuários. Por favor, tente novamente.",
     "showingCount": "Mostrando {{showing}} de {{total}} usuários",
     "refreshUsers": "Atualizar Usuários",
     "userCreated": "Usuário Criado",
@@ -518,7 +519,9 @@
       "entries": "registros",
       "previous": "Anterior",
       "next": "Próximo",
-      "page": "Página"
+      "page": "Página",
+      "range": "Mostrando {{from}} a {{to}} de {{total}} registros",
+      "pageOf": "Página {{page}} de {{totalPages}}"
     },
     "actions": {
       "CREATE": "Criou",
@@ -785,6 +788,8 @@
     "deleteSuccess": "O locatário foi excluído com sucesso.",
     "activateSuccess": "O locatário foi ativado.",
     "deactivateSuccess": "O locatário foi desativado.",
+    "activateError": "Falha ao ativar locatário. Por favor, tente novamente.",
+    "deactivateError": "Falha ao desativar locatário. Por favor, tente novamente.",
     "createError": "Falha ao criar locatário. Por favor, tente novamente.",
     "updateError": "Falha ao atualizar locatário. Por favor, tente novamente.",
     "deleteError": "Falha ao excluir locatário. Por favor, tente novamente.",

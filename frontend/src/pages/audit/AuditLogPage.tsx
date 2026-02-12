@@ -355,7 +355,7 @@ export default function AuditLogPage() {
           {data && data.total > 0 && (
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                {t('audit.pagination.showing')} {(filters.skip || 0) + 1} {t('audit.pagination.to')} {Math.min((filters.skip || 0) + (filters.limit || 25), data.total)} {t('audit.pagination.of')} {data.total} {t('audit.pagination.entries')}
+                {t('audit.pagination.range', { from: (filters.skip || 0) + 1, to: Math.min((filters.skip || 0) + (filters.limit || 25), data.total), total: data.total })}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -367,7 +367,7 @@ export default function AuditLogPage() {
                   {t('audit.pagination.previous')}
                 </button>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('audit.pagination.page')} {currentPage} {t('audit.pagination.of')} {totalPages}
+                  {t('audit.pagination.pageOf', { page: currentPage, totalPages })}
                 </span>
                 <button
                   onClick={() => handlePageChange('next')}

@@ -235,6 +235,7 @@
     "searchPlaceholder": "Buscar usuarios por nombre o correo...",
     "noUsersFound": "No se encontraron usuarios",
     "loadingUsers": "Cargando usuarios...",
+    "loadError": "Error al cargar usuarios. Por favor intenta de nuevo.",
     "showingCount": "Mostrando {{showing}} de {{total}} usuarios",
     "refreshUsers": "Actualizar Usuarios",
     "userCreated": "Usuario Creado",
@@ -518,7 +519,9 @@
       "of": "de",
       "showing": "Mostrando",
       "to": "a",
-      "entries": "entradas"
+      "entries": "entradas",
+      "range": "Mostrando {{from}} a {{to}} de {{total}} entradas",
+      "pageOf": "Página {{page}} de {{totalPages}}"
     },
     "detailsModal": {
       "title": "Detalles del Registro de Auditoría",
@@ -761,6 +764,8 @@
     "deleteSuccess": "El inquilino ha sido eliminado exitosamente.",
     "activateSuccess": "El inquilino ha sido activado.",
     "deactivateSuccess": "El inquilino ha sido desactivado.",
+    "activateError": "Error al activar inquilino. Por favor intenta de nuevo.",
+    "deactivateError": "Error al desactivar inquilino. Por favor intenta de nuevo.",
     "createError": "Error al crear inquilino. Por favor intenta de nuevo.",
     "updateError": "Error al actualizar inquilino. Por favor intenta de nuevo.",
     "deleteError": "Error al eliminar inquilino. Por favor intenta de nuevo.",

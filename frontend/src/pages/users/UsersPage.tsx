@@ -261,7 +261,7 @@ export default function UsersPage() {
         ) : error ? (
           <div className="p-12 text-center">
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 mb-4">{t('users.loadingUsers')}</p>
+            <p className="text-red-600 mb-4">{t('users.loadError')}</p>
             <button onClick={() => refetch()} className="btn-primary">
               <RefreshCw className="w-4 h-4 mr-2" />
               {t('common.retry')}

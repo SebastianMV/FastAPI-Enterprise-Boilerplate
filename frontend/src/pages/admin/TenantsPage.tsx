@@ -172,6 +172,14 @@ export default function TenantsPage() {
         variant: 'success',
       });
     },
+    onError: () => {
+      setAlertModal({
+        isOpen: true,
+        title: t('common.error'),
+        message: t('tenants.activateError'),
+        variant: 'error',
+      });
+    },
   });
 
   // Deactivate mutation
@@ -184,6 +192,14 @@ export default function TenantsPage() {
         title: t('tenants.tenantDeactivated'),
         message: t('tenants.deactivateSuccess'),
         variant: 'success',
+      });
+    },
+    onError: () => {
+      setAlertModal({
+        isOpen: true,
+        title: t('common.error'),
+        message: t('tenants.deactivateError'),
+        variant: 'error',
       });
     },
   });

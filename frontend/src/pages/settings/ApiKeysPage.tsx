@@ -16,7 +16,7 @@ import {
   X
 } from 'lucide-react';
 import api from '@/services/api';
-import { ConfirmModal, AlertModal } from '@/components/common/Modal';
+import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
 
 interface ApiKey {
   id: string;
@@ -229,17 +229,19 @@ export default function ApiKeysPage() {
       )}
 
       {/* Newly Created Key Modal */}
-      {newlyCreatedKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="card p-6 max-w-lg w-full mx-4">
-            <div className="text-center mb-6">
+      <Modal
+        isOpen={!!newlyCreatedKey}
+        onClose={() => setNewlyCreatedKey(null)}
+        title={t('apiKeys.keyCreatedTitle')}
+        size="lg"
+      >
+        {newlyCreatedKey && (
+          <>
+            <div className="text-center mb-4">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Key className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {t('apiKeys.keyCreatedTitle')}
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {t('apiKeys.keyCreatedWarning')}
               </p>
             </div>
@@ -287,7 +289,7 @@ export default function ApiKeysPage() {
                 </div>
                 <div>
                   <span className="text-slate-500">{t('apiKeys.scopes')}:</span>
-                  <span className="ml-2">{newlyCreatedKey.scopes.length || t('apiKeys.scopes')}</span>
+                  <span className="ml-2">{newlyCreatedKey.scopes.length}</span>
                 </div>
               </div>
             </div>
@@ -298,127 +300,116 @@ export default function ApiKeysPage() {
             >
               {t('apiKeys.savedKey')}
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="card p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {t('apiKeys.createKey')}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  reset();
-                  setSelectedScopes([]);
-                }}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('apiKeys.keyName')}
-                </label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder={t('apiKeys.keyNamePlaceholder')}
-                  {...register('name', { required: t('validation.required') })}
-                />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('apiKeys.expirationDays')}
-                </label>
-                <input
-                  type="number"
-                  className="input"
-                  placeholder={t('apiKeys.expirationPlaceholder')}
-                  min={1}
-                  max={365}
-                  {...register('expires_in_days', { valueAsNumber: true })}
-                />
-                <p className="mt-1 text-xs text-slate-500">
-                  {t('apiKeys.expirationHelp')}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  {t('apiKeys.permissions')}
-                </label>
-                <div className="space-y-2">
-                  {AVAILABLE_SCOPES.map((scope) => (
-                    <label
-                      key={scope.value}
-                      className="flex items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedScopes.includes(scope.value)}
-                        onChange={() => toggleScope(scope.value)}
-                        className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {scope.label}
-                        </p>
-                        <p className="text-xs text-slate-500">{scope.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-slate-500">
-                  {t('apiKeys.permissionsHelp')}
-                </p>
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    reset();
-                    setSelectedScopes([]);
-                  }}
-                  className="btn-secondary flex-1"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreating}
-                  className="btn-primary flex-1"
-                >
-                  {isCreating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t('common.loading')}
-                    </>
-                  ) : (
-                    <>
-                      <Key className="w-4 h-4 mr-2" />
-                      {t('apiKeys.createKey')}
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          reset();
+          setSelectedScopes([]);
+        }}
+        title={t('apiKeys.createKey')}
+        size="lg"
+      >
+        <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('apiKeys.keyName')}
+            </label>
+            <input
+              type="text"
+              className="input"
+              placeholder={t('apiKeys.keyNamePlaceholder')}
+              {...register('name', { required: t('validation.required') })}
+            />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('apiKeys.expirationDays')}
+            </label>
+            <input
+              type="number"
+              className="input"
+              placeholder={t('apiKeys.expirationPlaceholder')}
+              min={1}
+              max={365}
+              {...register('expires_in_days', { valueAsNumber: true })}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              {t('apiKeys.expirationHelp')}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              {t('apiKeys.permissions')}
+            </label>
+            <div className="space-y-2">
+              {AVAILABLE_SCOPES.map((scope) => (
+                <label
+                  key={scope.value}
+                  className="flex items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedScopes.includes(scope.value)}
+                    onChange={() => toggleScope(scope.value)}
+                    className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {scope.label}
+                    </p>
+                    <p className="text-xs text-slate-500">{scope.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              {t('apiKeys.permissionsHelp')}
+            </p>
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateModal(false);
+                reset();
+                setSelectedScopes([]);
+              }}
+              className="btn-secondary flex-1"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={isCreating}
+              className="btn-primary flex-1"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t('common.loading')}
+                </>
+              ) : (
+                <>
+                  <Key className="w-4 h-4 mr-2" />
+                  {t('apiKeys.createKey')}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Filters */}
       <div className="flex items-center space-x-4">
