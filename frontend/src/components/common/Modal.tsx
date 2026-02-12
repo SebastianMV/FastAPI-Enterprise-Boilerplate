@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
@@ -15,6 +15,7 @@ interface ModalProps {
  */
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   const { t } = useTranslation();
+  const titleId = useId();
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
@@ -80,7 +81,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
@@ -97,7 +98,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-            <h3 id="modal-title" className="text-lg font-semibold text-slate-900 dark:text-white">
+            <h3 id={titleId} className="text-lg font-semibold text-slate-900 dark:text-white">
               {title}
             </h3>
             <button

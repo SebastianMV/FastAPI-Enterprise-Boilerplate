@@ -6,7 +6,7 @@
 from fastapi import APIRouter
 from sqlalchemy import text
 
-from app.api.v1.schemas.common import HealthResponse
+from app.api.v1.schemas.common import HealthResponse, ReadinessResponse
 from app.config import settings
 
 router = APIRouter()
@@ -43,12 +43,12 @@ async def health_check() -> HealthResponse:
 
 @router.get(
     "/health/ready",
-    response_model=HealthResponse,
+    response_model=ReadinessResponse,
     summary="Readiness check",
     description="Check if application is ready to receive traffic.",
     tags=["Health"],
 )
-async def readiness_check() -> HealthResponse:
+async def readiness_check() -> ReadinessResponse:
     """
     Kubernetes readiness probe.
 
@@ -81,7 +81,7 @@ async def readiness_check() -> HealthResponse:
 
     overall_status = "ready" if (redis_healthy and db_healthy) else "degraded"
 
-    return HealthResponse(
+    return ReadinessResponse(
         status=overall_status,
         database=db_status,
         redis=redis_status,

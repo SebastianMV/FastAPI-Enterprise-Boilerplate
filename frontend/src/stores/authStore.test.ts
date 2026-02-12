@@ -60,7 +60,7 @@ describe('authStore', () => {
       const state = useAuthStore.getState();
       
       expect(state.user).toBeNull();
-      expect(state.accessToken).toBeNull();
+      expect(state.tokenExpiresAt).toBeNull();
       expect(state.isAuthenticated).toBe(false);
       expect(state.isLoading).toBe(false);
       expect(state.error).toBeNull();
@@ -81,7 +81,8 @@ describe('authStore', () => {
       const state = useAuthStore.getState();
       
       expect(state.user).toEqual(mockUser);
-      expect(state.accessToken).toBe('access-token-123');
+      // Raw JWT is no longer stored; only tokenExpiresAt is kept
+      expect(state.tokenExpiresAt).toBeNull(); // mock token is not a real JWT
       expect(state.isAuthenticated).toBe(true);
       expect(state.isLoading).toBe(false);
       expect(state.error).toBeNull();
@@ -172,7 +173,7 @@ describe('authStore', () => {
       const state = useAuthStore.getState();
       
       expect(state.user).toBeNull();
-      expect(state.accessToken).toBeNull();
+      expect(state.tokenExpiresAt).toBeNull();
       expect(state.isAuthenticated).toBe(false);
       expect(state.error).toBeNull();
     });
@@ -216,7 +217,7 @@ describe('authStore', () => {
         await useAuthStore.getState().refreshAccessToken();
       });
       
-      expect(useAuthStore.getState().accessToken).toBe('new-access-token');
+      expect(useAuthStore.getState().tokenExpiresAt).toBeNull(); // mock token not a real JWT
     });
 
     it('should throw error when no refresh token', async () => {
@@ -249,26 +250,32 @@ describe('authStore', () => {
   });
 
   describe('setTokens', () => {
-    it('should set access token and mark authenticated', () => {
+    it('should extract token expiry (null for non-JWT strings)', () => {
       act(() => {
         useAuthStore.getState().setTokens('new-access');
       });
       
       const state = useAuthStore.getState();
       
-      expect(state.accessToken).toBe('new-access');
-      expect(state.isAuthenticated).toBe(true);
+      // 'new-access' is not a valid JWT, so tokenExpiresAt will be null
+      expect(state.tokenExpiresAt).toBeNull();
+      // isAuthenticated is NOT set by setTokens — caller must fetchUser()
+      expect(state.isAuthenticated).toBe(false);
     });
 
-    it('should set only access token if refresh not provided', () => {
+    it('should extract expiry from a valid JWT', () => {
+      // Create a minimal valid JWT with exp = 1700000000 (2023-11-14)
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({ sub: 'user-1', exp: 1700000000 }));
+      const signature = 'fakesig';
+      const jwt = `${header}.${payload}.${signature}`;
+
       act(() => {
-        useAuthStore.getState().setTokens('access-only');
+        useAuthStore.getState().setTokens(jwt);
       });
       
       const state = useAuthStore.getState();
-      
-      expect(state.accessToken).toBe('access-only');
-      expect(state.isAuthenticated).toBe(true);
+      expect(state.tokenExpiresAt).toBe(1700000000 * 1000);
     });
   });
 

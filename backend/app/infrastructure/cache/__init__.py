@@ -48,6 +48,22 @@ class RedisCache:
             logger.warning("Cache get error: %s", e)
             return None
 
+    async def get_and_delete(self, key: str) -> Any:
+        """Atomically get and delete a value (Redis GETDEL).
+
+        Returns the value if it existed, None otherwise.
+        This prevents TOCTOU races where two concurrent requests
+        both read the same one-time-use token.
+        """
+        try:
+            data = await self._client.getdel(key)
+            if data:
+                return json.loads(data)
+            return None
+        except Exception as e:
+            logger.warning("Cache get_and_delete error: %s", e)
+            return None
+
     async def set(
         self,
         key: str,
@@ -93,13 +109,18 @@ def get_cache() -> RedisCache:
     global _cache_client
 
     if _cache_client is None:
-        _cache_client = redis.Redis(
+        pool = redis.ConnectionPool(
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
             password=settings.REDIS_PASSWORD,
             db=settings.REDIS_DB,
             decode_responses=True,
+            max_connections=20,
+            socket_timeout=5,
+            socket_connect_timeout=5,
+            retry_on_timeout=True,
         )
+        _cache_client = redis.Redis(connection_pool=pool)
 
     return RedisCache(_cache_client)
 

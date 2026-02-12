@@ -15,6 +15,8 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { oauthService, type OAuthConnection } from '@/services/api';
+import { maskEmail } from '@/utils/security';
+import { ConfirmModal } from '@/components/common/Modal';
 
 // Display configuration for OAuth providers — NOT the same as OAUTH_PROVIDERS from oauthService.ts.
 // This has JSX icons and Tailwind classes for the profile UI; oauthService has string IDs for API calls.
@@ -68,6 +70,8 @@ export default function ConnectedAccounts() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [providerToDisconnect, setProviderToDisconnect] = useState<string | null>(null);
 
   // Fetch current connections on mount
   const fetchConnections = useCallback(async () => {
@@ -111,6 +115,8 @@ export default function ConnectedAccounts() {
       setError(t('profile.disconnectError'));
     } finally {
       setActionLoading(null);
+      setShowDisconnectModal(false);
+      setProviderToDisconnect(null);
     }
   };
 
@@ -179,7 +185,7 @@ export default function ConnectedAccounts() {
                   </h4>
                   {connected && connection ? (
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('profile.connectedAs', { account: connection.provider_email || connection.provider_username || t('profile.connected') })}
+                      {t('profile.connectedAs', { account: connection.provider_email ? maskEmail(connection.provider_email) : connection.provider_username || t('profile.connected') })}
                     </p>
                   ) : (
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -192,7 +198,10 @@ export default function ConnectedAccounts() {
               <div className="flex items-center space-x-2">
                 {connected ? (
                   <button
-                    onClick={() => handleDisconnect(provider.id)}
+                    onClick={() => {
+                      setProviderToDisconnect(provider.id);
+                      setShowDisconnectModal(true);
+                    }}
                     disabled={loading}
                     className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50 transition-colors"
                   >
@@ -237,6 +246,29 @@ export default function ConnectedAccounts() {
           </div>
         </div>
       </div>
+
+      {/* Disconnect Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDisconnectModal}
+        onClose={() => {
+          setShowDisconnectModal(false);
+          setProviderToDisconnect(null);
+        }}
+        onConfirm={() => {
+          if (providerToDisconnect) {
+            handleDisconnect(providerToDisconnect);
+          }
+        }}
+        title={t('profile.disconnect')}
+        message={t('profile.confirmDisconnect', {
+          provider: providerToDisconnect
+            ? providerToDisconnect.charAt(0).toUpperCase() + providerToDisconnect.slice(1)
+            : '',
+        })}
+        confirmText={t('profile.disconnect')}
+        cancelText={t('common.cancel')}
+        variant="danger"
+      />
     </div>
   );
 }

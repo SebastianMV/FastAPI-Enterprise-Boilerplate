@@ -31,7 +31,8 @@ ReportsWriter = Annotated[UUID, Depends(require_permission("reports", "write"))]
 # ============================================================================
 # In-Memory Storage (DEMO ONLY — NOT FOR PRODUCTION)
 # ============================================================================
-# WARNING: This is a demonstration implementation.
+# WARNING: Templates stored in-memory only — intended for development/demo mode.
+# Production environments will return HTTP 501 via _check_demo_mode().
 # - Data is lost on server restart.
 # - Not safe for multi-worker deployments (each worker has its own copy).
 # - Scheduled reports never actually execute (no background scheduler).
@@ -40,6 +41,83 @@ ReportsWriter = Annotated[UUID, Depends(require_permission("reports", "write"))]
 _report_templates: dict[str, dict[str, Any]] = {}
 _scheduled_reports: dict[str, dict[str, Any]] = {}
 _storage_lock = asyncio.Lock()
+
+
+def _check_demo_mode() -> None:
+    """Block in-memory report template endpoints in production."""
+    from app.config import settings as _s
+
+    if _s.ENVIRONMENT in ("production", "staging"):
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail={
+                "code": "NOT_IMPLEMENTED",
+                "message": "Report templates require database-backed storage in production.",
+            },
+        )
+
+# Per-tenant limits to prevent unbounded memory growth (B5)
+_MAX_TEMPLATES_PER_TENANT = 100
+_MAX_SCHEDULES_PER_TENANT = 50
+
+
+def _validate_webhook_url(url: str) -> None:
+    """Validate webhook URL: enforce HTTPS, block SSRF targets.
+
+    Rejects private networks (RFC 1918), link-local, loopback,
+    and cloud metadata endpoints.
+    """
+    import ipaddress
+    from urllib.parse import urlparse
+
+    if not url.startswith("https://"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "WEBHOOK_HTTPS_REQUIRED", "message": "Webhook URL must use HTTPS"},
+        )
+
+    parsed = urlparse(url)
+    hostname = parsed.hostname or ""
+
+    # Block known cloud metadata hostnames
+    _BLOCKED_HOSTS = {
+        "metadata.google.internal",
+        "metadata.goog",
+        "169.254.169.254",
+        "fd00:ec2::254",
+        "[fd00:ec2::254]",
+    }
+    if hostname.lower() in _BLOCKED_HOSTS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "WEBHOOK_BLOCKED_HOST", "message": "Webhook URL points to a blocked host"},
+        )
+
+    # Block internal/private IPs
+    try:
+        addr = ipaddress.ip_address(hostname)
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "WEBHOOK_PRIVATE_IP", "message": "Webhook URL must not point to a private/internal address"},
+            )
+    except ValueError:
+        # hostname is a domain name, not an IP — allow (DNS resolution happens at call time)
+        pass
+
+    # Block localhost variants
+    if hostname.lower() in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "WEBHOOK_LOCALHOST", "message": "Webhook URL must not point to localhost"},
+        )
+
+
+def _count_tenant_items(store: dict[str, dict[str, Any]], tenant: str | None) -> int:
+    """Count items belonging to a tenant in an in-memory store."""
+    if not tenant:
+        return 0
+    return sum(1 for item in store.values() if item.get("tenant_id") == tenant)
 
 
 # ============================================================================
@@ -245,9 +323,21 @@ async def create_template(
     tenant_id: CurrentTenantId = None,
 ) -> ReportTemplateResponse:
     """Create a new report template."""
+    _check_demo_mode()
 
     template_id = str(uuid4())
     now = datetime.now(UTC)
+
+    # Enforce per-tenant template limit (B5 — prevent unbounded memory growth)
+    current_tenant = str(tenant_id) if tenant_id else None
+    if _count_tenant_items(_report_templates, current_tenant) >= _MAX_TEMPLATES_PER_TENANT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "TEMPLATE_LIMIT_REACHED",
+                "message": f"Maximum of {_MAX_TEMPLATES_PER_TENANT} templates per tenant reached",
+            },
+        )
 
     template = {
         "id": template_id,
@@ -610,11 +700,18 @@ async def create_schedule(
             detail={"code": "WEBHOOK_URL_REQUIRED", "message": "Webhook delivery requires a webhook URL"},
         )
     if request.webhook_url:
-        if not request.webhook_url.startswith("https://"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "WEBHOOK_HTTPS_REQUIRED", "message": "Webhook URL must use HTTPS"},
-            )
+        _validate_webhook_url(request.webhook_url)
+
+    # Enforce per-tenant schedule limit (B5 — prevent unbounded memory growth)
+    current_tenant_str = str(tenant_id) if tenant_id else None
+    if _count_tenant_items(_scheduled_reports, current_tenant_str) >= _MAX_SCHEDULES_PER_TENANT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "SCHEDULE_LIMIT_REACHED",
+                "message": f"Maximum of {_MAX_SCHEDULES_PER_TENANT} schedules per tenant reached",
+            },
+        )
 
     # Validate recipient email addresses
     import re as _re
@@ -799,11 +896,7 @@ async def update_schedule(
 
     # Validate webhook URL if being updated
     if request.webhook_url:
-        if not request.webhook_url.startswith("https://"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "WEBHOOK_HTTPS_REQUIRED", "message": "Webhook URL must use HTTPS"},
-            )
+        _validate_webhook_url(request.webhook_url)
 
     # Validate recipient emails if being updated
     if request.recipients:

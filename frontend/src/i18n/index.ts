@@ -36,10 +36,11 @@ i18n
     supportedLngs: SUPPORTED_LANGUAGES.map((l) => l.code),
 
     // Backend options for lazy loading
+    // Preload critical languages on app start (EN, ES, PT)
+    preload: ['en', 'es', 'pt'],
+
     backend: {
       loadPath: '/locales/{{lng}}.json',
-      // Preload critical languages on app start (EN, ES, PT)
-      preload: ['en', 'es', 'pt'],
     },
 
     // Detection options
@@ -50,7 +51,11 @@ i18n
     },
 
     interpolation: {
-      escapeValue: false, // React already handles XSS
+      // React's JSX automatically escapes interpolated values, preventing XSS.
+      // IMPORTANT: Never use translation values with dangerouslySetInnerHTML.
+      // If you must render HTML from translations, use the Trans component
+      // with explicit allowed tags: <Trans components={{ b: <b /> }}>
+      escapeValue: false,
     },
 
     // React specific options

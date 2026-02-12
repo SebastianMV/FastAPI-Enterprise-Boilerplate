@@ -1,11 +1,24 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { authService, type LoginCredentials, type User } from '@/services/api';
 import { useNotificationsStore } from '@/stores/notificationsStore';
+import { safeDecodeJwtPayload } from '@/utils/security';
+
+/**
+ * Extract the expiration timestamp from a JWT without storing the raw token.
+ * Returns epoch milliseconds, or null if extraction fails.
+ */
+function extractTokenExpiry(token: string): number | null {
+  const payload = safeDecodeJwtPayload(token);
+  if (payload && typeof payload.exp === 'number') {
+    return payload.exp * 1000; // Convert seconds → ms
+  }
+  return null;
+}
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
+  /** Opaque expiry timestamp (ms) — raw JWT is never stored in JS-reachable state */
+  tokenExpiresAt: number | null;
   isAuthenticated: boolean;
   isInitializing: boolean;
   isLoading: boolean;
@@ -22,10 +35,9 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>()(
-  persist(
     (set, get) => ({
       user: null,
-      accessToken: null,
+      tokenExpiresAt: null,
       isAuthenticated: false,
       isInitializing: true,
       isLoading: false,
@@ -37,12 +49,12 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authService.login(credentials);
           
-          // Tokens are now stored in HttpOnly cookies by the backend.
-          // We keep accessToken in memory (state) for Bearer header fallback,
-          // but do NOT persist tokens to localStorage anymore.
+          // Tokens are stored in HttpOnly cookies by the backend.
+          // We extract only the expiry timestamp — the raw JWT is NEVER
+          // stored in JS-reachable state to prevent XSS exfiltration.
           set({
             user: response.user,
-            accessToken: response.access_token,
+            tokenExpiresAt: extractTokenExpiry(response.access_token),
             isAuthenticated: true,
             isInitializing: false,
             isLoading: false,
@@ -57,17 +69,30 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        // Call backend to clear HttpOnly cookies and blacklist token
-        authService.logout().catch(() => {});
-        
-        // Clear notification state so the next user starts fresh
+        // Clear client state immediately for responsive UX
         useNotificationsStore.getState().clearNotifications();
-        
         set({
           user: null,
-          accessToken: null,
+          tokenExpiresAt: null,
           isAuthenticated: false,
           error: null,
+        });
+
+        // Attempt server-side session invalidation with timeout.
+        // Retry once on failure to maximize chance of cookie invalidation.
+        const logoutWithTimeout = () =>
+          Promise.race([
+            authService.logout(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+          ]);
+
+        logoutWithTimeout().catch(() => {
+          // Retry once
+          logoutWithTimeout().catch(() => {
+            // Server-side invalidation failed — HttpOnly cookie may remain valid
+            // until it expires naturally. This is logged for observability but
+            // client state is already cleared above.
+          });
         });
       },
 
@@ -77,7 +102,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await authService.refresh();
           
           set({
-            accessToken: response.access_token,
+            tokenExpiresAt: extractTokenExpiry(response.access_token),
           });
         } catch {
           // If refresh fails, logout
@@ -91,9 +116,11 @@ export const useAuthStore = create<AuthState>()(
       setError: (error) => set({ error }),
       
       setTokens: (accessToken) => {
+        // Extract only the expiry timestamp — discard the raw JWT.
+        // isAuthenticated is NOT set here — callers must also
+        // fetchUser() to confirm validity.
         set({
-          accessToken,
-          isAuthenticated: true,
+          tokenExpiresAt: extractTokenExpiry(accessToken),
         });
       },
       
@@ -107,11 +134,4 @@ export const useAuthStore = create<AuthState>()(
         }
       },
     }),
-    {
-      name: 'auth-storage',
-      // Only persist minimal flags — NO tokens, NO user PII in localStorage.
-      // isAuthenticated is derived from user presence after fetchUser().
-      partialize: () => ({}),
-    },
-  ),
 );

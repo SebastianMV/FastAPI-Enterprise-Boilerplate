@@ -13,18 +13,13 @@ import { useNotificationsStore, type Notification } from '@/stores/notifications
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { notificationsService } from '@/services/api';
+import { isSafeRedirectUrl, sanitizeText } from '@/utils/security';
 
 /**
  * Validate that an action URL is a safe relative path (not an external redirect).
  */
 function isSafeActionUrl(url: string): boolean {
-  // Only allow relative paths starting with /
-  if (!url.startsWith('/')) return false;
-  // Block protocol-relative URLs (//evil.com)
-  if (url.startsWith('//')) return false;
-  // Block URLs with protocol schemes
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url)) return false;
-  return true;
+  return isSafeRedirectUrl(url);
 }
 
 /**
@@ -135,12 +130,20 @@ export default function NotificationsDropdown() {
       // Runtime payload validation (F-03)
       if (typeof payload !== 'object' || payload === null) return;
       
-      const id = typeof payload.id === 'string' ? payload.id : crypto.randomUUID();
-      const type = typeof payload.type === 'string' ? (payload.type as Notification['type']) : 'info';
-      const title = typeof payload.title === 'string' ? payload.title : t('notificationsDropdown.defaultTitle');
-      const message = typeof payload.message === 'string' ? payload.message : undefined;
+      // Require server-generated ID — drop payloads without one
+      if (typeof payload.id !== 'string' || !payload.id) return;
+      
+      const id = payload.id as string;
+      // Validate type against allowed enum values
+      const VALID_TYPES: Notification['type'][] = ['info', 'success', 'warning', 'error'];
+      const type = VALID_TYPES.includes(payload.type as Notification['type'])
+        ? (payload.type as Notification['type'])
+        : 'info';
+      const title = typeof payload.title === 'string' ? sanitizeText(payload.title.slice(0, 200)) : t('notificationsDropdown.defaultTitle');
+      const message = typeof payload.message === 'string' ? sanitizeText(payload.message.slice(0, 1000)) : undefined;
       const created_at = typeof payload.timestamp === 'string' ? payload.timestamp : new Date().toISOString();
-      const action_url = typeof payload.action_url === 'string' ? payload.action_url : undefined;
+      const rawActionUrl = typeof payload.action_url === 'string' ? payload.action_url : undefined;
+      const action_url = rawActionUrl && isSafeRedirectUrl(rawActionUrl) ? rawActionUrl : undefined;
       
       const notification: Notification = {
         id,
@@ -158,7 +161,7 @@ export default function NotificationsDropdown() {
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && event.target instanceof Node && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     }

@@ -4,7 +4,7 @@
 
 # Stage 1: Base
 # Pin to minor; update patch periodically: docker pull python:3.13-slim
-FROM python:3.13-slim AS base
+FROM python:3.14-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -23,12 +23,16 @@ RUN pip install --upgrade pip && \
 
 # Stage 3: Development
 FROM deps AS development
-# NOTE: Runs as root for hot-reload file watching in mounted volumes.
-# Production stage below uses a non-root 'appuser'.
+# Create non-root user for development too
+RUN groupadd --gid 1000 appuser && \
+    useradd --uid 1000 --gid 1000 --create-home appuser
 
 COPY pyproject.toml ./
 COPY . .
 RUN pip install -e .[dev]
+
+# Switch to non-root user
+USER appuser
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1

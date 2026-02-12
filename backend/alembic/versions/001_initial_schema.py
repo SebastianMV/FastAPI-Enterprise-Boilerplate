@@ -307,6 +307,17 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Safety check: prevent accidental destructive downgrade in production
+    import os
+
+    env = os.environ.get("ENVIRONMENT", "development")
+    if env in ("production", "staging"):
+        raise RuntimeError(
+            f"FATAL: Refusing to run destructive downgrade in {env} environment. "
+            "This would DROP ALL TABLES and cause irrecoverable data loss. "
+            "If you really need this, set ENVIRONMENT=development first."
+        )
+
     # Drop tables in reverse order (respecting foreign keys)
     op.drop_table("api_keys")
     op.drop_table("users")

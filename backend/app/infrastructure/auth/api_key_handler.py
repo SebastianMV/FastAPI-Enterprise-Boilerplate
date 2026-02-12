@@ -20,6 +20,8 @@ from app.domain.exceptions.base import AuthenticationError, AuthorizationError
 from app.infrastructure.auth.jwt_handler import hash_password, verify_password
 from app.infrastructure.database.models.api_key import APIKeyModel
 from app.infrastructure.observability.logging import get_logger
+import hashlib as _hashlib
+import hmac as _hmac
 
 logger = get_logger(__name__)
 
@@ -52,11 +54,11 @@ class APIKeyHandler:
 
     def hash_key(self, key: str) -> str:
         """Hash an API key for storage."""
-        return hash_password(key)
+        return _hash_api_key(key)
 
     def verify_key(self, plain_key: str, hashed_key: str) -> bool:
         """Verify an API key against its hash."""
-        return verify_password(plain_key, hashed_key)
+        return _verify_api_key_hash(plain_key, hashed_key)
 
     def extract_prefix(self, key: str) -> str:
         """
@@ -72,6 +74,21 @@ class APIKeyHandler:
         if len(key) <= prefix_length:
             return key
         return key[:prefix_length]
+
+
+def _hash_api_key(key: str) -> str:
+    """Hash an API key with SHA-256.
+
+    API keys are high-entropy random tokens (>256 bits), so they do
+    *not* need the slow brute-force resistance that bcrypt provides
+    for human-chosen passwords.  SHA-256 is both secure and O(1).
+    """
+    return _hashlib.sha256(key.encode()).hexdigest()
+
+
+def _verify_api_key_hash(plain_key: str, stored_hash: str) -> bool:
+    """Constant-time comparison of API key hash."""
+    return _hmac.compare_digest(_hash_api_key(plain_key), stored_hash)
 
 
 def generate_api_key() -> tuple[str, str, str]:
@@ -91,8 +108,8 @@ def generate_api_key() -> tuple[str, str, str]:
     # Extract prefix (first 8 chars of random part)
     prefix = random_part[:8]
 
-    # Hash the full key for storage
-    key_hash = hash_password(full_key)
+    # Hash the full key with SHA-256 (fast, O(1), secure for high-entropy keys)
+    key_hash = _hash_api_key(full_key)
 
     return full_key, prefix, key_hash
 
@@ -156,10 +173,12 @@ async def authenticate_api_key(
     result = await session.execute(stmt)
     key_models = result.scalars().all()
 
-    # Verify against each potential match
+    # Verify against each potential match using constant-time HMAC comparison.
+    # With SHA-256 hashing, this loop is O(n) but each comparison is ~1μs
+    # instead of ~200ms with bcrypt, making DoS via prefix collision infeasible.
     valid_model = None
     for model in key_models:
-        if verify_password(key, model.key_hash):
+        if _verify_api_key_hash(key, model.key_hash):
             valid_model = model
             break
 

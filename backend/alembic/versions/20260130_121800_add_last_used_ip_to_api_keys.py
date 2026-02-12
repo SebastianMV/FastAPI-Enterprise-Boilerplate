@@ -22,6 +22,8 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     """Add last_used_ip and usage_count columns to api_keys table."""
     # last_used_ip may already exist from partial migration
+    from sqlalchemy.exc import OperationalError, ProgrammingError
+
     try:
         op.add_column(
             "api_keys",
@@ -32,8 +34,11 @@ def upgrade() -> None:
                 comment="IP address of last API key usage",
             ),
         )
-    except Exception:
-        pass  # Column already exists
+    except (OperationalError, ProgrammingError) as e:
+        if "already exists" in str(e).lower() or "duplicate column" in str(e).lower():
+            pass  # Column already exists from a partial migration run
+        else:
+            raise  # Re-raise unexpected errors
 
     # Add usage_count column
     op.add_column(

@@ -398,12 +398,22 @@ async def import_data(
         )
 
     # Server-side file size validation
-    contents = await file.read()
-    if len(contents) > MAX_IMPORT_FILE_SIZE:
+    # Check reported size first (if available) to fail fast
+    if hasattr(file, 'size') and file.size and file.size > MAX_IMPORT_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail={"code": "FILE_TOO_LARGE", "message": "File too large. Maximum size is 50 MB."},
         )
+
+    # Stream-check actual size to avoid loading entire file into memory
+    file_size = 0
+    while chunk := await file.read(8192):
+        file_size += len(chunk)
+        if file_size > MAX_IMPORT_FILE_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail={"code": "FILE_TOO_LARGE", "message": "File too large. Maximum size is 50 MB."},
+            )
     await file.seek(0)
 
     # Detect file type

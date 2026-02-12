@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { usersService, rolesService, type User } from '@/services/api';
+import { sanitizeText } from '@/utils/security';
+import { EMAIL_PATTERN, PASSWORD_PATTERN } from '@/utils/validation';
 import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
 import {
   Plus,
@@ -54,13 +56,15 @@ export default function UsersPage() {
     message: string;
     variant: 'success' | 'error';
   }>({ isOpen: false, title: '', message: '', variant: 'success' });
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   
   const queryClient = useQueryClient();
 
   // Fetch users
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => usersService.list({ limit: 100 }),
+    queryKey: ['users', page],
+    queryFn: () => usersService.list({ skip: (page - 1) * pageSize, limit: pageSize }),
   });
 
   // Fetch available roles for assignment
@@ -227,6 +231,7 @@ export default function UsersPage() {
             onClick={() => refetch()}
             className="btn-secondary"
             title={t('users.refreshUsers')}
+            aria-label={t('users.refreshUsers')}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -248,6 +253,7 @@ export default function UsersPage() {
           placeholder={t('users.searchPlaceholder')}
           className="input pl-10"
           value={search}
+          maxLength={200}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
@@ -314,10 +320,10 @@ export default function UsersPage() {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-slate-900 dark:text-white">
-                              {user.first_name} {user.last_name}
+                              {sanitizeText(user.first_name ?? '')} {sanitizeText(user.last_name ?? '')}
                             </div>
                             <div className="text-sm text-slate-500">
-                              {user.email}
+                              {sanitizeText(user.email)}
                             </div>
                           </div>
                         </div>
@@ -380,6 +386,7 @@ export default function UsersPage() {
                           <button
                             className="p-2 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                             title={t('common.edit')}
+                            aria-label={t('common.edit')}
                             onClick={() => handleEditClick(user)}
                           >
                             <Edit className="w-4 h-4" />
@@ -387,6 +394,7 @@ export default function UsersPage() {
                           <button
                             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             title={t('common.delete')}
+                            aria-label={t('common.delete')}
                             onClick={() => handleDeleteClick(user)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -402,12 +410,38 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* Pagination info */}
-      {data && (
-        <div className="text-sm text-slate-500 dark:text-slate-400">
-          {t('users.showingCount', { showing: filteredUsers.length, total: data.total })}
-        </div>
-      )}
+      {/* Pagination */}
+      {data && (() => {
+        const totalPages = Math.ceil((data.total || 0) / pageSize);
+        return (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {t('users.showingCount', { showing: filteredUsers.length, total: data.total })}
+            </p>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(page - 1)}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  {t('common.previous', 'Previous')}
+                </button>
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  {t('common.next', 'Next')}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Create User Modal */}
       <Modal
@@ -431,6 +465,7 @@ export default function UsersPage() {
                   {...registerCreate('first_name', { required: t('validation.required') })}
                   className="input pl-10"
                   placeholder={t('common.placeholderFirstName')}
+                  maxLength={100}
                 />
               </div>
               {createErrors.first_name && (
@@ -447,6 +482,7 @@ export default function UsersPage() {
                   {...registerCreate('last_name', { required: t('validation.required') })}
                   className="input pl-10"
                   placeholder={t('common.placeholderLastName')}
+                  maxLength={100}
                 />
               </div>
               {createErrors.last_name && (
@@ -465,13 +501,14 @@ export default function UsersPage() {
                 {...registerCreate('email', {
                   required: t('validation.required'),
                   pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    value: EMAIL_PATTERN,
                     message: t('validation.emailInvalid'),
                   },
                 })}
                 type="email"
                 className="input pl-10"
                 placeholder={t('common.placeholderEmail')}
+                maxLength={254}
               />
             </div>
             {createErrors.email && (
@@ -492,11 +529,17 @@ export default function UsersPage() {
                     value: 8,
                     message: t('validation.passwordMin', { min: 8 }),
                   },
+                  pattern: {
+                    value: PASSWORD_PATTERN,
+                    message: t('validation.passwordComplexity', 'Password must include uppercase, lowercase, number, and special character'),
+                  },
                 })}
                 type="password"
                 autoComplete="new-password"
+                spellCheck={false}
                 className="input pl-10"
                 placeholder="••••••••"
+                maxLength={128}
               />
             </div>
             {createErrors.password && (
@@ -602,6 +645,7 @@ export default function UsersPage() {
               <input
                 {...registerEdit('first_name', { required: t('validation.required') })}
                 className="input"
+                maxLength={100}
               />
               {editErrors.first_name && (
                 <p className="text-xs text-red-500 mt-1">{editErrors.first_name.message}</p>
@@ -614,6 +658,7 @@ export default function UsersPage() {
               <input
                 {...registerEdit('last_name', { required: t('validation.required') })}
                 className="input"
+                maxLength={100}
               />
               {editErrors.last_name && (
                 <p className="text-xs text-red-500 mt-1">{editErrors.last_name.message}</p>
@@ -629,12 +674,13 @@ export default function UsersPage() {
               {...registerEdit('email', {
                 required: t('validation.required'),
                 pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  value: EMAIL_PATTERN,
                   message: t('validation.emailInvalid'),
                 },
               })}
               type="email"
               className="input"
+              maxLength={254}
             />
             {editErrors.email && (
               <p className="text-xs text-red-500 mt-1">{editErrors.email.message}</p>

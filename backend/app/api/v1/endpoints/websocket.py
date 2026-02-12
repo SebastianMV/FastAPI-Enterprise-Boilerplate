@@ -99,6 +99,16 @@ async def authenticate_websocket(
     # Prefer cookie-based auth (HttpOnly cookies are not exposed in URLs/logs)
     cookie_token = websocket.cookies.get("access_token")
     if token and not cookie_token:
+        # In production, reject query-param tokens to prevent credential leakage
+        # in server logs, proxy logs, Referer headers, and browser history.
+        from app.config import settings
+
+        if settings.ENVIRONMENT == "production":
+            logger.warning(
+                "WebSocket query-param auth REJECTED in production — use HttpOnly cookies"
+            )
+            return None
+
         logger.warning(
             "WebSocket auth via query param is deprecated; use HttpOnly cookies"
         )
@@ -164,6 +174,8 @@ async def websocket_endpoint(
         user_id,
         tenant_id,
     )
+    if not connection_id:
+        return  # Connection was rejected
 
     try:
         while True:
@@ -238,6 +250,8 @@ async def notifications_endpoint(
         tenant_id,
         metadata={"type": "notifications_only"},
     )
+    if not connection_id:
+        return  # Connection was rejected
 
     try:
         while True:

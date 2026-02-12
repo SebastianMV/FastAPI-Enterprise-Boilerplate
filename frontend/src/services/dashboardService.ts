@@ -50,8 +50,9 @@ export const dashboardService = {
   },
 
   getActivity: async (limit: number = 10): Promise<RecentActivity> => {
+    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
     const response = await api.get<RecentActivity>('/dashboard/activity', {
-      params: { limit },
+      params: { limit: safeLimit },
     });
     return response.data;
   },

@@ -17,6 +17,13 @@ export default function VerifyEmailPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'no-token'>('loading');
   const [message, setMessage] = useState('');
 
+  // Clean token from URL immediately to prevent leakage via browser history
+  useEffect(() => {
+    if (token) {
+      window.history.replaceState({}, '', '/verify-email');
+    }
+  }, [token]);
+
   // Verify email mutation
   const verifyMutation = useMutation({
     mutationFn: (token: string) => emailVerificationService.verifyEmail(token),
@@ -34,6 +41,13 @@ export default function VerifyEmailPage() {
     if (!token) {
       setStatus('no-token');
       setMessage(t('auth.noTokenMessage'));
+      return;
+    }
+
+    // Basic token format validation: must be alphanumeric/URL-safe, reasonable length
+    if (!/^[A-Za-z0-9_-]{10,512}$/.test(token)) {
+      setStatus('error');
+      setMessage(t('auth.verificationError'));
       return;
     }
 
@@ -73,7 +87,7 @@ export default function VerifyEmailPage() {
                 {message}
               </p>
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/dashboard', { replace: true })}
                 className="btn-primary w-full"
               >
                 {t('auth.goToDashboard')}

@@ -1,4 +1,5 @@
 import api from './api';
+import { clampPaginationParams } from '@/utils/security';
 
 // Role Types
 export interface Role {
@@ -41,7 +42,7 @@ export interface AssignRoleRequest {
 
 export const rolesService = {
   list: async (params?: { skip?: number; limit?: number }): Promise<RoleListResponse> => {
-    const response = await api.get<RoleListResponse>('/roles', { params });
+    const response = await api.get<RoleListResponse>('/roles', { params: clampPaginationParams(params) });
     return response.data;
   },
 
@@ -51,12 +52,17 @@ export const rolesService = {
   },
 
   create: async (data: CreateRoleData): Promise<Role> => {
-    const response = await api.post<Role>('/roles', data);
+    const safeData = { name: data.name, description: data.description, permissions: data.permissions };
+    const response = await api.post<Role>('/roles', safeData);
     return response.data;
   },
 
   update: async (id: string, data: UpdateRoleData): Promise<Role> => {
-    const response = await api.patch<Role>(`/roles/${encodeURIComponent(id)}`, data);
+    const safeData: Record<string, unknown> = {};
+    if (data.name !== undefined) safeData.name = data.name;
+    if (data.description !== undefined) safeData.description = data.description;
+    if (data.permissions !== undefined) safeData.permissions = data.permissions;
+    const response = await api.patch<Role>(`/roles/${encodeURIComponent(id)}`, safeData);
     return response.data;
   },
 
@@ -66,12 +72,14 @@ export const rolesService = {
   },
 
   assignToUser: async (data: AssignRoleRequest): Promise<{ message: string }> => {
-    const response = await api.post<{ message: string }>('/roles/assign', data);
+    const safeData = { user_id: data.user_id, role_id: data.role_id };
+    const response = await api.post<{ message: string }>('/roles/assign', safeData);
     return response.data;
   },
 
   revokeFromUser: async (data: AssignRoleRequest): Promise<{ message: string }> => {
-    const response = await api.post<{ message: string }>('/roles/revoke', data);
+    const safeData = { user_id: data.user_id, role_id: data.role_id };
+    const response = await api.post<{ message: string }>('/roles/revoke', safeData);
     return response.data;
   },
 

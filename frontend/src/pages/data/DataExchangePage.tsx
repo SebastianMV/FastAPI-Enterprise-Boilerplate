@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { sanitizeFilename, sanitizeText } from '@/utils/security';
 import {
   Download,
   Upload,
@@ -51,7 +52,7 @@ export default function DataExchangePage() {
       if (data.length > 0) {
         setSelectedEntity(data[0].name);
       }
-    } catch (err) {
+    } catch {
       setError(t('data.loadError'));
     } finally {
       setLoading(false);
@@ -79,6 +80,7 @@ export default function DataExchangePage() {
 
   useEffect(() => {
     if (activeTab === 'export' && selectedEntity) {
+      setExportPreview(null); // Clear stale preview immediately
       loadExportPreview();
     }
   }, [activeTab, selectedEntity, loadExportPreview]);
@@ -98,12 +100,12 @@ export default function DataExchangePage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${selectedEntity}_export.${exportFormat === 'excel' ? 'xlsx' : exportFormat}`;
+      a.download = sanitizeFilename(`${selectedEntity}_export.${exportFormat === 'excel' ? 'xlsx' : exportFormat}`);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
-    } catch (err) {
+    } catch {
       setError(t('data.exportError'));
     } finally {
       setLoading(false);
@@ -120,12 +122,12 @@ export default function DataExchangePage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${selectedEntity}_template.csv`;
+      a.download = sanitizeFilename(`${selectedEntity}_template.csv`);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
-    } catch (err) {
+    } catch {
       setError(t('data.templateError'));
     } finally {
       setLoading(false);
@@ -140,7 +142,7 @@ export default function DataExchangePage() {
       setImportResult(null);
       const result = await dataExchangeService.validateImport(selectedEntity, importFile);
       setImportResult(result);
-    } catch (err) {
+    } catch {
       setError(t('data.validateError'));
     } finally {
       setValidating(false);
@@ -159,7 +161,7 @@ export default function DataExchangePage() {
       if (result.success) {
         setImportFile(null);
       }
-    } catch (err) {
+    } catch {
       setError(t('data.importError'));
     } finally {
       setLoading(false);
@@ -180,12 +182,12 @@ export default function DataExchangePage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${selectedEntity}_report.${reportFormat === 'excel' ? 'xlsx' : reportFormat}`;
+      a.download = sanitizeFilename(`${selectedEntity}_report.${reportFormat === 'excel' ? 'xlsx' : reportFormat}`);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
-    } catch (err) {
+    } catch {
       setError(t('data.reportError'));
     } finally {
       setLoading(false);
@@ -382,7 +384,7 @@ export default function DataExchangePage() {
                                 key={vidx}
                                 className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
                               >
-                                {String(value ?? '')}
+                                {sanitizeText(String(value ?? ''))}
                               </td>
                             ))}
                           </tr>
@@ -473,6 +475,23 @@ export default function DataExchangePage() {
                         const MAX_FILE_SIZE_MB = 50;
                         if (file && file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
                           setError(t('data.fileTooLarge', { maxSize: MAX_FILE_SIZE_MB }));
+                          e.target.value = '';
+                          return;
+                        }
+                        if (file && !/\.(csv|xlsx|xls)$/i.test(file.name)) {
+                          setError(t('data.invalidFileType', 'Invalid file type. Only CSV, XLSX and XLS files are accepted.'));
+                          e.target.value = '';
+                          return;
+                        }
+                        // MIME type validation (F1 — prevent renamed-file bypass)
+                        const ALLOWED_MIMES = new Set([
+                          'text/csv',
+                          'application/vnd.ms-excel',
+                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                          '',  // Some browsers leave MIME empty for .csv
+                        ]);
+                        if (file && file.type && !ALLOWED_MIMES.has(file.type)) {
+                          setError(t('data.invalidFileType', 'Invalid file type. Only CSV, XLSX and XLS files are accepted.'));
                           e.target.value = '';
                           return;
                         }
@@ -572,6 +591,7 @@ export default function DataExchangePage() {
                   value={reportTitle}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setReportTitle(e.target.value)}
                   placeholder={t('data.reportPlaceholder', { entity: selectedEntityData?.display_name || selectedEntity })}
+                  maxLength={200}
                   className="block w-full max-w-md rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 />
               </div>

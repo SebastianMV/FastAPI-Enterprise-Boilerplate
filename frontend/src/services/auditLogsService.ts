@@ -1,4 +1,5 @@
 import api from './api';
+import { clampPaginationParams } from '@/utils/security';
 
 // Audit Log Types
 export interface AuditLog {
@@ -37,7 +38,20 @@ export interface AuditLogFilters {
 
 export const auditLogsService = {
   list: async (filters?: AuditLogFilters): Promise<AuditLogListResponse> => {
-    const response = await api.get<AuditLogListResponse>('/audit-logs', { params: filters });
+    const { skip, limit } = clampPaginationParams(filters);
+    // Allowlist filter params to prevent unexpected keys from reaching the API
+    const ALLOWED_FILTER_KEYS = new Set(['action', 'resource_type', 'start_date', 'end_date']);
+    const safeFilters: Record<string, unknown> = { skip, limit };
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (ALLOWED_FILTER_KEYS.has(key) && value !== undefined) {
+          safeFilters[key] = value;
+        }
+      }
+    }
+    const response = await api.get<AuditLogListResponse>('/audit-logs', { 
+      params: safeFilters 
+    });
     return response.data;
   },
 
@@ -47,19 +61,22 @@ export const auditLogsService = {
   },
 
   getMyActivity: async (filters?: AuditLogFilters): Promise<AuditLogListResponse> => {
-    const response = await api.get<AuditLogListResponse>('/audit-logs/my-activity', { params: filters });
+    const { skip, limit } = clampPaginationParams(filters);
+    const response = await api.get<AuditLogListResponse>('/audit-logs/my-activity', { params: { ...filters, skip, limit } });
     return response.data;
   },
 
   getRecentLogins: async (limit?: number, includeFailed?: boolean): Promise<AuditLogListResponse> => {
+    const safeLimit = Math.min(100, Math.max(1, Math.floor(Number(limit) || 20)));
     const response = await api.get<AuditLogListResponse>('/audit-logs/recent-logins', {
-      params: { limit, include_failed: includeFailed },
+      params: { limit: safeLimit, include_failed: includeFailed },
     });
     return response.data;
   },
 
   getResourceHistory: async (resourceType: string, resourceId: string, filters?: AuditLogFilters): Promise<AuditLogListResponse> => {
-    const response = await api.get<AuditLogListResponse>(`/audit-logs/resource/${encodeURIComponent(resourceType)}/${encodeURIComponent(resourceId)}`, { params: filters });
+    const { skip, limit } = clampPaginationParams(filters);
+    const response = await api.get<AuditLogListResponse>(`/audit-logs/resource/${encodeURIComponent(resourceType)}/${encodeURIComponent(resourceId)}`, { params: { ...filters, skip, limit } });
     return response.data;
   },
 

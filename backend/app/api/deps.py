@@ -278,20 +278,17 @@ def require_permission(resource: str, action: str) -> Any:
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
-            # Superusers have all permissions
-            if payload.get("is_superuser", False):
-                return user_id
+            # B5: Cache user lookup on request to avoid repeated DB queries
+            # when multiple dependencies (require_permission, get_current_user)
+            # are used in the same request.
+            _cache_attr = "_cached_user_model"
+            user_result = getattr(request.state, _cache_attr, None)
+            if user_result is None or user_result.id != user_id:
+                from app.infrastructure.database.models.user import UserModel
 
-            # Use cached role repository for permission checks
-            from app.infrastructure.database.models.user import UserModel
-            from app.infrastructure.database.repositories.cached_role_repository import (
-                get_cached_role_repository,
-            )
-            from app.infrastructure.database.repositories.role_repository import (
-                SQLAlchemyRoleRepository,
-            )
-
-            user_result = await session.get(UserModel, user_id)
+                user_result = await session.get(UserModel, user_id)
+                if user_result is not None:
+                    request.state._cached_user_model = user_result
             if not user_result:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -308,6 +305,10 @@ def require_permission(resource: str, action: str) -> Any:
                     },
                 )
 
+            # Superusers have all permissions — verified from DB, not just JWT
+            if user_result.is_superuser:
+                return user_id
+
             role_ids = user_result.roles or []
             if not role_ids:
                 raise HTTPException(
@@ -319,6 +320,13 @@ def require_permission(resource: str, action: str) -> Any:
                 )
 
             # Fetch roles via cached repository (Redis-backed)
+            from app.infrastructure.database.repositories.cached_role_repository import (
+                get_cached_role_repository,
+            )
+            from app.infrastructure.database.repositories.role_repository import (
+                SQLAlchemyRoleRepository,
+            )
+
             base_repo = SQLAlchemyRoleRepository(session)
             cached_repo = get_cached_role_repository(base_repo)
 

@@ -80,11 +80,11 @@ class MFAConfig:
 
         code_upper = code.upper().replace("-", "").replace(" ", "")
         # Constant-time comparison to prevent timing side-channel attacks
+        # Iterate all codes without breaking to avoid leaking position info
         matched = None
         for stored in self.backup_codes:
             if hmac.compare_digest(code_upper, stored):
                 matched = stored
-                break
         if matched:
             self.backup_codes.remove(matched)
             self.last_used_at = datetime.now(UTC)

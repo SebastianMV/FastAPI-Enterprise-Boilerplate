@@ -1,4 +1,5 @@
 import api from './api';
+import { clampPaginationParams } from '@/utils/security';
 
 // Tenant Types
 export interface TenantSettings {
@@ -66,7 +67,10 @@ export interface UpdateTenantData {
 
 export const tenantsService = {
   list: async (params?: { skip?: number; limit?: number; is_active?: boolean }): Promise<TenantListResponse> => {
-    const response = await api.get<TenantListResponse>('/tenants', { params });
+    const { skip, limit } = clampPaginationParams(params);
+    const response = await api.get<TenantListResponse>('/tenants', { 
+      params: { skip, limit, is_active: params?.is_active } 
+    });
     return response.data;
   },
 
@@ -76,12 +80,22 @@ export const tenantsService = {
   },
 
   create: async (data: CreateTenantData): Promise<Tenant> => {
-    const response = await api.post<Tenant>('/tenants', data);
+    const ALLOWED_FIELDS: (keyof CreateTenantData)[] = ['name', 'slug', 'email', 'phone', 'domain', 'timezone', 'locale', 'plan', 'settings'];
+    const safeData: Record<string, unknown> = {};
+    for (const key of ALLOWED_FIELDS) {
+      if (data[key] !== undefined) safeData[key] = data[key];
+    }
+    const response = await api.post<Tenant>('/tenants', safeData);
     return response.data;
   },
 
   update: async (id: string, data: UpdateTenantData): Promise<Tenant> => {
-    const response = await api.patch<Tenant>(`/tenants/${encodeURIComponent(id)}`, data);
+    const ALLOWED_FIELDS: (keyof UpdateTenantData)[] = ['name', 'slug', 'email', 'phone', 'domain', 'timezone', 'locale', 'plan', 'settings'];
+    const safeData: Record<string, unknown> = {};
+    for (const key of ALLOWED_FIELDS) {
+      if (data[key] !== undefined) safeData[key] = data[key];
+    }
+    const response = await api.patch<Tenant>(`/tenants/${encodeURIComponent(id)}`, safeData);
     return response.data;
   },
 

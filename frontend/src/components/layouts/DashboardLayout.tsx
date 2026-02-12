@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
+import { maskEmail } from '@/utils/security';
 import SearchBar from '@/components/common/SearchBar';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 import EmailVerificationBanner from '@/components/common/EmailVerificationBanner';
@@ -34,8 +36,8 @@ export default function DashboardLayout() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
-  const { fetchFeatures } = useConfigStore();
+  const { user, logout } = useAuthStore(useShallow((s) => ({ user: s.user, logout: s.logout })));
+  const fetchFeatures = useConfigStore((s) => s.fetchFeatures);
 
   // Fetch feature config on mount
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function DashboardLayout() {
   // Close user menu on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (userMenuRef.current && event.target instanceof Node && !userMenuRef.current.contains(event.target)) {
         setUserMenuOpen(false);
       }
     }
@@ -110,11 +112,14 @@ export default function DashboardLayout() {
         {/* Navigation */}
         <nav className="p-4 space-y-1">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
+            const isActive = item.href === '/'
+              ? location.pathname === '/'
+              : location.pathname.startsWith(item.href);
             return (
               <Link
                 key={item.name}
                 to={item.href}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
@@ -178,7 +183,7 @@ export default function DashboardLayout() {
                   <p className="text-sm font-medium text-slate-900 dark:text-white">
                     {user?.first_name} {user?.last_name}
                   </p>
-                  <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                  <p className="text-xs text-slate-500 truncate">{user?.email ? maskEmail(user.email) : ''}</p>
                 </div>
                 
                 {/* Profile & Account Links */}
@@ -188,6 +193,7 @@ export default function DashboardLayout() {
                       setUserMenuOpen(false);
                       navigate('/profile');
                     }}
+                    role="menuitem"
                     className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <User className="w-4 h-4" />
@@ -198,6 +204,7 @@ export default function DashboardLayout() {
                       setUserMenuOpen(false);
                       navigate('/settings');
                     }}
+                    role="menuitem"
                     className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <Globe className="w-4 h-4" />
@@ -208,6 +215,7 @@ export default function DashboardLayout() {
                       setUserMenuOpen(false);
                       navigate('/settings/api-keys');
                     }}
+                    role="menuitem"
                     className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <Key className="w-4 h-4" />
@@ -218,6 +226,7 @@ export default function DashboardLayout() {
                       setUserMenuOpen(false);
                       navigate('/security/mfa');
                     }}
+                    role="menuitem"
                     className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <Shield className="w-4 h-4" />
@@ -231,7 +240,9 @@ export default function DashboardLayout() {
                     onClick={() => {
                       setUserMenuOpen(false);
                       logout();
+                      navigate('/login');
                     }}
+                    role="menuitem"
                     className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <LogOut className="w-4 h-4" />

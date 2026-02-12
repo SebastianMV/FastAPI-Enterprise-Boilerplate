@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     DB_POOL_TIMEOUT: int = Field(default=30, ge=1)
     DB_POOL_RECYCLE: int = Field(default=3600, ge=60, description="Recycle connections after N seconds")
     DB_ECHO: bool = Field(default=False, description="Log SQL queries")
+    DB_SSL_REQUIRED: bool = Field(
+        default=False,
+        description=(
+            "Require SSL/TLS for database connections. "
+            "Should be True in production when the DB is on a remote host."
+        ),
+    )
 
     # ===========================================
     # Redis
@@ -298,6 +305,16 @@ class Settings(BaseSettings):
     )
 
     @model_validator(mode="after")
+    def _validate_smtp_config(self) -> "Settings":
+        """Validate SMTP_TLS and SMTP_SSL are mutually exclusive."""
+        if self.SMTP_TLS and self.SMTP_SSL:
+            raise ValueError(
+                "SMTP_TLS and SMTP_SSL cannot both be True. "
+                "Use TLS for port 587, SSL for port 465."
+            )
+        return self
+
+    @model_validator(mode="after")
     def _validate_security(self) -> "Settings":
         """Fail-fast: reject insecure defaults in production/staging."""
         if self.ENVIRONMENT in ("production", "staging"):
@@ -349,6 +366,16 @@ class Settings(BaseSettings):
                     f"FATAL: DATABASE_URL contains default credentials "
                     f"in {self.ENVIRONMENT} environment. "
                     "Use a strong password for the database connection."
+                )
+            # Warn (but don't block) if SSL is not enabled for DB in production
+            if not self.DB_SSL_REQUIRED:
+                import warnings
+
+                warnings.warn(
+                    f"WARNING: DB_SSL_REQUIRED is False in {self.ENVIRONMENT} environment. "
+                    "Database connections may be unencrypted. Set DB_SSL_REQUIRED=true "
+                    "if the database is on a remote host.",
+                    stacklevel=2,
                 )
         return self
 

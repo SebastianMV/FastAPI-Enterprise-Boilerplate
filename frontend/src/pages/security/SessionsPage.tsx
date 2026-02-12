@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { sessionsService, type UserSession } from '@/services/api';
+import { maskIpAddress, sanitizeText } from '@/utils/security';
 import { formatRelativeTime as formatRelativeTimeShared } from '@/utils/formatRelativeTime';
 import { ConfirmModal, AlertModal } from '@/components/common/Modal';
 import {
@@ -197,7 +198,7 @@ export default function SessionsPage() {
                 <div>
                   <div className="flex items-center space-x-2">
                     <h3 className="font-medium text-slate-900 dark:text-white">
-                      {session.device_name}
+                      {sanitizeText(session.device_name)}
                     </h3>
                     {session.is_current && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
@@ -209,8 +210,8 @@ export default function SessionsPage() {
                   <div className="flex items-center space-x-4 mt-1 text-sm text-slate-500 dark:text-slate-400">
                     <span className="flex items-center">
                       <Globe className="w-4 h-4 mr-1" />
-                      {session.ip_address}
-                      {session.location && ` • ${session.location}`}
+                      {maskIpAddress(session.ip_address)}
+                      {session.location && ` • ${sanitizeText(session.location)}`}
                     </span>
                     <span className="flex items-center">
                       <Clock className="w-4 h-4 mr-1" />
@@ -218,7 +219,7 @@ export default function SessionsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                    {t('sessions.browserOnOs', { browser: session.browser, os: session.os })} • {t('sessions.started')} {new Date(session.created_at).toLocaleDateString()}
+                    {t('sessions.browserOnOs', { browser: sanitizeText(session.browser), os: sanitizeText(session.os) })} • {t('sessions.started')} {new Date(session.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>

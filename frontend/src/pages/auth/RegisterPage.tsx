@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { EMAIL_PATTERN, PASSWORD_PATTERN } from '@/utils/validation';
 import { 
   AlertCircle, 
   Loader2, 
@@ -45,6 +46,7 @@ export default function RegisterPage() {
   const password = watch('password');
 
   const onSubmit = async (data: RegisterFormData) => {
+    if (isLoading) return;
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -125,7 +127,6 @@ export default function RegisterPage() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-4 transition-transform duration-200 group-hover:translate-y-0"
-            noValidate
           >
         {/* Name fields */}
         <div className="grid grid-cols-2 gap-4">
@@ -145,8 +146,10 @@ export default function RegisterPage() {
                 type="text"
                 autoComplete="given-name"
                 autoFocus
+                spellCheck={false}
                 className="input pl-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                 placeholder={t('common.placeholderFirstName')}
+                maxLength={100}
                 {...register('first_name', {
                   required: t('validation.required'),
                   minLength: { value: 1, message: t('validation.required') },
@@ -173,8 +176,10 @@ export default function RegisterPage() {
                 id="last_name"
                 type="text"
                 autoComplete="family-name"
+                spellCheck={false}
                 className="input pl-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                 placeholder={t('common.placeholderLastName')}
+                maxLength={100}
                 {...register('last_name', {
                   required: t('validation.required'),
                   minLength: { value: 1, message: t('validation.required') },
@@ -205,10 +210,11 @@ export default function RegisterPage() {
               autoComplete="email"
               className="input pl-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
               placeholder={t('common.placeholderEmail')}
+              maxLength={254}
               {...register('email', {
                 required: t('validation.required'),
                 pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  value: EMAIL_PATTERN,
                   message: t('validation.emailInvalid'),
                 },
               })}
@@ -237,6 +243,7 @@ export default function RegisterPage() {
               autoComplete="new-password"
               className="input pl-10 pr-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
               placeholder="••••••••"
+              maxLength={128}
               {...register('password', {
                 required: t('validation.required'),
                 minLength: {
@@ -244,7 +251,7 @@ export default function RegisterPage() {
                   message: t('validation.passwordMin', { min: 8 }),
                 },
                 pattern: {
-                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
+                  value: PASSWORD_PATTERN,
                   message: t('validation.passwordStrength'),
                 },
               })}
@@ -285,6 +292,7 @@ export default function RegisterPage() {
               autoComplete="new-password"
               className="input pl-10 pr-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
               placeholder="••••••••"
+              maxLength={128}
               {...register('confirmPassword', {
                 required: t('validation.required'),
                 validate: (value) =>

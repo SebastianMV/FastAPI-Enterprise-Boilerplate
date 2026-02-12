@@ -117,6 +117,23 @@ class RefreshTokenUseCase:
             if old_session:
                 await self._session_repo.revoke(old_session.id)
 
+            # Blacklist old refresh token JTI so it cannot be reused
+            try:
+                from app.infrastructure.cache import get_cache
+
+                cache = get_cache()
+                # Blacklist for the remaining lifetime of the old token
+                await cache.set(
+                    f"blacklist:token:{old_jti}",
+                    "rotated",
+                    ttl=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+                )
+            except Exception:
+                logger.warning(
+                    "Failed to blacklist old refresh token JTI on rotation — session already revoked in DB",
+                    exc_info=True,
+                )
+
             new_payload = decode_token(new_refresh_token)
             new_jti = new_payload.get("jti", "")
 

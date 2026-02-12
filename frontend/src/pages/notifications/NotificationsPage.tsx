@@ -21,8 +21,10 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useNotificationsStore, type Notification } from '@/stores/notificationsStore';
+import { ConfirmModal } from '@/components/common/Modal';
 import { notificationsService } from '@/services/api';
 import { formatRelativeTime as formatRelativeTimeShared } from '@/utils/formatRelativeTime';
+import { isSafeRedirectUrl } from '@/utils/security';
 
 type FilterType = 'all' | 'unread' | 'read';
 
@@ -55,28 +57,19 @@ function getNotificationIcon(type: Notification['type']) {
 }
 
 /**
- * Validate that an action URL is a safe relative path (not an external redirect).
- */
-function isSafeActionUrl(url: string): boolean {
-  // Only allow relative paths starting with /
-  if (!url.startsWith('/')) return false;
-  // Block protocol-relative URLs (//evil.com)
-  if (url.startsWith('//')) return false;
-  // Block URLs with protocol schemes
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url)) return false;
-  return true;
-}
 
-/**
  * Notifications page with full history.
  */
 export default function NotificationsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>('all');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [notificationToDelete, setNotificationToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 20;
+  const [totalItems, setTotalItems] = useState(0);
   
   const {
     notifications,
@@ -91,32 +84,30 @@ export default function NotificationsPage() {
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await notificationsService.getAll({ page: 1, page_size: 100 });
+      const response = await notificationsService.getAll({
+        page,
+        page_size: pageSize,
+        unread_only: filter === 'unread' ? true : undefined,
+      });
       setNotifications(response.items);
+      setTotalItems(response.total);
     } catch {
       // Fetch failed — non-critical
     } finally {
       setIsLoading(false);
     }
-  }, [setNotifications]);
+  }, [setNotifications, page, filter]);
 
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Filter notifications
-  const filteredNotifications = notifications.filter((n) => {
-    if (filter === 'unread') return !n.read;
-    if (filter === 'read') return n.read;
-    return true;
-  });
+  // For 'read' filter (not supported server-side), apply client-side filter
+  const displayedNotifications = filter === 'read'
+    ? notifications.filter((n) => n.read)
+    : notifications;
 
-  // Paginate
-  const paginatedNotifications = filteredNotifications.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  );
-  const totalPages = Math.ceil(filteredNotifications.length / pageSize);
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
@@ -128,18 +119,27 @@ export default function NotificationsPage() {
       }
       markAsRead(notification.id);
     }
-    if (notification.action_url && isSafeActionUrl(notification.action_url)) {
+    if (notification.action_url && isSafeRedirectUrl(notification.action_url)) {
       navigate(notification.action_url);
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setNotificationToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!notificationToDelete) return;
     try {
-      await notificationsService.delete(id);
-      removeNotification(id);
+      await notificationsService.delete(notificationToDelete);
+      removeNotification(notificationToDelete);
     } catch {
       // Delete failed — non-critical
+    } finally {
+      setShowDeleteModal(false);
+      setNotificationToDelete(null);
     }
   };
 
@@ -220,7 +220,7 @@ export default function NotificationsPage() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
           </div>
-        ) : paginatedNotifications.length === 0 ? (
+        ) : displayedNotifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Bell className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
             <h3 className="text-lg font-medium text-slate-900 dark:text-white">
@@ -237,7 +237,7 @@ export default function NotificationsPage() {
           </div>
         ) : (
           <div className="divide-y divide-slate-200 dark:divide-slate-700">
-            {paginatedNotifications.map((notification) => (
+            {displayedNotifications.map((notification) => (
               <div
                 key={notification.id}
                 role="button"
@@ -272,14 +272,16 @@ export default function NotificationsPage() {
                       onClick={async (e) => { e.stopPropagation(); try { await notificationsService.markAsRead(notification.id); } catch { /* non-critical */ } markAsRead(notification.id); }}
                       className="p-1.5 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
                       title={t('notificationsDropdown.markAsRead')}
+                      aria-label={t('notificationsDropdown.markAsRead')}
                     >
                       <Check className="w-4 h-4" />
                     </button>
                   )}
                   <button
-                    onClick={(e) => handleDelete(notification.id, e)}
+                    onClick={(e) => handleDeleteClick(notification.id, e)}
                     className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
                     title={t('common.delete')}
+                    aria-label={t('common.delete')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -293,7 +295,7 @@ export default function NotificationsPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {t('notifications.showingRange', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, filteredNotifications.length), total: filteredNotifications.length })}
+              {t('notifications.showingRange', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, totalItems), total: totalItems })}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -317,6 +319,16 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => { setShowDeleteModal(false); setNotificationToDelete(null); }}
+        onConfirm={handleDeleteConfirm}
+        title={t('notifications.deleteTitle', 'Delete Notification')}
+        message={t('notifications.deleteConfirm', 'Are you sure you want to delete this notification?')}
+        confirmText={t('common.delete')}
+        variant="danger"
+      />
     </div>
   );
 }

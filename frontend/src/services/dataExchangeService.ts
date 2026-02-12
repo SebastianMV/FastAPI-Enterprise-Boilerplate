@@ -1,4 +1,23 @@
 import api from './api';
+import { validateImportFile } from '@/utils/security';
+
+/** Allowed Content-Types for blob responses from data exchange endpoints */
+const ALLOWED_BLOB_TYPES = new Set([
+  'text/csv',
+  'application/json',
+  'application/pdf',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/octet-stream',
+]);
+
+/** Validates that a blob response has an expected Content-Type */
+function validateBlobResponse(blob: Blob): Blob {
+  if (blob.type && !ALLOWED_BLOB_TYPES.has(blob.type)) {
+    throw new Error(`Unexpected response content type: ${blob.type}`);
+  }
+  return blob;
+}
 
 // Data Exchange Types
 export interface EntityField {
@@ -39,7 +58,7 @@ export interface ImportResult {
 export interface ReportFilter {
   field: string;
   operator: string;
-  value: unknown;
+  value: string | number | boolean | null;
 }
 
 export interface ReportRequest {
@@ -67,8 +86,10 @@ export const dataExchangeService = {
   },
 
   previewExport: async (entity: string, limit = 10): Promise<ExportPreview> => {
+    // Clamp limit to prevent excessive server-side serialization (DoS)
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
     const response = await api.get<ExportPreview>(`/data/export/${encodeURIComponent(entity)}/preview`, {
-      params: { limit },
+      params: { limit: safeLimit },
     });
     return response.data;
   },
@@ -85,7 +106,7 @@ export const dataExchangeService = {
       },
       responseType: 'blob',
     });
-    return response.data;
+    return validateBlobResponse(response.data);
   },
 
   downloadTemplate: async (entity: string, format: 'csv' | 'excel' = 'csv'): Promise<Blob> => {
@@ -93,10 +114,14 @@ export const dataExchangeService = {
       params: { format },
       responseType: 'blob',
     });
-    return response.data;
+    return validateBlobResponse(response.data);
   },
 
   validateImport: async (entity: string, file: File): Promise<ImportResult> => {
+    const validation = validateImportFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error || 'Invalid file');
+    }
     const formData = new FormData();
     formData.append('file', file);
     
@@ -115,6 +140,10 @@ export const dataExchangeService = {
     file: File,
     mode: 'insert' | 'update' | 'upsert' = 'upsert'
   ): Promise<ImportResult> => {
+    const validation = validateImportFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error || 'Invalid file');
+    }
     const formData = new FormData();
     formData.append('file', file);
     
@@ -132,7 +161,7 @@ export const dataExchangeService = {
     const response = await api.post(`/data/reports/${encodeURIComponent(entity)}`, options, {
       responseType: 'blob',
     });
-    return response.data;
+    return validateBlobResponse(response.data);
   },
 
   getReportSummary: async (

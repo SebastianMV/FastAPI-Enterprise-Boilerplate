@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { usersService } from '@/services/api';
+import { sanitizeText, maskEmail } from '@/utils/security';
 import { ConfirmModal, AlertModal } from '@/components/common/Modal';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 import {
@@ -49,7 +50,7 @@ export default function SettingsPage() {
   });
   const [timezone, setTimezone] = useState(() => {
     const stored = localStorage.getItem('timezone');
-    return stored || 'America/Santiago';
+    return stored || Intl.DateTimeFormat().resolvedOptions().timeZone;
   });
 
   // Delete account mutation
@@ -150,9 +151,9 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {user?.first_name} {user?.last_name}
+                {sanitizeText(user?.first_name ?? '')} {sanitizeText(user?.last_name ?? '')}
               </h2>
-              <p className="text-slate-500 dark:text-slate-400">{user?.email}</p>
+              <p className="text-slate-500 dark:text-slate-400">{user?.email ? maskEmail(user.email) : ''}</p>
               <p className="text-sm text-primary-600 dark:text-primary-400 mt-1">
                 {user?.is_superuser ? t('settings.administrator') : t('settings.user')}
               </p>

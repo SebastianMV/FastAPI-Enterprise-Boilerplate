@@ -103,7 +103,10 @@ class TenantModel(Base):
     users: Mapped[list["UserModel"]] = relationship(
         "UserModel",
         back_populates="tenant",
-        lazy="selectin",
+        lazy="raise",
+        # NOTE: lazy="raise" prevents accidental eager loading of ALL tenant
+        # users. Use explicit joinedload/selectinload when needed.
+        # Previous lazy="selectin" caused an N+1 bomb on tenant queries.
     )
 
     # Indexes

@@ -8,8 +8,9 @@ import './i18n'; // Initialize i18n
 
 // Initialize theme from localStorage before first render to avoid flash
 const initializeTheme = () => {
-  const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
-  const theme = savedTheme || 'system';
+  const raw = localStorage.getItem('theme');
+  const VALID_THEMES = ['light', 'dark', 'system'] as const;
+  const theme = (VALID_THEMES as readonly string[]).includes(raw ?? '') ? (raw as typeof VALID_THEMES[number]) : 'system';
   
   if (theme === 'dark') {
     document.documentElement.classList.add('dark');
@@ -30,7 +31,7 @@ initializeTheme();
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60, // 1 minute
       retry: (failureCount, error) => {
         if (failureCount >= 1) return false;
         const status = error instanceof Error && 'response' in error

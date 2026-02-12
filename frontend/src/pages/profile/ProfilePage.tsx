@@ -3,9 +3,11 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { usersService } from '@/services/api';
+import { PASSWORD_PATTERN } from '@/utils/validation';
 import api from '@/services/api';
 import ConnectedAccounts from '@/components/profile/ConnectedAccounts';
 import { ConfirmModal, AlertModal } from '@/components/common/Modal';
+import { isSafeImageUrl, maskEmail } from '@/utils/security';
 import { 
   User as UserIcon, 
   Mail, 
@@ -226,6 +228,7 @@ export default function ProfilePage() {
   };
 
   const onPasswordSubmit = async (data: PasswordFormData) => {
+    if (isPasswordLoading) return;
     setIsPasswordLoading(true);
     setSuccessMessage(null);
     setErrorMessage(null);
@@ -291,7 +294,7 @@ export default function ProfilePage() {
           {/* Avatar with upload capability */}
           <div className="relative">
             <div className="relative group">
-              {user?.avatar_url ? (
+              {user?.avatar_url && isSafeImageUrl(user.avatar_url) ? (
                 <img
                   src={user.avatar_url}
                   alt={`${user.first_name} ${user.last_name}`}
@@ -342,7 +345,7 @@ export default function ProfilePage() {
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
               {user?.first_name} {user?.last_name}
             </h2>
-            <p className="text-slate-500 dark:text-slate-400">{user?.email}</p>
+            <p className="text-slate-500 dark:text-slate-400">{user?.email ? maskEmail(user.email) : ''}</p>
             <div className="flex items-center space-x-4 mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 user?.is_superuser 
@@ -426,6 +429,8 @@ export default function ProfilePage() {
                     <input
                       type="text"
                       className="input"
+                      maxLength={100}
+                      spellCheck={false}
                       {...registerProfile('first_name', { required: t('validation.required') })}
                     />
                     {profileErrors.first_name && (
@@ -439,6 +444,8 @@ export default function ProfilePage() {
                     <input
                       type="text"
                       className="input"
+                      maxLength={100}
+                      spellCheck={false}
                       {...registerProfile('last_name', { required: t('validation.required') })}
                     />
                     {profileErrors.last_name && (
@@ -558,6 +565,8 @@ export default function ProfilePage() {
                   type="password"
                   className="input"
                   autoComplete="current-password"
+                  spellCheck={false}
+                  maxLength={128}
                   {...registerPassword('current_password', { required: t('validation.required') })}
                 />
                 {passwordErrors.current_password && (
@@ -572,11 +581,13 @@ export default function ProfilePage() {
                   type="password"
                   className="input"
                   autoComplete="new-password"
+                  spellCheck={false}
+                  maxLength={128}
                   {...registerPassword('new_password', { 
                     required: t('validation.required'),
                     minLength: { value: 8, message: t('validation.passwordMin', { min: 8 }) },
                     pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/,
+                      value: PASSWORD_PATTERN,
                       message: t('validation.passwordStrength')
                     }
                   })}
@@ -593,6 +604,8 @@ export default function ProfilePage() {
                   type="password"
                   className="input"
                   autoComplete="new-password"
+                  spellCheck={false}
+                  maxLength={128}
                   {...registerPassword('confirm_password', { 
                     required: t('validation.required'),
                     validate: value => value === newPassword || t('profile.passwordsNoMatch')

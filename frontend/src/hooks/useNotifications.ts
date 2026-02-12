@@ -1,8 +1,14 @@
 /**
  * Notifications hook for real-time and persistent notifications.
  * 
- * Combines WebSocket for real-time delivery with REST API for
- * persistence and history.
+ * **Delegates all state to the Zustand ``useNotificationsStore``** so
+ * that a single source of truth is shared by every consumer
+ * (``NotificationsDropdown``, ``NotificationsPage``, etc.).
+ * 
+ * The hook is responsible only for:
+ * 1. Connecting WebSocket → pushing events into the store.
+ * 2. Initial REST fetch → seeding the store on mount.
+ * 3. Exposing convenience methods that wrap API calls + store updates.
  * 
  * @example
  * ```tsx
@@ -13,19 +19,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useWebSocket } from './useWebSocket';
 import { notificationsService } from '../services/notificationsService';
+import { validateActionUrl, sanitizeText } from '../utils/security';
+import { useNotificationsStore } from '../stores/notificationsStore';
+import type { Notification } from '../stores/notificationsStore';
 
-export interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  category?: string;
-  metadata?: Record<string, unknown>;
-  action_url?: string;
-  read: boolean;
-  created_at: string;
-}
+export type { Notification } from '../stores/notificationsStore';
 
 export interface UseNotificationsOptions {
   /** Auto-fetch on mount */
@@ -63,15 +61,24 @@ export function useNotifications(
   options: UseNotificationsOptions = {}
 ): UseNotificationsReturn {
   const { autoFetch = true, limit = 50, pollInterval = 0 } = options;
-  
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+
+  // ── Zustand store (single source of truth) ──
+  const notifications = useNotificationsStore((s) => s.notifications);
+  const unreadCount = useNotificationsStore((s) => s.unreadCount);
+  const isConnected = useNotificationsStore((s) => s.isConnected);
+  const storeAdd = useNotificationsStore((s) => s.addNotification);
+  const storeSet = useNotificationsStore((s) => s.setNotifications);
+  const storeMarkRead = useNotificationsStore((s) => s.markAsRead);
+  const storeMarkAllRead = useNotificationsStore((s) => s.markAllAsRead);
+  const storeRemove = useNotificationsStore((s) => s.removeNotification);
+  const storeSetCount = useNotificationsStore((s) => s.setUnreadCount);
+
+  // ── Local loading / error state (not shared) ──
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Handle real-time notifications
+
+  // ── WebSocket → store bridge ──
   const handleNotification = useCallback((payload: Record<string, unknown>) => {
-    // Runtime validation: ensure payload has required Notification fields
     if (
       typeof payload !== 'object' ||
       payload === null ||
@@ -80,149 +87,122 @@ export function useNotifications(
       typeof payload.title !== 'string' ||
       typeof payload.message !== 'string'
     ) {
-      return; // Silently drop malformed payloads
+      return;
     }
 
     const notification: Notification = {
       id: payload.id as string,
       type: payload.type as string,
-      title: payload.title as string,
-      message: payload.message as string,
+      title: sanitizeText(payload.title as string),
+      message: sanitizeText(payload.message as string),
       priority: (['low', 'normal', 'high', 'urgent'].includes(payload.priority as string)
         ? payload.priority
         : 'normal') as Notification['priority'],
       category: typeof payload.category === 'string' ? payload.category : undefined,
       metadata: typeof payload.metadata === 'object' && payload.metadata !== null
+        && !Array.isArray(payload.metadata)
         ? payload.metadata as Record<string, unknown>
         : undefined,
-      action_url: typeof payload.action_url === 'string' ? payload.action_url : undefined,
+      action_url: validateActionUrl(payload.action_url),
       read: typeof payload.read === 'boolean' ? payload.read : false,
       created_at: typeof payload.created_at === 'string' ? payload.created_at : new Date().toISOString(),
     };
-    
-    // Add to beginning of list
-    setNotifications((prev) => [notification, ...prev]);
-    
-    // Increment unread count
-    if (!notification.read) {
-      setUnreadCount((prev) => prev + 1);
-    }
-  }, []);
-  
-  // WebSocket connection
-  const { isConnected } = useWebSocket({
-    onNotification: handleNotification,
-  });
-  
-  // Fetch notifications from API
+
+    storeAdd(notification);
+  }, [storeAdd]);
+
+  // Single WebSocket connection shared via the store's `isConnected`
+  useWebSocket({ onNotification: handleNotification });
+
+  // ── REST operations ──
   const fetchNotifications = useCallback(async (opts?: {
     unreadOnly?: boolean;
     limit?: number;
   }) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const data = await notificationsService.list({
         unread_only: opts?.unreadOnly,
         limit: opts?.limit ?? limit,
       });
-      
-      setNotifications(data.items as Notification[]);
-    } catch (err) {
+
+      if (Array.isArray(data.items)) {
+        storeSet(data.items as Notification[]);
+      }
+    } catch {
       setError('notifications.fetchError');
     } finally {
       setIsLoading(false);
     }
-  }, [limit]);
-  
-  // Fetch unread count
+  }, [limit, storeSet]);
+
   const fetchUnreadCount = useCallback(async () => {
     try {
       const count = await notificationsService.getUnreadCount();
-      setUnreadCount(count);
+      storeSetCount(count);
     } catch {
-      // Unread count fetch failed — non-critical
+      // Non-critical
     }
-  }, []);
-  
-  // Mark as read
+  }, [storeSetCount]);
+
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
       await notificationsService.markAsRead(notificationId);
-      
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notificationId ? { ...n, read: true } : n
-        )
-      );
-      
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      storeMarkRead(notificationId);
     } catch {
-      // Mark as read failed — non-critical
+      setError('notifications.markAsReadError');
     }
-  }, []);
-  
-  // Mark all as read
+  }, [storeMarkRead]);
+
   const markAllAsRead = useCallback(async () => {
     try {
       await notificationsService.markAllAsRead();
-      
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, read: true }))
-      );
-      
-      setUnreadCount(0);
+      storeMarkAllRead();
     } catch {
-      // Mark all as read failed — non-critical
+      setError('notifications.markAllAsReadError');
     }
-  }, []);
-  
-  // Delete notification
+  }, [storeMarkAllRead]);
+
   const deleteNotification = useCallback(async (notificationId: string) => {
     try {
       await notificationsService.delete(notificationId);
-      
-      setNotifications((prev) => {
-        const notification = prev.find((n) => n.id === notificationId);
-        if (notification && !notification.read) {
-          setUnreadCount((count) => Math.max(0, count - 1));
-        }
-        return prev.filter((n) => n.id !== notificationId);
-      });
+      storeRemove(notificationId);
     } catch {
-      // Delete notification failed — non-critical
+      setError('notifications.deleteError');
     }
-  }, []);
-  
-  // Clear all read notifications
+  }, [storeRemove]);
+
   const clearRead = useCallback(async () => {
     try {
-      // Clear read: no dedicated service method; use raw list re-fetch
       await notificationsService.list({ unread_only: true });
-      
-      setNotifications((prev) => prev.filter((n) => !n.read));
+      // Remove read notifications from store
+      const current = useNotificationsStore.getState().notifications;
+      const unreadOnly = current.filter((n) => !n.read);
+      storeSet(unreadOnly);
     } catch {
-      // Clear read failed — non-critical
+      setError('notifications.clearReadError');
     }
-  }, []);
-  
-  // Auto-fetch on mount
+  }, [storeSet]);
+
+  // ── Auto-fetch ──
   useEffect(() => {
     if (autoFetch) {
       fetchNotifications();
       fetchUnreadCount();
     }
   }, [autoFetch, fetchNotifications, fetchUnreadCount]);
-  
-  // Poll for unread count
+
+  // ── Poll unread count ──
   useEffect(() => {
-    if (pollInterval > 0) {
-      const interval = setInterval(fetchUnreadCount, pollInterval);
+    const safePollInterval = pollInterval > 0 ? Math.max(5000, pollInterval) : 0;
+    if (safePollInterval > 0) {
+      const interval = setInterval(fetchUnreadCount, safePollInterval);
       return () => clearInterval(interval);
     }
   }, [pollInterval, fetchUnreadCount]);
-  
+
   return {
     notifications,
     unreadCount,

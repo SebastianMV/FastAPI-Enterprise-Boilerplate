@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '@/services/api';
+import { EMAIL_PATTERN } from '@/utils/validation';
 import { 
   Mail, 
   ArrowLeft, 
@@ -33,6 +34,7 @@ export default function ForgotPasswordPage() {
   } = useForm<ForgotPasswordFormData>();
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
+    if (isLoading) return;
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -118,7 +120,6 @@ export default function ForgotPasswordPage() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-5 transition-transform duration-200 group-hover:translate-y-0"
-            noValidate
           >
             <div className="transition-colors duration-200">
               <label 
@@ -136,11 +137,12 @@ export default function ForgotPasswordPage() {
                   type="email"
                   autoComplete="email"
                   placeholder={t('auth.enterEmail')}
+                  maxLength={254}
                   className="input pl-10 shadow-sm border border-slate-300 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
                   {...register('email', {
                     required: t('validation.required'),
                     pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      value: EMAIL_PATTERN,
                       message: t('validation.emailInvalid'),
                     },
                   })}

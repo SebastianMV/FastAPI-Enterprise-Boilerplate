@@ -6,10 +6,11 @@
  * 
  * Features:
  * - Automatic reconnection with exponential backoff
- * - Authentication via JWT token (auto-refresh)
- * - Typed message handlers for notifications and presence
+ * - Authentication via HttpOnly cookies (auto-refresh)
+ * - Typed message handlers with runtime validation
  * - Connection state management
  * - Ping/pong keep-alive
+ * - Client-side message rate limiting
  * 
  * @example
  * ```tsx
@@ -22,6 +23,7 @@
 
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { sanitizeText } from '../utils/security';
 
 // Debug logging - only in development
 const DEBUG = import.meta.env.DEV;
@@ -45,6 +47,14 @@ export type MessageType =
   | 'presence_away'
   | 'broadcast'
   | 'tenant_broadcast';
+
+const VALID_MESSAGE_TYPES = new Set<string>([
+  'connected', 'disconnected', 'error', 'ping', 'pong',
+  'notification', 'notification_read', 'chat_message',
+  'chat_typing', 'chat_read', 'chat_delivered',
+  'presence_online', 'presence_offline', 'presence_away',
+  'broadcast', 'tenant_broadcast',
+]);
 
 export interface WebSocketMessage {
   type: MessageType;
@@ -130,7 +140,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     options.pingInterval,
   ]);
   
-  const { accessToken } = useAuthStore();
+  const { tokenExpiresAt } = useAuthStore();
   const refreshAccessToken = useAuthStore((state) => state.refreshAccessToken);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isConnected, setIsConnected] = useState(false);
@@ -160,10 +170,41 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     return `${protocol}//${host}/ws`;
   }, [opts.url]);
   
-  // Handle incoming messages
+  // Handle incoming messages with runtime validation
   const handleMessage = useCallback((event: MessageEvent) => {
+    // Reject oversized messages to prevent memory exhaustion
+    if (typeof event.data === 'string' && event.data.length > 1_000_000) {
+      debugLog('[WebSocket] Dropped oversized message:', event.data.length, 'bytes');
+      return;
+    }
     try {
-      const message: WebSocketMessage = JSON.parse(event.data);
+      const parsed = JSON.parse(event.data);
+      
+      // Runtime validation: ensure message has required structure
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        typeof parsed.type !== 'string' ||
+        !VALID_MESSAGE_TYPES.has(parsed.type)
+      ) {
+        return; // Drop malformed or unknown-type messages
+      }
+      
+      // Ensure payload is an object
+      if (typeof parsed.payload !== 'object' || parsed.payload === null) {
+        parsed.payload = {};
+      }
+      
+      const message: WebSocketMessage = {
+        type: parsed.type as MessageType,
+        payload: parsed.payload,
+        sender_id: typeof parsed.sender_id === 'string' ? parsed.sender_id : undefined,
+        recipient_id: typeof parsed.recipient_id === 'string' ? parsed.recipient_id : undefined,
+        room_id: typeof parsed.room_id === 'string' ? parsed.room_id : undefined,
+        timestamp: typeof parsed.timestamp === 'string' ? parsed.timestamp : undefined,
+        message_id: typeof parsed.message_id === 'string' ? parsed.message_id : undefined,
+      };
+      
       setLastMessage(message);
       
       // Call general message handler
@@ -171,10 +212,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       
       // Handle specific message types
       switch (message.type) {
-        case 'connected':
-          setConnectionId(message.payload.connection_id as string);
-          optionsRef.current.onConnected?.(message.payload.connection_id as string);
+        case 'connected': {
+          const connId = message.payload.connection_id;
+          if (typeof connId === 'string') {
+            setConnectionId(connId);
+            optionsRef.current.onConnected?.(connId);
+          }
           break;
+        }
           
         case 'notification':
           optionsRef.current.onNotification?.(message.payload);
@@ -184,25 +229,38 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
           optionsRef.current.onChatMessage?.(message.payload);
           break;
           
-        case 'presence_online':
-          optionsRef.current.onPresenceChange?.(message.payload.user_id as string, 'online');
+        case 'presence_online': {
+          const userId = message.payload.user_id;
+          if (typeof userId === 'string') {
+            optionsRef.current.onPresenceChange?.(userId, 'online');
+          }
           break;
+        }
           
-        case 'presence_offline':
-          optionsRef.current.onPresenceChange?.(message.payload.user_id as string, 'offline');
+        case 'presence_offline': {
+          const userId = message.payload.user_id;
+          if (typeof userId === 'string') {
+            optionsRef.current.onPresenceChange?.(userId, 'offline');
+          }
           break;
+        }
           
-        case 'presence_away':
-          optionsRef.current.onPresenceChange?.(message.payload.user_id as string, 'away');
+        case 'presence_away': {
+          const userId = message.payload.user_id;
+          if (typeof userId === 'string') {
+            optionsRef.current.onPresenceChange?.(userId, 'away');
+          }
           break;
+        }
           
-        case 'chat_typing':
-          optionsRef.current.onTyping?.(
-            message.payload.user_id as string,
-            message.payload.is_typing as boolean,
-            message.room_id,
-          );
+        case 'chat_typing': {
+          const userId = message.payload.user_id;
+          const isTyping = message.payload.is_typing;
+          if (typeof userId === 'string' && typeof isTyping === 'boolean') {
+            optionsRef.current.onTyping?.(userId, isTyping, message.room_id);
+          }
           break;
+        }
           
         case 'error':
           optionsRef.current.onError?.(new Error('WebSocket server error'));
@@ -263,7 +321,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       ws.onmessage = handleMessage;
       
       ws.onclose = (event) => {
-        debugLog('[WebSocket] Connection closed:', event.code, event.reason, 'intentional:', isIntentionalCloseRef.current);
+        debugLog('[WebSocket] Connection closed:', event.code, 'intentional:', isIntentionalCloseRef.current);
         setIsConnected(false);
         setConnectionId(null);
         optionsRef.current.onDisconnected?.();
@@ -274,6 +332,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         
         // 403/1008 = Policy Violation (likely auth issue)
         if (event.code === 1008 && !isIntentionalCloseRef.current) {
+          // Check against maxReconnectAttempts to prevent infinite loop
+          if (reconnectAttemptsRef.current >= opts.maxReconnectAttempts) {
+            optionsRef.current.onError?.(new Error('WebSocket max reconnect attempts reached'));
+            return;
+          }
           debugLog('[WebSocket] Authentication failed, attempting token refresh...');
           refreshAccessToken().then(() => {
             debugLog('[WebSocket] Token refreshed, reconnecting...');
@@ -288,11 +351,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         
         // Auto-reconnect only if not intentional close
         if (!isIntentionalCloseRef.current && opts.autoReconnect && reconnectAttemptsRef.current < opts.maxReconnectAttempts) {
-          debugLog('[WebSocket] Scheduling reconnect attempt', reconnectAttemptsRef.current + 1);
+          // Exponential backoff with jitter: delay * 2^attempts + random jitter
+          const backoffDelay = Math.min(
+            opts.reconnectDelay * Math.pow(2, reconnectAttemptsRef.current) + Math.random() * 1000,
+            60000 // Cap at 60 seconds
+          );
+          debugLog('[WebSocket] Scheduling reconnect attempt', reconnectAttemptsRef.current + 1, 'in', Math.round(backoffDelay), 'ms');
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttemptsRef.current++;
             connect();
-          }, opts.reconnectDelay);
+          }, backoffDelay);
         }
       };
       
@@ -330,12 +398,43 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     setConnectionId(null);
   }, []);
   
+  // Rate limiting for outgoing messages
+  const lastSendTimestamps = useRef<number[]>([]);
+  const MAX_MESSAGES_PER_SECOND = 10;
+  
+  const isRateLimited = useCallback((): boolean => {
+    const now = Date.now();
+    // Remove timestamps older than 1 second
+    lastSendTimestamps.current = lastSendTimestamps.current.filter(t => now - t < 1000);
+    if (lastSendTimestamps.current.length >= MAX_MESSAGES_PER_SECOND) {
+      return true;
+    }
+    lastSendTimestamps.current.push(now);
+    return false;
+  }, []);
+  
   // Send a message
   const sendMessage = useCallback((message: Partial<WebSocketMessage>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
+      // Validate outbound message type against known types
+      if (message.type && !VALID_MESSAGE_TYPES.has(message.type)) {
+        return;
+      }
+      if (isRateLimited()) {
+        if (DEBUG) {
+          console.warn('WebSocket message rate limited');
+        }
+        return;
+      }
+      // Sanitize string values in payload to prevent stored-XSS via server relay
+      const sanitizedPayload: Record<string, unknown> = {};
+      const rawPayload = (message.payload || {}) as Record<string, unknown>;
+      for (const [key, val] of Object.entries(rawPayload)) {
+        sanitizedPayload[key] = typeof val === 'string' ? sanitizeText(val) : val;
+      }
       wsRef.current.send(JSON.stringify({
         type: message.type,
-        payload: message.payload || {},
+        payload: sanitizedPayload,
         recipient_id: message.recipient_id,
         room_id: message.room_id,
       }));
@@ -344,9 +443,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         console.warn('Cannot send message: WebSocket not connected');
       }
     }
-  }, []);
+  }, [isRateLimited]);
   
-  // Send a chat message
+  // Send a chat message (with content sanitization)
   const sendChatMessage = useCallback((
     content: string,
     recipientId?: string,
@@ -354,7 +453,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   ) => {
     sendMessage({
       type: 'chat_message',
-      payload: { content },
+      payload: { content: sanitizeText(content) },
       recipient_id: recipientId,
       room_id: roomId,
     });
@@ -376,9 +475,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   
   // Send read receipt
   const sendReadReceipt = useCallback((messageIds: string[], senderId: string) => {
+    // Cap IDs to prevent oversized payloads
+    const cappedIds = messageIds.slice(0, 100);
     sendMessage({
       type: 'chat_read',
-      payload: { message_ids: messageIds },
+      payload: { message_ids: cappedIds },
       recipient_id: senderId,
     });
   }, [sendMessage]);
@@ -392,20 +493,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     // Check if token is expired or about to expire (within 1 minute)
     const checkTokenAndConnect = async () => {
       try {
-        // If we have an in-memory accessToken, check its expiry
-        if (accessToken) {
-          const parts = accessToken.split('.');
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1]));
-            const expiresAt = payload.exp * 1000;
-            const now = Date.now();
-            const timeUntilExpiry = expiresAt - now;
-            
-            if (timeUntilExpiry < 60000) {
-              debugLog('[WebSocket] Token expiring soon, refreshing before connect...');
-              await refreshAccessToken();
-              return;
-            }
+        // If we have an expiry timestamp, check if token is about to expire
+        if (tokenExpiresAt) {
+          const now = Date.now();
+          const timeUntilExpiry = tokenExpiresAt - now;
+          
+          if (timeUntilExpiry < 60000) {
+            debugLog('[WebSocket] Token expiring soon, refreshing before connect...');
+            await refreshAccessToken();
+            // Fall through to connect() after refresh instead of returning
           }
         }
       } catch {

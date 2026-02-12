@@ -22,6 +22,7 @@ from app.api.v1.schemas.auth import (
     TokenResponse,
     UserResponse,
     VerifyResetTokenRequest,
+    VerifyEmailTokenRequest,
 )
 from app.api.v1.schemas.common import MessageResponse
 from app.config import settings
@@ -51,6 +52,15 @@ SECONDS_PER_DAY = 86400
 
 # Password reset token size (bytes of randomness)
 PASSWORD_RESET_TOKEN_BYTES = 32
+
+
+def _hash_reset_token(token: str) -> str:
+    """Hash a password reset token with SHA-256 for secure storage.
+
+    Reset tokens are high-entropy random strings, so SHA-256 is
+    sufficient (no need for bcrypt's slow brute-force resistance).
+    """
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 # =============================================================================
@@ -454,7 +464,6 @@ async def change_password(
     user.updated_at = datetime.now(UTC)
 
     await user_repository.update(user)
-    await session.commit()
 
     # Invalidate all existing sessions (tokens remain valid until blacklisted)
     try:
@@ -464,6 +473,7 @@ async def change_password(
 
         session_repo = SQLAlchemySessionRepository(session)
         await session_repo.revoke_all(current_user_id)
+        # Single atomic commit: password change + session revocation
         await session.commit()
     except Exception:
         logger.error(
@@ -534,7 +544,9 @@ async def forgot_password(
                 "user_id": str(user.id),
             }
             await cache.set(
-                f"password_reset:token:{token}", token_data, ttl=ttl_seconds
+                f"password_reset:token:{_hash_reset_token(token)}",
+                token_data,
+                ttl=ttl_seconds,
             )
 
             # Increment rate counter (with same TTL)
@@ -591,7 +603,8 @@ async def verify_reset_token(
 
     cache = get_cache()
 
-    token_data = await cache.get(f"password_reset:token:{request.token}")
+    token_hash = _hash_reset_token(request.token)
+    token_data = await cache.get(f"password_reset:token:{token_hash}")
 
     if not token_data:
         raise HTTPException(
@@ -621,13 +634,15 @@ async def reset_password(
     """
     Reset password using a valid reset token.
     """
-    # --- 1. Retrieve and validate reset token from cache ---
+    # --- 1. Atomically retrieve and consume reset token from cache ---
     token_data = None
     try:
         from app.infrastructure.cache import get_cache
 
         cache = get_cache()
-        token_data = await cache.get(f"password_reset:token:{request.token}")
+        token_data = await cache.get_and_delete(
+            f"password_reset:token:{_hash_reset_token(request.token)}"
+        )
     except Exception:
         logger.debug("Failed to retrieve reset token from cache", exc_info=True)
 
@@ -654,7 +669,9 @@ async def reset_password(
 
     # --- 3. Get user and update password ---
     user_repository = SQLAlchemyUserRepository(session)
-    user = await user_repository.get_by_id(token_data["user_id"])
+    from uuid import UUID as _UUID
+
+    user = await user_repository.get_by_id(_UUID(token_data["user_id"]))
 
     if not user:
         raise HTTPException(
@@ -667,15 +684,9 @@ async def reset_password(
     user.updated_at = datetime.now(UTC)
 
     await user_repository.update(user)
-    await session.commit()
 
-    # --- 4. Clean up tokens and rate limits ---
-    try:
-        await cache.delete(f"password_reset:token:{request.token}")
-    except Exception:
-        logger.debug("Failed to delete reset token from cache", exc_info=True)
-
-    # Invalidate all other active reset tokens for this user's email
+    # --- 4. Clean up rate limits ---
+    # Token already consumed atomically by get_and_delete above
     try:
         email_lower = str(user.email).lower()
         # Clear the rate limit counter so user can request new tokens if needed
@@ -691,6 +702,7 @@ async def reset_password(
 
         session_repo = SQLAlchemySessionRepository(session)
         await session_repo.revoke_all(user.id)
+        # Single atomic commit: password change + session revocation
         await session.commit()
     except Exception:
         logger.error(
@@ -743,7 +755,25 @@ async def send_verification_email(
     Send verification email to the current user.
 
     Can be called multiple times to resend the verification link.
+    Rate limited to 3 requests per hour per user.
     """
+    # Per-user rate limit (B21): max 3 verification emails per hour
+    from app.infrastructure.cache import get_cache
+
+    cache = get_cache()
+    rate_key = f"email_verify:rate:{current_user.id}"
+    rate_count_raw = await cache.get(rate_key)
+    rate_count = int(rate_count_raw) if rate_count_raw else 0
+
+    if rate_count >= 3:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "code": "RATE_LIMIT",
+                "message": "Too many verification emails requested. Please try again later.",
+            },
+        )
+
     user_id = current_user.id
     user_repository = SQLAlchemyUserRepository(session)
     user = await user_repository.get_by_id(user_id)
@@ -799,7 +829,7 @@ async def send_verification_email(
     description="Verify email address with token.",
 )
 async def verify_email(
-    request: VerifyResetTokenRequest,
+    request: VerifyEmailTokenRequest,
     session: DbSession,
 ) -> MessageResponse:
     """

@@ -53,6 +53,7 @@ class MetricsService:
 
     def __init__(self) -> None:
         self._response_times: deque[float] = deque(maxlen=self.MAX_SAMPLES)
+        self._sorted_cache: list[float] | None = None
         self._request_count = 0
         self._error_count = 0
         self._redis_client: redis.Redis | None = None
@@ -99,6 +100,7 @@ class MetricsService:
     def record_response_time(self, response_time_ms: float) -> None:
         """Record a response time sample."""
         self._response_times.append(response_time_ms)
+        self._sorted_cache = None
         self._request_count += 1
 
     def record_error(self) -> None:
@@ -123,7 +125,9 @@ class MetricsService:
                 sample_count=0,
             )
 
-        sorted_times = sorted(self._response_times)
+        if self._sorted_cache is None or len(self._sorted_cache) != len(self._response_times):
+            self._sorted_cache = sorted(self._response_times)
+        sorted_times = self._sorted_cache
         count = len(sorted_times)
 
         avg_ms = sum(sorted_times) / count
@@ -174,6 +178,7 @@ class MetricsService:
     def reset_metrics(self) -> None:
         """Reset all metrics (for testing or rotation)."""
         self._response_times.clear()
+        self._sorted_cache = None
         self._request_count = 0
         self._error_count = 0
 

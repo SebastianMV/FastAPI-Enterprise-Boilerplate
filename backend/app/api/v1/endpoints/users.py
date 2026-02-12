@@ -42,6 +42,9 @@ from app.domain.exceptions.base import (
     EntityNotFoundError,
     ValidationError,
 )
+from app.infrastructure.database.repositories.session_repository import (
+    SQLAlchemySessionRepository,
+)
 from app.infrastructure.database.repositories.user_repository import (
     SQLAlchemyUserRepository,
 )
@@ -321,7 +324,8 @@ async def delete_user(
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
 
-    use_case = DeleteUserUseCase(repo)
+    session_repo = SQLAlchemySessionRepository(session)
+    use_case = DeleteUserUseCase(repo, session_repository=session_repo)
 
     try:
         await use_case.execute(DeleteUserRequest(user_id=user_id))

@@ -60,6 +60,10 @@ INDEX_CONFIGS: dict[SearchIndex, dict[str, Any]] = {
         },
         "highlight_columns": ["email", "first_name", "last_name"],
         "suggest_column": "email",
+        "allowed_filter_fields": {
+            "email", "first_name", "last_name", "is_active",
+            "is_superuser", "created_at", "updated_at", "tenant_id",
+        },
     },
     SearchIndex.AUDIT_LOGS: {
         "table": "audit_logs",
@@ -73,6 +77,10 @@ INDEX_CONFIGS: dict[SearchIndex, dict[str, Any]] = {
         },
         "highlight_columns": ["action", "reason"],
         "suggest_column": "action",
+        "allowed_filter_fields": {
+            "action", "resource_type", "resource_id", "reason",
+            "actor_id", "actor_ip", "created_at", "tenant_id",
+        },
     },
 }
 
@@ -181,9 +189,12 @@ class PostgresFullTextSearch(SearchPort):
             where_clauses.append(f"{config['deleted_column']} IS NULL")
 
         # Additional filters
+        allowed_fields = config.get("allowed_filter_fields")
         for i, f in enumerate(query.filters):
             param_name = f"filter_{i}"
-            where_clauses.append(self._build_filter_clause(f, param_name))
+            where_clauses.append(
+                self._build_filter_clause(f, param_name, allowed_fields=allowed_fields)
+            )
             params[param_name] = f.value
 
         sql_parts.append("WHERE " + " AND ".join(where_clauses))
@@ -638,12 +649,21 @@ class PostgresFullTextSearch(SearchPort):
         self,
         filter: SearchFilter,
         param_name: str,
+        *,
+        allowed_fields: set[str] | None = None,
     ) -> str:
-        """Build SQL filter clause with field sanitization."""
+        """Build SQL filter clause with field sanitization and allowlist check."""
         # Sanitize field name: only allow alphanumeric and underscore
         field = re.sub(r"[^a-zA-Z0-9_]", "", filter.field)
         if not field:
             raise ValueError(f"Invalid filter field: {filter.field}")
+
+        # Allowlist check — reject fields not explicitly permitted (B6)
+        if allowed_fields and field not in allowed_fields:
+            raise ValueError(
+                f"Field '{field}' is not allowed for filtering on this index"
+            )
+
         op = filter.operator.lower()
 
         # NOTE: For ILIKE operators, callers must escape user input via

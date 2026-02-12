@@ -83,6 +83,7 @@ class ChangePasswordRequest(BaseModel):
 
     current_password: str = Field(
         ...,
+        min_length=1,
         max_length=128,
         description="Current password for verification",
     )
@@ -128,6 +129,16 @@ class VerifyResetTokenRequest(BaseModel):
         ...,
         max_length=256,
         description="Password reset token to verify",
+    )
+
+
+class VerifyEmailTokenRequest(BaseModel):
+    """Request to verify an email verification token."""
+
+    token: str = Field(
+        ...,
+        max_length=256,
+        description="Email verification token",
     )
 
 

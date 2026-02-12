@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, X, Loader2, User, FileText, MessageSquare, Clock } from 'lucide-react';
 import { searchService, type SearchHit } from '@/services/api';
 import { useDebounce } from '@/hooks/useDebounce';
+import { sanitizeSearchQuery, maskEmail, sanitizeText } from '@/utils/security';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -45,9 +46,15 @@ export default function SearchBar({
     const saved = sessionStorage.getItem('recent-searches');
     if (saved) {
       try {
-        setRecentSearches(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Validate schema: must be an array of strings, max 10 items
+        if (Array.isArray(parsed)) {
+          setRecentSearches(
+            parsed.filter((s): s is string => typeof s === 'string').slice(0, 10)
+          );
+        }
       } catch {
-        // Ignore
+        sessionStorage.removeItem('recent-searches');
       }
     }
   }, []);
@@ -70,9 +77,17 @@ export default function SearchBar({
         return;
       }
 
+      // Sanitize query to prevent search-engine injection
+      const sanitized = sanitizeSearchQuery(debouncedQuery);
+      if (!sanitized) {
+        setResults([]);
+        setSuggestions([]);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const response = await searchService.quickSearch(debouncedQuery, controller.signal);
+        const response = await searchService.quickSearch(sanitized, controller.signal);
         if (!controller.signal.aborted) {
           setResults(response.hits.slice(0, 5));
           setSuggestions(response.suggestions || []);
@@ -98,9 +113,10 @@ export default function SearchBar({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
+        event.target instanceof Node &&
         dropdownRef.current && 
-        !dropdownRef.current.contains(event.target as Node) &&
-        !inputRef.current?.contains(event.target as Node)
+        !dropdownRef.current.contains(event.target) &&
+        !inputRef.current?.contains(event.target)
       ) {
         setIsOpen(false);
       }
@@ -179,7 +195,8 @@ export default function SearchBar({
   const getResultSubtitle = (result: SearchHit): string => {
     const source = result.source as Record<string, unknown> | undefined;
     if (!source) return '';
-    if (source.email) return String(source.email);
+    // Mask emails for privacy (defense-in-depth against PII exposure)
+    if (source.email) return maskEmail(String(source.email));
     if (source.description) return String(source.description).slice(0, 50);
     return '';
   };
@@ -201,6 +218,8 @@ export default function SearchBar({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={effectivePlaceholder}
+          maxLength={500}
+          autoComplete="off"
           className="w-full pl-10 pr-10 py-2 bg-slate-100 dark:bg-slate-700 border-0 rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
         />
         {query && (
@@ -307,7 +326,7 @@ export default function SearchBar({
           {/* No Results */}
           {query && !isLoading && results.length === 0 && suggestions.length === 0 && (
             <div className="p-4 text-center text-slate-500">
-              <p className="text-sm">{t('search.noResultsFor', { query })}</p>
+              <p className="text-sm">{t('search.noResultsFor', { query: sanitizeText(query) })}</p>
             </div>
           )}
 
@@ -318,7 +337,7 @@ export default function SearchBar({
                 onClick={() => handleSearch(query)}
                 className="w-full px-2 py-2 text-sm text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-colors text-left"
               >
-                {t('search.searchAll', { query })} →
+                {t('search.searchAll', { query: sanitizeText(query) })} →
               </button>
             </div>
           )}

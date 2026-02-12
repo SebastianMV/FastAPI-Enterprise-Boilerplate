@@ -5,7 +5,7 @@
 OAuth2/SSO authentication endpoints.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
@@ -21,6 +21,8 @@ from app.application.services.oauth_service import OAuthService
 from app.config import settings
 from app.domain.entities.oauth import OAuthProvider
 from app.infrastructure.auth import create_access_token, create_refresh_token
+from app.infrastructure.auth.jwt_handler import decode_token, hash_jti
+from app.infrastructure.database.repositories.session_repository import SQLAlchemySessionRepository
 from app.infrastructure.observability.logging import get_logger
 
 logger = get_logger(__name__)
@@ -254,6 +256,27 @@ async def callback(
         tenant_id=user.tenant_id,
     )
 
+    # Create OAuth session record (B29)
+    payload = decode_token(refresh_token)
+    jti = payload.get("jti", "")
+    session_repo = SQLAlchemySessionRepository(session)
+    from app.domain.entities.session import UserSession
+
+    user_session = UserSession(
+        user_id=user.id,
+        tenant_id=user.tenant_id,
+        refresh_token_hash=hash_jti(jti),
+        device_name="OAuth Login",
+        device_type="desktop",
+        browser="",
+        os="",
+        ip_address="",
+        location="",
+        last_activity=datetime.now(UTC),
+    )
+    await session_repo.create(user_session)
+    await session.commit()
+
     # Set tokens as HttpOnly cookies (not in response body)
     response.set_cookie(
         key="access_token",
@@ -360,6 +383,27 @@ async def callback_redirect(
             user_id=user.id,
             tenant_id=user.tenant_id,
         )
+
+        # Create OAuth session record (B29)
+        payload = decode_token(refresh_token)
+        jti = payload.get("jti", "")
+        session_repo = SQLAlchemySessionRepository(session)
+        from app.domain.entities.session import UserSession as UserSessionEntity
+
+        user_session = UserSessionEntity(
+            user_id=user.id,
+            tenant_id=user.tenant_id,
+            refresh_token_hash=hash_jti(jti),
+            device_name="OAuth Login",
+            device_type="desktop",
+            browser="",
+            os="",
+            ip_address="",
+            location="",
+            last_activity=datetime.now(UTC),
+        )
+        await session_repo.create(user_session)
+        await session.commit()
 
         # Set tokens via HttpOnly cookies (never in URL query params)
         redirect = RedirectResponse(
@@ -470,6 +514,11 @@ async def link_account(
         linking_user_id=current_user.id,
     )
 
+    logger.info(
+        "OAuth account link initiated",
+        extra={"user_id": str(current_user.id), "provider": provider, "action": "oauth_link"},
+    )
+
     return OAuthAuthorizeResponse(
         authorization_url=auth_url,
         state=state,
@@ -509,6 +558,11 @@ async def unlink_account(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "CONNECTION_NOT_FOUND", "message": "OAuth connection not found"},
         )
+
+    logger.info(
+        "OAuth account unlinked",
+        extra={"user_id": str(current_user.id), "connection_id": str(connection_id), "action": "oauth_unlink"},
+    )
 
     await session.commit()
 

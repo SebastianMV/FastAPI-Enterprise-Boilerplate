@@ -320,13 +320,52 @@ async def bulk_create_users(
                 failed += 1
                 continue
 
+            # Validate role tenant ownership (B11 — prevent cross-tenant role assignment)
+            validated_role_ids: list = []
+            if user_data.roles:
+                from app.infrastructure.database.repositories.role_repository import (
+                    SQLAlchemyRoleRepository,
+                )
+
+                role_repo = SQLAlchemyRoleRepository(session)
+                role_validation_failed = False
+                for role_id in user_data.roles:
+                    role = await role_repo.get_by_id(role_id)
+                    if not role:
+                        results.append(
+                            BulkOperationItemResult(
+                                id=f"row-{idx}",
+                                success=False,
+                                error="role_not_found",
+                                message=f"Role {role_id} not found",
+                            )
+                        )
+                        failed += 1
+                        role_validation_failed = True
+                        break
+                    if role.tenant_id and tenant_id and role.tenant_id != tenant_id:
+                        results.append(
+                            BulkOperationItemResult(
+                                id=f"row-{idx}",
+                                success=False,
+                                error="cross_tenant_role",
+                                message=f"Role {role_id} does not belong to the current tenant",
+                            )
+                        )
+                        failed += 1
+                        role_validation_failed = True
+                        break
+                    validated_role_ids.append(role_id)
+                if role_validation_failed:
+                    continue
+
             new_user = User(
                 email=Email(user_data.email),
                 password_hash=hash_password(user_data.password),
                 first_name=user_data.first_name,
                 last_name=user_data.last_name,
                 is_active=user_data.is_active,
-                roles=list(user_data.roles) if user_data.roles else [],
+                roles=list(validated_role_ids) if user_data.roles else [],
                 tenant_id=tenant_id,
             )
 
@@ -461,9 +500,41 @@ async def bulk_update_users(
             if update_data.is_active is not None:
                 user.is_active = update_data.is_active
 
-            # Update roles if specified - roles are stored directly on user
+            # Update roles if specified - validate tenant ownership (B31)
             if update_data.roles is not None:
-                user.roles = list(update_data.roles)
+                role_repo = SQLAlchemyRoleRepository(session)
+                validated_role_ids: list = []
+                role_validation_failed = False
+                for role_id in update_data.roles:
+                    role = await role_repo.get_by_id(role_id)
+                    if not role:
+                        results.append(
+                            BulkOperationItemResult(
+                                id=update_data.id,
+                                success=False,
+                                error="role_not_found",
+                                message=f"Role {role_id} not found",
+                            )
+                        )
+                        failed += 1
+                        role_validation_failed = True
+                        break
+                    if role.tenant_id and tenant_id and role.tenant_id != tenant_id:
+                        results.append(
+                            BulkOperationItemResult(
+                                id=update_data.id,
+                                success=False,
+                                error="cross_tenant_role",
+                                message=f"Role {role_id} does not belong to the current tenant",
+                            )
+                        )
+                        failed += 1
+                        role_validation_failed = True
+                        break
+                    validated_role_ids.append(role_id)
+                if role_validation_failed:
+                    continue
+                user.roles = list(validated_role_ids)
 
             await user_repo.update(user)
 

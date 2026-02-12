@@ -19,11 +19,16 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: '0.0.0.0',
+    // WARNING: 0.0.0.0 exposes dev server on all network interfaces.
+    // Docker overrides this via VITE_DEV_HOST env var.
+    host: process.env.VITE_DEV_HOST || 'localhost',
     hmr: {
       clientPort: 3000,
     },
     proxy: {
+      // NOTE: secure: false disables TLS certificate verification for the
+      // dev proxy target.  This is acceptable for local development only.
+      // In production, nginx handles proxying with proper TLS.
       '/auth': {
         target: apiUrl,
         changeOrigin: true,
@@ -125,7 +130,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: process.env.VITE_SOURCEMAP === 'true' ? 'hidden' : false,
   },
   test: {
     globals: true,
@@ -138,10 +143,10 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/test/**', 'src/**/*.d.ts'],
       thresholds: {
-        statements: 30,
-        branches: 25,
-        functions: 25,
-        lines: 30,
+        statements: 70,
+        branches: 60,
+        functions: 60,
+        lines: 70,
       },
     },
   },

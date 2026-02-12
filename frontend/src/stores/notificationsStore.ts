@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Notification } from '@/services/api';
 
 // Re-export Notification type for convenience
@@ -24,10 +23,11 @@ interface NotificationsState {
 /**
  * Zustand store for notifications state.
  * 
- * Persists unread count to localStorage.
+ * Previously persisted unreadCount to localStorage, but this leaked
+ * cross-user data when the storage key was not scoped per user.
+ * Now kept purely in-memory — count is re-fetched from server on connection.
  */
 export const useNotificationsStore = create<NotificationsState>()(
-  persist(
     (set, _get) => ({
       notifications: [],
       unreadCount: 0,
@@ -84,7 +84,7 @@ export const useNotificationsStore = create<NotificationsState>()(
       },
 
       setUnreadCount: (count) => {
-        set({ unreadCount: count });
+        set({ unreadCount: Math.max(0, Math.floor(count) || 0) });
       },
 
       setConnected: (connected) => {
@@ -95,9 +95,4 @@ export const useNotificationsStore = create<NotificationsState>()(
         set({ notifications: [], unreadCount: 0 });
       },
     }),
-    {
-      name: 'notifications-storage',
-      partialize: (state) => ({ unreadCount: state.unreadCount }),
-    }
-  )
 );

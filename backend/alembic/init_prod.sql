@@ -1,8 +1,16 @@
 -- ===========================================
 -- FastAPI Enterprise Boilerplate - Production Database Init
 -- ===========================================
--- This script runs on first container startup (production).
--- It creates the app_user role used for RLS enforcement.
+--
+-- !! DEPRECATED: DO NOT USE THIS FILE DIRECTLY !!
+-- Use init_prod.sh instead, which reads APP_USER_PASSWORD from the environment.
+--
+-- docker-compose.prod.yml already mounts init_prod.sh correctly.
+-- This .sql file is kept only as documentation reference.
+--
+-- If this file is accidentally mounted, it will REFUSE to create
+-- the app_user role with a hardcoded password.
+-- ===========================================
 
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -12,28 +20,16 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 -- Enable Row-Level Security globally
 ALTER DATABASE boilerplate SET row_security = on;
 
--- Create non-owner application user for RLS enforcement.
--- The owner (boilerplate) bypasses RLS, so the backend must connect as app_user.
--- SECURITY: Set APP_USER_PASSWORD environment variable before deploying.
+-- SECURITY: Refuse to create app_user with a hardcoded password.
+-- Use init_prod.sh which reads APP_USER_PASSWORD from the environment.
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'app_user') THEN
-        CREATE ROLE app_user WITH LOGIN PASSWORD 'CHANGE_ME_BEFORE_DEPLOY';
-        RAISE WARNING 'Created role app_user with default password – change it immediately via: ALTER ROLE app_user WITH PASSWORD ''<strong-password>'';';
+        RAISE EXCEPTION 'FATAL: Do not use init_prod.sql directly. '
+            'Use init_prod.sh instead, which reads APP_USER_PASSWORD '
+            'from the environment. See docker-compose.prod.yml.';
     END IF;
 END $$;
-
--- Grant connect and usage
-GRANT CONNECT ON DATABASE boilerplate TO app_user;
-GRANT USAGE ON SCHEMA public TO app_user;
-
--- Grant DML privileges on all current and future tables
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
-
--- Grant sequence usage (for serial/bigserial columns)
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO app_user;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
 
 DO $$
 BEGIN
