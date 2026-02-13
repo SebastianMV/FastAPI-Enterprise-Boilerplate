@@ -1,7 +1,7 @@
 /**
  * Unit tests for oauthService.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGet = vi.fn();
 const mockDelete = vi.fn();
@@ -13,7 +13,7 @@ vi.mock('./api', () => ({
   },
 }));
 
-import { oauthService, OAUTH_PROVIDERS } from './oauthService';
+import { OAUTH_PROVIDERS, oauthService } from './oauthService';
 
 describe('oauthService', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -81,7 +81,7 @@ describe('oauthService', () => {
 
   describe('linkProvider', () => {
     it('should redirect with link param', async () => {
-      const data = { authorization_url: 'https://microsoft.com/auth?link=true', state: 'st' };
+      const data = { authorization_url: 'https://login.microsoftonline.com/auth?link=true', state: 'st' };
       mockGet.mockResolvedValueOnce({ data });
 
       const originalLocation = window.location;
@@ -91,7 +91,7 @@ describe('oauthService', () => {
       await oauthService.linkProvider('microsoft');
 
       expect(mockGet).toHaveBeenCalledWith('/auth/oauth/microsoft/authorize', { params: { link: true } });
-      expect(mockLocation.href).toBe('https://microsoft.com/auth?link=true');
+      expect(mockLocation.href).toBe('https://login.microsoftonline.com/auth?link=true');
       Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
     });
   });

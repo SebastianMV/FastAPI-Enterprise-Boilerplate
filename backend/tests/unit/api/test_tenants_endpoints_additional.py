@@ -72,7 +72,7 @@ class TestUpdateTenantEndpoint:
             )
 
         assert exc.value.status_code == 404
-        assert "Tenant not found" in exc.value.detail
+        assert "Tenant not found" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_update_tenant_slug_conflict(self, mock_repo, mock_tenant):
@@ -94,7 +94,7 @@ class TestUpdateTenantEndpoint:
             )
 
         assert exc.value.status_code == 409
-        assert "already exists" in exc.value.detail
+        assert "already exists" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_update_tenant_domain_conflict(self, mock_repo, mock_tenant):
@@ -117,7 +117,7 @@ class TestUpdateTenantEndpoint:
             )
 
         assert exc.value.status_code == 409
-        assert "already exists" in exc.value.detail
+        assert "already exists" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_update_tenant_success(self, mock_repo, mock_tenant):

@@ -231,7 +231,7 @@ class S3StorageAdapter(StoragePort):
             return await loop.run_in_executor(None, response["Body"].read)
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchKey":
-                raise FileNotFoundError("File not found")
+                raise FileNotFoundError("File not found") from None
             raise
 
     async def download_stream(self, path: str) -> AsyncIterator[bytes]:
@@ -251,7 +251,7 @@ class S3StorageAdapter(StoragePort):
                 yield chunk
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchKey":
-                raise FileNotFoundError("File not found")
+                raise FileNotFoundError("File not found") from None
             raise
 
     async def delete(self, path: str) -> bool:
@@ -260,9 +260,7 @@ class S3StorageAdapter(StoragePort):
         try:
             await loop.run_in_executor(
                 None,
-                partial(
-                    self._client.delete_object, Bucket=self._bucket, Key=path
-                ),
+                partial(self._client.delete_object, Bucket=self._bucket, Key=path),
             )
             return True
         except ClientError:

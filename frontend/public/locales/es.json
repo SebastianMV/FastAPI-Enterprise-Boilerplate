@@ -11,6 +11,7 @@
     "actions": "Acciones",
     "confirm": "Confirmar",
     "back": "Volver",
+    "previous": "Anterior",
     "next": "Siguiente",
     "submit": "Enviar",
     "close": "Cerrar",
@@ -19,7 +20,23 @@
     "success": "Éxito",
     "error": "Error",
     "warning": "Advertencia",
-    "info": "Información"
+    "info": "Información",
+    "untitled": "Sin título",
+    "closeDialog": "Cerrar diálogo",
+    "ok": "Aceptar",
+    "signOut": "Cerrar sesión",
+    "note": "Nota",
+    "accessDenied": "No tienes permiso para acceder a esta página",
+    "fetchError": "Error al obtener datos",
+    "na": "N/D",
+    "never": "Nunca",
+    "retry": "Reintentar",
+    "brandName": "FastAPI Enterprise",
+    "brandLogoAlt": "Logo de la aplicación",
+    "placeholderFirstName": "ej. Juan",
+    "placeholderLastName": "ej. Pérez",
+    "placeholderEmail": "ej. usuario@example.com",
+    "menu": "Abrir menú"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -81,8 +98,38 @@
       "enterManually": "O ingresa este código manualmente",
       "backupCodes": "Códigos de Respaldo",
       "backupCodesDescription": "Guarda estos códigos de respaldo en un lugar seguro. Cada código solo puede usarse una vez.",
-      "enterCode": "Por favor ingresa tu código de autenticación de 6 dígitos"
-    }
+      "enterCode": "Por favor ingresa tu código de autenticación de 6 dígitos",
+      "codeMustBe6Digits": "El código debe ser de 6 dígitos"
+    },
+    "loginFailed": "Error de inicio de sesión. Inténtalo de nuevo.",
+    "registrationFailed": "Error en el registro. Por favor, inténtalo de nuevo.",
+    "requestFailed": "Error al procesar la solicitud",
+    "didntReceiveEmail": "¿No recibiste el correo? Revisa tu carpeta de spam o inténtalo de nuevo.",
+    "tryAnotherEmail": "Probar con otro correo",
+    "rememberPassword": "¿Recuerdas tu contraseña?",
+    "passwordRequirements": "Requisitos de contraseña:",
+    "passwordReqMinChars": "Al menos 8 caracteres",
+    "passwordReqUppercase": "Una letra mayúscula",
+    "passwordReqLowercase": "Una letra minúscula",
+    "passwordReqNumber": "Un número",
+    "passwordReqSpecial": "Un carácter especial (!@#$...)",
+    "emailVerified": "¡Correo verificado!",
+    "emailVerifiedSuccess": "Tu correo electrónico ha sido verificado exitosamente.",
+    "goToDashboard": "Ir al Panel",
+    "verificationFailed": "Verificación fallida",
+    "verificationError": "Error de verificación",
+    "noTokenProvided": "Sin token de verificación",
+    "noTokenMessage": "No se proporcionó un token de verificación.",
+    "socialSignUp": "Registrarse con",
+    "socialConnect": "Conectar",
+    "socialContinue": "Continuar con",
+    "socialConnectError": "Error al conectar",
+    "layoutAriaLabel": "Autenticación",
+    "invalidResetLink": "Enlace de restablecimiento inválido",
+    "resetLinkExpired": "Este enlace de restablecimiento de contraseña es inválido o ha expirado. Por favor, solicita uno nuevo.",
+    "requestNewLink": "Solicitar nuevo enlace",
+    "resetFailed": "Error al restablecer la contraseña. El enlace puede haber expirado.",
+    "registrationDisabled": "El registro está actualmente deshabilitado"
   },
   "navigation": {
     "dashboard": "Panel",
@@ -117,7 +164,28 @@
     "loadingDashboard": "Cargando panel...",
     "failedToLoad": "Error al cargar datos del panel. Por favor, intenta nuevamente.",
     "refreshData": "Actualizar Datos",
-    "lastUpdated": "Última actualización"
+    "lastUpdated": "Última actualización",
+    "overview": "Esto es lo que está pasando con tu aplicación hoy.",
+    "vsLastMonth": "vs mes pasado",
+    "quickActions": "Acciones Rápidas",
+    "addUser": "Agregar Usuario",
+    "apiKeys": "Claves API",
+    "settings": "Configuración",
+    "security": "Seguridad",
+    "userOverview": "Resumen de Usuarios",
+    "newUsersLast7Days": "Nuevos usuarios (últimos 7 días)",
+    "newUsersLast30Days": "Nuevos usuarios (últimos 30 días)",
+    "activeInactive": "Activos / Inactivos",
+    "events": "eventos",
+    "noRecentActivity": "Sin actividad reciente",
+    "justNow": "Ahora mismo",
+    "minAgo": "hace {{count}} min",
+    "hAgo": "hace {{count}}h",
+    "dAgo": "hace {{count}}d",
+    "statTotalUsers": "Total de Usuarios",
+    "statActiveUsers": "Usuarios Activos",
+    "statApiKeys": "Claves API",
+    "statRoles": "Roles"
   },
   "users": {
     "title": "Usuarios",
@@ -151,7 +219,9 @@
     "userDeleted": "Usuario Eliminado",
     "createError": "Error al crear usuario. Por favor intenta de nuevo.",
     "updateError": "Error al actualizar usuario. Por favor intenta de nuevo.",
-    "deleteError": "Error al eliminar usuario. Por favor intenta de nuevo."
+    "deleteError": "Error al eliminar usuario. Por favor intenta de nuevo.",
+    "subtitle": "Gestionar cuentas de usuario y permisos",
+    "showingCount": "Mostrando {{showing}} de {{total}} usuarios"
   },
   "roles": {
     "title": "Roles",
@@ -205,7 +275,9 @@
       "read": "leer",
       "update": "actualizar",
       "delete": "eliminar"
-    }
+    },
+    "namePlaceholder": "ej., Editor, Visor, Gerente",
+    "loadError": "Error al cargar los roles. Por favor, inténtalo de nuevo."
   },
   "profile": {
     "title": "Mi Perfil",
@@ -264,7 +336,36 @@
       "profile": "Información del Perfil",
       "security": "Seguridad",
       "connections": "Cuentas Conectadas"
-    }
+    },
+    "connectedAccountsDescription": "Vincula tus cuentas sociales para iniciar sesión más fácilmente",
+    "connectedAs": "Conectado como {{account}}",
+    "connected": "Conectado",
+    "notConnected": "No conectado",
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "disconnectSuccess": "Cuenta de {{provider}} desconectada",
+    "connectError": "Error al conectar la cuenta",
+    "disconnectError": "Error al desconectar la cuenta",
+    "whyConnect": "¿Por qué conectar cuentas?",
+    "whyConnectReasons": {
+      "faster": "Inicia sesión más rápido con un clic",
+      "noPassword": "No necesitas recordar otra contraseña",
+      "sync": "Sincroniza la información de tu perfil automáticamente"
+    },
+    "emailVerification": {
+      "verifyYourEmail": "Verifica tu correo",
+      "verifyDescription": "Por favor verifica tu dirección de correo electrónico para acceder a todas las funciones.",
+      "emailSent": "¡Correo de verificación enviado!",
+      "resend": "Reenviar verificación",
+      "dismiss": "Cerrar"
+    },
+    "changePhoto": "Cambiar foto",
+    "avatarUploadError": "Error al subir avatar. Por favor intenta de nuevo.",
+    "invalidFileType": "Por favor selecciona un archivo de imagen válido (JPEG, PNG, GIF o WebP).",
+    "fileTooLarge": "La imagen debe ser menor a 5MB.",
+    "activeSessions": "Sesiones Activas",
+    "activeSessionsDescription": "Administra tus sesiones de inicio de sesión activas en todos los dispositivos.",
+    "viewAllSessions": "Ver Todas las Sesiones"
   },
   "settings": {
     "title": "Configuración",
@@ -292,18 +393,36 @@
     "enableNotifications": "Habilitar Notificaciones",
     "disableNotifications": "Deshabilitar Notificaciones",
     "deleteAccount": "Eliminar Cuenta",
-    "deleteAccountWarning": "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.",
+    "deleteAccountWarning": "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción usa eliminación suave y puede ser revertida por un administrador. Serás desconectado inmediatamente.",
     "dangerZone": "Zona de Peligro",
     "features": "Características",
     "featuresDescription": "Características opcionales configuradas por el administrador del sistema",
     "websocketConnection": "Conexión WebSocket",
     "websocketDescription": "Comunicación bidireccional en tiempo real",
     "realtimeNotifications": "Notificaciones en Tiempo Real",
-    "realtimeNotificationsDescription": "Notificaciones push vía WebSocket",
+    "realtimeNotificationsDescription": "Entrega instantánea de notificaciones vía WebSocket",
     "enabled": "Habilitado",
     "disabled": "Deshabilitado",
     "saveChanges": "Guardar Cambios",
-    "changesSaved": "Configuración guardada exitosamente"
+    "changesSaved": "Configuración guardada exitosamente",
+    "securityDescription": "Administra la configuración de seguridad de tu cuenta",
+    "switchToLanguage": "Cambiar a {{language}}",
+    "languageRegionDescription": "Configura tu idioma y zona horaria",
+    "appearanceDescription": "Personaliza la apariencia",
+    "themeUpdated": "Tema Actualizado",
+    "themeChangedTo": "Tema cambiado a {{theme}}.",
+    "timezoneUpdated": "Zona Horaria Actualizada",
+    "timezoneChangedTo": "Zona horaria cambiada a {{timezone}}.",
+    "notificationsUpdated": "Notificaciones Actualizadas",
+    "notificationsToggled": "Notificaciones {{status}}.",
+    "deleteAccountDescription": "Elimina tu cuenta. Usa eliminación suave y puede ser revertida por un administrador.",
+    "deletingAccount": "Eliminando...",
+    "featuresNote": "Estas características se configuran mediante variables de entorno por el administrador del sistema. Contacta a tu administrador para habilitar o deshabilitar características opcionales.",
+    "twoFactorAuth": "Autenticación de Dos Factores",
+    "twoFactorAuthDescription": "Añade una capa adicional de seguridad a tu cuenta",
+    "activeSessions": "Sesiones Activas",
+    "activeSessionsDescription": "Ver y administrar tus sesiones activas en dispositivos",
+    "deleteError": "Error al eliminar cuenta. Por favor intenta de nuevo."
   },
   "audit": {
     "title": "Registro de Auditoría",
@@ -376,7 +495,26 @@
       "title": "Detalles del Registro de Auditoría",
       "close": "Cerrar",
       "metadata": "Metadatos",
-      "changes": "Cambios"
+      "changes": "Cambios",
+      "id": "ID",
+      "resourceType": "Tipo de Recurso",
+      "actorEmail": "Email del Actor",
+      "system": "Sistema",
+      "resourceName": "Nombre del Recurso",
+      "reason": "Razón",
+      "userAgent": "Agente de Usuario",
+      "before": "Antes",
+      "after": "Después"
+    },
+    "loadError": "Error al cargar registros de auditoría",
+    "resourceTypes": {
+      "user": "Usuario",
+      "role": "Rol",
+      "tenant": "Inquilino",
+      "api_key": "Clave API",
+      "session": "Sesión",
+      "notification": "Notificación",
+      "sso_configuration": "Configuración SSO"
     }
   },
   "apiKeys": {
@@ -435,7 +573,8 @@
       "apiKeysReadDesc": "Ver claves API",
       "apiKeysWrite": "Escribir Claves API",
       "apiKeysWriteDesc": "Gestionar claves API"
-    }
+    },
+    "usageExampleCommand": "curl -H \"X-API-Key: tu_clave_api\" https://tu-dominio-api.com/v1/users"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -462,7 +601,10 @@
       "minutesAgo": "hace {{count}}m",
       "hoursAgo": "hace {{count}}h",
       "daysAgo": "hace {{count}}d"
-    }
+    },
+    "fetchError": "Error al obtener notificaciones",
+    "deleteTitle": "Eliminar Notificación",
+    "deleteConfirm": "¿Estás seguro de que deseas eliminar esta notificación?"
   },
   "sessions": {
     "title": "Sesiones Activas",
@@ -488,7 +630,10 @@
       "minutesAgo": "hace {{count}} min",
       "hoursAgo": "hace {{count}} horas",
       "daysAgo": "hace {{count}} días"
-    }
+    },
+    "sessionRevokedMessage": "La sesión ha sido revocada exitosamente.",
+    "allSessionsRevokedMessage": "Todas las demás sesiones han sido revocadas.",
+    "browserOnOs": "{{browser}} en {{os}}"
   },
   "mfa": {
     "title": "Autenticación de Dos Factores",
@@ -538,7 +683,11 @@
     "recommendedApps": "Google Authenticator, Microsoft Authenticator, Authy, 1Password, o cualquier aplicación compatible con TOTP.",
     "lostDevice": "Usa uno de tus códigos de respaldo para iniciar sesión, luego reconfigura 2FA con un nuevo dispositivo.",
     "fetchError": "Error al obtener el estado de MFA",
-    "setupError": "Error al configurar MFA. Por favor intenta de nuevo."
+    "setupError": "Error al configurar MFA. Por favor intenta de nuevo.",
+    "qrCodeAlt": "Código QR para MFA",
+    "copyCode": "Copiar código de respaldo",
+    "lostDeviceQuestion": "¿Perdiste tu dispositivo?",
+    "lostDeviceAnswer": "Usa uno de tus códigos de respaldo para iniciar sesión, luego reconfigura 2FA con un nuevo dispositivo."
   },
   "tenants": {
     "title": "Gestión de Inquilinos",
@@ -618,7 +767,12 @@
       "primaryColor": "Color Primario",
       "yes": "Sí",
       "no": "No"
-    }
+    },
+    "localeEnglish": "Inglés",
+    "localeSpanish": "Español",
+    "localePortuguese": "Portugués",
+    "feature2fa": "2FA",
+    "featureApiKeys": "Claves API"
   },
   "data": {
     "title": "Intercambio de Datos",
@@ -656,7 +810,7 @@
     "skipped": "Omitidos",
     "errors": "Errores",
     "errorDetails": "Detalle de Errores",
-    "reportTitle": "Título del Reporte",
+    "reportTitle": "Reporte de {{entity}}",
     "reportFormat": "Formato del Reporte",
     "availableFields": "Campos Disponibles",
     "generateReportButton": "Generar Reporte",
@@ -665,7 +819,16 @@
     "templateError": "Error al descargar plantilla",
     "validateError": "Error al validar archivo",
     "importError": "Error al importar datos",
-    "reportError": "Error al generar reporte"
+    "reportError": "Error al generar reporte",
+    "acceptedFormats": "CSV, Excel",
+    "tabNavigation": "Pestañas de intercambio de datos",
+    "importRowError": "Fila {{row}}: {{field}} — falló la validación",
+    "moreErrors": "... y {{count}} errores más",
+    "reportTitleLabel": "Título del Reporte",
+    "reportPlaceholder": "Reporte de {{entity}}",
+    "fileTooLarge": "El archivo es demasiado grande. El tamaño máximo es {{maxSize}}MB.",
+    "maxFileSize": "Máx {{maxSize}}MB",
+    "invalidFileType": "Tipo de archivo inválido. Solo se aceptan archivos CSV, XLSX y XLS."
   },
   "search": {
     "title": "Buscar",
@@ -711,7 +874,14 @@
     "page": "Página {{current}} de {{total}}",
     "previous": "Anterior",
     "next": "Siguiente",
-    "untitled": "Sin título"
+    "untitled": "Sin título",
+    "noResultsFor": "No se encontraron resultados para \"{{query}}\"",
+    "searchAll": "Buscar todo para \"{{query}}\"",
+    "results": "Resultados",
+    "suggestions": "Sugerencias",
+    "recentSearches": "Búsquedas recientes",
+    "actionOnResource": "{{action}} en {{resource}}",
+    "byActor": "Por: {{email}}"
   },
   "oauth": {
     "processing": "Procesando autenticación...",
@@ -729,24 +899,90 @@
     "authError": "Autenticación fallida: {{error}}",
     "invalidCallback": "Callback inválido: falta el código de autorización o el estado",
     "invalidState": "Parámetro de estado inválido",
-    "authFailedGeneric": "Autenticación fallida. Por favor intenta de nuevo."
+    "authFailedGeneric": "Autenticación fallida. Por favor intenta de nuevo.",
+    "connectionFailed": "Error al conectar con el proveedor",
+    "signUpWith": "Registrarse con",
+    "connect": "Conectar",
+    "continueWith": "Continuar con"
   },
   "validation": {
     "required": "Este campo es requerido",
     "invalidEmail": "Dirección de email inválida",
+    "emailInvalid": "Por favor ingresa una dirección de email válida",
     "passwordsMustMatch": "Las contraseñas deben coincidir",
+    "passwordMismatch": "Las contraseñas no coinciden",
     "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+    "passwordMin": "La contraseña debe tener al menos {{min}} caracteres",
+    "passwordMax": "La contraseña debe tener máximo {{max}} caracteres",
     "invalidLength": "Debe tener entre {{min}} y {{max}} caracteres",
     "invalidFormat": "Formato inválido",
     "minLength": "Mínimo {{min}} caracteres",
-    "maxLength": "Máximo {{max}} caracteres"
+    "maxLength": "Máximo {{max}} caracteres",
+    "passwordRequired": "La contraseña es requerida",
+    "passwordUppercase": "La contraseña debe contener una letra mayúscula",
+    "passwordLowercase": "La contraseña debe contener una letra minúscula",
+    "passwordDigit": "La contraseña debe contener un dígito",
+    "passwordSpecial": "La contraseña debe contener un carácter especial",
+    "passwordStrength": "La contraseña debe contener mayúscula, minúscula, dígito y carácter especial",
+    "passwordComplexity": "La contraseña debe incluir mayúscula, minúscula, número y carácter especial"
+  },
+  "file": {
+    "tooLarge": "El archivo excede el límite de {{maxMB}}MB",
+    "empty": "El archivo está vacío",
+    "invalidExtension": "Tipo de archivo inválido. Permitidos: {{allowed}}",
+    "invalidMimeType": "Tipo MIME de archivo inválido. Permitidos: {{allowed}}"
   },
   "errors": {
     "general": "Algo salió mal. Por favor intenta de nuevo.",
+    "generic": "Algo salió mal. Por favor intenta de nuevo",
     "network": "Error de red. Por favor verifica tu conexión.",
+    "networkError": "Error de red. Por favor verifica tu conexión",
     "unauthorized": "No estás autorizado para realizar esta acción.",
+    "forbidden": "Acceso denegado",
     "notFound": "El recurso solicitado no fue encontrado.",
     "serverError": "Error del servidor. Por favor intenta más tarde.",
     "validationError": "Por favor verifica tu entrada e intenta de nuevo."
+  },
+  "userMenu": {
+    "title": "Menú de usuario",
+    "myProfile": "Mi Perfil",
+    "languagePreferences": "Idioma y Preferencias",
+    "apiKeys": "Claves API",
+    "security": "Seguridad"
+  },
+  "notificationsDropdown": {
+    "title": "Notificaciones",
+    "defaultTitle": "Notificación",
+    "markAllRead": "Marcar todas como leídas",
+    "noNotifications": "Sin notificaciones aún",
+    "emptyDescription": "Te notificaremos cuando algo llegue",
+    "viewAll": "Ver todas las notificaciones",
+    "justNow": "Ahora mismo",
+    "minuteAgo": "hace {{count}} minuto",
+    "minutesAgo": "hace {{count}} minutos",
+    "hourAgo": "hace {{count}} hora",
+    "hoursAgo": "hace {{count}} horas",
+    "dayAgo": "hace {{count}} día",
+    "daysAgo": "hace {{count}} días",
+    "weekAgo": "hace {{count}} semana",
+    "weeksAgo": "hace {{count}} semanas",
+    "monthAgo": "hace {{count}} mes",
+    "monthsAgo": "hace {{count}} meses",
+    "yearAgo": "hace {{count}} año",
+    "yearsAgo": "hace {{count}} años",
+    "markAsRead": "Marcar como leída",
+    "connected": "Conectado",
+    "disconnected": "Desconectado"
+  },
+  "errorBoundary": {
+    "title": "Algo salió mal",
+    "description": "Ocurrió un error inesperado. Puedes intentar recargar la página o volver a la página de inicio.",
+    "reload": "Recargar página",
+    "goHome": "Ir al inicio",
+    "details": "Detalles del error (solo desarrollo)",
+    "recover": "Intentar recuperar (resetear boundary)"
+  },
+  "config": {
+    "fetchError": "Error al cargar la configuración"
   }
 }

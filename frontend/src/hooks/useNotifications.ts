@@ -1,15 +1,15 @@
 /**
  * Notifications hook for real-time and persistent notifications.
- * 
+ *
  * **Delegates all state to the Zustand ``useNotificationsStore``** so
  * that a single source of truth is shared by every consumer
  * (``NotificationsDropdown``, ``NotificationsPage``, etc.).
- * 
+ *
  * The hook is responsible only for:
  * 1. Connecting WebSocket → pushing events into the store.
  * 2. Initial REST fetch → seeding the store on mount.
  * 3. Exposing convenience methods that wrap API calls + store updates.
- * 
+ *
  * @example
  * ```tsx
  * const { notifications, unreadCount, markAsRead } = useNotifications();
@@ -17,11 +17,11 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { useWebSocket } from './useWebSocket';
 import { notificationsService } from '../services/notificationsService';
-import { validateActionUrl, sanitizeText } from '../utils/security';
-import { useNotificationsStore } from '../stores/notificationsStore';
 import type { Notification } from '../stores/notificationsStore';
+import { useNotificationsStore } from '../stores/notificationsStore';
+import { sanitizeText, validateActionUrl } from '../utils/security';
+import { useWebSocket } from './useWebSocket';
 
 export type { Notification } from '../stores/notificationsStore';
 
@@ -92,17 +92,10 @@ export function useNotifications(
 
     const notification: Notification = {
       id: payload.id as string,
-      type: payload.type as string,
+      type: (['info', 'success', 'warning', 'error'].includes(payload.type as string)
+        ? payload.type : 'info') as Notification['type'],
       title: sanitizeText(payload.title as string),
       message: sanitizeText(payload.message as string),
-      priority: (['low', 'normal', 'high', 'urgent'].includes(payload.priority as string)
-        ? payload.priority
-        : 'normal') as Notification['priority'],
-      category: typeof payload.category === 'string' ? payload.category : undefined,
-      metadata: typeof payload.metadata === 'object' && payload.metadata !== null
-        && !Array.isArray(payload.metadata)
-        ? payload.metadata as Record<string, unknown>
-        : undefined,
       action_url: validateActionUrl(payload.action_url),
       read: typeof payload.read === 'boolean' ? payload.read : false,
       created_at: typeof payload.created_at === 'string' ? payload.created_at : new Date().toISOString(),
@@ -129,7 +122,13 @@ export function useNotifications(
       });
 
       if (Array.isArray(data.items)) {
-        storeSet(data.items as Notification[]);
+        const sanitized = data.items.map((item: Notification) => ({
+          ...item,
+          title: sanitizeText(item.title),
+          message: sanitizeText(item.message),
+          action_url: validateActionUrl(item.action_url),
+        }));
+        storeSet(sanitized);
       }
     } catch {
       setError('notifications.fetchError');
@@ -188,10 +187,14 @@ export function useNotifications(
 
   // ── Auto-fetch ──
   useEffect(() => {
+    let cancelled = false;
     if (autoFetch) {
-      fetchNotifications();
-      fetchUnreadCount();
+      (async () => {
+        await Promise.all([fetchNotifications(), fetchUnreadCount()]);
+        if (cancelled) return;
+      })();
     }
+    return () => { cancelled = true; };
   }, [autoFetch, fetchNotifications, fetchUnreadCount]);
 
   // ── Poll unread count ──

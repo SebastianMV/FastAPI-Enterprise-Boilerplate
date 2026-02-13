@@ -1,22 +1,22 @@
-import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
 import { sanitizeFilename, sanitizeText } from '@/utils/security';
 import {
-  Download,
-  Upload,
-  FileBarChart,
-  FolderOpen,
-  Table,
-  CheckCircle,
-  XCircle,
-  FileDown,
+    CheckCircle,
+    Download,
+    FileBarChart,
+    FileDown,
+    FolderOpen,
+    Table,
+    Upload,
+    XCircle,
 } from 'lucide-react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  dataExchangeService,
-  type Entity,
-  type EntityField,
-  type ExportPreview,
-  type ImportResult,
+    dataExchangeService,
+    type Entity,
+    type EntityField,
+    type ExportPreview,
+    type ImportResult,
 } from '../../services/api';
 
 type TabType = 'export' | 'import' | 'reports';
@@ -61,12 +61,18 @@ export default function DataExchangePage() {
 
   // Load entities on mount
   useEffect(() => {
-    loadEntities();
+    let cancelled = false;
+    const original = loadEntities;
+    (async () => {
+      await original();
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
   }, [loadEntities]);
 
   const loadExportPreview = useCallback(async () => {
     if (!selectedEntity) return;
-    
+
     try {
       setLoading(true);
       const preview = await dataExchangeService.previewExport(selectedEntity, 5);
@@ -79,15 +85,20 @@ export default function DataExchangePage() {
   }, [selectedEntity]);
 
   useEffect(() => {
+    let cancelled = false;
     if (activeTab === 'export' && selectedEntity) {
       setExportPreview(null); // Clear stale preview immediately
-      loadExportPreview();
+      (async () => {
+        await loadExportPreview();
+        if (cancelled) return;
+      })();
     }
+    return () => { cancelled = true; };
   }, [activeTab, selectedEntity, loadExportPreview]);
 
   const handleExport = async () => {
     if (!selectedEntity) return;
-    
+
     try {
       setLoading(true);
       const blob = await dataExchangeService.exportData(
@@ -95,7 +106,7 @@ export default function DataExchangePage() {
         exportFormat,
         selectedColumns.length > 0 ? selectedColumns : undefined
       );
-      
+
       // Download file
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -114,11 +125,11 @@ export default function DataExchangePage() {
 
   const handleDownloadTemplate = async () => {
     if (!selectedEntity) return;
-    
+
     try {
       setLoading(true);
       const blob = await dataExchangeService.downloadTemplate(selectedEntity, 'csv');
-      
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -136,7 +147,7 @@ export default function DataExchangePage() {
 
   const handleValidateImport = async () => {
     if (!selectedEntity || !importFile) return;
-    
+
     try {
       setValidating(true);
       setImportResult(null);
@@ -151,13 +162,13 @@ export default function DataExchangePage() {
 
   const handleImport = async () => {
     if (!selectedEntity || !importFile) return;
-    
+
     try {
       setLoading(true);
       setImportResult(null);
       const result = await dataExchangeService.importData(selectedEntity, importFile, importMode);
       setImportResult(result);
-      
+
       if (result.success) {
         setImportFile(null);
       }
@@ -170,7 +181,7 @@ export default function DataExchangePage() {
 
   const handleGenerateReport = async () => {
     if (!selectedEntity) return;
-    
+
     try {
       setLoading(true);
       const blob = await dataExchangeService.generateReport(selectedEntity, {
@@ -178,7 +189,7 @@ export default function DataExchangePage() {
         format: reportFormat,
         include_summary: true,
       });
-      
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -249,7 +260,7 @@ export default function DataExchangePage() {
           >
             {entities.map((entity: Entity) => (
               <option key={entity.name} value={entity.name} className="text-gray-900 dark:text-white bg-white dark:bg-gray-700">
-                {entity.display_name}
+                {sanitizeText(entity.display_name)}
               </option>
             ))}
           </select>
@@ -343,7 +354,7 @@ export default function DataExchangePage() {
                             }}
                             className="sr-only"
                           />
-                          {field.display_name}
+                          {sanitizeText(field.display_name)}
                         </label>
                       ))}
                   </div>
@@ -371,17 +382,17 @@ export default function DataExchangePage() {
                                 key={key}
                                 className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
                               >
-                                {key}
+                                {sanitizeText(key)}
                               </th>
                             ))}
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                         {exportPreview.rows.map((row: Record<string, unknown>, idx: number) => (
-                          <tr key={idx}>
-                            {Object.values(row).map((value: unknown, vidx: number) => (
+                          <tr key={`row-${idx}-${String(Object.values(row)[0] ?? '')}`}>
+                            {Object.entries(row).map(([colKey, value]: [string, unknown]) => (
                               <td
-                                key={vidx}
+                                key={`${idx}-${colKey}`}
                                 className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
                               >
                                 {sanitizeText(String(value ?? ''))}
@@ -479,7 +490,7 @@ export default function DataExchangePage() {
                           return;
                         }
                         if (file && !/\.(csv|xlsx|xls)$/i.test(file.name)) {
-                          setError(t('data.invalidFileType', 'Invalid file type. Only CSV, XLSX and XLS files are accepted.'));
+                          setError(t('data.invalidFileType'));
                           e.target.value = '';
                           return;
                         }
@@ -491,7 +502,7 @@ export default function DataExchangePage() {
                           '',  // Some browsers leave MIME empty for .csv
                         ]);
                         if (file && file.type && !ALLOWED_MIMES.has(file.type)) {
-                          setError(t('data.invalidFileType', 'Invalid file type. Only CSV, XLSX and XLS files are accepted.'));
+                          setError(t('data.invalidFileType'));
                           e.target.value = '';
                           return;
                         }
@@ -560,8 +571,8 @@ export default function DataExchangePage() {
                             {t('data.errorDetails')}:
                           </h4>
                           <ul className="mt-1 text-sm text-red-600 dark:text-red-400">
-                            {importResult.errors.slice(0, 5).map((err, idx) => (
-                              <li key={idx}>
+                            {importResult.errors.slice(0, 5).map((err) => (
+                              <li key={`err-${err.row}-${err.field}`}>
                                 {t('data.importRowError', { row: err.row, field: err.field })}
                               </li>
                             ))}
@@ -631,8 +642,8 @@ export default function DataExchangePage() {
                         key={field.name}
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                       >
-                        {field.display_name}
-                        <span className="ml-1 text-gray-400">({field.field_type})</span>
+                        {sanitizeText(field.display_name)}
+                        <span className="ml-1 text-gray-400">({sanitizeText(field.field_type)})</span>
                       </span>
                     ))}
                   </div>

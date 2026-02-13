@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import MFASettingsPage from './MFASettingsPage';
 
 const mockGetStatus = vi.fn();
@@ -82,6 +82,8 @@ describe('MFASettingsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('mfa.step1Title')).toBeInTheDocument();
     });
+    // Secret is hidden by default, click show button to reveal
+    fireEvent.click(screen.getByTitle('mfa.showSecret'));
     expect(screen.getByText('JBSWY3DPEHPK3PXP')).toBeInTheDocument();
     expect(screen.getByText('mfa.step2Title')).toBeInTheDocument();
     expect(screen.getByText('mfa.step3Title')).toBeInTheDocument();

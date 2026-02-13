@@ -1,20 +1,20 @@
+import api from '@/services/api';
+import { EMAIL_PATTERN, PASSWORD_PATTERN } from '@/utils/validation';
+import {
+    AlertCircle,
+    CheckCircle,
+    Eye,
+    EyeOff,
+    Loader2,
+    Lock,
+    Mail,
+    User,
+    UserPlus
+} from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { EMAIL_PATTERN, PASSWORD_PATTERN } from '@/utils/validation';
-import { 
-  AlertCircle, 
-  Loader2, 
-  Eye, 
-  EyeOff,
-  UserPlus,
-  CheckCircle,
-  Mail,
-  Lock,
-  User
-} from 'lucide-react';
-import api from '@/services/api';
+import { Link } from 'react-router-dom';
 
 interface RegisterFormData {
   email: string;
@@ -101,7 +101,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="group relative rounded-2xl p-8 bg-white border border-slate-200 shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-3xl overflow-hidden">
-          
+
           {/* Logo */}
           <div className="relative text-center mb-6">
             <div className="relative inline-flex items-center justify-center mb-6">
@@ -141,6 +141,7 @@ export default function RegisterPage() {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-slate-400" />
               </div>
+              {/* eslint-disable jsx-a11y/no-autofocus -- intentional UX: focus first name on page load */}
               <input
                 id="first_name"
                 type="text"
@@ -155,6 +156,7 @@ export default function RegisterPage() {
                   minLength: { value: 1, message: t('validation.required') },
                 })}
               />
+              {/* eslint-enable jsx-a11y/no-autofocus */}
             </div>
             {errors.first_name && (
               <p className="mt-1 text-sm text-red-600">{errors.first_name.message}</p>

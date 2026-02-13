@@ -1,14 +1,15 @@
 /**
  * Unit tests for useWebSocket hook.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWebSocket } from './useWebSocket';
 
 // Mock authStore
 let mockAccessToken: string | null = 'test-jwt-token.eyJleHAiOjk5OTk5OTk5OTl9.sig';
 
 vi.mock('../stores/authStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
   useAuthStore: (selector?: (s: any) => any) => {
     const state = {
       accessToken: mockAccessToken,
@@ -36,6 +37,7 @@ class MockWebSocket {
 
   constructor(url: string) {
     this.url = url;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- test mock needs reference to instance
     mockWebSocketInstance = this;
   }
 }
@@ -48,7 +50,7 @@ describe('useWebSocket', () => {
     vi.useFakeTimers();
     mockWebSocketInstance = null;
     mockAccessToken = 'test-jwt-token.eyJleHAiOjk5OTk5OTk5OTl9.sig';
-    
+
     // Replace global WebSocket with mock
     vi.stubGlobal('WebSocket', MockWebSocket);
   });
@@ -77,7 +79,7 @@ describe('useWebSocket', () => {
 
   it('should connect when connect is called', () => {
     const { result } = renderHook(() => useWebSocket({ autoConnect: false }));
-    
+
     act(() => {
       result.current.connect();
     });

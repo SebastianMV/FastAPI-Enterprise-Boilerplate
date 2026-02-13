@@ -5,7 +5,7 @@
 Unit tests for Report Templates - focusing on internal functions and models.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -92,8 +92,7 @@ class TestCalculateNextRun:
 
     def test_with_start_date(self):
         """Test calculation with start date."""
-        # Use naive datetime to match the internal implementation
-        future_date = datetime.utcnow() + timedelta(days=7)
+        future_date = datetime.now(UTC) + timedelta(days=7)
         freq = ScheduleFrequency(type="daily", time="10:00")
 
         result = _calculate_next_run(freq, future_date)

@@ -10,6 +10,7 @@ Supports bulk create, update, delete with validation and error handling.
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
@@ -20,8 +21,10 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentTenantId, DbSession, SuperuserId
+from app.api.v1.schemas.common import NameStr
 from app.domain.entities.audit_log import AuditAction, AuditLog, AuditResourceType
 from app.domain.entities.user import User
+from app.domain.exceptions.base import ValidationError as DomainValidationError
 from app.domain.value_objects.email import Email
 from app.domain.value_objects.password import Password
 from app.infrastructure.auth.jwt_handler import hash_password
@@ -71,8 +74,8 @@ class BulkUserCreate(BaseModel):
 
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
-    first_name: str = Field(min_length=1, max_length=100)
-    last_name: str = Field(min_length=1, max_length=100)
+    first_name: NameStr
+    last_name: NameStr
     is_active: bool = True
     roles: list[UUID] = Field(default_factory=list)
 
@@ -81,8 +84,8 @@ class BulkUserUpdate(BaseModel):
     """Single user update for bulk operations."""
 
     id: UUID
-    first_name: str | None = None
-    last_name: str | None = None
+    first_name: NameStr | None = None
+    last_name: NameStr | None = None
     is_active: bool | None = None
     roles: list[UUID] | None = None
 
@@ -308,7 +311,7 @@ async def bulk_create_users(
             # Validate password strength (same rules as single-user create)
             try:
                 Password(user_data.password)
-            except ValueError:
+            except (ValueError, DomainValidationError):
                 results.append(
                     BulkOperationItemResult(
                         id=f"row-{idx}",
@@ -331,25 +334,15 @@ async def bulk_create_users(
                 role_validation_failed = False
                 for role_id in user_data.roles:
                     role = await role_repo.get_by_id(role_id)
-                    if not role:
+                    if not role or (
+                        role.tenant_id and tenant_id and role.tenant_id != tenant_id
+                    ):
                         results.append(
                             BulkOperationItemResult(
                                 id=f"row-{idx}",
                                 success=False,
                                 error="role_not_found",
-                                message=f"Role {role_id} not found",
-                            )
-                        )
-                        failed += 1
-                        role_validation_failed = True
-                        break
-                    if role.tenant_id and tenant_id and role.tenant_id != tenant_id:
-                        results.append(
-                            BulkOperationItemResult(
-                                id=f"row-{idx}",
-                                success=False,
-                                error="cross_tenant_role",
-                                message=f"Role {role_id} does not belong to the current tenant",
+                                message="Role not found or not accessible",
                             )
                         )
                         failed += 1
@@ -381,7 +374,7 @@ async def bulk_create_users(
             successful += 1
 
         except Exception as e:
-            logger.error("Error creating user at row %d: %s", idx, e)
+            logger.error("bulk_user_create_failed", row=idx, error=type(e).__name__)
             results.append(
                 BulkOperationItemResult(
                     id=f"row-{idx}",
@@ -507,25 +500,15 @@ async def bulk_update_users(
                 role_validation_failed = False
                 for role_id in update_data.roles:
                     role = await role_repo.get_by_id(role_id)
-                    if not role:
+                    if not role or (
+                        role.tenant_id and tenant_id and role.tenant_id != tenant_id
+                    ):
                         results.append(
                             BulkOperationItemResult(
                                 id=update_data.id,
                                 success=False,
                                 error="role_not_found",
-                                message=f"Role {role_id} not found",
-                            )
-                        )
-                        failed += 1
-                        role_validation_failed = True
-                        break
-                    if role.tenant_id and tenant_id and role.tenant_id != tenant_id:
-                        results.append(
-                            BulkOperationItemResult(
-                                id=update_data.id,
-                                success=False,
-                                error="cross_tenant_role",
-                                message=f"Role {role_id} does not belong to the current tenant",
+                                message="Role not found or not accessible",
                             )
                         )
                         failed += 1
@@ -548,7 +531,7 @@ async def bulk_update_users(
             successful += 1
 
         except Exception as e:
-            logger.error("Error updating user %s: %s", update_data.id, e)
+            logger.error("bulk_user_update_failed", user_id=str(update_data.id), error=type(e).__name__)
             results.append(
                 BulkOperationItemResult(
                     id=update_data.id,
@@ -679,6 +662,17 @@ async def bulk_delete_users(
                 user.is_active = False
                 await user_repo.update(user)
 
+            # Revoke all sessions for deactivated/deleted user
+            try:
+                from app.infrastructure.database.repositories.session_repository import (
+                    SQLAlchemySessionRepository,
+                )
+
+                session_repo = SQLAlchemySessionRepository(session)
+                await session_repo.revoke_all(user_id)
+            except Exception:
+                logger.warning("bulk_session_revoke_failed", user_id=str(user_id))
+
             results.append(
                 BulkOperationItemResult(
                     id=user_id,
@@ -691,7 +685,7 @@ async def bulk_delete_users(
             successful += 1
 
         except Exception as e:
-            logger.error("Error deleting user %s: %s", user_id, e)
+            logger.error("bulk_user_delete_failed", user_id=str(user_id), error=type(e).__name__)
             results.append(
                 BulkOperationItemResult(
                     id=user_id,
@@ -780,7 +774,7 @@ async def bulk_update_user_status(
             successful += 1
 
         except Exception:
-            logger.warning("Failed to update status for a user in bulk operation")
+            logger.warning("bulk_status_update_failed", user_id=str(user_id))
             failed += 1
 
     action = AuditAction.BULK_UPDATE
@@ -835,7 +829,9 @@ async def bulk_role_assignment(
     valid_role_ids = []
     for role_id in request.role_ids:
         role = await role_repo.get_by_id(role_id)
-        if role and (not tenant_id or not role.tenant_id or role.tenant_id == tenant_id):
+        if role and (
+            not tenant_id or not role.tenant_id or role.tenant_id == tenant_id
+        ):
             valid_role_ids.append(role_id)
 
     if not valid_role_ids:
@@ -874,7 +870,7 @@ async def bulk_role_assignment(
             successful += 1
 
         except Exception:
-            logger.warning("Failed to assign/revoke role for a user in bulk operation")
+            logger.warning("bulk_role_assignment_failed", user_id=str(user_id))
             failed += 1
 
     await log_bulk_operation(
@@ -926,6 +922,22 @@ class BulkValidationResult(BaseModel):
     errors: list[dict[str, Any]]
 
 
+_BULK_EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+_BULK_PASSWORD_RE = re.compile(
+    r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]).{8,}$"
+)
+
+
+def _validate_email_format(email: str) -> bool:
+    """Validate email format using a proper regex."""
+    return bool(_BULK_EMAIL_RE.match(email))
+
+
+def _validate_password_complexity(password: str) -> bool:
+    """Validate password complexity (8+ chars, upper, lower, digit, special)."""
+    return bool(len(password) >= 8 and _BULK_PASSWORD_RE.match(password))
+
+
 @router.post(
     "/validate",
     response_model=BulkValidationResult,
@@ -935,6 +947,7 @@ class BulkValidationResult(BaseModel):
 async def validate_bulk_data(
     request: BulkValidationRequest,
     current_user_id: SuperuserId,
+    tenant_id: CurrentTenantId,
     session: DbSession,
 ) -> BulkValidationResult:
     """
@@ -958,9 +971,9 @@ async def validate_bulk_data(
                 # Validate user creation data
                 if not item.get("email"):
                     item_errors.append("email is required")
-                elif not isinstance(item.get("email"), str) or "@" not in item.get(
-                    "email", ""
-                ):
+                elif not isinstance(
+                    item.get("email"), str
+                ) or not _validate_email_format(item.get("email", "")):
                     item_errors.append("invalid email format")
                 else:
                     # Check for duplicate
@@ -970,8 +983,10 @@ async def validate_bulk_data(
 
                 if not item.get("password"):
                     item_errors.append("password is required")
-                elif len(item.get("password", "")) < 8:
-                    item_errors.append("password must be at least 8 characters")
+                elif not _validate_password_complexity(item.get("password", "")):
+                    item_errors.append(
+                        "password must be at least 8 characters with uppercase, lowercase, digit, and special character"
+                    )
 
                 if not item.get("first_name"):
                     item_errors.append("first_name is required")

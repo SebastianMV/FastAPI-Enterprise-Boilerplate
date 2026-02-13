@@ -13,7 +13,7 @@ This module provides reusable fixtures for testing:
 
 import asyncio
 import os
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator
 from typing import Any
 from uuid import uuid4
 
@@ -281,8 +281,8 @@ async def test_user(db_session, user_factory) -> dict[str, Any]:
 
     # Persist to DB for integration tests
     try:
-        from app.infrastructure.database.models.user import UserModel
         from app.infrastructure.database.models.tenant import TenantModel
+        from app.infrastructure.database.models.user import UserModel
 
         # Ensure a tenant exists
         tenant_id = user_data.get("tenant_id", uuid4())
@@ -290,13 +290,17 @@ async def test_user(db_session, user_factory) -> dict[str, Any]:
 
         from sqlalchemy import select
 
-        existing_tenant = (await db_session.execute(
-            select(TenantModel).where(TenantModel.id == tenant_id)
-        )).scalars().first()
+        existing_tenant = (
+            (
+                await db_session.execute(
+                    select(TenantModel).where(TenantModel.id == tenant_id)
+                )
+            )
+            .scalars()
+            .first()
+        )
 
         if not existing_tenant:
-            from datetime import datetime, UTC
-
             tenant = TenantModel(
                 id=tenant_id,
                 name="Test Tenant",
@@ -339,17 +343,23 @@ async def test_superuser(db_session, user_factory) -> dict[str, Any]:
     user_data = user_factory(is_superuser=True, email="admin@example.com")
 
     try:
-        from app.infrastructure.database.models.user import UserModel
         from app.infrastructure.database.models.tenant import TenantModel
+        from app.infrastructure.database.models.user import UserModel
 
         tenant_id = user_data.get("tenant_id", uuid4())
         user_data["tenant_id"] = tenant_id
 
         from sqlalchemy import select
 
-        existing_tenant = (await db_session.execute(
-            select(TenantModel).where(TenantModel.id == tenant_id)
-        )).scalars().first()
+        existing_tenant = (
+            (
+                await db_session.execute(
+                    select(TenantModel).where(TenantModel.id == tenant_id)
+                )
+            )
+            .scalars()
+            .first()
+        )
 
         if not existing_tenant:
             tenant = TenantModel(

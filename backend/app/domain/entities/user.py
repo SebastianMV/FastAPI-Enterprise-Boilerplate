@@ -89,7 +89,9 @@ class User(TenantSoftDeletableEntity):
         """
         self.password_hash = hasher(password.value)
 
-    def verify_password(self, plain_password: str, verifier: Callable[[str, str], bool]) -> bool:
+    def verify_password(
+        self, plain_password: str, verifier: Callable[[str, str], bool]
+    ) -> bool:
         """
         Verify password against stored hash.
 
@@ -186,9 +188,7 @@ class User(TenantSoftDeletableEntity):
         import secrets
 
         raw_token = secrets.token_urlsafe(32)
-        self.email_verification_token = hashlib.sha256(
-            raw_token.encode()
-        ).hexdigest()
+        self.email_verification_token = hashlib.sha256(raw_token.encode()).hexdigest()
         self.email_verification_sent_at = datetime.now(UTC)
         return raw_token
 

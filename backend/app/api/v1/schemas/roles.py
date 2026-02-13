@@ -8,6 +8,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.v1.schemas.common import ScopeStr, ShortStr
+
 # ===========================================
 # Request Schemas
 # ===========================================
@@ -16,8 +18,12 @@ from pydantic import BaseModel, ConfigDict, Field
 class PermissionSchema(BaseModel):
     """Permission representation."""
 
-    resource: str = Field(..., max_length=50, description="Resource name (e.g., 'users')")
-    action: str = Field(..., max_length=50, description="Action name (e.g., 'read', 'create')")
+    resource: ShortStr = Field(
+        ..., description="Resource name (e.g., 'users')"
+    )
+    action: ShortStr = Field(
+        ..., description="Action name (e.g., 'read', 'create')"
+    )
 
 
 class RoleCreate(BaseModel):
@@ -34,7 +40,7 @@ class RoleCreate(BaseModel):
         max_length=500,
         description="Role description",
     )
-    permissions: list[str] = Field(
+    permissions: list[ScopeStr] = Field(
         default_factory=list,
         max_length=100,
         description="List of permissions (resource:action format)",
@@ -53,7 +59,7 @@ class RoleUpdate(BaseModel):
         default=None,
         max_length=500,
     )
-    permissions: list[str] | None = Field(default=None, max_length=100)
+    permissions: list[ScopeStr] | None = Field(default=None, max_length=100)
 
 
 class AssignRoleRequest(BaseModel):
@@ -81,9 +87,9 @@ class RoleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    name: str
-    description: str
-    permissions: list[str]
+    name: str = Field(max_length=100)
+    description: str = Field(max_length=500)
+    permissions: list[ScopeStr]
     is_system: bool
     created_at: datetime
     updated_at: datetime
@@ -100,5 +106,5 @@ class UserPermissionsResponse(BaseModel):
     """User's effective permissions."""
 
     user_id: UUID
-    permissions: list[str]
+    permissions: list[ScopeStr]
     roles: list[RoleResponse]

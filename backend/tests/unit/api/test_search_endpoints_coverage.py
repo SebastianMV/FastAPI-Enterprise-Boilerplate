@@ -82,7 +82,7 @@ class TestSearchEndpoint:
             await search(
                 request=request,
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=None,
             )
 
@@ -113,7 +113,7 @@ class TestSearchEndpoint:
             result = await search(
                 request=request,
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=uuid4(),
             )
 
@@ -149,7 +149,7 @@ class TestSearchEndpoint:
             result = await search(
                 request=request,
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=None,
             )
 
@@ -181,7 +181,7 @@ class TestSearchEndpoint:
             result = await search(
                 request=request,
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=None,
             )
 
@@ -210,7 +210,7 @@ class TestSearchEndpoint:
             result = await search(
                 request=request,
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=None,
             )
 
@@ -237,7 +237,7 @@ class TestSearchEndpoint:
                 await search(
                     request=request,
                     session=mock_session,
-                    current_user=mock_user,
+                    current_user_id=mock_user.id,
                     tenant_id=None,
                 )
 
@@ -264,7 +264,7 @@ class TestSimpleSearchEndpoint:
 
             result = await simple_search(
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=None,
                 q="test query",
                 index="users",
@@ -292,7 +292,7 @@ class TestSimpleSearchEndpoint:
 
             result = await simple_search(
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=tenant_id,
                 q="test",
                 index="users",
@@ -316,7 +316,7 @@ class TestSuggestEndpoint:
         with pytest.raises(HTTPException) as exc:
             await suggest(
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=None,
                 q="test",
                 index="invalid_index",
@@ -346,7 +346,7 @@ class TestSuggestEndpoint:
 
             result = await suggest(
                 session=mock_session,
-                current_user=mock_user,
+                current_user_id=mock_user.id,
                 tenant_id=uuid4(),
                 q="tes",
                 index="users",
@@ -371,7 +371,7 @@ class TestSuggestEndpoint:
             with pytest.raises(HTTPException) as exc:
                 await suggest(
                     session=mock_session,
-                    current_user=mock_user,
+                    current_user_id=mock_user.id,
                     tenant_id=None,
                     q="test",
                     index="users",
@@ -401,7 +401,7 @@ class TestHealthEndpoint:
         ) as mock_get_backend:
             mock_get_backend.return_value = mock_service
 
-            result = await health(session=mock_session)
+            result = await health(session=mock_session, current_user_id=uuid4())
 
             assert result.status == "healthy"
             assert result.backend == "postgres"
@@ -414,7 +414,7 @@ class TestHealthEndpoint:
         ) as mock_get_backend:
             mock_get_backend.side_effect = Exception("Connection failed")
 
-            result = await health(session=mock_session)
+            result = await health(session=mock_session, current_user_id=uuid4())
 
             assert result.status == "unhealthy"
             assert "error" in result.details
@@ -426,7 +426,7 @@ class TestListIndicesEndpoint:
     @pytest.mark.asyncio
     async def test_list_indices(self, mock_user: MagicMock) -> None:
         """Test listing search indices."""
-        result = await list_indices(current_user=mock_user)
+        result = await list_indices(current_user_id=mock_user.id)
 
         assert isinstance(result, list)
         assert len(result) > 0

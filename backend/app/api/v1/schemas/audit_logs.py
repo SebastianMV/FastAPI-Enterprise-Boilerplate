@@ -9,6 +9,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.v1.schemas.common import NameStr, ShortStr, TextStr
+
 
 class AuditLogResponse(BaseModel):
     """Schema for audit log response."""
@@ -17,19 +19,19 @@ class AuditLogResponse(BaseModel):
 
     id: UUID
     timestamp: datetime
-    action: str
-    resource_type: str
-    resource_id: str | None = None
-    resource_name: str | None = None
+    action: str = Field(max_length=50)
+    resource_type: str = Field(max_length=50)
+    resource_id: str | None = Field(default=None, max_length=200)
+    resource_name: str | None = Field(default=None, max_length=200)
     actor_id: UUID | None = None
-    actor_email: str | None = None
-    actor_ip: str | None = None
-    actor_user_agent: str | None = None
+    actor_email: str | None = Field(default=None, max_length=320)
+    actor_ip: str | None = Field(default=None, max_length=45)
+    actor_user_agent: str | None = Field(default=None, max_length=500)
     tenant_id: UUID | None = None
     old_value: dict[str, Any] | None = None
     new_value: dict[str, Any] | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-    reason: str | None = None
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class AuditLogListResponse(BaseModel):
@@ -44,8 +46,8 @@ class AuditLogListResponse(BaseModel):
 class AuditLogFilters(BaseModel):
     """Schema for audit log filter options."""
 
-    action: str | None = None
-    resource_type: str | None = None
+    action: ShortStr | None = None
+    resource_type: ShortStr | None = None
     actor_id: UUID | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None

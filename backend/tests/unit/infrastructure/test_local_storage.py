@@ -220,7 +220,7 @@ class TestLocalStorageAdapter:
     ):
         """Test that path traversal attacks are prevented."""
         # Path traversal should be blocked and raise ValueError
-        with pytest.raises(ValueError, match="Invalid path"):
+        with pytest.raises(ValueError, match="Path traversal"):
             storage._get_full_path("../../etc/passwd")
 
     def test_content_type_detection(self, storage: LocalStorageAdapter):

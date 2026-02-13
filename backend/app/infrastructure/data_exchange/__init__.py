@@ -18,13 +18,13 @@ from app.domain.ports.data_exchange import (
 )
 from app.domain.ports.import_export import (
     DataImportError,
+    DataImportWarning,
     ExportPort,
     ExportRequest,
     ExportResult,
     ImportPort,
     ImportRequest,
     ImportResult,
-    DataImportWarning,
 )
 from app.domain.ports.reports import (
     ReportFilter,

@@ -1,5 +1,6 @@
 """Additional websocket endpoint tests for coverage."""
 
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -64,10 +65,10 @@ class TestMainWebSocketEndpoint:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                return {"type": "invalid_type"}
+                return json.dumps({"type": "invalid_type"})
             raise WebSocketDisconnect()
 
-        mock_websocket.receive_json = receive_side_effect
+        mock_websocket.receive_text = receive_side_effect
 
         with patch("app.api.v1.endpoints.websocket.settings") as mock_settings:
             mock_settings.WEBSOCKET_ENABLED = True
@@ -164,10 +165,10 @@ class TestNotificationsWebSocketEndpoint:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                return {"type": "ping", "payload": {"timestamp": 1234567890}}
+                return json.dumps({"type": "ping", "payload": {"timestamp": 1234567890}})
             raise WebSocketDisconnect()
 
-        mock_websocket.receive_json = receive_side_effect
+        mock_websocket.receive_text = receive_side_effect
 
         with patch("app.api.v1.endpoints.websocket.settings") as mock_settings:
             mock_settings.WEBSOCKET_ENABLED = True

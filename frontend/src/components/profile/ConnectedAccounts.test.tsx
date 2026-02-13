@@ -1,8 +1,8 @@
 /**
  * Unit tests for ConnectedAccounts component.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ConnectedAccounts from './ConnectedAccounts';
 
 const mockGetConnections = vi.fn();
@@ -15,6 +15,17 @@ vi.mock('@/services/api', () => ({
     disconnect: (...a: unknown[]) => mockDisconnect(...a),
     linkProvider: (...a: unknown[]) => mockLinkProvider(...a),
   },
+}));
+
+vi.mock('@/components/common/Modal', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
+  ConfirmModal: ({ isOpen, onConfirm, title }: any) =>
+    isOpen ? (
+      <div data-testid="confirm-modal">
+        <h2>{title}</h2>
+        <button onClick={onConfirm}>Confirm</button>
+      </div>
+    ) : null,
 }));
 
 describe('ConnectedAccounts', () => {
@@ -75,6 +86,11 @@ describe('ConnectedAccounts', () => {
     render(<ConnectedAccounts />);
     await waitFor(() => screen.getByText('profile.disconnect'));
     fireEvent.click(screen.getByText('profile.disconnect'));
+    // Confirm in the modal
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Confirm'));
     await waitFor(() => {
       expect(mockDisconnect).toHaveBeenCalledWith('google');
     });

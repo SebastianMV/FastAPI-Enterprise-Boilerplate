@@ -22,4 +22,3 @@ async def get_redis_client() -> redis.Redis:
 async def close_redis_client() -> None:
     """Close Redis client connection (no-op — lifecycle managed by cache singleton)."""
     # Connection lifecycle is managed by close_cache() in __init__.py
-    pass

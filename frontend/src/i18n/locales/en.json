@@ -111,6 +111,7 @@
     "socialConnect": "Connect",
     "socialContinue": "Continue with",
     "socialConnectError": "Failed to connect",
+    "layoutAriaLabel": "Authentication",
     "mfa": {
       "title": "Two-Factor Authentication",
       "codeMustBe6Digits": "Code must be 6 digits",

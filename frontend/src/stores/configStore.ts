@@ -38,6 +38,7 @@ export const useConfigStore = create<ConfigState>()(
           });
         } catch (error) {
           if (import.meta.env.DEV) {
+            // eslint-disable-next-line no-console -- development-only error logging
             console.error('[configStore] Failed to fetch features:', error);
           }
           set({

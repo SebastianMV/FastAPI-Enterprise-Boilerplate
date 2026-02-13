@@ -15,7 +15,6 @@ Provides enhanced PDF features including:
 # pyright: reportMissingImports=false, reportOptionalMemberAccess=false
 
 import html
-
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -178,7 +177,7 @@ class PDFHandler:
 
             return pdf_bytes
         except Exception as e:
-            logger.error("PDF generation failed: %s", e)
+            logger.error("pdf_generation_failed", error_type=type(e).__name__)
             # Fallback to HTML
             return self._generate_html_fallback(title, content_html).encode("utf-8")
 
@@ -245,19 +244,19 @@ class PDFHandler:
 </head>
 <body>
     {watermark_html}
-    
+
     <header class="page-header">
         {logo_html}
         <span class="header-text">{html.escape(header_content)}</span>
     </header>
-    
+
     <main class="content">
         <h1 class="report-title">{html.escape(title)}</h1>
         {toc_html}
         {charts_html}
         {content_html}
     </main>
-    
+
     <footer class="page-footer">
         <span class="footer-text">{html.escape(footer_content)}</span>
     </footer>
@@ -278,15 +277,15 @@ class PDFHandler:
 @page {{
     size: {page_size};
     margin: {cfg.margin_top} {cfg.margin_right} {cfg.margin_bottom} {cfg.margin_left};
-    
+
     @top-center {{
         content: element(header);
     }}
-    
+
     @bottom-center {{
         content: element(footer);
     }}
-    
+
     @bottom-right {{
         content: "Page " counter(page) " of " counter(pages);
         font-size: 9pt;
@@ -508,7 +507,7 @@ h3 {{
 
             html_parts.append(f"""
             <div class="chart-container">
-                {f'<div class="chart-title">{chart.title}</div>' if chart.title else ""}
+                {f'<div class="chart-title">{html.escape(chart.title)}</div>' if chart.title else ""}
                 {svg}
             </div>
             """)
@@ -569,18 +568,18 @@ h3 {{
                 )
 
         return f'''
-        <svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" 
+        <svg width="{width}" height="{height}" viewBox="0 0 {width} {height}"
              xmlns="http://www.w3.org/2000/svg" class="chart-image">
             <!-- Background -->
             <rect width="100%" height="100%" fill="#ffffff"/>
-            
+
             <!-- Grid lines -->
-            <line x1="{padding}" y1="{height - padding}" x2="{width - padding}" 
+            <line x1="{padding}" y1="{height - padding}" x2="{width - padding}"
                   y2="{height - padding}" stroke="#e5e7eb" stroke-width="1"/>
-            
+
             <!-- Bars -->
             {"".join(bars_svg)}
-            
+
             <!-- Labels -->
             {"".join(labels_svg)}
         </svg>
@@ -665,10 +664,10 @@ h3 {{
              xmlns="http://www.w3.org/2000/svg" class="chart-image">
             <!-- Background -->
             <rect width="100%" height="100%" fill="#ffffff"/>
-            
+
             <!-- Pie slices -->
             {"".join(slices_svg)}
-            
+
             <!-- Legend -->
             {"".join(legend_svg)}
         </svg>
@@ -725,19 +724,19 @@ h3 {{
              xmlns="http://www.w3.org/2000/svg" class="chart-image">
             <!-- Background -->
             <rect width="100%" height="100%" fill="#ffffff"/>
-            
+
             <!-- Grid -->
-            <line x1="{padding}" y1="{height - padding}" x2="{width - padding}" 
+            <line x1="{padding}" y1="{height - padding}" x2="{width - padding}"
                   y2="{height - padding}" stroke="#e5e7eb" stroke-width="1"/>
-            <line x1="{padding}" y1="{padding}" x2="{padding}" 
+            <line x1="{padding}" y1="{padding}" x2="{padding}"
                   y2="{height - padding}" stroke="#e5e7eb" stroke-width="1"/>
-            
+
             <!-- Line -->
             <path d="{path_d}" fill="none" stroke="{color}" stroke-width="2"/>
-            
+
             <!-- Dots and values -->
             {"".join(dots_svg)}
-            
+
             <!-- Labels -->
             {"".join(labels_svg)}
         </svg>
@@ -795,7 +794,7 @@ h3 {{
 </head>
 <body>
     <div class="no-pdf-notice">
-        <strong>Note:</strong> PDF generation is not available. 
+        <strong>Note:</strong> PDF generation is not available.
         Install WeasyPrint for full PDF support: <code>pip install weasyprint</code>
     </div>
     <h1>{html.escape(title)}</h1>

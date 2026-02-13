@@ -35,7 +35,7 @@ class TestRateLimitExceeded:
         """Test that exception has correct detail message."""
         exc = RateLimitExceeded(retry_after=30)
 
-        assert "30 seconds" in exc.detail
+        assert exc.detail == "Rate limit exceeded. Please try again later."
 
     def test_exception_headers(self) -> None:
         """Test that exception includes Retry-After header."""
@@ -72,9 +72,10 @@ class TestInMemoryRateLimiter:
         """Create a fresh rate limiter for each test."""
         return InMemoryRateLimiter()
 
-    def test_allows_first_request(self, limiter: InMemoryRateLimiter) -> None:
+    @pytest.mark.asyncio
+    async def test_allows_first_request(self, limiter: InMemoryRateLimiter) -> None:
         """Test that first request is allowed."""
-        is_allowed, remaining, retry_after = limiter.is_allowed(
+        is_allowed, remaining, retry_after = await limiter.is_allowed(
             key="test_key",
             limit=10,
             window_seconds=60,
@@ -84,29 +85,31 @@ class TestInMemoryRateLimiter:
         assert remaining == 9
         assert retry_after == 0
 
-    def test_allows_requests_under_limit(self, limiter: InMemoryRateLimiter) -> None:
+    @pytest.mark.asyncio
+    async def test_allows_requests_under_limit(self, limiter: InMemoryRateLimiter) -> None:
         """Test that requests under limit are allowed."""
         key = "test_key"
         limit = 5
 
         for i in range(limit):
-            is_allowed, remaining, _ = limiter.is_allowed(
+            is_allowed, remaining, _ = await limiter.is_allowed(
                 key=key, limit=limit, window_seconds=60
             )
             assert is_allowed is True
             assert remaining == limit - i - 1
 
-    def test_blocks_when_limit_exceeded(self, limiter: InMemoryRateLimiter) -> None:
+    @pytest.mark.asyncio
+    async def test_blocks_when_limit_exceeded(self, limiter: InMemoryRateLimiter) -> None:
         """Test that requests are blocked when limit exceeded."""
         key = "test_key"
         limit = 3
 
         # Use up the limit
         for _ in range(limit):
-            limiter.is_allowed(key=key, limit=limit, window_seconds=60)
+            await limiter.is_allowed(key=key, limit=limit, window_seconds=60)
 
         # Next request should be blocked
-        is_allowed, remaining, retry_after = limiter.is_allowed(
+        is_allowed, remaining, retry_after = await limiter.is_allowed(
             key=key, limit=limit, window_seconds=60
         )
 
@@ -114,25 +117,27 @@ class TestInMemoryRateLimiter:
         assert remaining == 0
         assert retry_after > 0
 
-    def test_different_keys_independent(self, limiter: InMemoryRateLimiter) -> None:
+    @pytest.mark.asyncio
+    async def test_different_keys_independent(self, limiter: InMemoryRateLimiter) -> None:
         """Test that different keys have independent limits."""
         key1 = "user_1"
         key2 = "user_2"
         limit = 2
 
         # Use up key1's limit
-        limiter.is_allowed(key=key1, limit=limit, window_seconds=60)
-        limiter.is_allowed(key=key1, limit=limit, window_seconds=60)
+        await limiter.is_allowed(key=key1, limit=limit, window_seconds=60)
+        await limiter.is_allowed(key=key1, limit=limit, window_seconds=60)
 
         # key2 should still be allowed
-        is_allowed, remaining, _ = limiter.is_allowed(
+        is_allowed, remaining, _ = await limiter.is_allowed(
             key=key2, limit=limit, window_seconds=60
         )
 
         assert is_allowed is True
         assert remaining == 1
 
-    def test_window_expires_allows_new_requests(
+    @pytest.mark.asyncio
+    async def test_window_expires_allows_new_requests(
         self, limiter: InMemoryRateLimiter
     ) -> None:
         """Test that expired window entries are cleared."""
@@ -141,11 +146,11 @@ class TestInMemoryRateLimiter:
         window = 1  # 1 second window
 
         # Use up the limit
-        limiter.is_allowed(key=key, limit=limit, window_seconds=window)
-        limiter.is_allowed(key=key, limit=limit, window_seconds=window)
+        await limiter.is_allowed(key=key, limit=limit, window_seconds=window)
+        await limiter.is_allowed(key=key, limit=limit, window_seconds=window)
 
         # Should be blocked
-        is_allowed, _, _ = limiter.is_allowed(
+        is_allowed, _, _ = await limiter.is_allowed(
             key=key, limit=limit, window_seconds=window
         )
         assert is_allowed is False
@@ -154,16 +159,17 @@ class TestInMemoryRateLimiter:
         time.sleep(1.1)
 
         # Should be allowed again
-        is_allowed, remaining, _ = limiter.is_allowed(
+        is_allowed, remaining, _ = await limiter.is_allowed(
             key=key, limit=limit, window_seconds=window
         )
         assert is_allowed is True
 
-    def test_cleanup_removes_old_entries(self, limiter: InMemoryRateLimiter) -> None:
+    @pytest.mark.asyncio
+    async def test_cleanup_removes_old_entries(self, limiter: InMemoryRateLimiter) -> None:
         """Test cleanup removes old entries."""
         # Add some requests
-        limiter.is_allowed(key="key1", limit=10, window_seconds=60)
-        limiter.is_allowed(key="key2", limit=10, window_seconds=60)
+        await limiter.is_allowed(key="key1", limit=10, window_seconds=60)
+        await limiter.is_allowed(key="key2", limit=10, window_seconds=60)
 
         # Verify keys exist
         assert "key1" in limiter._requests
@@ -253,17 +259,18 @@ class TestGetRateLimitForPath:
 class TestRateLimitRetryAfter:
     """Tests for retry-after calculation."""
 
-    def test_retry_after_is_positive(self) -> None:
+    @pytest.mark.asyncio
+    async def test_retry_after_is_positive(self) -> None:
         """Test that retry_after is always positive."""
         limiter = InMemoryRateLimiter()
         key = "test"
         limit = 1
 
         # Use up limit
-        limiter.is_allowed(key=key, limit=limit, window_seconds=60)
+        await limiter.is_allowed(key=key, limit=limit, window_seconds=60)
 
         # Next request blocked
-        is_allowed, _, retry_after = limiter.is_allowed(
+        is_allowed, _, retry_after = await limiter.is_allowed(
             key=key, limit=limit, window_seconds=60
         )
 

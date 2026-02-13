@@ -74,12 +74,13 @@ class TestListUsersEndpoint:
             result = await list_users(
                 current_user_id=uuid4(),
                 session=mock_session,
+                tenant_id=None,
                 page=1,
                 page_size=20,
                 is_active=True,
             )
 
-        mock_repo.list.assert_awaited_once_with(skip=0, limit=20, is_active=True)
+        mock_repo.list.assert_awaited_once_with(skip=0, limit=20, is_active=True, tenant_id=None)
         assert result.total == 0
 
     @pytest.mark.asyncio
@@ -100,12 +101,13 @@ class TestListUsersEndpoint:
             result = await list_users(
                 current_user_id=uuid4(),
                 session=mock_session,
+                tenant_id=None,
                 page=3,
                 page_size=10,
                 is_active=None,
             )
 
-        mock_repo.list.assert_awaited_once_with(skip=20, limit=10, is_active=None)
+        mock_repo.list.assert_awaited_once_with(skip=20, limit=10, is_active=None, tenant_id=None)
         assert result.pages == 5
 
 
@@ -149,6 +151,7 @@ class TestGetUserEndpoint:
             result = await get_user(
                 user_id=user_id,
                 current_user_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -173,6 +176,7 @@ class TestGetUserEndpoint:
                 await get_user(
                     user_id=user_id,
                     current_user_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 

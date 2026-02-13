@@ -82,7 +82,7 @@ class TestUploadAvatarEndpoint:
         # Mock storage
         mock_storage = MagicMock()
         mock_storage_file = MagicMock()
-        mock_storage_file.url = f"/storage/avatars/{user_id}/abc123.jpg"
+        mock_storage_file.path = f"/storage/avatars/{user_id}/abc123.jpg"
         mock_storage.upload = AsyncMock(return_value=mock_storage_file)
 
         # Updated user after save
@@ -91,7 +91,7 @@ class TestUploadAvatarEndpoint:
         updated_user.email = "test@example.com"
         updated_user.first_name = "Test"
         updated_user.last_name = "User"
-        updated_user.avatar_url = mock_storage_file.url
+        updated_user.avatar_url = mock_storage_file.path
         updated_user.is_active = True
         updated_user.is_superuser = False
         updated_user.created_at = MagicMock()
@@ -111,6 +111,7 @@ class TestUploadAvatarEndpoint:
 
             result = await upload_avatar(
                 current_user_id=user_id,
+                tenant_id=None,
                 session=mock_session,
                 file=valid_image_file,
             )
@@ -119,7 +120,7 @@ class TestUploadAvatarEndpoint:
             mock_storage.upload.assert_called_once()
 
             # Verify user was updated
-            assert mock_user.avatar_url == mock_storage_file.url
+            assert mock_user.avatar_url == mock_storage_file.path
             mock_user.mark_updated.assert_called_once_with(by_user=user_id)
             mock_repo.update.assert_called_once_with(mock_user)
 
@@ -138,6 +139,7 @@ class TestUploadAvatarEndpoint:
         with pytest.raises(HTTPException) as exc_info:
             await upload_avatar(
                 current_user_id=mock_user.id,
+                tenant_id=None,
                 session=mock_session,
                 file=file,
             )
@@ -153,8 +155,8 @@ class TestUploadAvatarEndpoint:
 
         mock_session = AsyncMock()
 
-        # Create file larger than MAX_AVATAR_SIZE
-        large_content = b"0" * (MAX_AVATAR_SIZE + 1)
+        # Create file larger than MAX_AVATAR_SIZE with valid JPEG header
+        large_content = b"\xff\xd8\xff" + b"\x00" * MAX_AVATAR_SIZE
 
         file = MagicMock(spec=UploadFile)
         file.filename = "large.jpg"
@@ -164,6 +166,7 @@ class TestUploadAvatarEndpoint:
         with pytest.raises(HTTPException) as exc_info:
             await upload_avatar(
                 current_user_id=mock_user.id,
+                tenant_id=None,
                 session=mock_session,
                 file=file,
             )
@@ -190,6 +193,7 @@ class TestUploadAvatarEndpoint:
             with pytest.raises(HTTPException) as exc_info:
                 await upload_avatar(
                     current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                     file=valid_image_file,
                 )
@@ -234,6 +238,7 @@ class TestDeleteAvatarEndpoint:
 
             result = await delete_avatar(
                 current_user_id=user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -262,6 +267,7 @@ class TestDeleteAvatarEndpoint:
             with pytest.raises(HTTPException) as exc_info:
                 await delete_avatar(
                     current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -287,6 +293,7 @@ class TestDeleteAvatarEndpoint:
             with pytest.raises(HTTPException) as exc_info:
                 await delete_avatar(
                     current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 

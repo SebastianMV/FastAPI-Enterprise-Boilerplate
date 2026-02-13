@@ -150,8 +150,9 @@ class TestAPIKeyHandler:
         # Prefix is first 8 chars of the random part
         assert len(prefix) == 8
 
-        # Hash should be bcrypt format
-        assert key_hash.startswith("$2b$")
+        # Hash should be SHA-256 format (64 hex characters)
+        assert len(key_hash) == 64
+        assert all(c in '0123456789abcdef' for c in key_hash)
 
     def test_generate_unique_keys(self, handler):
         """Generated keys should be unique."""
@@ -166,18 +167,17 @@ class TestAPIKeyHandler:
         assert handler.verify_key("wrong_key", key_hash) is False
 
     def test_hash_key(self, handler):
-        """Should hash key consistently."""
+        """Should hash key deterministically with SHA-256."""
         key = "krs_test1234567890123456789012"
 
         hash1 = handler.hash_key(key)
         hash2 = handler.hash_key(key)
 
-        # Different hashes due to salt
-        assert hash1 != hash2
+        # SHA-256 is deterministic — same input produces same hash
+        assert hash1 == hash2
 
-        # Both should verify
+        # Should verify
         assert handler.verify_key(key, hash1) is True
-        assert handler.verify_key(key, hash2) is True
 
     def test_extract_prefix(self, handler):
         """Should extract prefix correctly."""

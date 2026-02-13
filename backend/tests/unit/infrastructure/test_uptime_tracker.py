@@ -10,7 +10,7 @@ Tests for uptime tracking, health check recording, and incident management.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -260,37 +260,41 @@ class TestGetRedisClient:
 
     @pytest.mark.asyncio
     async def test_get_redis_client_creates_client(self) -> None:
-        """Test that _get_redis_client creates client."""
+        """Test that _get_redis_client creates client via get_cache."""
         tracker = UptimeTracker()
 
-        with patch(
-            "app.infrastructure.monitoring.uptime_tracker.redis.Redis"
-        ) as mock_redis_class:
-            mock_client = AsyncMock()
-            mock_redis_class.return_value = mock_client
+        mock_redis_client = AsyncMock()
+        mock_cache = MagicMock()
+        mock_cache.get_redis_client.return_value = mock_redis_client
 
+        with patch(
+            "app.infrastructure.cache.get_cache",
+            return_value=mock_cache,
+        ):
             client = await tracker._get_redis_client()
 
-            assert client == mock_client
-            mock_redis_class.assert_called_once()
+            assert client is mock_redis_client
+            mock_cache.get_redis_client.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_redis_client_reuses_client(self) -> None:
         """Test that _get_redis_client reuses existing client."""
         tracker = UptimeTracker()
 
-        with patch(
-            "app.infrastructure.monitoring.uptime_tracker.redis.Redis"
-        ) as mock_redis_class:
-            mock_client = AsyncMock()
-            mock_redis_class.return_value = mock_client
+        mock_redis_client = AsyncMock()
+        mock_cache = MagicMock()
+        mock_cache.get_redis_client.return_value = mock_redis_client
 
+        with patch(
+            "app.infrastructure.cache.get_cache",
+            return_value=mock_cache,
+        ):
             client1 = await tracker._get_redis_client()
             client2 = await tracker._get_redis_client()
 
             assert client1 is client2
-            # Should only create once
-            mock_redis_class.assert_called_once()
+            # Should only call get_cache once (cached in _redis_client)
+            mock_cache.get_redis_client.assert_called_once()
 
 
 class TestIncidentRecording:
@@ -435,8 +439,8 @@ class TestRecentIncidents:
         tracker = UptimeTracker()
 
         incidents = [
-            "{'timestamp': '2025-01-01T00:00:00Z', 'duration': 60}",
-            "{'timestamp': '2025-01-02T00:00:00Z', 'duration': 120}",
+            '{"timestamp": "2025-01-01T00:00:00Z", "duration": 60}',
+            '{"timestamp": "2025-01-02T00:00:00Z", "duration": 120}',
         ]
 
         mock_redis = AsyncMock()

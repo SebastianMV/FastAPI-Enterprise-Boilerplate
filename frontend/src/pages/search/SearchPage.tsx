@@ -133,7 +133,7 @@ export default function SearchPage() {
         }
 
         setResults(response);
-      } catch (error) {
+      } catch {
         if (abortController.signal.aborted) return;
         // Search failed — don't log error details in production
         setResults(null);

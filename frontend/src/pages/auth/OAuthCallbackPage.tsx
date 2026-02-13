@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import api, { OAUTH_PROVIDERS } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
+import { CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface OAuthCallbackResult {
   is_new_user: boolean;
@@ -11,7 +11,7 @@ interface OAuthCallbackResult {
 
 /**
  * OAuth callback page that handles the redirect from OAuth providers.
- * 
+ *
  * Processes the authorization code and completes the authentication.
  */
 export default function OAuthCallbackPage() {
@@ -19,14 +19,15 @@ export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { fetchUser } = useAuthStore();
-  
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState(t('oauth.processing'));
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    
+    const controller = new AbortController();
+
     const handleCallback = async () => {
       // Clean the OAuth code/state from the URL immediately
       window.history.replaceState({}, '', '/oauth/callback');
@@ -64,7 +65,7 @@ export default function OAuthCallbackPage() {
       try {
         // Extract provider from state (format: provider_randomstring)
         const provider = state.split('_')[0];
-        
+
         // Validate provider against known allowlist to prevent path traversal
         if (!provider || !OAUTH_PROVIDERS.map(p => p.id).includes(provider)) {
           throw new Error(t('oauth.invalidState'));
@@ -72,11 +73,14 @@ export default function OAuthCallbackPage() {
 
         // Complete OAuth flow
         const response = await api.get<OAuthCallbackResult>(
-          `/auth/oauth/${provider}/callback`,
+          `/auth/oauth/${encodeURIComponent(provider)}/callback`,
           {
             params: { code, state },
+            signal: controller.signal,
           }
         );
+
+        if (controller.signal.aborted) return;
 
         const { is_new_user } = response.data;
 
@@ -84,11 +88,13 @@ export default function OAuthCallbackPage() {
         // Fetch user profile to confirm authentication.
         await fetchUser();
 
+        if (controller.signal.aborted) return;
+
         setIsNewUser(is_new_user);
         setStatus('success');
         setMessage(
-          is_new_user 
-            ? t('oauth.accountCreated') 
+          is_new_user
+            ? t('oauth.accountCreated')
             : t('oauth.signedIn')
         );
 
@@ -97,8 +103,10 @@ export default function OAuthCallbackPage() {
           navigate(is_new_user ? '/profile' : '/dashboard', { replace: true });
         }, 1500);
 
-      } catch (error) {
+      } catch {
+        if (controller.signal.aborted) return;
         if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console -- development-only error logging
           console.error('OAuth callback failed');
         }
         setStatus('error');
@@ -107,8 +115,9 @@ export default function OAuthCallbackPage() {
     };
 
     handleCallback();
-    
+
     return () => {
+      controller.abort();
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [searchParams, navigate, fetchUser]);

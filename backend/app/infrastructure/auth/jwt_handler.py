@@ -191,7 +191,7 @@ def decode_token(token: str) -> dict[str, Any]:
         # Do NOT leak PyJWT internal details (algorithm, key format, etc.)
         from app.infrastructure.observability.logging import get_logger as _get_logger
 
-        _get_logger(__name__).debug("JWT decode error: %s", e)
+        _get_logger(__name__).debug("jwt_decode_error", error_type=type(e).__name__)
         raise AuthenticationError(
             message="Invalid or expired token",
             code="INVALID_TOKEN",

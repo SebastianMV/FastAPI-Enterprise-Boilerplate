@@ -18,6 +18,7 @@ from app.domain.entities.oauth import (
     OAuthState,
     OAuthUserInfo,
 )
+from app.domain.exceptions.base import AuthenticationError
 
 
 class TestOAuthServiceInitiateOAuth:
@@ -70,14 +71,12 @@ class TestOAuthServiceCallback:
 
             service = OAuthService(mock_session)
 
-            with pytest.raises(ValueError) as exc:
+            with pytest.raises(AuthenticationError, match="Invalid or expired"):
                 await service.handle_callback(
                     provider=OAuthProvider.GOOGLE,
                     code="auth_code",
                     state="invalid_state",
                 )
-
-            assert "Invalid or expired" in str(exc.value)
 
 
 class TestOAuthServiceConnections:

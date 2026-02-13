@@ -75,18 +75,18 @@ class TenantResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    name: str
-    slug: str
-    email: str | None = None
-    phone: str | None = None
+    name: str = Field(max_length=255)
+    slug: str = Field(max_length=100)
+    email: str | None = Field(default=None, max_length=320)
+    phone: str | None = Field(default=None, max_length=50)
     is_active: bool
     is_verified: bool
-    plan: str
+    plan: str = Field(max_length=50)
     plan_expires_at: datetime | None = None
     settings: TenantSettingsSchema
-    domain: str | None = None
-    timezone: str
-    locale: str
+    domain: str | None = Field(default=None, max_length=255)
+    timezone: str = Field(max_length=50)
+    locale: str = Field(max_length=10)
     created_at: datetime
     updated_at: datetime
 

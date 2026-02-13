@@ -38,8 +38,10 @@ class TestPermissionFromString:
         assert perm.action == "*"
 
     def test_permission_from_invalid_string(self) -> None:
-        """Test Permission from invalid string."""
-        with pytest.raises(ValueError):
+        """Test Permission from invalid string raises DomainValidationError."""
+        from app.domain.exceptions.base import ValidationError as DomainValidationError
+
+        with pytest.raises(DomainValidationError):
             Permission.from_string("invalid")
 
     def test_permission_to_string(self) -> None:

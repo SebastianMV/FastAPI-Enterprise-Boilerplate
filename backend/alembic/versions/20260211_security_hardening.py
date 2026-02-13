@@ -208,9 +208,7 @@ def downgrade() -> None:
     op.execute("ALTER TABLE mfa_configs DISABLE ROW LEVEL SECURITY")
 
     # Revert user_sessions RLS
-    op.execute(
-        "DROP POLICY IF EXISTS user_sessions_tenant_isolation ON user_sessions"
-    )
+    op.execute("DROP POLICY IF EXISTS user_sessions_tenant_isolation ON user_sessions")
     op.execute("ALTER TABLE user_sessions NO FORCE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE user_sessions DISABLE ROW LEVEL SECURITY")
 

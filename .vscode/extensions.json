@@ -1,0 +1,32 @@
+{
+    // ==========================================================================
+    // Recommended Extensions for FastAPI-Enterprise-Boilerplate
+    // ==========================================================================
+    // VS Code will prompt team members to install these when opening the project.
+    // These align with the linting/formatting/testing stack defined in the project.
+    // ==========================================================================
+    "recommendations": [
+        // ── Python ──────────────────────────────────────────────────────────────
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        // ── TypeScript / React ──────────────────────────────────────────────────
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        // ── Docker & Infrastructure ─────────────────────────────────────────────
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        // ── Git ─────────────────────────────────────────────────────────────────
+        "eamodio.gitlens",
+        // ── Database ────────────────────────────────────────────────────────────
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        // ── Testing ─────────────────────────────────────────────────────────────
+        "ms-playwright.playwright",
+        // ── DX / Productivity ───────────────────────────────────────────────────
+        "editorconfig.editorconfig",
+        "streetsidesoftware.code-spell-checker",
+        "github.copilot",
+        "github.copilot-chat"
+    ]
+}

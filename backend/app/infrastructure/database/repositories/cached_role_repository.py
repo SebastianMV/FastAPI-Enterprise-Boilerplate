@@ -49,7 +49,7 @@ class CachedRoleRepository:
         # Try cache
         cached = await cache.get(cache_key)
         if cached:
-            logger.debug("Cache hit: role %s", role_id)
+            logger.debug("cache_hit_role", role_id=str(role_id))
             return self._dict_to_role(cached)
 
         # Fetch from DB
@@ -84,6 +84,14 @@ class CachedRoleRepository:
         if role:
             await self._invalidate_role_cache(role_id, role.tenant_id)
 
+    async def count(
+        self,
+        *,
+        tenant_id: UUID,
+    ) -> int:
+        """Count roles for tenant (not cached — cheap DB query)."""
+        return await self._repo.count(tenant_id=tenant_id)
+
     async def list(
         self,
         *,
@@ -104,7 +112,7 @@ class CachedRoleRepository:
         # Try cache
         cached = await cache.get(cache_key)
         if cached:
-            logger.debug("Cache hit: roles for tenant %s", tenant_id)
+            logger.debug("cache_hit_roles_for_tenant", tenant_id=str(tenant_id))
             return [self._dict_to_role(r) for r in cached]
 
         # Fetch from DB
@@ -156,7 +164,7 @@ class CachedRoleRepository:
         # Try cache
         cached = await cache.get(cache_key)
         if cached:
-            logger.debug("Cache hit: roles for user %s", user_id)
+            logger.debug("cache_hit_roles_for_user", user_id=str(user_id))
             return [self._dict_to_role(r) for r in cached]
 
         # Fetch from DB

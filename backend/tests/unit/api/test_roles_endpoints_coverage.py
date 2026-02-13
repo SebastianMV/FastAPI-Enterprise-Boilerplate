@@ -106,6 +106,7 @@ class TestListRolesEndpoint:
 
         mock_repo = AsyncMock()
         mock_repo.list.return_value = []
+        mock_repo.count.return_value = 0
         mock_session = MagicMock()
 
         result = await list_roles(
@@ -139,6 +140,7 @@ class TestGetRoleEndpoint:
             await get_role(
                 role_id=role_id,
                 current_user_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
                 repo=mock_repo,
             )
@@ -181,6 +183,7 @@ class TestGetRoleEndpoint:
         result = await get_role(
             role_id=role_id,
             current_user_id=uuid4(),
+            tenant_id=None,
             session=mock_session,
             repo=mock_repo,
         )
@@ -294,6 +297,7 @@ class TestUpdateRoleEndpoint:
                     role_id=role_id,
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -330,6 +334,7 @@ class TestUpdateRoleEndpoint:
                     role_id=role_id,
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -368,6 +373,7 @@ class TestUpdateRoleEndpoint:
                     role_id=role_id,
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -396,6 +402,7 @@ class TestDeleteRoleEndpoint:
                 await delete_role(
                     role_id=role_id,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -420,6 +427,7 @@ class TestDeleteRoleEndpoint:
                 await delete_role(
                     role_id=role_id,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -441,6 +449,7 @@ class TestDeleteRoleEndpoint:
             result = await delete_role(
                 role_id=role_id,
                 superuser_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -457,11 +466,14 @@ class TestGetUserPermissionsEndpoint:
         user_id = uuid4()
         mock_session = MagicMock()
 
-        with patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
-        ) as mock_role_cls, patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyUserRepository"
-        ) as mock_user_cls:
+        with (
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
+            ) as mock_role_cls,
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyUserRepository"
+            ) as mock_user_cls,
+        ):
             mock_user_repo = AsyncMock()
             mock_user_repo.get_by_id.return_value = None
             mock_user_cls.return_value = mock_user_repo
@@ -471,7 +483,8 @@ class TestGetUserPermissionsEndpoint:
             with pytest.raises(HTTPException) as exc:
                 await get_user_permissions(
                     user_id=user_id,
-                    current_user_id=uuid4(),
+                    current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -488,11 +501,14 @@ class TestAssignRoleEndpoint:
         request = AssignRoleRequest(user_id=uuid4(), role_id=uuid4())
         mock_session = MagicMock()
 
-        with patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyUserRepository"
-        ) as mock_user_cls, patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
-        ) as mock_role_cls:
+        with (
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyUserRepository"
+            ) as mock_user_cls,
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
+            ) as mock_role_cls,
+        ):
             mock_user_repo = AsyncMock()
             mock_user_repo.get_by_id.return_value = None
             mock_user_cls.return_value = mock_user_repo
@@ -503,6 +519,7 @@ class TestAssignRoleEndpoint:
                 await assign_role(
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -519,11 +536,14 @@ class TestAssignRoleEndpoint:
         mock_user = MagicMock()
         mock_user.id = user_id
 
-        with patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyUserRepository"
-        ) as mock_user_cls, patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
-        ) as mock_role_cls:
+        with (
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyUserRepository"
+            ) as mock_user_cls,
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
+            ) as mock_role_cls,
+        ):
             mock_user_repo = AsyncMock()
             mock_user_repo.get_by_id.return_value = mock_user
             mock_user_cls.return_value = mock_user_repo
@@ -538,6 +558,7 @@ class TestAssignRoleEndpoint:
                 await assign_role(
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -561,11 +582,14 @@ class TestAssignRoleEndpoint:
         mock_role.id = role_id
         mock_role.name = "Admin"
 
-        with patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyUserRepository"
-        ) as mock_user_cls, patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
-        ) as mock_role_cls:
+        with (
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyUserRepository"
+            ) as mock_user_cls,
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
+            ) as mock_role_cls,
+        ):
             mock_user_repo = AsyncMock()
             mock_user_repo.get_by_id.return_value = mock_user
             mock_user_repo.update.return_value = mock_user
@@ -578,6 +602,7 @@ class TestAssignRoleEndpoint:
             result = await assign_role(
                 request=request,
                 superuser_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -607,6 +632,7 @@ class TestRevokeRoleEndpoint:
                 await revoke_role(
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -636,6 +662,7 @@ class TestRevokeRoleEndpoint:
             result = await revoke_role(
                 request=request,
                 superuser_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -707,6 +734,7 @@ class TestUpdateRoleEdgeCases:
                     role_id=uuid4(),
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -737,6 +765,7 @@ class TestUpdateRoleEdgeCases:
                     role_id=uuid4(),
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -764,7 +793,8 @@ class TestGetUserPermissionsNotFound:
             with pytest.raises(HTTPException) as exc:
                 await get_user_permissions(
                     user_id=user_id,
-                    current_user_id=uuid4(),
+                    current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 

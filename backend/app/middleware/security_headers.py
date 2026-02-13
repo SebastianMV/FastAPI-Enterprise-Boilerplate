@@ -66,9 +66,9 @@ class SecurityHeadersMiddleware:
         self._security_headers = self._build_security_headers()
 
         logger.info(
-            "Security headers middleware initialized: HSTS=%s, Frame-Options=%s",
-            self.hsts_enabled,
-            self.frame_options,
+            "security_headers_initialized",
+            hsts_enabled=self.hsts_enabled,
+            frame_options=self.frame_options,
         )
 
     def _build_hsts_value(self) -> str:
@@ -140,7 +140,11 @@ class SecurityHeadersMiddleware:
 def get_security_headers_middleware() -> type[SecurityHeadersMiddleware]:
     """Factory function to create security headers middleware with settings."""
     hsts_enabled = getattr(settings, "SECURITY_HEADERS_HSTS_ENABLED", True)
-    hsts_max_age = getattr(settings, "SECURITY_HEADERS_HSTS_MAX_AGE", SecurityHeadersMiddleware.HSTS_DEFAULT_MAX_AGE)
+    hsts_max_age = getattr(
+        settings,
+        "SECURITY_HEADERS_HSTS_MAX_AGE",
+        SecurityHeadersMiddleware.HSTS_DEFAULT_MAX_AGE,
+    )
     csp_policy = getattr(settings, "SECURITY_HEADERS_CSP", None)
 
     class ConfiguredSecurityHeadersMiddleware(SecurityHeadersMiddleware):

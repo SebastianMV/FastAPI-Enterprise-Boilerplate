@@ -73,7 +73,7 @@ class CreateUserUseCase:
         # 1. Validate email
         try:
             email = Email(request.email)
-        except ValueError:
+        except (ValueError, ValidationError):
             raise ValidationError(
                 message="Invalid email format",
                 field="email",
@@ -83,12 +83,26 @@ class CreateUserUseCase:
         # 2. Validate password
         try:
             password = Password(request.password)
-        except ValueError:
+        except (ValueError, ValidationError):
             raise ValidationError(
                 message="Password does not meet security requirements",
                 field="password",
                 code="INVALID_PASSWORD",
             ) from None
+
+        # 2b. Validate name lengths (defense-in-depth)
+        if not request.first_name or len(request.first_name) > 200:
+            raise ValidationError(
+                message="First name must be between 1 and 200 characters",
+                field="first_name",
+                code="INVALID_FIRST_NAME",
+            )
+        if not request.last_name or len(request.last_name) > 200:
+            raise ValidationError(
+                message="Last name must be between 1 and 200 characters",
+                field="last_name",
+                code="INVALID_LAST_NAME",
+            )
 
         # 3. Check for duplicate email
         if await self._user_repository.exists_by_email(email.value):

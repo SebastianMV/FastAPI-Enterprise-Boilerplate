@@ -8,6 +8,7 @@ Provides multi-language support for the application.
 """
 
 import collections
+import contextlib
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -185,10 +186,8 @@ class I18n:
             if len(parts) > 1:
                 for param in parts[1:]:
                     if param.strip().startswith("q="):
-                        try:
+                        with contextlib.suppress(ValueError):
                             quality = float(param.strip()[2:])
-                        except ValueError:
-                            pass
 
             locales_with_quality.append((locale, quality))
 

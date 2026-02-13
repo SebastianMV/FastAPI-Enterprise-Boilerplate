@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import CurrentTenantId, CurrentUser, require_permission
+from app.api.v1.schemas.common import ShortStr
 from app.infrastructure.observability.logging import get_logger
 
 logger = get_logger(__name__)
@@ -56,6 +57,7 @@ def _check_demo_mode() -> None:
             },
         )
 
+
 # Per-tenant limits to prevent unbounded memory growth (B5)
 _MAX_TEMPLATES_PER_TENANT = 100
 _MAX_SCHEDULES_PER_TENANT = 50
@@ -73,7 +75,10 @@ def _validate_webhook_url(url: str) -> None:
     if not url.startswith("https://"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "WEBHOOK_HTTPS_REQUIRED", "message": "Webhook URL must use HTTPS"},
+            detail={
+                "code": "WEBHOOK_HTTPS_REQUIRED",
+                "message": "Webhook URL must use HTTPS",
+            },
         )
 
     parsed = urlparse(url)
@@ -90,16 +95,27 @@ def _validate_webhook_url(url: str) -> None:
     if hostname.lower() in _BLOCKED_HOSTS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "WEBHOOK_BLOCKED_HOST", "message": "Webhook URL points to a blocked host"},
+            detail={
+                "code": "WEBHOOK_BLOCKED_HOST",
+                "message": "Webhook URL points to a blocked host",
+            },
         )
 
     # Block internal/private IPs
     try:
         addr = ipaddress.ip_address(hostname)
-        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+        if (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_link_local
+            or addr.is_reserved
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "WEBHOOK_PRIVATE_IP", "message": "Webhook URL must not point to a private/internal address"},
+                detail={
+                    "code": "WEBHOOK_PRIVATE_IP",
+                    "message": "Webhook URL must not point to a private/internal address",
+                },
             )
     except ValueError:
         # hostname is a domain name, not an IP — allow (DNS resolution happens at call time)
@@ -109,7 +125,10 @@ def _validate_webhook_url(url: str) -> None:
     if hostname.lower() in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "WEBHOOK_LOCALHOST", "message": "Webhook URL must not point to localhost"},
+            detail={
+                "code": "WEBHOOK_LOCALHOST",
+                "message": "Webhook URL must not point to localhost",
+            },
         )
 
 
@@ -129,8 +148,8 @@ def _count_tenant_items(store: dict[str, dict[str, Any]], tenant: str | None) ->
 class ReportFilterSchema(BaseModel):
     """Filter for report data."""
 
-    field: str
-    operator: str = "eq"  # eq, ne, gt, lt, gte, lte, contains, in
+    field: str = Field(..., max_length=100)
+    operator: str = Field(default="eq", pattern="^(eq|ne|gt|lt|gte|lte|contains|in)$")
     value: Any
 
 
@@ -145,7 +164,9 @@ class ReportTemplateCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     format: str = Field(default="pdf", pattern="^(pdf|excel|csv|html)$")
     columns: list[str] | None = None
-    filters: list[ReportFilterSchema] = Field(default_factory=list)
+    filters: list[ReportFilterSchema] = Field(
+        default_factory=lambda: list[ReportFilterSchema]()
+    )
     group_by: list[str] | None = None
     sort_by: str | None = None
     include_summary: bool = True
@@ -172,22 +193,25 @@ class ReportTemplateUpdate(BaseModel):
     """Request to update a report template."""
 
     name: str | None = Field(None, min_length=1, max_length=100)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     title: str | None = Field(None, min_length=1, max_length=200)
     format: str | None = Field(None, pattern="^(pdf|excel|csv|html)$")
     columns: list[str] | None = None
     filters: list[ReportFilterSchema] | None = None
     group_by: list[str] | None = None
-    sort_by: str | None = None
+    sort_by: str | None = Field(default=None, max_length=100)
     include_summary: bool | None = None
-    date_range_field: str | None = None
-    date_range_type: str | None = None
-    page_orientation: str | None = None
-    page_size: str | None = None
+    date_range_field: str | None = Field(default=None, max_length=100)
+    date_range_type: str | None = Field(
+        default=None,
+        pattern="^(today|yesterday|this_week|last_week|this_month|last_month|this_quarter|this_year|custom)$",
+    )
+    page_orientation: str | None = Field(default=None, pattern="^(portrait|landscape)$")
+    page_size: str | None = Field(default=None, pattern="^(A4|letter|legal|A3|A5)$")
     include_charts: bool | None = None
-    watermark: str | None = None
+    watermark: str | None = Field(default=None, max_length=200)
     is_public: bool | None = None
-    tags: list[str] | None = None
+    tags: list[str] | None = Field(default=None, max_length=50)
 
 
 class ReportTemplateResponse(BaseModel):
@@ -225,7 +249,11 @@ class ScheduleFrequency(BaseModel):
     day_of_week: int | None = Field(default=None, ge=0, le=6)  # 0=Monday
     day_of_month: int | None = Field(default=None, ge=1, le=31)
     time: str = Field(default="09:00", pattern="^\\d{2}:\\d{2}$")  # HH:MM
-    timezone: str = "UTC"
+    timezone: str = Field(
+        default="UTC",
+        max_length=50,
+        pattern="^[A-Za-z_/+-]+$",
+    )
 
 
 class ScheduledReportCreate(BaseModel):
@@ -241,7 +269,9 @@ class ScheduledReportCreate(BaseModel):
 
     # Delivery options
     delivery_method: str = Field(default="email", pattern="^(email|storage|webhook)$")
-    recipients: list[str] = Field(default_factory=list, max_length=100)  # Email addresses
+    recipients: list[str] = Field(
+        default_factory=list, max_length=100
+    )  # Email addresses
     storage_path: str | None = None  # For storage delivery
     webhook_url: str | None = None  # For webhook delivery
 
@@ -330,7 +360,10 @@ async def create_template(
 
     # Enforce per-tenant template limit (B5 — prevent unbounded memory growth)
     current_tenant = str(tenant_id) if tenant_id else None
-    if _count_tenant_items(_report_templates, current_tenant) >= _MAX_TEMPLATES_PER_TENANT:
+    if (
+        _count_tenant_items(_report_templates, current_tenant)
+        >= _MAX_TEMPLATES_PER_TENANT
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
@@ -339,7 +372,7 @@ async def create_template(
             },
         )
 
-    template = {
+    template: dict[str, Any] = {
         "id": template_id,
         "name": _html.escape(request.name),
         "description": _html.escape(request.description)
@@ -371,10 +404,10 @@ async def create_template(
         _report_templates[template_id] = template
 
     logger.info(
-        "Report template created — template_id=%s name=%s user_id=%s",
-        template_id,
-        request.name,
-        str(current_user.id),
+        "report_template_created",
+        template_id=str(template_id),
+        name=request.name,
+        user_id=str(current_user.id),
     )
 
     return ReportTemplateResponse(**template)
@@ -400,7 +433,7 @@ async def list_templates(
     user_id = str(current_user.id)
     tenant = str(tenant_id) if tenant_id else None
 
-    results = []
+    results: list[ReportTemplateResponse] = []
     for template in _report_templates.values():
         # Filter by tenant — public templates are only visible within the same tenant
         if tenant:
@@ -447,7 +480,10 @@ async def get_template(
     if not template:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+            detail={
+                "code": "TEMPLATE_NOT_FOUND",
+                "message": "Report template not found",
+            },
         )
 
     # Tenant isolation: ensure template belongs to the current tenant
@@ -456,7 +492,10 @@ async def get_template(
     if template_tenant and current_tenant and template_tenant != current_tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+            detail={
+                "code": "TEMPLATE_NOT_FOUND",
+                "message": "Report template not found",
+            },
         )
 
     # Check access
@@ -491,7 +530,10 @@ async def update_template(
         if not template:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+                detail={
+                    "code": "TEMPLATE_NOT_FOUND",
+                    "message": "Report template not found",
+                },
             )
 
         # Tenant isolation
@@ -500,7 +542,10 @@ async def update_template(
         if template_tenant and current_tenant and template_tenant != current_tenant:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+                detail={
+                    "code": "TEMPLATE_NOT_FOUND",
+                    "message": "Report template not found",
+                },
             )
 
         # Check ownership
@@ -508,7 +553,10 @@ async def update_template(
             if not current_user.is_superuser:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail={"code": "FORBIDDEN", "message": "Only the owner can update this template"},
+                    detail={
+                        "code": "FORBIDDEN",
+                        "message": "Only the owner can update this template",
+                    },
                 )
 
         # Update fields (exclude_unset preserves intentional None assignments)
@@ -518,15 +566,23 @@ async def update_template(
                 [f.model_dump() for f in request.filters] if request.filters else []
             )
 
+        # Escape HTML-sensitive fields to prevent stored XSS (matches create_template)
+        _escape_fields = {"name", "description", "title", "watermark"}
         for key, value in update_data.items():
-            template[key] = value
+            if key in _escape_fields and isinstance(value, str):
+                template[key] = _html.escape(value)
+            elif key == "tags" and isinstance(value, list):
+                tags_list: list[str] = value  # type: ignore[assignment]
+                template[key] = [_html.escape(str(t)) for t in tags_list]
+            else:
+                template[key] = value
 
         template["updated_at"] = datetime.now(UTC)
 
     logger.info(
-        "Report template updated — template_id=%s user_id=%s",
-        template_id,
-        str(current_user.id),
+        "report_template_updated",
+        template_id=str(template_id),
+        user_id=str(current_user.id),
     )
 
     return ReportTemplateResponse(**template)
@@ -551,7 +607,10 @@ async def delete_template(
         if not template:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+                detail={
+                    "code": "TEMPLATE_NOT_FOUND",
+                    "message": "Report template not found",
+                },
             )
 
         # Tenant isolation
@@ -560,7 +619,10 @@ async def delete_template(
         if template_tenant and current_tenant and template_tenant != current_tenant:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+                detail={
+                    "code": "TEMPLATE_NOT_FOUND",
+                    "message": "Report template not found",
+                },
             )
 
         # Check ownership
@@ -568,7 +630,10 @@ async def delete_template(
             if not current_user.is_superuser:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail={"code": "FORBIDDEN", "message": "Only the owner can delete this template"},
+                    detail={
+                        "code": "FORBIDDEN",
+                        "message": "Only the owner can delete this template",
+                    },
                 )
 
         # Check for scheduled reports using this template
@@ -576,15 +641,18 @@ async def delete_template(
             if schedule.get("template_id") == template_id:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail={"code": "TEMPLATE_HAS_SCHEDULES", "message": "Cannot delete template with active schedules"},
+                    detail={
+                        "code": "TEMPLATE_HAS_SCHEDULES",
+                        "message": "Cannot delete template with active schedules",
+                    },
                 )
 
         del _report_templates[template_id]
 
     logger.info(
-        "Report template deleted — template_id=%s user_id=%s",
-        template_id,
-        str(current_user.id),
+        "report_template_deleted",
+        template_id=str(template_id),
+        user_id=str(current_user.id),
     )
 
 
@@ -600,7 +668,9 @@ async def duplicate_template(
     current_user: CurrentUser,
     current_user_id: ReportsWriter,
     tenant_id: CurrentTenantId = None,
-    name: str = Query(..., description="Name for the duplicated template", max_length=200),
+    name: str = Query(
+        ..., description="Name for the duplicated template", max_length=200
+    ),
 ) -> ReportTemplateResponse:
     """Duplicate a report template."""
 
@@ -609,7 +679,10 @@ async def duplicate_template(
         if not template:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+                detail={
+                    "code": "TEMPLATE_NOT_FOUND",
+                    "message": "Report template not found",
+                },
             )
 
         # Tenant isolation
@@ -618,7 +691,10 @@ async def duplicate_template(
         if template_tenant and current_tenant and template_tenant != current_tenant:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+                detail={
+                    "code": "TEMPLATE_NOT_FOUND",
+                    "message": "Report template not found",
+                },
             )
 
         # Create copy
@@ -629,7 +705,7 @@ async def duplicate_template(
         new_template.update(
             {
                 "id": new_id,
-                "name": name,
+                "name": _html.escape(name),
                 "is_public": False,
                 "created_by": str(current_user.id),
                 "created_at": now,
@@ -641,10 +717,10 @@ async def duplicate_template(
         _report_templates[new_id] = new_template
 
     logger.info(
-        "Report template duplicated — source_id=%s new_id=%s user_id=%s",
-        template_id,
-        new_id,
-        str(current_user.id),
+        "report_template_duplicated",
+        source_id=str(template_id),
+        new_id=str(new_id),
+        user_id=str(current_user.id),
     )
 
     return ReportTemplateResponse(**new_template)
@@ -676,7 +752,10 @@ async def create_schedule(
     if not template:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+            detail={
+                "code": "TEMPLATE_NOT_FOUND",
+                "message": "Report template not found",
+            },
         )
 
     # Tenant isolation: verify template belongs to current tenant
@@ -685,26 +764,38 @@ async def create_schedule(
     if template_tenant and current_tenant and template_tenant != current_tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "TEMPLATE_NOT_FOUND", "message": "Report template not found"},
+            detail={
+                "code": "TEMPLATE_NOT_FOUND",
+                "message": "Report template not found",
+            },
         )
 
     # Validate delivery method requirements
     if request.delivery_method == "email" and not request.recipients:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "RECIPIENTS_REQUIRED", "message": "Email delivery requires at least one recipient"},
+            detail={
+                "code": "RECIPIENTS_REQUIRED",
+                "message": "Email delivery requires at least one recipient",
+            },
         )
     if request.delivery_method == "webhook" and not request.webhook_url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "WEBHOOK_URL_REQUIRED", "message": "Webhook delivery requires a webhook URL"},
+            detail={
+                "code": "WEBHOOK_URL_REQUIRED",
+                "message": "Webhook delivery requires a webhook URL",
+            },
         )
     if request.webhook_url:
         _validate_webhook_url(request.webhook_url)
 
     # Enforce per-tenant schedule limit (B5 — prevent unbounded memory growth)
     current_tenant_str = str(tenant_id) if tenant_id else None
-    if _count_tenant_items(_scheduled_reports, current_tenant_str) >= _MAX_SCHEDULES_PER_TENANT:
+    if (
+        _count_tenant_items(_scheduled_reports, current_tenant_str)
+        >= _MAX_SCHEDULES_PER_TENANT
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
@@ -721,7 +812,10 @@ async def create_schedule(
         if not _email_re.match(email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "INVALID_RECIPIENT_EMAIL", "message": "Invalid email address in recipients"},
+                detail={
+                    "code": "INVALID_RECIPIENT_EMAIL",
+                    "message": "Invalid email address in recipients",
+                },
             )
 
     # Validate storage_path (prevent path traversal)
@@ -732,7 +826,10 @@ async def create_schedule(
         if ".." in normalized.split("/"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "INVALID_STORAGE_PATH", "message": "Invalid storage path"},
+                detail={
+                    "code": "INVALID_STORAGE_PATH",
+                    "message": "Invalid storage path",
+                },
             )
 
     schedule_id = str(uuid4())
@@ -741,7 +838,7 @@ async def create_schedule(
     # Calculate next run
     next_run = _calculate_next_run(request.frequency, request.start_date)
 
-    schedule = {
+    schedule: dict[str, Any] = {
         "id": schedule_id,
         "template_id": template_id,
         "template_name": template.get("name"),
@@ -769,10 +866,10 @@ async def create_schedule(
         _scheduled_reports[schedule_id] = schedule
 
     logger.info(
-        "Report schedule created — schedule_id=%s template_id=%s user_id=%s",
-        schedule_id,
-        template_id,
-        str(current_user.id),
+        "report_schedule_created",
+        schedule_id=str(schedule_id),
+        template_id=str(template_id),
+        user_id=str(current_user.id),
     )
 
     return ScheduledReportResponse(**schedule)
@@ -795,7 +892,7 @@ async def list_schedules(
     user_id = str(current_user.id)
     tenant = str(tenant_id) if tenant_id else None
 
-    results = []
+    results: list[ScheduledReportResponse] = []
     for schedule in _scheduled_reports.values():
         # Filter by tenant
         if tenant and schedule.get("tenant_id") != tenant:
@@ -821,7 +918,7 @@ async def list_schedules(
     description="Get details of a scheduled report.",
 )
 async def get_schedule(
-    schedule_id: str,
+    schedule_id: ShortStr,
     current_user: CurrentUser,
     current_user_id: ReportsReader,
     tenant_id: CurrentTenantId = None,
@@ -832,7 +929,10 @@ async def get_schedule(
     if not schedule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Tenant isolation
@@ -841,7 +941,10 @@ async def get_schedule(
     if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Check access
@@ -862,7 +965,7 @@ async def get_schedule(
     description="Update a scheduled report configuration.",
 )
 async def update_schedule(
-    schedule_id: str,
+    schedule_id: ShortStr,
     request: ScheduledReportUpdate,
     current_user: CurrentUser,
     current_user_id: ReportsWriter,
@@ -874,7 +977,10 @@ async def update_schedule(
     if not schedule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Tenant isolation
@@ -883,7 +989,10 @@ async def update_schedule(
     if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Check ownership
@@ -891,7 +1000,10 @@ async def update_schedule(
         if not current_user.is_superuser:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": "Only the owner can update this schedule"},
+                detail={
+                    "code": "FORBIDDEN",
+                    "message": "Only the owner can update this schedule",
+                },
             )
 
     # Validate webhook URL if being updated
@@ -907,7 +1019,10 @@ async def update_schedule(
             if not _email_re.match(email):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail={"code": "INVALID_RECIPIENT_EMAIL", "message": "Invalid email address in recipients"},
+                    detail={
+                        "code": "INVALID_RECIPIENT_EMAIL",
+                        "message": "Invalid email address in recipients",
+                    },
                 )
 
     # Validate storage_path (prevent path traversal)
@@ -918,10 +1033,13 @@ async def update_schedule(
         if ".." in normalized.split("/"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "INVALID_STORAGE_PATH", "message": "Invalid storage path"},
+                detail={
+                    "code": "INVALID_STORAGE_PATH",
+                    "message": "Invalid storage path",
+                },
             )
 
-    # Update fields
+    # Update fields (inside lock to prevent TOCTOU race condition)
     update_data = request.model_dump(exclude_unset=True)
     if "frequency" in update_data and request.frequency:
         update_data["frequency"] = request.frequency.model_dump()
@@ -931,13 +1049,22 @@ async def update_schedule(
         )
 
     async with _storage_lock:
+        # Re-check schedule still exists after acquiring lock
+        if schedule_id not in _scheduled_reports:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "SCHEDULE_NOT_FOUND",
+                    "message": "Scheduled report not found",
+                },
+            )
         for key, value in update_data.items():
             schedule[key] = value
 
     logger.info(
-        "Report schedule updated — schedule_id=%s user_id=%s",
-        schedule_id,
-        str(current_user.id),
+        "report_schedule_updated",
+        schedule_id=str(schedule_id),
+        user_id=str(current_user.id),
     )
 
     return ScheduledReportResponse(**schedule)
@@ -950,7 +1077,7 @@ async def update_schedule(
     description="Delete a scheduled report.",
 )
 async def delete_schedule(
-    schedule_id: str,
+    schedule_id: ShortStr,
     current_user: CurrentUser,
     current_user_id: ReportsWriter,
     tenant_id: CurrentTenantId = None,
@@ -961,7 +1088,10 @@ async def delete_schedule(
     if not schedule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Tenant isolation
@@ -970,7 +1100,10 @@ async def delete_schedule(
     if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Check ownership
@@ -978,16 +1111,19 @@ async def delete_schedule(
         if not current_user.is_superuser:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": "Only the owner can delete this schedule"},
+                detail={
+                    "code": "FORBIDDEN",
+                    "message": "Only the owner can delete this schedule",
+                },
             )
 
     async with _storage_lock:
         del _scheduled_reports[schedule_id]
 
     logger.info(
-        "Report schedule deleted \u2014 schedule_id=%s user_id=%s",
-        schedule_id,
-        str(current_user.id),
+        "report_schedule_deleted",
+        schedule_id=str(schedule_id),
+        user_id=str(current_user.id),
     )
 
 
@@ -997,7 +1133,7 @@ async def delete_schedule(
     description="Manually trigger a scheduled report execution.",
 )
 async def run_schedule_now(
-    schedule_id: str,
+    schedule_id: ShortStr,
     current_user: CurrentUser,
     current_user_id: ReportsWriter,
     tenant_id: CurrentTenantId = None,
@@ -1008,7 +1144,10 @@ async def run_schedule_now(
     if not schedule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Tenant isolation
@@ -1017,7 +1156,10 @@ async def run_schedule_now(
     if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Check access
@@ -1035,9 +1177,9 @@ async def run_schedule_now(
         schedule["run_count"] = schedule.get("run_count", 0) + 1
 
     logger.info(
-        "Report schedule triggered manually — schedule_id=%s user_id=%s",
-        schedule_id,
-        str(current_user.id),
+        "report_schedule_triggered",
+        schedule_id=str(schedule_id),
+        user_id=str(current_user.id),
     )
 
     return {
@@ -1054,7 +1196,7 @@ async def run_schedule_now(
     description="Enable or disable a scheduled report.",
 )
 async def toggle_schedule(
-    schedule_id: str,
+    schedule_id: ShortStr,
     current_user: CurrentUser,
     current_user_id: ReportsWriter,
     tenant_id: CurrentTenantId = None,
@@ -1065,7 +1207,10 @@ async def toggle_schedule(
     if not schedule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Tenant isolation
@@ -1074,7 +1219,10 @@ async def toggle_schedule(
     if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "SCHEDULE_NOT_FOUND", "message": "Scheduled report not found"},
+            detail={
+                "code": "SCHEDULE_NOT_FOUND",
+                "message": "Scheduled report not found",
+            },
         )
 
     # Check ownership
@@ -1082,17 +1230,20 @@ async def toggle_schedule(
         if not current_user.is_superuser:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": "Only the owner can toggle this schedule"},
+                detail={
+                    "code": "FORBIDDEN",
+                    "message": "Only the owner can toggle this schedule",
+                },
             )
 
     async with _storage_lock:
         schedule["enabled"] = not schedule.get("enabled", True)
 
     logger.info(
-        "Report schedule toggled \u2014 schedule_id=%s enabled=%s user_id=%s",
-        schedule_id,
-        schedule["enabled"],
-        str(current_user.id),
+        "report_schedule_toggled",
+        schedule_id=str(schedule_id),
+        enabled=schedule["enabled"],
+        user_id=str(current_user.id),
     )
 
     return ScheduledReportResponse(**schedule)
@@ -1164,6 +1315,7 @@ def _calculate_next_run(
             day=1,
             hour=hour,
             minute=minute,
+            tzinfo=UTC,
         )
 
     return now

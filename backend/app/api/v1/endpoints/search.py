@@ -6,12 +6,13 @@ Full-Text Search API endpoints.
 """
 
 from typing import Any
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import DataError, ProgrammingError
 
-from app.api.deps import CurrentTenantId, CurrentUser, DbSession, SuperuserId
+from app.api.deps import CurrentTenantId, CurrentUser, DbSession, SuperuserId, require_permission
 from app.domain.ports.search import (
     SearchFilter,
     SearchHighlight,
@@ -31,12 +32,24 @@ router = APIRouter(prefix="/search", tags=["Search"])
 # Fields not in this set are rejected to prevent probing of sensitive columns.
 _ALLOWED_FIELDS: dict[str, set[str]] = {
     "users": {
-        "email", "first_name", "last_name", "is_active",
-        "is_superuser", "created_at", "updated_at", "tenant_id",
+        "email",
+        "first_name",
+        "last_name",
+        "is_active",
+        "is_superuser",
+        "created_at",
+        "updated_at",
+        "tenant_id",
     },
     "audit_logs": {
-        "action", "resource_type", "resource_id", "reason",
-        "actor_id", "actor_ip", "created_at", "tenant_id",
+        "action",
+        "resource_type",
+        "resource_id",
+        "reason",
+        "actor_id",
+        "actor_ip",
+        "created_at",
+        "tenant_id",
     },
 }
 
@@ -89,7 +102,9 @@ class SearchSortRequest(BaseModel):
     """Search sort criteria."""
 
     field: str = Field(..., max_length=100, description="Field to sort by")
-    order: str = Field("desc", pattern="^(asc|desc)$", description="Sort order: asc or desc")
+    order: str = Field(
+        "desc", pattern="^(asc|desc)$", description="Sort order: asc or desc"
+    )
 
 
 class SearchRequest(BaseModel):
@@ -160,7 +175,7 @@ class HealthResponse(BaseModel):
 async def search(
     request: SearchRequest,
     session: DbSession,
-    current_user: CurrentUser,
+    current_user_id: UUID = Depends(require_permission("search", "read")),
     tenant_id: CurrentTenantId = None,
 ) -> SearchResponse:
     """
@@ -252,14 +267,17 @@ async def search(
         )
     except ValueError as e:
         # Invalid query parameters — log detail, return generic
-        logger.warning("Invalid search query: %s", e)
+        logger.warning("search_invalid_query", error=type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "INVALID_QUERY", "message": "Invalid search query parameters"},
+            detail={
+                "code": "INVALID_QUERY",
+                "message": "Invalid search query parameters",
+            },
         ) from e
     except (ProgrammingError, DataError):
         # Bad query syntax or invalid data type — return empty results
-        logger.warning("Search query produced a database error")
+        logger.warning("search_database_error", query=request.query)
         return SearchResponse(
             hits=[],
             total=0,
@@ -273,10 +291,13 @@ async def search(
             suggestions=[],
         )
     except Exception as e:
-        logger.warning("Unexpected search error", exc_info=True)
+        logger.warning("search_unexpected_error", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "SEARCH_ERROR", "message": "An internal search error occurred"},
+            detail={
+                "code": "SEARCH_ERROR",
+                "message": "An internal search error occurred",
+            },
         ) from e
 
 
@@ -288,10 +309,10 @@ async def search(
 )
 async def simple_search(
     session: DbSession,
-    current_user: CurrentUser,
+    current_user_id: UUID = Depends(require_permission("search", "read")),
     tenant_id: CurrentTenantId = None,
     q: str = Query(..., min_length=1, max_length=500, description="Search query"),
-    index: str = Query("posts", description="Search index"),
+    index: str = Query("posts", max_length=50, description="Search index"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ) -> SearchResponse:
@@ -306,7 +327,7 @@ async def simple_search(
         fuzzy=True,
     )
 
-    return await search(request, session, current_user, tenant_id)
+    return await search(request, session, current_user_id, tenant_id)
 
 
 @router.get(
@@ -317,11 +338,11 @@ async def simple_search(
 )
 async def suggest(
     session: DbSession,
-    current_user: CurrentUser,
+    current_user_id: UUID = Depends(require_permission("search", "read")),
     tenant_id: CurrentTenantId = None,
     q: str = Query(..., min_length=1, max_length=100, description="Partial query"),
-    index: str = Query("posts", description="Search index"),
-    field: str = Query("title", description="Field to get suggestions from"),
+    index: str = Query("posts", max_length=50, description="Search index"),
+    field: str = Query("title", max_length=100, description="Field to get suggestions from"),
     size: int = Query(5, ge=1, le=20, description="Number of suggestions"),
 ) -> SuggestResponse:
     """
@@ -345,10 +366,13 @@ async def suggest(
 
         return SuggestResponse(suggestions=suggestions)
     except Exception as e:
-        logger.warning("Unexpected suggest error", exc_info=True)
+        logger.warning("suggest_unexpected_error", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "SEARCH_ERROR", "message": "An internal search error occurred"},
+            detail={
+                "code": "SEARCH_ERROR",
+                "message": "An internal search error occurred",
+            },
         ) from e
 
 
@@ -360,7 +384,7 @@ async def suggest(
 )
 async def health(
     session: DbSession,
-    current_user: CurrentUser,
+    current_user_id: UUID = Depends(require_permission("search", "read")),
 ) -> HealthResponse:
     """
     Check search backend health.
@@ -376,7 +400,7 @@ async def health(
             details=health_info,
         )
     except Exception as e:
-        logger.error("Search health check failed: %s", e)
+        logger.error("search_health_check_failed", error=type(e).__name__)
         return HealthResponse(
             status="unhealthy",
             backend="postgres",
@@ -390,7 +414,7 @@ async def health(
     description="Get list of available search indices.",
 )
 async def list_indices(
-    current_user: CurrentUser,
+    current_user_id: UUID = Depends(require_permission("search", "read")),
 ) -> list[dict[str, str]]:
     """
     List available search indices.
@@ -440,10 +464,13 @@ async def create_index(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Create index failed: %s", e)
+        logger.error("search_create_index_failed", error=type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "INDEX_CREATE_FAILED", "message": "Failed to create search index"},
+            detail={
+                "code": "INDEX_CREATE_FAILED",
+                "message": "Failed to create search index",
+            },
         ) from e
 
 
@@ -483,7 +510,7 @@ async def reindex(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Reindex failed: %s", e)
+        logger.error("search_reindex_failed", error=type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"code": "REINDEX_FAILED", "message": "Reindex operation failed"},
@@ -516,13 +543,19 @@ async def delete_index(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={"code": "INDEX_DELETE_FAILED", "message": "Failed to delete index"},
+                detail={
+                    "code": "INDEX_DELETE_FAILED",
+                    "message": "Failed to delete index",
+                },
             )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Delete index failed: %s", e)
+        logger.error("search_delete_index_failed", error=type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "INDEX_DELETE_FAILED", "message": "Failed to delete search index"},
+            detail={
+                "code": "INDEX_DELETE_FAILED",
+                "message": "Failed to delete search index",
+            },
         ) from e

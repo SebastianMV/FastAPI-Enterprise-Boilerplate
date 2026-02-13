@@ -22,6 +22,13 @@ from app.domain.entities.oauth import (
     SSOConfiguration,
 )
 from app.domain.entities.user import User
+from app.domain.exceptions.base import (
+    AuthenticationError,
+    BusinessRuleViolationError,
+    ConflictError,
+    EntityNotFoundError,
+    ValidationError as DomainValidationError,
+)
 from app.infrastructure.auth.encryption import decrypt_value, encrypt_value
 from app.infrastructure.auth.oauth_providers import (
     OAuthProviderBase,
@@ -139,10 +146,16 @@ class OAuthService:
         # Validate state
         state_data = await self._get_oauth_state(state)
         if not state_data:
-            raise ValueError("Invalid or expired OAuth state")
+            raise AuthenticationError(
+                message="Invalid or expired OAuth state",
+                code="INVALID_OAUTH_STATE",
+            )
 
         if state_data.provider != provider:
-            raise ValueError("Provider mismatch")
+            raise AuthenticationError(
+                message="Provider mismatch",
+                code="PROVIDER_MISMATCH",
+            )
 
         # Clean up state
         await self._delete_oauth_state(state)
@@ -200,7 +213,10 @@ class OAuthService:
             # Verify the connection belongs to the correct tenant
             conn_user = await self._get_user_by_id(existing_conn.user_id)
             if not conn_user:
-                raise ValueError("User not found for OAuth connection")
+                raise EntityNotFoundError(
+                    entity_type="User",
+                    message="User not found for OAuth connection",
+                )
             if conn_user.tenant_id != tenant_id:
                 # Cross-tenant OAuth identity — treat as new user for this tenant
                 existing_conn = None
@@ -214,7 +230,10 @@ class OAuthService:
                 )
 
                 if not conn_user.is_active:
-                    raise ValueError("User account is disabled")
+                    raise AuthenticationError(
+                        message="User account is disabled",
+                        code="USER_INACTIVE",
+                    )
 
                 return conn_user, existing_conn, False
 
@@ -225,13 +244,17 @@ class OAuthService:
             if existing_user:
                 # Only auto-link if the OAuth provider verified the email
                 if not user_info.email_verified:
-                    raise ValueError(
-                        "Cannot link account: email not verified by provider"
+                    raise BusinessRuleViolationError(
+                        message="Cannot link account: email not verified by provider",
+                        rule="oauth_email_verification_required",
                     )
 
                 # Block disabled accounts from re-authenticating via OAuth
                 if not existing_user.is_active:
-                    raise ValueError("User account is disabled")
+                    raise AuthenticationError(
+                        message="User account is disabled",
+                        code="USER_INACTIVE",
+                    )
 
                 # Link OAuth to existing user
                 connection = await self._create_oauth_connection(
@@ -274,7 +297,10 @@ class OAuthService:
 
         if existing:
             if existing.user_id != user_id:
-                raise ValueError("This OAuth account is linked to another user")
+                raise ConflictError(
+                    message="This OAuth account is linked to another user",
+                    conflicting_field="provider_user_id",
+                )
             return await self._get_user_by_id(user_id), existing  # type: ignore
 
         # Create new connection
@@ -287,7 +313,10 @@ class OAuthService:
 
         user = await self._get_user_by_id(user_id)
         if not user:
-            raise ValueError("User not found")
+            raise EntityNotFoundError(
+                entity_type="User",
+                message="User not found",
+            )
 
         return user, connection
 
@@ -335,8 +364,9 @@ class OAuthService:
             user = user_result.scalar_one_or_none()
 
             if user and (not user.password_hash or user.password_hash == "!oauth"):
-                raise ValueError(
-                    "Cannot unlink primary OAuth account without setting a password"
+                raise BusinessRuleViolationError(
+                    message="Cannot unlink primary OAuth account without setting a password",
+                    rule="oauth_primary_unlink_requires_password",
                 )
 
         # Soft delete
@@ -478,17 +508,17 @@ class OAuthService:
             "production",
             "staging",
         ) and not base_url.startswith("https://"):
-            logger.warning("APP_BASE_URL should use HTTPS in %s", settings.ENVIRONMENT)
+            logger.warning("app_base_url_not_https", environment=settings.ENVIRONMENT)
         return f"{base_url}/api/v1/auth/oauth/{provider.value}/callback"
 
     async def _store_oauth_state(self, state: str, data: OAuthState) -> None:
         """Store OAuth state in cache.
 
-        Raises ``HTTPException(503)`` if the cache is unavailable so that
-        the caller receives an immediate error instead of a confusing
+        Raises ``ServiceUnavailableError`` if the cache is unavailable so
+        that the caller receives an immediate error instead of a confusing
         failure on the callback leg.
         """
-        from fastapi import HTTPException, status as _status
+        from app.domain.exceptions.base import ServiceUnavailableError
 
         cache_key = f"oauth_state:{state}"
         cache_data = {
@@ -510,12 +540,9 @@ class OAuthService:
             ttl=self.STATE_EXPIRATION_SECONDS,
         )
         if stored is False:
-            raise HTTPException(
-                status_code=_status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={
-                    "code": "CACHE_UNAVAILABLE",
-                    "message": "Unable to initiate OAuth flow. Please try again later.",
-                },
+            raise ServiceUnavailableError(
+                service="cache",
+                message="Unable to initiate OAuth flow. Please try again later.",
             )
 
     async def _get_oauth_state(self, state: str) -> OAuthState | None:
@@ -563,10 +590,11 @@ class OAuthService:
 
         if sso_config and sso_config.allowed_domains:
             email_domain = email.rsplit("@", 1)[-1].lower()
-            if email_domain not in [
-                d.lower() for d in sso_config.allowed_domains
-            ]:
-                raise ValueError("Email domain not allowed for this provider")
+            if email_domain not in [d.lower() for d in sso_config.allowed_domains]:
+                raise BusinessRuleViolationError(
+                    message="Email domain not allowed for this provider",
+                    rule="sso_domain_restriction",
+                )
 
     async def _get_default_tenant_id(self) -> UUID:
         """Get default tenant ID."""
@@ -580,7 +608,10 @@ class OAuthService:
         if tenant:
             return UUID(str(tenant.id))
 
-        raise ValueError("No default tenant found")
+        raise EntityNotFoundError(
+            entity_type="Tenant",
+            message="No default tenant found",
+        )
 
     async def _get_oauth_connection(
         self,
@@ -752,7 +783,10 @@ class OAuthService:
         from app.domain.value_objects.email import Email
 
         if not user_info.email:
-            raise ValueError("OAuth provider did not return an email address")
+            raise DomainValidationError(
+                message="OAuth provider did not return an email address",
+                field="email",
+            )
 
         model = UserModel(
             id=user_id,

@@ -346,7 +346,7 @@ class TestCreateTenantEndpoint:
             )
 
         assert exc_info.value.status_code == 409
-        assert "already exists" in exc_info.value.detail
+        assert "already exists" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_create_tenant_domain_conflict(self) -> None:

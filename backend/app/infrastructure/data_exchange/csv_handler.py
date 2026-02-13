@@ -209,7 +209,7 @@ class CSVHandler:
     @staticmethod
     def _sanitize_formula(value: str) -> str:
         """Prevent CSV formula injection by prefixing dangerous chars with a tab."""
-        if value and value[0] in ('=', '+', '-', '@', '\t', '\r'):
+        if value and value[0] in ("=", "+", "-", "@", "\t", "\r"):
             return "\t" + value
         return value
 
@@ -252,10 +252,7 @@ class CSVHandler:
             FieldType.JSON: '{"key": "value"}',
         }
 
-        if field.required:
-            prefix = "(requerido) "
-        else:
-            prefix = "(opcional) "
+        prefix = "(requerido) " if field.required else "(opcional) "
 
         return prefix + examples.get(field.field_type, "valor")
 

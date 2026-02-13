@@ -2,12 +2,12 @@
 # Licensed under the MIT License
 
 """
-Comprehensive tests for MFA endpoints to achieve 100% coverage.
-Focuses on 14 uncovered lines in app/api/v1/endpoints/mfa.py
+Comprehensive tests for MFA endpoints and config service.
+Covers helper functions in mfa_config_service and endpoint logic in mfa.py.
 """
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -16,139 +16,168 @@ from app.domain.entities.mfa import MFAConfig
 
 
 class TestMFAHelperFunctions:
-    """Tests for MFA helper functions (lines 42-92)."""
+    """Tests for MFA helper functions in mfa_config_service."""
 
-    def test_get_redis_returns_client(self):
-        """Test _get_redis returns Redis client from URL."""
-        with (
-            patch("app.api.v1.endpoints.mfa.settings") as mock_settings,
-            patch("app.api.v1.endpoints.mfa.redis.from_url") as mock_from_url,
-        ):
-            mock_settings.redis_url = "redis://localhost:6379"
-            mock_client = MagicMock()
-            mock_from_url.return_value = mock_client
+    @pytest.mark.asyncio
+    async def test_get_redis_returns_cache(self):
+        """Test _get_redis returns cache from get_cache()."""
+        with patch(
+            "app.infrastructure.cache.get_cache"
+        ) as mock_get_cache:
+            mock_cache = MagicMock()
+            mock_get_cache.return_value = mock_cache
 
-            from app.api.v1.endpoints.mfa import _get_redis
+            from app.application.services.mfa_config_service import _get_redis
 
-            result = _get_redis()
+            result = await _get_redis()
 
-            mock_from_url.assert_called_once_with(
-                "redis://localhost:6379", decode_responses=True
-            )
-            assert result == mock_client
+            mock_get_cache.assert_called_once()
+            assert result == mock_cache
 
     def test_mfa_config_to_dict_converts_config(self):
         """Test _mfa_config_to_dict converts MFAConfig to dict."""
-        from app.api.v1.endpoints.mfa import _mfa_config_to_dict
+        with patch(
+            "app.infrastructure.auth.encryption.encrypt_value",
+            side_effect=lambda v: f"enc:{v}",
+        ):
+            from app.application.services.mfa_config_service import (
+                _mfa_config_to_dict,
+            )
 
-        user_id = uuid4()
-        config_id = uuid4()
-        config = MFAConfig(
-            id=config_id,
-            user_id=user_id,
-            secret="ABCD1234",
-            is_enabled=True,
-            backup_codes=["code1", "code2"],
-        )
+            user_id = uuid4()
+            config = MFAConfig(
+                user_id=user_id,
+                secret="ABCD1234",
+                is_enabled=True,
+                backup_codes=["code1", "code2"],
+            )
 
-        result = _mfa_config_to_dict(config)
+            result = _mfa_config_to_dict(config)
 
-        assert result["user_id"] == str(user_id)
-        assert result["secret"] == "ABCD1234"
-        assert result["is_enabled"] == True
-        assert result["backup_codes"] == ["code1", "code2"]
+            assert result["user_id"] == str(user_id)
+            assert result["secret"] == "enc:ABCD1234"
+            assert result["is_enabled"] is True
+            assert result["backup_codes"] == ["code1", "code2"]
 
     def test_dict_to_mfa_config_converts_dict(self):
         """Test _dict_to_mfa_config converts dict to MFAConfig."""
-        from app.api.v1.endpoints.mfa import _dict_to_mfa_config
+        with patch(
+            "app.infrastructure.auth.encryption.decrypt_value",
+            side_effect=lambda v: v.replace("enc:", ""),
+        ):
+            from app.application.services.mfa_config_service import (
+                _dict_to_mfa_config,
+            )
 
-        user_id = uuid4()
-        config_id = uuid4()
-        data = {
-            "id": str(config_id),
-            "user_id": str(user_id),
-            "secret": "EFGH5678",
-            "is_enabled": False,
-            "backup_codes": ["code3", "code4"],
-            "created_at": "2025-01-01T00:00:00+00:00",
-            "enabled_at": None,
-            "last_used_at": None,
-        }
+            user_id = uuid4()
+            data = {
+                "user_id": str(user_id),
+                "secret": "enc:EFGH5678",
+                "is_enabled": False,
+                "backup_codes": ["code3", "code4"],
+                "enabled_at": None,
+                "last_used_at": None,
+            }
 
-        result = _dict_to_mfa_config(data)
+            result = _dict_to_mfa_config(data)
 
-        assert result.user_id == user_id
-        assert result.secret == "EFGH5678"
-        assert result.is_enabled == False
-        assert result.backup_codes == ["code3", "code4"]
+            assert result.user_id == user_id
+            assert result.secret == "EFGH5678"
+            assert result.is_enabled is False
+            assert result.backup_codes == ["code3", "code4"]
 
     def test_dict_to_mfa_config_with_last_used_at(self):
         """Test _dict_to_mfa_config handles last_used_at field."""
-        from app.api.v1.endpoints.mfa import _dict_to_mfa_config
+        with patch(
+            "app.infrastructure.auth.encryption.decrypt_value",
+            side_effect=lambda v: v.replace("enc:", ""),
+        ):
+            from app.application.services.mfa_config_service import (
+                _dict_to_mfa_config,
+            )
 
-        user_id = uuid4()
-        config_id = uuid4()
-        data = {
-            "id": str(config_id),
-            "user_id": str(user_id),
-            "secret": "ABCD1234",
-            "is_enabled": True,
-            "backup_codes": [],
-            "created_at": "2025-01-01T00:00:00+00:00",
-            "enabled_at": "2025-01-02T10:00:00+00:00",
-            "last_used_at": "2025-01-15T14:30:00+00:00",
-        }
+            user_id = uuid4()
+            data = {
+                "user_id": str(user_id),
+                "secret": "enc:ABCD1234",
+                "is_enabled": True,
+                "backup_codes": [],
+                "enabled_at": "2025-01-02T10:00:00+00:00",
+                "last_used_at": "2025-01-15T14:30:00+00:00",
+            }
 
-        result = _dict_to_mfa_config(data)
+            result = _dict_to_mfa_config(data)
 
-        assert result.user_id == user_id
-        assert result.is_enabled == True
-        assert result.enabled_at is not None
-        assert result.last_used_at is not None
+            assert result.user_id == user_id
+            assert result.is_enabled is True
+            assert result.enabled_at is not None
+            assert result.last_used_at is not None
 
-    def test_get_mfa_config_returns_none_when_not_found(self):
-        """Test get_mfa_config returns None when no config exists."""
-        with patch("app.api.v1.endpoints.mfa._get_redis") as mock_get_redis:
-            mock_redis = MagicMock()
-            mock_redis.get.return_value = None
-            mock_get_redis.return_value = mock_redis
+    @pytest.mark.asyncio
+    async def test_get_mfa_config_returns_none_when_not_found(self):
+        """Test get_mfa_config returns None when no config in cache or DB."""
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
 
-            from app.api.v1.endpoints.mfa import get_mfa_config
+        mock_session = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = None
+        mock_session.execute.return_value = mock_result
 
-            result = get_mfa_config(str(uuid4()))
+        with (
+            patch(
+                "app.application.services.mfa_config_service._get_redis",
+                return_value=mock_cache,
+            ),
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                return_value=mock_session,
+            ),
+        ):
+            from app.application.services.mfa_config_service import get_mfa_config
+
+            result = await get_mfa_config(str(uuid4()))
 
             assert result is None
 
-    def test_get_mfa_config_returns_config_when_found(self):
-        """Test get_mfa_config returns MFAConfig when exists."""
+    @pytest.mark.asyncio
+    async def test_get_mfa_config_returns_config_from_cache(self):
+        """Test get_mfa_config returns MFAConfig from Redis cache."""
         user_id = uuid4()
-        config_id = uuid4()
         config_data = {
-            "id": str(config_id),
             "user_id": str(user_id),
-            "secret": "SECRET123",
+            "secret": "enc:SECRET123",
             "is_enabled": True,
             "backup_codes": [],
-            "created_at": "2025-01-01T00:00:00+00:00",
             "enabled_at": "2025-01-02T00:00:00+00:00",
             "last_used_at": None,
         }
 
-        with patch("app.api.v1.endpoints.mfa._get_redis") as mock_get_redis:
-            mock_redis = MagicMock()
-            mock_redis.get.return_value = json.dumps(config_data)
-            mock_get_redis.return_value = mock_redis
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = json.dumps(config_data)
 
-            from app.api.v1.endpoints.mfa import get_mfa_config
+        with (
+            patch(
+                "app.application.services.mfa_config_service._get_redis",
+                return_value=mock_cache,
+            ),
+            patch(
+                "app.infrastructure.auth.encryption.decrypt_value",
+                side_effect=lambda v: v.replace("enc:", ""),
+            ),
+        ):
+            from app.application.services.mfa_config_service import get_mfa_config
 
-            result = get_mfa_config(str(user_id))
+            result = await get_mfa_config(str(user_id))
 
+            assert result is not None
             assert result.user_id == user_id
             assert result.secret == "SECRET123"
-            assert result.is_enabled == True
+            assert result.is_enabled is True
 
-    def test_save_mfa_config_stores_in_redis(self):
-        """Test save_mfa_config stores config in Redis with TTL."""
+    @pytest.mark.asyncio
+    async def test_save_mfa_config_persists_to_db_and_cache(self):
+        """Test save_mfa_config writes to DB and updates Redis cache."""
         user_id = uuid4()
         config = MFAConfig(
             user_id=user_id,
@@ -157,22 +186,38 @@ class TestMFAHelperFunctions:
             backup_codes=["backup1"],
         )
 
-        with patch("app.api.v1.endpoints.mfa._get_redis") as mock_get_redis:
-            mock_redis = MagicMock()
-            mock_get_redis.return_value = mock_redis
+        mock_session = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = None
+        mock_session.execute.return_value = mock_result
 
-            from app.api.v1.endpoints.mfa import save_mfa_config
+        mock_cache = AsyncMock()
 
-            save_mfa_config(config)
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                return_value=mock_session,
+            ),
+            patch(
+                "app.application.services.mfa_config_service._get_redis",
+                return_value=mock_cache,
+            ),
+            patch(
+                "app.infrastructure.auth.encryption.encrypt_value",
+                side_effect=lambda v: f"enc:{v}",
+            ),
+        ):
+            from app.application.services.mfa_config_service import save_mfa_config
 
-            mock_redis.setex.assert_called_once()
-            call_args = mock_redis.setex.call_args
-            assert call_args[0][0] == f"mfa:config:{user_id}"
-            assert call_args[0][1] == 60 * 60 * 24 * 30  # 30 days
+            await save_mfa_config(config)
+
+            mock_session.add.assert_called_once()
+            mock_session.commit.assert_awaited_once()
+            mock_cache.set.assert_awaited_once()
 
 
 class TestMFADisableFlow:
-    """Tests for MFA disable endpoint (line 233)."""
+    """Tests for MFA disable endpoint."""
 
     @pytest.mark.asyncio
     async def test_disable_mfa_not_enabled(self):
@@ -189,9 +234,11 @@ class TestMFADisableFlow:
 
         request = MFADisableRequest(password="password123", code="123456")
 
-        with patch("app.api.v1.endpoints.mfa.get_mfa_config") as mock_get_config:
-            mock_get_config.return_value = None
-
+        with patch(
+            "app.api.v1.endpoints.mfa.get_mfa_config",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
             with pytest.raises(HTTPException) as exc_info:
                 await disable_mfa(
                     request=request,
@@ -216,11 +263,14 @@ class TestMFADisableFlow:
 
         request = MFADisableRequest(password="password123", code="123456")
 
-        with patch("app.api.v1.endpoints.mfa.get_mfa_config") as mock_get_config:
-            mock_config = MagicMock()
-            mock_config.is_enabled = False
-            mock_get_config.return_value = mock_config
+        mock_config = MagicMock()
+        mock_config.is_enabled = False
 
+        with patch(
+            "app.api.v1.endpoints.mfa.get_mfa_config",
+            new_callable=AsyncMock,
+            return_value=mock_config,
+        ):
             with pytest.raises(HTTPException) as exc_info:
                 await disable_mfa(
                     request=request,
@@ -247,12 +297,15 @@ class TestMFADisableFlow:
 
         request = MFADisableRequest(password="password123", code="000000")
 
-        with patch("app.api.v1.endpoints.mfa.get_mfa_config") as mock_get_config:
-            mock_config = MFAConfig(
-                user_id=mock_user.id, secret="SECRET", is_enabled=True
-            )
-            mock_get_config.return_value = mock_config
+        mock_config = MFAConfig(
+            user_id=mock_user.id, secret="SECRET", is_enabled=True
+        )
 
+        with patch(
+            "app.api.v1.endpoints.mfa.get_mfa_config",
+            new_callable=AsyncMock,
+            return_value=mock_config,
+        ):
             with pytest.raises(HTTPException) as exc_info:
                 await disable_mfa(
                     request=request,
@@ -261,7 +314,7 @@ class TestMFADisableFlow:
                 )
 
             assert exc_info.value.status_code == 400
-            assert "Invalid verification code" in exc_info.value.detail
+            assert exc_info.value.detail["code"] == "INVALID_CODE"
 
     @pytest.mark.asyncio
     async def test_disable_mfa_success(self):
@@ -278,18 +331,24 @@ class TestMFADisableFlow:
 
         request = MFADisableRequest(password="correct_password", code="123456")
 
-        with (
-            patch("app.api.v1.endpoints.mfa.get_mfa_config") as mock_get_config,
-            patch("app.api.v1.endpoints.mfa.save_mfa_config") as mock_save,
-        ):
-            mock_config = MFAConfig(
-                user_id=mock_user.id, secret="SECRET", is_enabled=True
-            )
-            mock_get_config.return_value = mock_config
+        mock_config = MFAConfig(
+            user_id=mock_user.id, secret="SECRET", is_enabled=True
+        )
 
+        with (
+            patch(
+                "app.api.v1.endpoints.mfa.get_mfa_config",
+                new_callable=AsyncMock,
+                return_value=mock_config,
+            ),
+            patch(
+                "app.api.v1.endpoints.mfa.save_mfa_config",
+                new_callable=AsyncMock,
+            ) as mock_save,
+        ):
             result = await disable_mfa(
                 request=request, current_user=mock_user, mfa_service=mock_mfa_service
             )
 
-            assert result.success == True
+            assert result.success is True
             mock_save.assert_called_once()

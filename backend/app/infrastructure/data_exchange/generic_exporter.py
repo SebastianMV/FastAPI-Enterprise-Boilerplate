@@ -53,14 +53,15 @@ class GenericExporter(ExportPort):
         """
         self.session = session
 
-    def _apply_tenant_filter(self, query: Any, config: EntityConfig, tenant_id: UUID | None) -> Any:
-        """Apply tenant filter to query, logging a warning when tenant_id is missing for tenant-aware models."""
+    def _apply_tenant_filter(
+        self, query: Any, config: EntityConfig, tenant_id: UUID | None
+    ) -> Any:
+        """Apply tenant filter to query, raising error when tenant_id is missing for tenant-aware models."""
         if tenant_id and hasattr(config.model, "tenant_id"):
             return query.where(config.model.tenant_id == tenant_id)
         if not tenant_id and hasattr(config.model, "tenant_id"):
-            logger.warning(
-                "Export query without tenant_id on tenant-aware model %s",
-                config.model.__name__,
+            raise ValueError(
+                "tenant_id is required for tenant-aware model exports"
             )
         return query
 
@@ -342,6 +343,8 @@ class GenericExporter(ExportPort):
             return obj.isoformat()
         if isinstance(obj, UUID):
             return str(obj)
+        if hasattr(obj, "__dict__"):
+            return obj.__dict__
         raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 

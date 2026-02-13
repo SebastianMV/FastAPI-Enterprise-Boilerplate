@@ -81,6 +81,7 @@ class TestListRolesEndpoint:
         tenant_id = uuid4()
         mock_repo = AsyncMock()
         mock_repo.list.return_value = []
+        mock_repo.count.return_value = 0
 
         result = await list_roles(
             current_user_id=uuid4(),
@@ -122,6 +123,7 @@ class TestGetRoleEndpoint:
         result = await get_role(
             role_id=role_id,
             current_user_id=uuid4(),
+            tenant_id=None,
             session=mock_session,
             repo=mock_repo,
         )
@@ -143,6 +145,7 @@ class TestGetRoleEndpoint:
             await get_role(
                 role_id=role_id,
                 current_user_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
                 repo=mock_repo,
             )
@@ -337,11 +340,14 @@ class TestGetRoleRepository:
 
         mock_session = MagicMock()
 
-        with patch(
-            "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
-        ) as mock_base_repo, patch(
-            "app.api.v1.endpoints.roles.get_cached_role_repository"
-        ) as mock_get_cached:
+        with (
+            patch(
+                "app.api.v1.endpoints.roles.SQLAlchemyRoleRepository"
+            ) as mock_base_repo,
+            patch(
+                "app.api.v1.endpoints.roles.get_cached_role_repository"
+            ) as mock_get_cached,
+        ):
             mock_cached_repo = MagicMock()
             mock_get_cached.return_value = mock_cached_repo
 

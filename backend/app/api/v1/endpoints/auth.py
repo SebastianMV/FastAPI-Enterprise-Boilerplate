@@ -21,8 +21,8 @@ from app.api.v1.schemas.auth import (
     ResetPasswordRequest,
     TokenResponse,
     UserResponse,
-    VerifyResetTokenRequest,
     VerifyEmailTokenRequest,
+    VerifyResetTokenRequest,
 )
 from app.api.v1.schemas.common import MessageResponse
 from app.config import settings
@@ -152,6 +152,7 @@ async def login(
     forwarded_for = http_request.headers.get("X-Forwarded-For")
     if forwarded_for:
         from app.middleware.rate_limit import RateLimitMiddleware
+
         if RateLimitMiddleware._is_trusted_proxy(direct_ip):
             ip_address = forwarded_for.split(",")[0].strip()
         else:
@@ -477,13 +478,16 @@ async def change_password(
         await session.commit()
     except Exception:
         logger.error(
-            "Failed to revoke sessions after password change for user %s — rolling back",
-            current_user_id,
+            "session_revoke_after_password_change_failed",
+            user_id=str(current_user_id),
             exc_info=True,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "SESSION_REVOCATION_FAILED", "message": "Password changed but failed to invalidate existing sessions. Please contact support."},
+            detail={
+                "code": "SESSION_REVOCATION_FAILED",
+                "message": "Password changed but failed to invalidate existing sessions. Please contact support.",
+            },
         ) from None
 
     return MessageResponse(
@@ -533,7 +537,10 @@ async def forgot_password(
 
         if rate_count >= PASSWORD_RESET_MAX_TOKENS_PER_EMAIL:
             # Silently skip — don't reveal to client
-            logger.warning("Password reset rate limit hit for email hash %s", hashlib.sha256(str(user.email).lower().encode()).hexdigest()[:8])
+            logger.warning(
+                "password_reset_rate_limit",
+                email_hash=hashlib.sha256(str(user.email).lower().encode()).hexdigest()[:8],
+            )
         else:
             # Generate secure token
             token = secrets.token_urlsafe(PASSWORD_RESET_TOKEN_BYTES)
@@ -569,7 +576,7 @@ async def forgot_password(
             except Exception:
                 # Log error but don't fail the request (prevents email enumeration)
                 logger.warning(
-                    "Failed to send password reset email",
+                    "password_reset_email_send_failed",
                     exc_info=True,
                 )
     else:
@@ -578,6 +585,7 @@ async def forgot_password(
         # Without this delay, the "not found" path returns instantly, leaking existence.
         import asyncio
         import random
+
         await asyncio.sleep(random.uniform(0.3, 0.6))
 
     # Always return success to prevent email enumeration
@@ -644,7 +652,7 @@ async def reset_password(
             f"password_reset:token:{_hash_reset_token(request.token)}"
         )
     except Exception:
-        logger.debug("Failed to retrieve reset token from cache", exc_info=True)
+        logger.debug("reset_token_cache_retrieval_failed", exc_info=True)
 
     if not token_data:
         raise HTTPException(
@@ -692,7 +700,7 @@ async def reset_password(
         # Clear the rate limit counter so user can request new tokens if needed
         await cache.delete(f"password_reset:rate:{email_lower}")
     except Exception:
-        logger.debug("Failed to clear rate limit counter from cache", exc_info=True)
+        logger.debug("rate_limit_counter_clear_failed", exc_info=True)
 
     # --- 5. Invalidate all existing sessions for security ---
     try:
@@ -706,13 +714,16 @@ async def reset_password(
         await session.commit()
     except Exception:
         logger.error(
-            "Failed to revoke sessions after password reset for user %s — rolling back",
-            user.id,
+            "session_revoke_after_password_reset_failed",
+            user_id=str(user.id),
             exc_info=True,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "SESSION_REVOCATION_FAILED", "message": "Password reset but failed to invalidate existing sessions. Please contact support."},
+            detail={
+                "code": "SESSION_REVOCATION_FAILED",
+                "message": "Password reset but failed to invalidate existing sessions. Please contact support.",
+            },
         ) from None
 
     # --- 6. Send confirmation email ---
@@ -726,7 +737,7 @@ async def reset_password(
         )
     except Exception:
         logger.warning(
-            "Failed to send password changed email",
+            "password_changed_email_send_failed",
             exc_info=True,
         )
 
@@ -812,9 +823,7 @@ async def send_verification_email(
         )
     except Exception:
         # Log error but don't fail the request
-        logger.warning(
-            "Failed to send verification email", exc_info=True
-        )
+        logger.warning("verification_email_send_failed", exc_info=True)
 
     return MessageResponse(
         message="Verification email sent. Please check your inbox.",

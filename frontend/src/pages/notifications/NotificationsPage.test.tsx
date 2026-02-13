@@ -15,6 +15,17 @@ vi.mock('@/services/api', () => ({
   },
 }));
 
+vi.mock('@/components/common/Modal', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
+  ConfirmModal: ({ isOpen, onConfirm, title }: any) =>
+    isOpen ? (
+      <div data-testid="confirm-modal">
+        <h2>{title}</h2>
+        <button onClick={onConfirm}>Confirm</button>
+      </div>
+    ) : null,
+}));
+
 const mockMarkAsRead = vi.fn();
 const mockStoreMarkAllAsRead = vi.fn();
 const mockRemoveNotification = vi.fn();
@@ -136,7 +147,7 @@ describe('NotificationsPage', () => {
   it('fetches notifications on mount', async () => {
     renderPage();
     await waitFor(() => {
-      expect(mockGetAll).toHaveBeenCalledWith({ page: 1, page_size: 100 });
+      expect(mockGetAll).toHaveBeenCalledWith({ page: 1, page_size: 20 });
     });
   });
 
@@ -150,6 +161,11 @@ describe('NotificationsPage', () => {
     renderPage();
     const deleteButtons = screen.getAllByTitle('common.delete');
     fireEvent.click(deleteButtons[0]);
+    // Confirm in the modal
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Confirm'));
     await waitFor(() => {
       expect(mockDelete).toHaveBeenCalledWith('n1');
     });

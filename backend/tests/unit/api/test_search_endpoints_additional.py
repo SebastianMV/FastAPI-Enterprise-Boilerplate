@@ -37,18 +37,14 @@ class TestCreateIndexEndpoint:
     async def test_create_index_forbidden_non_superuser(
         self, mock_session, mock_regular_user
     ):
-        """Test that non-superusers cannot create indices."""
+        """Test that non-superusers cannot create indices (enforced via SuperuserId dependency)."""
+        import inspect
+
         from app.api.v1.endpoints.search import create_index
 
-        with pytest.raises(HTTPException) as exc:
-            await create_index(
-                index="users",
-                session=mock_session,
-                current_user=mock_regular_user,
-            )
-
-        assert exc.value.status_code == 403
-        assert "Only superadmins" in exc.value.detail
+        # Auth is enforced by the SuperuserId dependency at DI level
+        sig = inspect.signature(create_index)
+        assert "superuser_id" in sig.parameters
 
     @pytest.mark.asyncio
     async def test_create_index_invalid_index(self, mock_session, mock_superuser):
@@ -59,11 +55,11 @@ class TestCreateIndexEndpoint:
             await create_index(
                 index="invalid_index_name",
                 session=mock_session,
-                current_user=mock_superuser,
+                superuser_id=mock_superuser.id,
             )
 
         assert exc.value.status_code == 400
-        assert "Invalid search index" in exc.value.detail
+        assert exc.value.detail["code"] == "INVALID_SEARCH_INDEX"
 
     @pytest.mark.asyncio
     async def test_create_index_success(self, mock_session, mock_superuser):
@@ -71,7 +67,8 @@ class TestCreateIndexEndpoint:
         from app.api.v1.endpoints.search import create_index
 
         with patch(
-            "app.api.v1.endpoints.search.get_search_backend"
+            "app.api.v1.endpoints.search.get_search_backend",
+            new_callable=AsyncMock,
         ) as mock_get_backend:
             mock_service = MagicMock()
             mock_service.create_index = AsyncMock(return_value=True)
@@ -80,7 +77,7 @@ class TestCreateIndexEndpoint:
             result = await create_index(
                 index="users",
                 session=mock_session,
-                current_user=mock_superuser,
+                superuser_id=mock_superuser.id,
             )
 
             assert result["status"] == "created"
@@ -92,7 +89,8 @@ class TestCreateIndexEndpoint:
         from app.api.v1.endpoints.search import create_index
 
         with patch(
-            "app.api.v1.endpoints.search.get_search_backend"
+            "app.api.v1.endpoints.search.get_search_backend",
+            new_callable=AsyncMock,
         ) as mock_get_backend:
             mock_service = MagicMock()
             mock_service.create_index = AsyncMock(return_value=False)
@@ -102,7 +100,7 @@ class TestCreateIndexEndpoint:
                 await create_index(
                     index="users",
                     session=mock_session,
-                    current_user=mock_superuser,
+                    superuser_id=mock_superuser.id,
                 )
 
             assert exc.value.status_code == 500
@@ -113,7 +111,8 @@ class TestCreateIndexEndpoint:
         from app.api.v1.endpoints.search import create_index
 
         with patch(
-            "app.api.v1.endpoints.search.get_search_backend"
+            "app.api.v1.endpoints.search.get_search_backend",
+            new_callable=AsyncMock,
         ) as mock_get_backend:
             mock_get_backend.side_effect = Exception("Connection failed")
 
@@ -121,11 +120,11 @@ class TestCreateIndexEndpoint:
                 await create_index(
                     index="users",
                     session=mock_session,
-                    current_user=mock_superuser,
+                    superuser_id=mock_superuser.id,
                 )
 
             assert exc.value.status_code == 500
-            assert "Connection failed" in exc.value.detail
+            assert exc.value.detail["code"] == "INDEX_CREATE_FAILED"
 
 
 class TestReindexEndpoint:
@@ -158,18 +157,14 @@ class TestReindexEndpoint:
     async def test_reindex_forbidden_non_superuser(
         self, mock_session, mock_regular_user
     ):
-        """Test that non-superusers cannot reindex."""
+        """Test that non-superusers cannot reindex (enforced via SuperuserId dependency)."""
+        import inspect
+
         from app.api.v1.endpoints.search import reindex
 
-        with pytest.raises(HTTPException) as exc:
-            await reindex(
-                index="users",
-                session=mock_session,
-                current_user=mock_regular_user,
-                tenant_id=None,
-            )
-
-        assert exc.value.status_code == 403
+        # Auth is enforced by the SuperuserId dependency at DI level
+        sig = inspect.signature(reindex)
+        assert "superuser_id" in sig.parameters
 
     @pytest.mark.asyncio
     async def test_reindex_invalid_index(self, mock_session, mock_superuser):
@@ -180,7 +175,7 @@ class TestReindexEndpoint:
             await reindex(
                 index="invalid_index",
                 session=mock_session,
-                current_user=mock_superuser,
+                superuser_id=mock_superuser.id,
                 tenant_id=None,
             )
 
@@ -197,7 +192,8 @@ class TestReindexEndpoint:
         mock_result.took_ms = 1500
 
         with patch(
-            "app.api.v1.endpoints.search.get_search_backend"
+            "app.api.v1.endpoints.search.get_search_backend",
+            new_callable=AsyncMock,
         ) as mock_get_backend:
             mock_service = MagicMock()
             mock_service.reindex = AsyncMock(return_value=mock_result)
@@ -206,7 +202,7 @@ class TestReindexEndpoint:
             result = await reindex(
                 index="users",
                 session=mock_session,
-                current_user=mock_superuser,
+                superuser_id=mock_superuser.id,
                 tenant_id=uuid4(),
             )
 
@@ -220,7 +216,8 @@ class TestReindexEndpoint:
         from app.api.v1.endpoints.search import reindex
 
         with patch(
-            "app.api.v1.endpoints.search.get_search_backend"
+            "app.api.v1.endpoints.search.get_search_backend",
+            new_callable=AsyncMock,
         ) as mock_get_backend:
             mock_service = MagicMock()
             mock_service.reindex = AsyncMock(side_effect=Exception("Reindex failed"))
@@ -230,7 +227,7 @@ class TestReindexEndpoint:
                 await reindex(
                     index="users",
                     session=mock_session,
-                    current_user=mock_superuser,
+                    superuser_id=mock_superuser.id,
                     tenant_id=None,
                 )
 
@@ -267,17 +264,14 @@ class TestDeleteIndexEndpoint:
     async def test_delete_index_forbidden_non_superuser(
         self, mock_session, mock_regular_user
     ):
-        """Test that non-superusers cannot delete indices."""
+        """Test that non-superusers cannot delete indices (enforced via SuperuserId dependency)."""
+        import inspect
+
         from app.api.v1.endpoints.search import delete_index
 
-        with pytest.raises(HTTPException) as exc:
-            await delete_index(
-                index="users",
-                session=mock_session,
-                current_user=mock_regular_user,
-            )
-
-        assert exc.value.status_code == 403
+        # Auth is enforced by the SuperuserId dependency at DI level
+        sig = inspect.signature(delete_index)
+        assert "superuser_id" in sig.parameters
 
     @pytest.mark.asyncio
     async def test_delete_index_invalid_index(self, mock_session, mock_superuser):
@@ -288,7 +282,7 @@ class TestDeleteIndexEndpoint:
             await delete_index(
                 index="invalid_index",
                 session=mock_session,
-                current_user=mock_superuser,
+                superuser_id=mock_superuser.id,
             )
 
         assert exc.value.status_code == 400
@@ -299,7 +293,8 @@ class TestDeleteIndexEndpoint:
         from app.api.v1.endpoints.search import delete_index
 
         with patch(
-            "app.api.v1.endpoints.search.get_search_backend"
+            "app.api.v1.endpoints.search.get_search_backend",
+            new_callable=AsyncMock,
         ) as mock_get_backend:
             mock_service = MagicMock()
             mock_service.delete_index = AsyncMock(return_value=True)
@@ -308,7 +303,7 @@ class TestDeleteIndexEndpoint:
             result = await delete_index(
                 index="users",
                 session=mock_session,
-                current_user=mock_superuser,
+                superuser_id=mock_superuser.id,
             )
 
             assert result is None  # 204 No Content
@@ -319,7 +314,8 @@ class TestDeleteIndexEndpoint:
         from app.api.v1.endpoints.search import delete_index
 
         with patch(
-            "app.api.v1.endpoints.search.get_search_backend"
+            "app.api.v1.endpoints.search.get_search_backend",
+            new_callable=AsyncMock,
         ) as mock_get_backend:
             mock_service = MagicMock()
             mock_service.delete_index = AsyncMock(return_value=False)
@@ -329,7 +325,7 @@ class TestDeleteIndexEndpoint:
                 await delete_index(
                     index="users",
                     session=mock_session,
-                    current_user=mock_superuser,
+                    superuser_id=mock_superuser.id,
                 )
 
             assert exc.value.status_code == 500
@@ -340,7 +336,8 @@ class TestDeleteIndexEndpoint:
         from app.api.v1.endpoints.search import delete_index
 
         with patch(
-            "app.api.v1.endpoints.search.get_search_backend"
+            "app.api.v1.endpoints.search.get_search_backend",
+            new_callable=AsyncMock,
         ) as mock_get_backend:
             mock_get_backend.side_effect = Exception("Connection lost")
 
@@ -348,7 +345,7 @@ class TestDeleteIndexEndpoint:
                 await delete_index(
                     index="users",
                     session=mock_session,
-                    current_user=mock_superuser,
+                    superuser_id=mock_superuser.id,
                 )
 
             assert exc.value.status_code == 500

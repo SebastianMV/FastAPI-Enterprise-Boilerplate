@@ -22,7 +22,7 @@ describe('searchService', () => {
     const response = { hits: [], total: 0, page: 1, page_size: 10, total_pages: 0, has_next: false, has_previous: false, took_ms: 5, max_score: null, suggestions: [] };
     mockPost.mockResolvedValueOnce({ data: response });
     const result = await searchService.search({ query: 'test', index: 'users' });
-    expect(mockPost).toHaveBeenCalledWith('/search', { query: 'test', index: 'users' }, { signal: undefined });
+    expect(mockPost).toHaveBeenCalledWith('/search', { query: 'test', index: 'users', page: 1, page_size: 20 }, { signal: undefined });
     expect(result.hits).toEqual([]);
   });
 

@@ -11,6 +11,7 @@
     "actions": "Ações",
     "confirm": "Confirmar",
     "back": "Voltar",
+    "previous": "Anterior",
     "next": "Próximo",
     "submit": "Enviar",
     "close": "Fechar",
@@ -19,7 +20,23 @@
     "success": "Sucesso",
     "error": "Erro",
     "warning": "Aviso",
-    "info": "Informação"
+    "info": "Informação",
+    "untitled": "Sem título",
+    "closeDialog": "Fechar diálogo",
+    "ok": "OK",
+    "signOut": "Sair",
+    "note": "Nota",
+    "accessDenied": "Você não tem permissão para acessar esta página",
+    "fetchError": "Falha ao buscar dados",
+    "na": "N/D",
+    "never": "Nunca",
+    "retry": "Tentar novamente",
+    "brandName": "FastAPI Enterprise",
+    "brandLogoAlt": "Logo da aplicação",
+    "placeholderFirstName": "ex. João",
+    "placeholderLastName": "ex. Silva",
+    "placeholderEmail": "ex. usuario@example.com",
+    "menu": "Abrir menu"
   },
   "auth": {
     "login": "Entrar",
@@ -81,8 +98,38 @@
       "enterManually": "Ou digite este código manualmente",
       "backupCodes": "Códigos de Backup",
       "backupCodesDescription": "Salve estes códigos de backup em um local seguro. Cada código só pode ser usado uma vez.",
-      "enterCode": "Por favor, digite seu código de autenticação de 6 dígitos"
-    }
+      "enterCode": "Por favor, digite seu código de autenticação de 6 dígitos",
+      "codeMustBe6Digits": "O código deve ter 6 dígitos"
+    },
+    "loginFailed": "Falha no login. Tente novamente.",
+    "registrationFailed": "Falha no registro. Por favor, tente novamente.",
+    "requestFailed": "Erro ao processar a solicitação",
+    "didntReceiveEmail": "Não recebeu o e-mail? Verifique sua caixa de spam ou tente novamente.",
+    "tryAnotherEmail": "Tentar outro e-mail",
+    "rememberPassword": "Lembra da sua senha?",
+    "passwordRequirements": "Requisitos de senha:",
+    "passwordReqMinChars": "Pelo menos 8 caracteres",
+    "passwordReqUppercase": "Uma letra maiúscula",
+    "passwordReqLowercase": "Uma letra minúscula",
+    "passwordReqNumber": "Um número",
+    "passwordReqSpecial": "Um caractere especial (!@#$...)",
+    "emailVerified": "E-mail verificado!",
+    "emailVerifiedSuccess": "Seu e-mail foi verificado com sucesso.",
+    "goToDashboard": "Ir para o Painel",
+    "verificationFailed": "Falha na verificação",
+    "verificationError": "Erro de verificação",
+    "noTokenProvided": "Sem token de verificação",
+    "noTokenMessage": "Nenhum token de verificação fornecido.",
+    "socialSignUp": "Registrar com",
+    "socialConnect": "Conectar",
+    "socialContinue": "Continuar com",
+    "socialConnectError": "Erro ao conectar",
+    "layoutAriaLabel": "Autenticação",
+    "invalidResetLink": "Link de redefinição inválido",
+    "resetLinkExpired": "Este link de redefinição de senha é inválido ou expirou. Por favor, solicite um novo.",
+    "requestNewLink": "Solicitar novo link",
+    "resetFailed": "Falha ao redefinir a senha. O link pode ter expirado.",
+    "registrationDisabled": "O registro está atualmente desativado"
   },
   "navigation": {
     "dashboard": "Painel",
@@ -117,7 +164,28 @@
     "loadingDashboard": "Carregando painel...",
     "failedToLoad": "Falha ao carregar dados do painel. Por favor, tente novamente.",
     "refreshData": "Atualizar Dados",
-    "lastUpdated": "Última atualização"
+    "lastUpdated": "Última atualização",
+    "overview": "Aqui está o que está acontecendo com seu aplicativo hoje.",
+    "vsLastMonth": "vs mês passado",
+    "quickActions": "Ações Rápidas",
+    "addUser": "Adicionar Usuário",
+    "apiKeys": "Chaves API",
+    "settings": "Configurações",
+    "security": "Segurança",
+    "userOverview": "Visão Geral de Usuários",
+    "newUsersLast7Days": "Novos usuários (últimos 7 dias)",
+    "newUsersLast30Days": "Novos usuários (últimos 30 dias)",
+    "activeInactive": "Ativos / Inativos",
+    "events": "eventos",
+    "noRecentActivity": "Sem atividade recente",
+    "justNow": "Agora mesmo",
+    "minAgo": "há {{count}} min",
+    "hAgo": "há {{count}}h",
+    "dAgo": "há {{count}}d",
+    "statTotalUsers": "Total de Usuários",
+    "statActiveUsers": "Usuários Ativos",
+    "statApiKeys": "Chaves API",
+    "statRoles": "Funções"
   },
   "users": {
     "title": "Usuários",
@@ -151,7 +219,9 @@
     "userDeleted": "Usuário Excluído",
     "createError": "Falha ao criar usuário. Por favor, tente novamente.",
     "updateError": "Falha ao atualizar usuário. Por favor, tente novamente.",
-    "deleteError": "Falha ao excluir usuário. Por favor, tente novamente."
+    "deleteError": "Falha ao excluir usuário. Por favor, tente novamente.",
+    "subtitle": "Gerenciar contas de usuário e permissões",
+    "showingCount": "Mostrando {{showing}} de {{total}} usuários"
   },
   "roles": {
     "title": "Funções",
@@ -205,7 +275,9 @@
       "read": "ler",
       "update": "atualizar",
       "delete": "excluir"
-    }
+    },
+    "namePlaceholder": "ex., Editor, Visualizador, Gerente",
+    "loadError": "Falha ao carregar funções. Por favor, tente novamente."
   },
   "profile": {
     "title": "Meu Perfil",
@@ -264,7 +336,36 @@
       "profile": "Informações do Perfil",
       "security": "Segurança",
       "connections": "Contas Conectadas"
-    }
+    },
+    "connectedAccountsDescription": "Vincule suas contas sociais para login mais fácil e recursos adicionais",
+    "connectedAs": "Conectado como {{account}}",
+    "connected": "Conectado",
+    "notConnected": "Não conectado",
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "disconnectSuccess": "Conta {{provider}} desconectada",
+    "connectError": "Falha ao conectar conta",
+    "disconnectError": "Falha ao desconectar conta",
+    "whyConnect": "Por que conectar contas?",
+    "whyConnectReasons": {
+      "faster": "Faça login mais rápido com um clique",
+      "noPassword": "Não precisa lembrar outra senha",
+      "sync": "Sincronize informações do perfil automaticamente"
+    },
+    "emailVerification": {
+      "verifyYourEmail": "Verifique seu e-mail",
+      "verifyDescription": "Por favor, verifique seu endereço de e-mail para acessar todos os recursos.",
+      "emailSent": "E-mail de verificação enviado!",
+      "resend": "Reenviar verificação",
+      "dismiss": "Fechar"
+    },
+    "changePhoto": "Alterar foto",
+    "avatarUploadError": "Falha ao enviar avatar. Por favor, tente novamente.",
+    "invalidFileType": "Por favor selecione um arquivo de imagem válido (JPEG, PNG, GIF ou WebP).",
+    "fileTooLarge": "A imagem deve ter menos de 5MB.",
+    "activeSessions": "Sessões Ativas",
+    "activeSessionsDescription": "Gerencie suas sessões de login ativas em todos os dispositivos.",
+    "viewAllSessions": "Ver Todas as Sessões"
   },
   "settings": {
     "title": "Configurações",
@@ -294,29 +395,61 @@
     "enableNotifications": "Habilitar Notificações",
     "disableNotifications": "Desabilitar Notificações",
     "deleteAccount": "Excluir Conta",
-    "deleteAccountWarning": "Tem certeza de que deseja excluir sua conta? Esta ação não pode ser desfeita.",
+    "deleteAccountWarning": "Tem certeza de que deseja excluir sua conta? Esta ação usa exclusão suave e pode ser revertida por um administrador. Você será desconectado imediatamente.",
     "dangerZone": "Zona de Perigo",
     "features": "Recursos",
     "featuresDescription": "Recursos opcionais configurados pelo administrador do sistema",
     "websocketConnection": "Conexão WebSocket",
     "websocketDescription": "Comunicação bidirecional em tempo real",
     "realtimeNotifications": "Notificações em Tempo Real",
-    "realtimeNotificationsDescription": "Notificações push via WebSocket",
+    "realtimeNotificationsDescription": "Entrega instantânea de notificações via WebSocket",
     "enabled": "Habilitado",
-    "disabled": "Desabilitado"
+    "disabled": "Desabilitado",
+    "securityDescription": "Gerencie as configurações de segurança da sua conta",
+    "switchToLanguage": "Mudar para {{language}}",
+    "languageRegionDescription": "Configure seu idioma e fuso horário",
+    "appearanceDescription": "Personalize a aparência",
+    "themeUpdated": "Tema Atualizado",
+    "themeChangedTo": "Tema alterado para {{theme}}.",
+    "timezoneUpdated": "Fuso Horário Atualizado",
+    "timezoneChangedTo": "Fuso horário alterado para {{timezone}}.",
+    "notificationsUpdated": "Notificações Atualizadas",
+    "notificationsToggled": "Notificações {{status}}.",
+    "deleteAccountDescription": "Exclua sua conta. Usa exclusão suave e pode ser revertida por um administrador.",
+    "deletingAccount": "Excluindo...",
+    "featuresNote": "Estes recursos são configurados via variáveis de ambiente pelo administrador do sistema. Contate seu administrador para habilitar ou desabilitar recursos opcionais.",
+    "twoFactorAuth": "Autenticação de Dois Fatores",
+    "twoFactorAuthDescription": "Adicione uma camada extra de segurança à sua conta",
+    "activeSessions": "Sessões Ativas",
+    "activeSessionsDescription": "Visualize e gerencie suas sessões ativas em dispositivos",
+    "deleteError": "Falha ao excluir conta. Por favor, tente novamente."
   },
   "validation": {
     "required": "Este campo é obrigatório",
     "emailInvalid": "Por favor, insira um endereço de e-mail válido",
     "invalidEmail": "Endereço de e-mail inválido",
     "passwordMin": "A senha deve ter pelo menos {{min}} caracteres",
+    "passwordMax": "A senha deve ter no máximo {{max}} caracteres",
     "passwordMismatch": "As senhas não coincidem",
     "passwordsMustMatch": "As senhas devem ser iguais",
     "passwordTooShort": "A senha deve ter pelo menos 8 caracteres",
     "minLength": "Deve ter pelo menos {{min}} caracteres",
     "maxLength": "Deve ter no máximo {{max}} caracteres",
     "invalidLength": "Deve ter entre {{min}} e {{max}} caracteres",
-    "invalidFormat": "Formato inválido"
+    "invalidFormat": "Formato inválido",
+    "passwordRequired": "A senha é obrigatória",
+    "passwordUppercase": "A senha deve conter uma letra maiúscula",
+    "passwordLowercase": "A senha deve conter uma letra minúscula",
+    "passwordDigit": "A senha deve conter um dígito",
+    "passwordSpecial": "A senha deve conter um caractere especial",
+    "passwordStrength": "A senha deve conter maiúscula, minúscula, dígito e caractere especial",
+    "passwordComplexity": "A senha deve incluir maiúscula, minúscula, número e caractere especial"
+  },
+  "file": {
+    "tooLarge": "O arquivo excede o limite de {{maxMB}}MB",
+    "empty": "O arquivo está vazio",
+    "invalidExtension": "Tipo de arquivo inválido. Permitidos: {{allowed}}",
+    "invalidMimeType": "Tipo MIME de arquivo inválido. Permitidos: {{allowed}}"
   },
   "errors": {
     "generic": "Algo deu errado. Por favor, tente novamente",
@@ -400,7 +533,26 @@
       "title": "Detalhes do Log de Auditoria",
       "close": "Fechar",
       "metadata": "Metadados",
-      "changes": "Alterações"
+      "changes": "Alterações",
+      "id": "ID",
+      "resourceType": "Tipo de Recurso",
+      "actorEmail": "Email do Ator",
+      "system": "Sistema",
+      "resourceName": "Nome do Recurso",
+      "reason": "Razão",
+      "userAgent": "Agente do Usuário",
+      "before": "Antes",
+      "after": "Depois"
+    },
+    "loadError": "Falha ao carregar logs de auditoria",
+    "resourceTypes": {
+      "user": "Usuário",
+      "role": "Função",
+      "tenant": "Inquilino",
+      "api_key": "Chave API",
+      "session": "Sessão",
+      "notification": "Notificação",
+      "sso_configuration": "Configuração SSO"
     }
   },
   "apiKeys": {
@@ -424,7 +576,20 @@
     "name": "Nome",
     "prefix": "Prefixo",
     "expires": "Expira",
-    "scopes": "Escopos",
+    "scopes": {
+      "usersRead": "Ler Usuários",
+      "usersReadDesc": "Visualizar informações de usuários",
+      "usersWrite": "Escrever Usuários",
+      "usersWriteDesc": "Criar e atualizar usuários",
+      "rolesRead": "Ler Funções",
+      "rolesReadDesc": "Visualizar funções e permissões",
+      "rolesWrite": "Escrever Funções",
+      "rolesWriteDesc": "Gerenciar funções",
+      "apiKeysRead": "Ler Chaves API",
+      "apiKeysReadDesc": "Visualizar chaves API",
+      "apiKeysWrite": "Escrever Chaves API",
+      "apiKeysWriteDesc": "Gerenciar chaves API"
+    },
     "savedKey": "Salvei Minha Chave",
     "revoked": "Revogada",
     "expired": "Expirada",
@@ -447,20 +612,7 @@
     "createError": "Falha ao criar chave API",
     "usingApiKeys": "Usando Chaves API",
     "usingDescription": "Chaves API fornecem acesso programático à API sem exigir autenticação de usuário.",
-    "scopes": {
-      "usersRead": "Ler Usuários",
-      "usersReadDesc": "Visualizar informações de usuários",
-      "usersWrite": "Escrever Usuários",
-      "usersWriteDesc": "Criar e atualizar usuários",
-      "rolesRead": "Ler Funções",
-      "rolesReadDesc": "Visualizar funções e permissões",
-      "rolesWrite": "Escrever Funções",
-      "rolesWriteDesc": "Gerenciar funções",
-      "apiKeysRead": "Ler Chaves API",
-      "apiKeysReadDesc": "Visualizar chaves API",
-      "apiKeysWrite": "Escrever Chaves API",
-      "apiKeysWriteDesc": "Gerenciar chaves API"
-    }
+    "usageExampleCommand": "curl -H \"X-API-Key: sua_chave_api\" https://seu-dominio-api.com/v1/users"
   },
   "notifications": {
     "title": "Notificações",
@@ -487,7 +639,10 @@
       "minutesAgo": "{{count}}m atrás",
       "hoursAgo": "{{count}}h atrás",
       "daysAgo": "{{count}}d atrás"
-    }
+    },
+    "fetchError": "Falha ao buscar notificações",
+    "deleteTitle": "Excluir Notificação",
+    "deleteConfirm": "Tem certeza de que deseja excluir esta notificação?"
   },
   "sessions": {
     "title": "Sessões Ativas",
@@ -513,7 +668,10 @@
       "minutesAgo": "{{count}} min atrás",
       "hoursAgo": "{{count}} horas atrás",
       "daysAgo": "{{count}} dias atrás"
-    }
+    },
+    "sessionRevokedMessage": "A sessão foi revogada com sucesso.",
+    "allSessionsRevokedMessage": "Todas as outras sessões foram revogadas.",
+    "browserOnOs": "{{browser}} em {{os}}"
   },
   "mfa": {
     "title": "Autenticação de Dois Fatores",
@@ -563,7 +721,11 @@
     "recommendedApps": "Google Authenticator, Microsoft Authenticator, Authy, 1Password ou qualquer aplicativo compatível com TOTP.",
     "lostDevice": "Use um dos seus códigos de backup para entrar e depois reconfigure o 2FA com um novo dispositivo.",
     "fetchError": "Falha ao buscar status do MFA",
-    "setupError": "Falha ao configurar MFA. Por favor, tente novamente."
+    "setupError": "Falha ao configurar MFA. Por favor, tente novamente.",
+    "qrCodeAlt": "Código QR para MFA",
+    "copyCode": "Copiar código de backup",
+    "lostDeviceQuestion": "Perdeu seu dispositivo?",
+    "lostDeviceAnswer": "Use um dos seus códigos de backup para entrar e depois reconfigure o 2FA com um novo dispositivo."
   },
   "tenants": {
     "title": "Gerenciamento de Locatários",
@@ -643,7 +805,12 @@
       "primaryColor": "Cor Primária",
       "yes": "Sim",
       "no": "Não"
-    }
+    },
+    "localeEnglish": "Inglês",
+    "localeSpanish": "Espanhol",
+    "localePortuguese": "Português",
+    "feature2fa": "2FA",
+    "featureApiKeys": "Chaves API"
   },
   "data": {
     "title": "Troca de Dados",
@@ -681,7 +848,7 @@
     "skipped": "Ignorados",
     "errors": "Erros",
     "errorDetails": "Detalhes do Erro",
-    "reportTitle": "Título do Relatório",
+    "reportTitle": "Relatório de {{entity}}",
     "reportFormat": "Formato do Relatório",
     "availableFields": "Campos Disponíveis",
     "generateReportButton": "Gerar Relatório",
@@ -690,7 +857,16 @@
     "templateError": "Falha ao baixar modelo",
     "validateError": "Falha ao validar arquivo",
     "importError": "Falha ao importar dados",
-    "reportError": "Falha ao gerar relatório"
+    "reportError": "Falha ao gerar relatório",
+    "acceptedFormats": "CSV, Excel",
+    "tabNavigation": "Abas de troca de dados",
+    "importRowError": "Linha {{row}}: {{field}} — falha na validação",
+    "moreErrors": "... e mais {{count}} erros",
+    "reportTitleLabel": "Título do Relatório",
+    "reportPlaceholder": "Relatório de {{entity}}",
+    "fileTooLarge": "O arquivo é muito grande. O tamanho máximo é {{maxSize}}MB.",
+    "maxFileSize": "Máx {{maxSize}}MB",
+    "invalidFileType": "Tipo de arquivo inválido. Somente arquivos CSV, XLSX e XLS são aceitos."
   },
   "search": {
     "title": "Busca",
@@ -736,7 +912,14 @@
     "page": "Página {{current}} de {{total}}",
     "previous": "Anterior",
     "next": "Próximo",
-    "untitled": "Sem título"
+    "untitled": "Sem título",
+    "noResultsFor": "Nenhum resultado encontrado para \"{{query}}\"",
+    "searchAll": "Pesquisar tudo por \"{{query}}\"",
+    "results": "Resultados",
+    "suggestions": "Sugestões",
+    "recentSearches": "Pesquisas recentes",
+    "actionOnResource": "{{action}} em {{resource}}",
+    "byActor": "Por: {{email}}"
   },
   "oauth": {
     "processing": "Processando autenticação...",
@@ -754,6 +937,52 @@
     "authError": "Falha na autenticação: {{error}}",
     "invalidCallback": "Callback inválido: código de autorização ou estado ausente",
     "invalidState": "Parâmetro de estado inválido",
-    "authFailedGeneric": "Falha na autenticação. Por favor, tente novamente."
+    "authFailedGeneric": "Falha na autenticação. Por favor, tente novamente.",
+    "connectionFailed": "Falha ao conectar com o provedor",
+    "signUpWith": "Cadastrar com",
+    "connect": "Conectar",
+    "continueWith": "Continuar com"
+  },
+  "userMenu": {
+    "title": "Menu do usuário",
+    "myProfile": "Meu Perfil",
+    "languagePreferences": "Idioma e Preferências",
+    "apiKeys": "Chaves API",
+    "security": "Segurança"
+  },
+  "notificationsDropdown": {
+    "title": "Notificações",
+    "defaultTitle": "Notificação",
+    "markAllRead": "Marcar todas como lidas",
+    "noNotifications": "Sem notificações ainda",
+    "emptyDescription": "Nós o notificaremos quando algo chegar",
+    "viewAll": "Ver todas as notificações",
+    "justNow": "Agora mesmo",
+    "minuteAgo": "há {{count}} minuto",
+    "minutesAgo": "há {{count}} minutos",
+    "hourAgo": "há {{count}} hora",
+    "hoursAgo": "há {{count}} horas",
+    "dayAgo": "há {{count}} dia",
+    "daysAgo": "há {{count}} dias",
+    "weekAgo": "há {{count}} semana",
+    "weeksAgo": "há {{count}} semanas",
+    "monthAgo": "há {{count}} mês",
+    "monthsAgo": "há {{count}} meses",
+    "yearAgo": "há {{count}} ano",
+    "yearsAgo": "há {{count}} anos",
+    "markAsRead": "Marcar como lida",
+    "connected": "Conectado",
+    "disconnected": "Desconectado"
+  },
+  "errorBoundary": {
+    "title": "Algo deu errado",
+    "description": "Ocorreu um erro inesperado. Você pode tentar recarregar a página ou voltar à página inicial.",
+    "reload": "Recarregar página",
+    "goHome": "Ir para início",
+    "details": "Detalhes do erro (somente desenvolvimento)",
+    "recover": "Tentar recuperar (resetar boundary)"
+  },
+  "config": {
+    "fetchError": "Falha ao carregar a configuração"
   }
 }

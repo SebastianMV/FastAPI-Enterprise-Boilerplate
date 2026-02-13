@@ -1,30 +1,30 @@
 /**
  * Notifications page component.
- * 
+ *
  * Displays full history of notifications with filtering and pagination.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { 
-  Bell, 
-  Check, 
-  CheckCheck, 
-  Trash2, 
-  Filter,
-  Info, 
-  AlertTriangle, 
-  AlertCircle, 
-  CheckCircle,
-  Loader2,
-  RefreshCw
-} from 'lucide-react';
-import { useNotificationsStore, type Notification } from '@/stores/notificationsStore';
 import { ConfirmModal } from '@/components/common/Modal';
 import { notificationsService } from '@/services/api';
+import { useNotificationsStore, type Notification } from '@/stores/notificationsStore';
 import { formatRelativeTime as formatRelativeTimeShared } from '@/utils/formatRelativeTime';
-import { isSafeRedirectUrl } from '@/utils/security';
+import { isSafeRedirectUrl, sanitizeText } from '@/utils/security';
+import {
+    AlertCircle,
+    AlertTriangle,
+    Bell,
+    Check,
+    CheckCheck,
+    CheckCircle,
+    Filter,
+    Info,
+    Loader2,
+    RefreshCw,
+    Trash2
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 type FilterType = 'all' | 'unread' | 'read';
 
@@ -70,7 +70,7 @@ export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [totalItems, setTotalItems] = useState(0);
-  
+
   const {
     notifications,
     unreadCount,
@@ -99,7 +99,12 @@ export default function NotificationsPage() {
   }, [setNotifications, page, filter]);
 
   useEffect(() => {
-    fetchNotifications();
+    let cancelled = false;
+    (async () => {
+      await fetchNotifications();
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
   }, [fetchNotifications]);
 
   // For 'read' filter (not supported server-side), apply client-side filter
@@ -109,7 +114,7 @@ export default function NotificationsPage() {
 
   const totalPages = Math.ceil(totalItems / pageSize);
 
-  const handleNotificationClick = async (notification: Notification) => {
+  const handleNotificationClick = useCallback(async (notification: Notification) => {
     if (!notification.read) {
       // Sync to backend so read state persists across sessions/devices
       try {
@@ -122,7 +127,7 @@ export default function NotificationsPage() {
     if (notification.action_url && isSafeRedirectUrl(notification.action_url)) {
       navigate(notification.action_url);
     }
-  };
+  }, [markAsRead, navigate]);
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -162,7 +167,7 @@ export default function NotificationsPage() {
             {t('notifications.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {unreadCount > 0 
+            {unreadCount > 0
               ? t(unreadCount === 1 ? 'notifications.unreadCount' : 'notifications.unreadCount_plural', { count: unreadCount })
               : t('notifications.allCaughtUp')
             }
@@ -227,8 +232,8 @@ export default function NotificationsPage() {
               {t('notifications.noNotifications')}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {filter === 'unread' 
-                ? t('notifications.noUnread') 
+              {filter === 'unread'
+                ? t('notifications.noUnread')
                 : filter === 'read'
                 ? t('notifications.noRead')
                 : t('notifications.noNotificationsYet')
@@ -254,7 +259,7 @@ export default function NotificationsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <p className={`text-sm ${!notification.read ? 'font-medium' : ''} text-slate-900 dark:text-white`}>
-                      {notification.title}
+                      {sanitizeText(notification.title)}
                     </p>
                     <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {formatRelativeTime(notification.created_at, t)}
@@ -262,7 +267,7 @@ export default function NotificationsPage() {
                   </div>
                   {notification.message && (
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                      {notification.message}
+                      {sanitizeText(notification.message)}
                     </p>
                   )}
                 </div>
@@ -324,8 +329,8 @@ export default function NotificationsPage() {
         isOpen={showDeleteModal}
         onClose={() => { setShowDeleteModal(false); setNotificationToDelete(null); }}
         onConfirm={handleDeleteConfirm}
-        title={t('notifications.deleteTitle', 'Delete Notification')}
-        message={t('notifications.deleteConfirm', 'Are you sure you want to delete this notification?')}
+        title={t('notifications.deleteTitle')}
+        message={t('notifications.deleteConfirm')}
         confirmText={t('common.delete')}
         variant="danger"
       />

@@ -1,22 +1,23 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { AlertModal, ConfirmModal, Modal } from '@/components/common/Modal';
+import { apiKeysService, type ApiKey, type NewlyCreatedKey } from '@/services/apiKeysService';
+import { sanitizeText } from '@/utils/security';
+import {
+    Activity,
+    AlertCircle,
+    Calendar,
+    Check,
+    Clock,
+    Copy,
+    Key,
+    Loader2,
+    Plus,
+    Shield,
+    Trash2,
+    X
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import {
-  Key,
-  Plus,
-  Trash2,
-  Copy,
-  Check,
-  Loader2,
-  AlertCircle,
-  Clock,
-  Shield,
-  Activity,
-  Calendar,
-  X
-} from 'lucide-react';
-import { apiKeysService, type ApiKey, type NewlyCreatedKey } from '@/services/apiKeysService';
-import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
 
 interface CreateKeyFormData {
   name: string;
@@ -30,7 +31,7 @@ interface CreateKeyFormData {
  */
 export default function ApiKeysPage() {
   const { t } = useTranslation();
-  
+
   const AVAILABLE_SCOPES = useMemo(() => [
     { value: 'users:read', label: t('apiKeys.scopes.usersRead'), description: t('apiKeys.scopes.usersReadDesc') },
     { value: 'users:write', label: t('apiKeys.scopes.usersWrite'), description: t('apiKeys.scopes.usersWriteDesc') },
@@ -39,7 +40,7 @@ export default function ApiKeysPage() {
     { value: 'api-keys:read', label: t('apiKeys.scopes.apiKeysRead'), description: t('apiKeys.scopes.apiKeysReadDesc') },
     { value: 'api-keys:write', label: t('apiKeys.scopes.apiKeysWrite'), description: t('apiKeys.scopes.apiKeysWriteDesc') },
   ], [t]);
-  
+
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -101,7 +102,12 @@ export default function ApiKeysPage() {
 
   // Fetch API keys on mount
   useEffect(() => {
-    fetchApiKeys();
+    let cancelled = false;
+    (async () => {
+      await fetchApiKeys();
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
   }, [fetchApiKeys]);
 
   const onCreateSubmit = async (data: CreateKeyFormData) => {
@@ -262,7 +268,7 @@ export default function ApiKeysPage() {
                 </label>
                 <div className="flex items-center space-x-2">
                   <code className="flex-1 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono break-all">
-                    {newlyCreatedKey.key}
+                    {sanitizeText(newlyCreatedKey.key)}
                   </code>
                   <button
                     onClick={() => copyToClipboard(newlyCreatedKey.key, 'new-key')}
@@ -286,11 +292,11 @@ export default function ApiKeysPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-slate-500">{t('apiKeys.name')}:</span>
-                  <span className="ml-2 font-medium">{newlyCreatedKey.name}</span>
+                  <span className="ml-2 font-medium">{sanitizeText(newlyCreatedKey.name)}</span>
                 </div>
                 <div>
                   <span className="text-slate-500">{t('apiKeys.prefix')}:</span>
-                  <span className="ml-2 font-mono">{newlyCreatedKey.prefix}</span>
+                  <span className="ml-2 font-mono">{sanitizeText(newlyCreatedKey.prefix)}</span>
                 </div>
                 <div>
                   <span className="text-slate-500">{t('apiKeys.expires')}:</span>
@@ -362,16 +368,19 @@ export default function ApiKeysPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <span className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               {t('apiKeys.permissions')}
-            </label>
+            </span>
             <div className="space-y-2">
               {AVAILABLE_SCOPES.map((scope) => (
+                // eslint-disable-next-line jsx-a11y/label-has-associated-control -- label wraps checkbox with descriptive text
                 <label
                   key={scope.value}
+                  htmlFor={`scope-${scope.value}`}
                   className="flex items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   <input
+                    id={`scope-${scope.value}`}
                     type="checkbox"
                     checked={selectedScopes.includes(scope.value)}
                     onChange={() => toggleScope(scope.value)}
@@ -485,11 +494,11 @@ export default function ApiKeysPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 dark:text-white">
-                      {key.name}
+                      {sanitizeText(key.name)}
                     </h3>
                     <div className="flex items-center space-x-2 mt-1">
                       <code className="text-xs font-mono text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                        {key.prefix}...
+                        {sanitizeText(key.prefix)}...
                       </code>
                       {!key.is_active && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
@@ -569,7 +578,7 @@ export default function ApiKeysPage() {
                       key={scope}
                       className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
                     >
-                      {scope}
+                      {sanitizeText(scope)}
                     </span>
                   ))}
                 </div>

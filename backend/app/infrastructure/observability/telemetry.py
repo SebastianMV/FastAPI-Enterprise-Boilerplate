@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import Any
 
+from fastapi import FastAPI
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -37,7 +38,7 @@ from app.infrastructure.observability.logging import get_logger
 logger = get_logger(__name__)
 
 
-def setup_telemetry(app=None) -> None:
+def setup_telemetry(app: FastAPI | None = None) -> None:
     """
     Initialize OpenTelemetry with tracing and metrics.
 
@@ -45,7 +46,7 @@ def setup_telemetry(app=None) -> None:
         app: FastAPI application instance (optional, for auto-instrumentation)
     """
     if not settings.OTEL_ENABLED:
-        logger.info("OpenTelemetry disabled")
+        logger.info("otel_disabled")
         return
 
     # Create resource with service info
@@ -66,7 +67,7 @@ def setup_telemetry(app=None) -> None:
     # Auto-instrument libraries
     _instrument_libraries(app)
 
-    logger.info("OpenTelemetry initialized for %s", settings.APP_NAME)
+    logger.info("otel_initialized", app_name=settings.APP_NAME)
 
 
 def _setup_tracing(resource: Resource) -> None:
@@ -75,21 +76,25 @@ def _setup_tracing(resource: Resource) -> None:
 
     # Add exporter based on configuration
     if settings.OTEL_EXPORTER_OTLP_ENDPOINT:
-        otel_insecure = getattr(settings, "OTEL_EXPORTER_INSECURE", settings.ENVIRONMENT == "development")
+        otel_insecure = getattr(
+            settings, "OTEL_EXPORTER_INSECURE", settings.ENVIRONMENT == "development"
+        )
         if not otel_insecure and settings.ENVIRONMENT in ("production", "staging"):
-            logger.warning("OTLP exporter using TLS (insecure=False) for %s", settings.ENVIRONMENT)
+            logger.warning(
+                "otlp_exporter_tls_enabled", environment=settings.ENVIRONMENT
+            )
         exporter = OTLPSpanExporter(
             endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT,
             insecure=otel_insecure,
         )
         provider.add_span_processor(BatchSpanProcessor(exporter))
         logger.info(
-            "OTLP trace exporter configured: %s", settings.OTEL_EXPORTER_OTLP_ENDPOINT
+            "otlp_trace_exporter_configured", endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT
         )
     else:
         # Console exporter for development
         provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
-        logger.info("Console trace exporter configured")
+        logger.info("console_trace_exporter_configured")
 
     trace.set_tracer_provider(provider)
 
@@ -99,7 +104,9 @@ def _setup_metrics(resource: Resource) -> None:
     export_interval_ms = 60_000  # Export every 60 seconds
 
     if settings.OTEL_EXPORTER_OTLP_ENDPOINT:
-        otel_insecure = getattr(settings, "OTEL_EXPORTER_INSECURE", settings.ENVIRONMENT == "development")
+        otel_insecure = getattr(
+            settings, "OTEL_EXPORTER_INSECURE", settings.ENVIRONMENT == "development"
+        )
         exporter = OTLPMetricExporter(
             endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT,
             insecure=otel_insecure,
@@ -118,7 +125,7 @@ def _setup_metrics(resource: Resource) -> None:
     metrics.set_meter_provider(provider)
 
 
-def _instrument_libraries(app=None) -> None:
+def _instrument_libraries(app: FastAPI | None = None) -> None:
     """Auto-instrument common libraries."""
     # FastAPI
     if app:
@@ -128,7 +135,7 @@ def _instrument_libraries(app=None) -> None:
     SQLAlchemyInstrumentor().instrument()
 
     # Redis
-    RedisInstrumentor().instrument()
+    RedisInstrumentor().instrument()  # type: ignore[no-untyped-call]
 
     # HTTPX (for outgoing HTTP requests)
     HTTPXClientInstrumentor().instrument()
@@ -209,17 +216,26 @@ def traced(
         attributes: Initial span attributes
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         span_name = name or func.__name__
         # PII blocklist: never capture these kwargs as span attributes
         _sensitive_keys = {
-            "password", "secret", "token", "api_key", "authorization",
-            "email", "credit_card", "refresh_token", "access_token",
-            "password_hash", "mfa_code", "otp",
+            "password",
+            "secret",
+            "token",
+            "api_key",
+            "authorization",
+            "email",
+            "credit_card",
+            "refresh_token",
+            "access_token",
+            "password_hash",
+            "mfa_code",
+            "otp",
         }
 
         @wraps(func)
-        async def async_wrapper(*args, **kwargs):
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             with span_context(span_name, attributes) as span:
                 # Add function arguments as attributes (excluding PII)
                 if kwargs:
@@ -231,7 +247,7 @@ def traced(
                 return await func(*args, **kwargs)
 
         @wraps(func)
-        def sync_wrapper(*args, **kwargs):
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             with span_context(span_name, attributes) as span:
                 if kwargs:
                     for key, value in kwargs.items():
@@ -336,7 +352,7 @@ class AppMetrics:
         cls._initialized = True
 
 
-def add_span_attributes(span: Span, **attributes) -> None:
+def add_span_attributes(span: Span, **attributes: Any) -> None:
     """
     Add multiple attributes to a span.
 

@@ -92,14 +92,20 @@ async def create_tenant(
     if await repo.slug_exists(data.slug):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"code": "SLUG_EXISTS", "message": "A tenant with this slug already exists"},
+            detail={
+                "code": "SLUG_EXISTS",
+                "message": "A tenant with this slug already exists",
+            },
         )
 
     # Check domain uniqueness
     if data.domain and await repo.domain_exists(data.domain):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"code": "DOMAIN_EXISTS", "message": "A tenant with this domain already exists"},
+            detail={
+                "code": "DOMAIN_EXISTS",
+                "message": "A tenant with this domain already exists",
+            },
         )
 
     # Create tenant entity
@@ -209,7 +215,10 @@ async def update_tenant(
         if await repo.slug_exists(data.slug, exclude_id=tenant_id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail={"code": "SLUG_EXISTS", "message": "A tenant with this slug already exists"},
+                detail={
+                    "code": "SLUG_EXISTS",
+                    "message": "A tenant with this slug already exists",
+                },
             )
         tenant.slug = data.slug
 
@@ -218,7 +227,10 @@ async def update_tenant(
         if await repo.domain_exists(data.domain, exclude_id=tenant_id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail={"code": "DOMAIN_EXISTS", "message": "A tenant with this domain already exists"},
+                detail={
+                    "code": "DOMAIN_EXISTS",
+                    "message": "A tenant with this domain already exists",
+                },
             )
         tenant.domain = data.domain
 

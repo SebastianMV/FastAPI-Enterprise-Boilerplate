@@ -27,7 +27,6 @@ class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
 
 
-
 # Build connect_args with optional SSL
 _connect_args: dict = {}
 if settings.DB_SSL_REQUIRED:
@@ -209,11 +208,11 @@ async def init_database() -> None:
             raise
 
         if process.returncode != 0:
-            logger.error("Alembic migration failed: %s", stderr.decode())
+            logger.error("alembic_migration_failed", stderr=stderr.decode())
             if settings.ENVIRONMENT in ("production", "staging"):
                 raise RuntimeError(
-                    "Alembic migration failed in %s — refusing to fall back "
-                    "to create_all() (no RLS/triggers)" % settings.ENVIRONMENT
+                    f"Alembic migration failed in {settings.ENVIRONMENT} — refusing to fall back "
+                    "to create_all() (no RLS/triggers)"
                 )
             # Development/testing: fallback to create_all for convenience
             logger.warning("Falling back to Base.metadata.create_all() (dev only)")
@@ -223,13 +222,13 @@ async def init_database() -> None:
             logger.info("Alembic migrations applied successfully")
             if stdout:
                 for line in stdout.decode().strip().split("\n"):
-                    logger.info("  %s", line)
+                    logger.info("alembic_migration_output", line=line)
     except FileNotFoundError:
         if settings.ENVIRONMENT in ("production", "staging"):
             raise RuntimeError(
-                "Alembic not found in %s — refusing to fall back "
-                "to create_all() (no RLS/triggers)" % settings.ENVIRONMENT
-            )
+                f"Alembic not found in {settings.ENVIRONMENT} — refusing to fall back "
+                "to create_all() (no RLS/triggers)"
+            ) from None
         logger.warning("Alembic not found, using Base.metadata.create_all() (dev only)")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import pytest
 
+from app.domain.exceptions.base import ValidationError as DomainValidationError
+
 
 class TestPasswordValueObject:
     """Tests for Password value object that execute real code."""
@@ -22,35 +24,35 @@ class TestPasswordValueObject:
         """Test password validation rejects too short."""
         from app.domain.value_objects.password import Password
 
-        with pytest.raises(ValueError, match="at least 8 characters"):
+        with pytest.raises((ValueError, DomainValidationError), match="security requirements"):
             Password("Short1!")
 
     def test_password_no_uppercase(self) -> None:
         """Test password validation rejects no uppercase."""
         from app.domain.value_objects.password import Password
 
-        with pytest.raises(ValueError, match="uppercase letter"):
+        with pytest.raises((ValueError, DomainValidationError), match="security requirements"):
             Password("lowercase1@")
 
     def test_password_no_lowercase(self) -> None:
         """Test password validation rejects no lowercase."""
         from app.domain.value_objects.password import Password
 
-        with pytest.raises(ValueError, match="lowercase letter"):
+        with pytest.raises((ValueError, DomainValidationError), match="security requirements"):
             Password("UPPERCASE1@")
 
     def test_password_no_digit(self) -> None:
         """Test password validation rejects no digit."""
         from app.domain.value_objects.password import Password
 
-        with pytest.raises(ValueError, match="digit"):
+        with pytest.raises((ValueError, DomainValidationError), match="security requirements"):
             Password("NoDigits@@@")
 
     def test_password_no_special(self) -> None:
         """Test password validation rejects no special character."""
         from app.domain.value_objects.password import Password
 
-        with pytest.raises(ValueError, match="special character"):
+        with pytest.raises((ValueError, DomainValidationError), match="security requirements"):
             Password("NoSpecial123")
 
     def test_password_get_requirements(self) -> None:
@@ -116,9 +118,9 @@ class TestPasswordValueObject:
         """Test password with multiple validation errors."""
         from app.domain.value_objects.password import Password
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises((ValueError, DomainValidationError)) as exc_info:
             Password("short")
 
         error_msg = str(exc_info.value)
-        # Should contain multiple error messages
-        assert "characters" in error_msg.lower()
+        # Should contain generic error message
+        assert "security requirements" in error_msg.lower()

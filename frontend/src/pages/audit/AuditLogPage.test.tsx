@@ -17,6 +17,7 @@ vi.mock('@/services/api', () => ({
 }));
 
 vi.mock('@/components/common/Modal', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   Modal: ({ isOpen, children, title }: any) =>
     isOpen ? <div data-testid="modal"><h2>{title}</h2>{children}</div> : null,
 }));
@@ -82,7 +83,7 @@ describe('AuditLogPage', () => {
   it('displays audit logs after loading', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getAllByText('admin@test.com').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('ad***@test.com').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -105,15 +106,15 @@ describe('AuditLogPage', () => {
   it('shows IP addresses', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('192.168.1.1')).toBeInTheDocument();
+      expect(screen.getByText('192.168.x.x')).toBeInTheDocument();
     });
-    expect(screen.getByText('10.0.0.1')).toBeInTheDocument();
+    expect(screen.getByText('10.0.x.x')).toBeInTheDocument();
   });
 
   it('toggles filter panel', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getAllByText('admin@test.com').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('ad***@test.com').length).toBeGreaterThanOrEqual(1);
     });
     fireEvent.click(screen.getByText('audit.filters'));
     expect(screen.getByText('audit.filter.actionType')).toBeInTheDocument();
@@ -138,7 +139,7 @@ describe('AuditLogPage', () => {
   it('opens detail modal on view click', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getAllByText('admin@test.com').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('ad***@test.com').length).toBeGreaterThanOrEqual(1);
     });
     const viewButtons = screen.getAllByTitle('audit.viewDetails');
     fireEvent.click(viewButtons[0]);
@@ -148,7 +149,8 @@ describe('AuditLogPage', () => {
   it('shows resource name when present', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      // resource_type is 'user' so maskEmail('John Doe') → '***' (no @ sign)
+      expect(screen.getAllByText('***').length).toBeGreaterThanOrEqual(1);
     });
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Security utilities for frontend input validation and sanitization.
- * 
+ *
  * Provides defense-in-depth measures for file uploads, URL validation,
  * input sanitization, and other security-sensitive operations.
  */
@@ -20,7 +20,10 @@ export interface FileValidationOptions {
 
 export interface FileValidationResult {
   valid: boolean;
+  /** i18n error code — callers must translate via `t(error, errorParams)` */
   error?: string;
+  /** Interpolation params for the i18n error code */
+  errorParams?: Record<string, unknown>;
 }
 
 const AVATAR_OPTIONS: FileValidationOptions = {
@@ -39,15 +42,24 @@ const IMPORT_OPTIONS: FileValidationOptions = {
   allowedExtensions: ['.csv', '.xls', '.xlsx'],
 };
 
+/**
+ * File validation error codes — callers must translate via i18n `t()`.
+ *
+ * Codes:
+ * - `file.tooLarge`       — interpolation: `{ maxMB: number }`
+ * - `file.empty`
+ * - `file.invalidExtension` — interpolation: `{ allowed: string }`
+ * - `file.invalidMimeType`  — interpolation: `{ allowed: string }`
+ */
 export function validateFile(file: File, options: FileValidationOptions): FileValidationResult {
   // Check file size
   if (file.size > options.maxSizeBytes) {
     const maxMB = Math.round(options.maxSizeBytes / (1024 * 1024));
-    return { valid: false, error: `File size exceeds ${maxMB}MB limit` };
+    return { valid: false, error: 'file.tooLarge', errorParams: { maxMB } };
   }
 
   if (file.size === 0) {
-    return { valid: false, error: 'File is empty' };
+    return { valid: false, error: 'file.empty' };
   }
 
   // Check file extension
@@ -58,7 +70,8 @@ export function validateFile(file: File, options: FileValidationOptions): FileVa
   if (!hasValidExtension) {
     return {
       valid: false,
-      error: `Invalid file type. Allowed: ${options.allowedExtensions.join(', ')}`,
+      error: 'file.invalidExtension',
+      errorParams: { allowed: options.allowedExtensions.join(', ') },
     };
   }
 
@@ -66,7 +79,8 @@ export function validateFile(file: File, options: FileValidationOptions): FileVa
   if (file.type && !options.allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: `Invalid file type: ${file.type}. Allowed: ${options.allowedTypes.join(', ')}`,
+      error: 'file.invalidMimeType',
+      errorParams: { allowed: options.allowedTypes.join(', ') },
     };
   }
 
@@ -112,6 +126,7 @@ export function isSafeRedirectUrl(url: string): boolean {
   // Block dangerous schemes (check both raw and decoded)
   const lower = decoded.toLowerCase().trim();
   if (
+    // eslint-disable-next-line no-script-url -- security check for dangerous URL schemes
     lower.startsWith('javascript:') ||
     lower.startsWith('data:') ||
     lower.startsWith('vbscript:') ||
@@ -199,7 +214,7 @@ export function sanitizeSearchQuery(query: string, maxLength = 500): string {
   if (typeof query !== 'string') return '';
   // Remove Elasticsearch/Lucene special chars: + - = && || > < ! ( ) { } [ ] ^ " ~ * ? : \ /
   return query
-    .replace(/[+\-=&|><!()\[\]{}\^"~*?:\\/]/g, ' ')
+    .replace(/[+\-=&|><!()[\]{}^"~*?:\\/]/g, ' ')
     .replace(/\b(AND|OR|NOT|TO)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -252,28 +267,29 @@ export function clampPaginationParams(params?: { skip?: number; limit?: number }
 
 /**
  * Validates a password meets minimum security requirements.
+ * Returns i18n error codes — callers must translate via `t(error, errorParams)`.
  */
-export function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
+export function validatePasswordStrength(password: string): { valid: boolean; error?: string; errorParams?: Record<string, unknown> } {
   if (!password || typeof password !== 'string') {
-    return { valid: false, error: 'Password is required' };
+    return { valid: false, error: 'validation.passwordRequired' };
   }
   if (password.length < 8) {
-    return { valid: false, error: 'Password must be at least 8 characters' };
+    return { valid: false, error: 'validation.passwordMin', errorParams: { min: 8 } };
   }
   if (password.length > 256) {
-    return { valid: false, error: 'Password must be at most 256 characters' };
+    return { valid: false, error: 'validation.passwordMax', errorParams: { max: 256 } };
   }
   if (!/[A-Z]/.test(password)) {
-    return { valid: false, error: 'Password must contain an uppercase letter' };
+    return { valid: false, error: 'validation.passwordUppercase' };
   }
   if (!/[a-z]/.test(password)) {
-    return { valid: false, error: 'Password must contain a lowercase letter' };
+    return { valid: false, error: 'validation.passwordLowercase' };
   }
   if (!/[0-9]/.test(password)) {
-    return { valid: false, error: 'Password must contain a digit' };
+    return { valid: false, error: 'validation.passwordDigit' };
   }
   if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
-    return { valid: false, error: 'Password must contain a special character' };
+    return { valid: false, error: 'validation.passwordSpecial' };
   }
   return { valid: true };
 }

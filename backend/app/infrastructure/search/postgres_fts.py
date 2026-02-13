@@ -36,11 +36,35 @@ logger = get_logger(__name__)
 
 # Valid PostgreSQL text search configurations (defense-in-depth)
 _VALID_FTS_LANGUAGES = {
-    "simple", "arabic", "armenian", "basque", "catalan", "danish", "dutch",
-    "english", "finnish", "french", "german", "greek", "hindi", "hungarian",
-    "indonesian", "irish", "italian", "lithuanian", "nepali", "norwegian",
-    "portuguese", "romanian", "russian", "serbian", "spanish", "swedish",
-    "tamil", "turkish", "yiddish",
+    "simple",
+    "arabic",
+    "armenian",
+    "basque",
+    "catalan",
+    "danish",
+    "dutch",
+    "english",
+    "finnish",
+    "french",
+    "german",
+    "greek",
+    "hindi",
+    "hungarian",
+    "indonesian",
+    "irish",
+    "italian",
+    "lithuanian",
+    "nepali",
+    "norwegian",
+    "portuguese",
+    "romanian",
+    "russian",
+    "serbian",
+    "spanish",
+    "swedish",
+    "tamil",
+    "turkish",
+    "yiddish",
 }
 
 # Default number of suggestions returned by fuzzy/trigram search
@@ -61,8 +85,14 @@ INDEX_CONFIGS: dict[SearchIndex, dict[str, Any]] = {
         "highlight_columns": ["email", "first_name", "last_name"],
         "suggest_column": "email",
         "allowed_filter_fields": {
-            "email", "first_name", "last_name", "is_active",
-            "is_superuser", "created_at", "updated_at", "tenant_id",
+            "email",
+            "first_name",
+            "last_name",
+            "is_active",
+            "is_superuser",
+            "created_at",
+            "updated_at",
+            "tenant_id",
         },
     },
     SearchIndex.AUDIT_LOGS: {
@@ -78,8 +108,14 @@ INDEX_CONFIGS: dict[SearchIndex, dict[str, Any]] = {
         "highlight_columns": ["action", "reason"],
         "suggest_column": "action",
         "allowed_filter_fields": {
-            "action", "resource_type", "resource_id", "reason",
-            "actor_id", "actor_ip", "created_at", "tenant_id",
+            "action",
+            "resource_type",
+            "resource_id",
+            "reason",
+            "actor_id",
+            "actor_ip",
+            "created_at",
+            "tenant_id",
         },
     },
 }
@@ -217,7 +253,7 @@ class PostgresFullTextSearch(SearchPort):
                     order_dir = "ASC" if s.order == SortOrder.ASC else "DESC"
                     order_clauses.append(f"{sanitized_field} {order_dir}")
                 else:
-                    logger.warning("Invalid sort field ignored: %s", s.field)
+                    logger.warning("invalid_sort_field_ignored", field=s.field)
         order_clauses.append("score DESC")  # Always include score
 
         sql_parts.append("ORDER BY " + ", ".join(order_clauses))
@@ -236,7 +272,7 @@ class PostgresFullTextSearch(SearchPort):
 
         # Count total
         count_sql = f"""
-            SELECT COUNT(*) 
+            SELECT COUNT(*)
             FROM {table},
                  to_tsquery('{self._language}', :query) as query
             WHERE {" AND ".join(where_clauses)}
@@ -307,7 +343,7 @@ class PostgresFullTextSearch(SearchPort):
         # PostgreSQL FTS uses the actual table data, no separate indexing needed
         # If you have a dedicated tsvector column, update it here
 
-        logger.debug("Document %s indexed in %s", document.id, document.index.value)
+        logger.debug("document_indexed", document_id=str(document.id), index=document.index.value)
         return True
 
     async def bulk_index(
@@ -340,7 +376,7 @@ class PostgresFullTextSearch(SearchPort):
         For PostgreSQL FTS, deleting from the table removes from search.
         """
         # Actual deletion is handled by the main application
-        logger.debug("Document %s removed from %s", document_id, index.value)
+        logger.debug("document_removed", document_id=str(document_id), index=index.value)
         return True
 
     async def update_document(
@@ -415,7 +451,7 @@ class PostgresFullTextSearch(SearchPort):
             result = await self._session.execute(text(sql), params)
             return [row[0] for row in result.fetchall() if row[0]]
         except Exception as e:
-            logger.warning("Trigram suggestion failed: %s", e)
+            logger.warning("trigram_suggestion_failed", error=type(e).__name__)
 
             # Fallback to ILIKE
             sql = f"""
@@ -486,10 +522,10 @@ class PostgresFullTextSearch(SearchPort):
 
         try:
             await self._session.execute(text(sql))
-            logger.info("Created FTS index: %s", index_name)
+            logger.info("fts_index_created", index_name=index_name)
             return True
         except Exception as e:
-            logger.error("Failed to create FTS index: %s", e)
+            logger.error("fts_index_creation_failed", error=type(e).__name__)
             return False
 
     async def delete_index(
@@ -510,10 +546,10 @@ class PostgresFullTextSearch(SearchPort):
 
         try:
             await self._session.execute(text(sql))
-            logger.info("Dropped FTS index: %s", index_name)
+            logger.info("fts_index_dropped", index_name=index_name)
             return True
         except Exception as e:
-            logger.error("Failed to drop FTS index: %s", e)
+            logger.error("fts_index_drop_failed", error=type(e).__name__)
             return False
 
     async def health_check(self) -> dict[str, Any]:
@@ -528,12 +564,12 @@ class PostgresFullTextSearch(SearchPort):
             fts_works = result.scalar()
 
             # Check pg_trgm extension
-            trgm_result = await self._session.execute(text("SELECT 'test' % 'test'"))
+            await self._session.execute(text("SELECT 'test' % 'test'"))
             trgm_works = True
         except Exception as e:
             trgm_works = False
             fts_works = False
-            logger.warning("FTS health check failed: %s", e)
+            logger.warning("fts_health_check_failed", error=type(e).__name__)
 
         return {
             "status": "healthy" if fts_works else "unhealthy",
@@ -629,7 +665,7 @@ class PostgresFullTextSearch(SearchPort):
 
         # Join with AND by default
         result = []
-        for i, part in enumerate(tsquery_parts):
+        for _i, part in enumerate(tsquery_parts):
             if part == "|":
                 result.append("|")
             elif result and result[-1] != "|":

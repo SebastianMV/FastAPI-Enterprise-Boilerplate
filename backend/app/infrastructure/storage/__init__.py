@@ -61,7 +61,7 @@ def _create_local_storage() -> StoragePort:
     base_path = getattr(settings, "STORAGE_LOCAL_PATH", None)
 
     adapter = LocalStorageAdapter(base_path=base_path)
-    logger.info("Storage initialized: LocalStorageAdapter")
+    logger.info("storage_initialized", adapter="LocalStorageAdapter")
 
     return adapter
 
@@ -72,16 +72,16 @@ def _create_s3_storage() -> StoragePort:
         from app.infrastructure.storage.s3 import S3StorageAdapter
     except ImportError:
         logger.warning(
-            "S3 storage requested but boto3 not installed. "
-            "Falling back to local storage."
+            "s3_storage_boto3_not_installed",
+            fallback="local",
         )
         return _create_local_storage()
 
     bucket = getattr(settings, "S3_BUCKET", None)
     if not bucket:
         logger.warning(
-            "S3 storage requested but S3_BUCKET not configured. "
-            "Falling back to local storage."
+            "s3_storage_bucket_not_configured",
+            fallback="local",
         )
         return _create_local_storage()
 
@@ -93,7 +93,7 @@ def _create_s3_storage() -> StoragePort:
         secret_access_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
     )
 
-    logger.info("Storage initialized: S3StorageAdapter")
+    logger.info("storage_initialized", adapter="S3StorageAdapter")
 
     return adapter
 
@@ -104,8 +104,8 @@ def _create_minio_storage() -> StoragePort:
         from app.infrastructure.storage.s3 import S3StorageAdapter
     except ImportError:
         logger.warning(
-            "MinIO storage requested but boto3 not installed. "
-            "Falling back to local storage."
+            "minio_storage_boto3_not_installed",
+            fallback="local",
         )
         return _create_local_storage()
 
@@ -114,8 +114,8 @@ def _create_minio_storage() -> StoragePort:
 
     if not bucket or not endpoint:
         logger.warning(
-            "MinIO storage requested but MINIO_BUCKET or MINIO_ENDPOINT "
-            "not configured. Falling back to local storage."
+            "minio_storage_not_configured",
+            fallback="local",
         )
         return _create_local_storage()
 
@@ -127,7 +127,7 @@ def _create_minio_storage() -> StoragePort:
         server_side_encryption=None,  # MinIO doesn't require SSE
     )
 
-    logger.info("Storage initialized: S3StorageAdapter (MinIO)")
+    logger.info("storage_initialized", adapter="S3StorageAdapter", backend="minio")
 
     return adapter
 

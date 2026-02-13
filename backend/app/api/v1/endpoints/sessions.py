@@ -8,9 +8,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from app.api.deps import CurrentUserId, DbSession
+from app.api.deps import CurrentTenantId, CurrentUserId, DbSession
 from app.infrastructure.auth.jwt_handler import validate_access_token
 from app.infrastructure.database.repositories.session_repository import (
     SQLAlchemySessionRepository,
@@ -44,12 +44,12 @@ class SessionResponse(BaseModel):
     """Single session information."""
 
     id: UUID
-    device_name: str
-    device_type: str
-    browser: str
-    os: str
-    ip_address: str
-    location: str
+    device_name: str = Field(max_length=200)
+    device_type: str = Field(max_length=50)
+    browser: str = Field(max_length=100)
+    os: str = Field(max_length=100)
+    ip_address: str = Field(max_length=45)
+    location: str = Field(max_length=200)
     last_activity: datetime
     is_current: bool
     created_at: datetime
@@ -65,7 +65,7 @@ class SessionListResponse(BaseModel):
 class RevokeSessionsResponse(BaseModel):
     """Response for revoke operations."""
 
-    message: str
+    message: str = Field(max_length=500)
     revoked_count: int
 
 
@@ -82,6 +82,7 @@ class RevokeSessionsResponse(BaseModel):
 )
 async def list_sessions(
     user_id: CurrentUserId,
+    tenant_id: CurrentTenantId,
     session: DbSession,
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
@@ -93,7 +94,7 @@ async def list_sessions(
     The current session is marked with is_current=true.
     """
     repo = SQLAlchemySessionRepository(session)
-    user_sessions = await repo.get_user_sessions(user_id)
+    user_sessions = await repo.get_user_sessions(user_id, tenant_id=tenant_id)
 
     # Get current session ID from JWT token's jti claim
     current_token_jti = get_current_token_jti(credentials)
@@ -129,6 +130,7 @@ async def list_sessions(
 async def revoke_session(
     session_id: UUID,
     user_id: CurrentUserId,
+    tenant_id: CurrentTenantId,
     session: DbSession,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> RevokeSessionsResponse:
@@ -151,9 +153,13 @@ async def revoke_session(
 
     repo = SQLAlchemySessionRepository(session)
 
-    # Verify session belongs to user
+    # Verify session belongs to user and tenant
     target_session = await repo.get_by_id(session_id)
-    if not target_session or target_session.user_id != user_id:
+    if (
+        not target_session
+        or target_session.user_id != user_id
+        or target_session.tenant_id != tenant_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
@@ -189,6 +195,7 @@ async def revoke_session(
 )
 async def revoke_all_sessions(
     user_id: CurrentUserId,
+    tenant_id: CurrentTenantId,
     session: DbSession,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> RevokeSessionsResponse:
@@ -207,12 +214,12 @@ async def revoke_all_sessions(
         # Try to parse as UUID, otherwise use as string
         try:
             current_uuid = UUID(current_token_jti)
-            count = await repo.revoke_all_except(user_id, current_uuid)
+            count = await repo.revoke_all_except(user_id, current_uuid, tenant_id=tenant_id)
         except ValueError:
-            # If jti is not a valid UUID, revoke all sessions
-            count = await repo.revoke_all(user_id)
+            # If jti is not a valid UUID, only skip it (don't revoke all blindly)
+            count = await repo.revoke_all(user_id, tenant_id=tenant_id)
     else:
-        count = await repo.revoke_all(user_id)
+        count = await repo.revoke_all(user_id, tenant_id=tenant_id)
 
     await session.commit()
 

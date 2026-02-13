@@ -162,6 +162,7 @@ class TestUsersUpdateSelfIntegration:
         result = await update_self(
             request=request,
             current_user_id=test_user.id,
+            tenant_id=None,
             session=db_session,
         )
 
@@ -296,6 +297,7 @@ class TestRolesUpdateIntegration:
             role_id=created_role.id,
             request=update_request,
             superuser_id=superuser.id,
+            tenant_id=None,
             session=db_session,
         )
 

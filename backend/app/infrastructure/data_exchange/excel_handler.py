@@ -233,9 +233,6 @@ class ExcelHandler:
         header_fill = PatternFill(
             start_color="4472C4", end_color="4472C4", fill_type="solid"
         )
-        required_fill = PatternFill(
-            start_color="FFC7CE", end_color="FFC7CE", fill_type="solid"
-        )
         example_font = Font(italic=True, color="808080")
 
         # Write header
@@ -322,7 +319,7 @@ class ExcelHandler:
     @staticmethod
     def _sanitize_formula(value: str) -> str:
         """Prevent Excel formula injection by prefixing dangerous chars with a single-quote."""
-        if value and value[0] in ('=', '+', '-', '@', '\t', '\r'):
+        if value and value[0] in ("=", "+", "-", "@", "\t", "\r"):
             return "'" + value
         return value
 

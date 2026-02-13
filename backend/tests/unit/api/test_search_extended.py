@@ -7,7 +7,6 @@ Extended unit tests for Search API endpoints.
 Tests for search endpoint schemas and functionality.
 """
 
-
 import pytest
 from pydantic import ValidationError
 

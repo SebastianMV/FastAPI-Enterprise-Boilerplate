@@ -1,28 +1,27 @@
-import { useState, useRef, useEffect } from 'react';
+import { AlertModal, ConfirmModal } from '@/components/common/Modal';
+import ConnectedAccounts from '@/components/profile/ConnectedAccounts';
+import api, { usersService } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
+import { isSafeImageUrl, maskEmail, sanitizeText } from '@/utils/security';
+import { PASSWORD_PATTERN } from '@/utils/validation';
+import {
+    AlertCircle,
+    Calendar,
+    Camera,
+    CheckCircle,
+    Key,
+    Link2,
+    Loader2,
+    Lock,
+    Mail,
+    Save,
+    Shield,
+    Trash2,
+    User as UserIcon
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
-import { usersService } from '@/services/api';
-import { PASSWORD_PATTERN } from '@/utils/validation';
-import api from '@/services/api';
-import ConnectedAccounts from '@/components/profile/ConnectedAccounts';
-import { ConfirmModal, AlertModal } from '@/components/common/Modal';
-import { isSafeImageUrl, maskEmail } from '@/utils/security';
-import { 
-  User as UserIcon, 
-  Mail, 
-  Calendar, 
-  Shield, 
-  Save, 
-  Loader2, 
-  CheckCircle,
-  AlertCircle,
-  Key,
-  Lock,
-  Link2,
-  Camera,
-  Trash2
-} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface ProfileFormData {
@@ -86,9 +85,14 @@ export default function ProfilePage() {
 
   // Fetch user data on mount
   useEffect(() => {
+    let cancelled = false;
     if (!user) {
-      fetchUser().catch(() => {});
+      (async () => {
+        try { await fetchUser(); } catch { /* no session */ }
+        if (cancelled) return;
+      })();
     }
+    return () => { cancelled = true; };
   }, [user, fetchUser]);
 
   // Update form when user data changes
@@ -111,7 +115,7 @@ export default function ProfilePage() {
   // Actually save the profile after confirmation
   const handleConfirmSave = async () => {
     if (!pendingProfileData) return;
-    
+
     setShowConfirmModal(false);
     setIsLoading(true);
     setSuccessMessage(null);
@@ -303,7 +307,7 @@ export default function ProfilePage() {
               ) : (
                 <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-2xl font-bold">
-                    {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
+                    {sanitizeText(user?.first_name?.charAt(0) ?? '')}{sanitizeText(user?.last_name?.charAt(0) ?? '')}
                   </span>
                 </div>
               )}
@@ -343,21 +347,21 @@ export default function ProfilePage() {
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-              {user?.first_name} {user?.last_name}
+              {sanitizeText(user?.first_name ?? '')} {sanitizeText(user?.last_name ?? '')}
             </h2>
             <p className="text-slate-500 dark:text-slate-400">{user?.email ? maskEmail(user.email) : ''}</p>
             <div className="flex items-center space-x-4 mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                user?.is_superuser 
-                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' 
+                user?.is_superuser
+                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
                   : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
               }`}>
                 <Shield className="w-3 h-3 mr-1" />
                 {user?.is_superuser ? t('settings.administrator') : t('settings.user')}
               </span>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                user?.is_active 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                user?.is_active
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                   : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
               }`}>
                 {user?.is_active ? t('users.active') : t('users.inactive')}
@@ -499,7 +503,7 @@ export default function ProfilePage() {
                   <Mail className="w-5 h-5 text-slate-400" />
                   <div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{t('auth.emailAddress')}</p>
-                    <p className="text-sm text-slate-900 dark:text-white">{user?.email}</p>
+                    <p className="text-sm text-slate-900 dark:text-white">{user?.email ? maskEmail(user.email) : ''}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -583,7 +587,7 @@ export default function ProfilePage() {
                   autoComplete="new-password"
                   spellCheck={false}
                   maxLength={128}
-                  {...registerPassword('new_password', { 
+                  {...registerPassword('new_password', {
                     required: t('validation.required'),
                     minLength: { value: 8, message: t('validation.passwordMin', { min: 8 }) },
                     pattern: {
@@ -606,7 +610,7 @@ export default function ProfilePage() {
                   autoComplete="new-password"
                   spellCheck={false}
                   maxLength={128}
-                  {...registerPassword('confirm_password', { 
+                  {...registerPassword('confirm_password', {
                     required: t('validation.required'),
                     validate: value => value === newPassword || t('profile.passwordsNoMatch')
                   })}

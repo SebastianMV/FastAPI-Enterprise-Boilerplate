@@ -3,33 +3,70 @@
 
 """Common schemas shared across endpoints."""
 
-from typing import Any, Generic, TypeVar
+from typing import Annotated, Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
 T = TypeVar("T")
 
 
+# =============================================================================
+# Constrained type aliases — use these instead of raw `str` in schemas.
+#
+# From Audit 24 retrospective: ~40 fixes were missing max_length on Pydantic
+# fields. These reusable aliases ensure constraints by default, making it
+# harder to forget validation on new schemas.
+#
+# Usage:
+#   class MySchema(BaseModel):
+#       name: NameStr          # max 200 chars
+#       description: TextStr   # max 2000 chars
+#       code: ShortStr         # max 50 chars
+#       email: EmailStr        # from pydantic (already constrained)
+# =============================================================================
+
+ShortStr = Annotated[str, Field(min_length=1, max_length=50)]
+"""Short identifier strings (codes, slugs, enum-like values). Max 50 chars."""
+
+NameStr = Annotated[str, Field(min_length=1, max_length=200)]
+"""Names (user names, role names, resource names). Max 200 chars."""
+
+TextStr = Annotated[str, Field(max_length=2000)]
+"""Longer text (descriptions, notes, comments). Max 2000 chars."""
+
+UrlStr = Annotated[str, Field(max_length=2048)]
+"""URL strings (callback URLs, logo URLs, webhook URLs). Max 2048 chars."""
+
+TokenStr = Annotated[str, Field(min_length=1, max_length=2048)]
+"""Token/secret strings (JWT, API keys, CSRF tokens). Max 2048 chars."""
+
+ScopeStr = Annotated[str, Field(max_length=100)]
+"""Permission scope strings (e.g. 'users:read'). Max 100 chars."""
+
+LongNameStr = Annotated[str, Field(min_length=1, max_length=255)]
+"""Long names (tenant names, API key names, domains). Max 255 chars."""
+
+
 class ErrorDetail(BaseModel):
     """Error detail in response."""
 
-    code: str = Field(..., description="Error code")
-    message: str = Field(..., description="Human-readable error message")
-    field: str | None = Field(None, description="Field that caused the error")
+    code: ShortStr = Field(..., description="Error code")
+    message: str = Field(..., max_length=500, description="Human-readable error message")
+    field: str | None = Field(None, max_length=200, description="Field that caused the error")
 
 
 class ErrorResponse(BaseModel):
     """Standard error response."""
 
     error: ErrorDetail
-    request_id: str | None = Field(None, description="Request ID for debugging")
+    request_id: str | None = Field(None, max_length=100, description="Request ID for debugging")
 
 
 class ValidationErrorResponse(BaseModel):
     """Validation error response with multiple errors."""
 
     errors: list[ErrorDetail]
-    request_id: str | None = None
+    request_id: str | None = Field(default=None, max_length=100)
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
@@ -63,25 +100,25 @@ class PaginatedResponse(BaseModel, Generic[T]):
 class HealthResponse(BaseModel):
     """Basic health check response for /health and /health/live."""
 
-    status: str = Field(..., description="Service status")
+    status: str = Field(..., max_length=50, description="Service status")
     version: str | None = Field(
-        None, description="Application version (hidden in production)"
+        None, max_length=50, description="Application version (hidden in production)"
     )
     environment: str | None = Field(
-        None, description="Deployment environment (hidden in production)"
+        None, max_length=50, description="Deployment environment (hidden in production)"
     )
 
 
 class ReadinessResponse(HealthResponse):
     """Readiness check response for /health/ready — includes component health."""
 
-    database: str = Field(..., description="Database connection status")
-    redis: str = Field(..., description="Redis connection status")
+    database: str = Field(..., max_length=50, description="Database connection status")
+    redis: str = Field(..., max_length=50, description="Redis connection status")
 
 
 class MessageResponse(BaseModel):
     """Simple message response."""
 
-    message: str
+    message: str = Field(max_length=500)
     success: bool = True
     data: dict[str, Any] | None = None

@@ -79,15 +79,20 @@ class TestLifespan:
 
         mock_app = FastAPI()
 
-        with patch(
-            "app.infrastructure.database.connection.init_database",
-            new_callable=AsyncMock,
-        ) as mock_init_db, patch(
-            "app.infrastructure.database.connection.close_database",
-            new_callable=AsyncMock,
-        ) as mock_close_db, patch(
-            "app.infrastructure.observability.logging.setup_logging"
-        ) as mock_setup_logging, patch("app.config.settings") as mock_settings:
+        with (
+            patch(
+                "app.infrastructure.database.connection.init_database",
+                new_callable=AsyncMock,
+            ) as mock_init_db,
+            patch(
+                "app.infrastructure.database.connection.close_database",
+                new_callable=AsyncMock,
+            ) as mock_close_db,
+            patch(
+                "app.infrastructure.observability.logging.setup_logging"
+            ) as mock_setup_logging,
+            patch("app.config.settings") as mock_settings,
+        ):
             mock_settings.APP_NAME = "Test App"
             mock_settings.APP_VERSION = "1.0.0"
             mock_settings.ENVIRONMENT = "test"

@@ -5,6 +5,9 @@
 
 import re
 from dataclasses import dataclass
+from typing import ClassVar
+
+from app.domain.exceptions.base import ValidationError as DomainValidationError
 
 
 @dataclass(frozen=True)
@@ -27,14 +30,17 @@ class Password:
 
     value: str
 
-    MIN_LENGTH: int = 8
-    MAX_LENGTH: int = 128
+    MIN_LENGTH: ClassVar[int] = 8
+    MAX_LENGTH: ClassVar[int] = 128
 
     def __post_init__(self) -> None:
         """Validate password strength after initialization."""
         errors = self._validate()
         if errors:
-            raise ValueError(f"Password validation failed: {'; '.join(errors)}")
+            raise DomainValidationError(
+                message="Password does not meet security requirements",
+                field="password",
+            )
 
     def _validate(self) -> list[str]:
         """

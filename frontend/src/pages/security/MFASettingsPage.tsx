@@ -1,24 +1,24 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { mfaService, type MFASetupResponse, type MFAStatus } from '@/services/api';
+import { isValidQrCodeUri } from '@/utils/security';
+import {
+    AlertCircle,
+    ArrowLeft,
+    Check,
+    CheckCircle,
+    Copy,
+    Eye,
+    EyeOff,
+    Key,
+    Loader2,
+    QrCode,
+    Shield,
+    ShieldCheck,
+    ShieldOff
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { 
-  Shield, 
-  ShieldCheck, 
-  ShieldOff,
-  QrCode, 
-  Copy, 
-  Check,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  Key,
-  ArrowLeft,
-  Eye,
-  EyeOff
-} from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { mfaService, type MFAStatus, type MFASetupResponse } from '@/services/api';
-import { isValidQrCodeUri } from '@/utils/security';
 
 interface VerifyFormData {
   code: string;
@@ -59,8 +59,8 @@ export default function MFASettingsPage() {
   const getStoredFailCount = () => Number(sessionStorage.getItem(MFA_FAIL_KEY) || '0');
   const [mfaFailCount, setMfaFailCount] = useState(getStoredFailCount);
   const [mfaCooldownUntil, setMfaCooldownUntil] = useState<number | null>(getStoredCooldown);
-  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const clipboardTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const clipboardTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Persist cooldown changes to sessionStorage
   useEffect(() => {
@@ -116,7 +116,12 @@ export default function MFASettingsPage() {
 
   // Fetch MFA status on mount
   useEffect(() => {
-    fetchMFAStatus();
+    let cancelled = false;
+    (async () => {
+      await fetchMFAStatus();
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
   }, [fetchMFAStatus]);
 
   const handleSetupMFA = async () => {
@@ -142,9 +147,9 @@ export default function MFASettingsPage() {
     try {
       setIsVerifying(true);
       setErrorMessage(null);
-      
+
       await mfaService.verify(data.code);
-      
+
       setMfaFailCount(0);
       setSuccessMessage(t('mfa.enableSuccess'));
       setSetupData(null);
@@ -176,9 +181,9 @@ export default function MFASettingsPage() {
     try {
       setIsDisabling(true);
       setErrorMessage(null);
-      
+
       await mfaService.disable(data.code, data.password);
-      
+
       setMfaFailCount(0);
       setSuccessMessage(t('mfa.disableSuccess'));
       setShowDisableForm(false);
@@ -244,8 +249,8 @@ export default function MFASettingsPage() {
     <div className="space-y-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center space-x-4">
-        <Link 
-          to="/profile" 
+        <Link
+          to="/profile"
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           aria-label={t('common.back')}
         >
@@ -281,8 +286,8 @@ export default function MFASettingsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className={`p-3 rounded-full ${
-              mfaStatus?.is_enabled 
-                ? 'bg-green-100 dark:bg-green-900/30' 
+              mfaStatus?.is_enabled
+                ? 'bg-green-100 dark:bg-green-900/30'
                 : 'bg-slate-100 dark:bg-slate-800'
             }`}>
               {mfaStatus?.is_enabled ? (
@@ -296,8 +301,8 @@ export default function MFASettingsPage() {
                 {mfaStatus?.is_enabled ? t('mfa.enabled') : t('mfa.disabled')}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {mfaStatus?.is_enabled 
-                  ? t('mfa.usingTotp') 
+                {mfaStatus?.is_enabled
+                  ? t('mfa.usingTotp')
                   : t('mfa.notProtected')}
               </p>
             </div>
@@ -363,7 +368,7 @@ export default function MFASettingsPage() {
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 {isValidQrCodeUri(setupData.qr_code) ? (
-                <img 
+                <img
                   src={setupData.qr_code}
                   alt={t('mfa.qrCodeAlt')}
                   className="w-48 h-48"
@@ -461,7 +466,7 @@ export default function MFASettingsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {setupData.backup_codes.map((code, index) => (
                     <div
-                      key={index}
+                      key={code}
                       className="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-800 rounded-lg"
                     >
                       <code className="text-sm font-mono">{code}</code>
@@ -515,7 +520,7 @@ export default function MFASettingsPage() {
                   autoComplete="one-time-code"
                   spellCheck={false}
                   className="input max-w-xs text-center text-2xl tracking-widest font-mono"
-                  {...registerVerify('code', { 
+                  {...registerVerify('code', {
                     required: t('mfa.codeRequired'),
                     pattern: {
                       value: /^\d{6}$/,
@@ -577,7 +582,7 @@ export default function MFASettingsPage() {
           <p className="text-slate-500 dark:text-slate-400 mb-4">
             {t('mfa.disableDescription')}
           </p>
-          
+
           {!showDisableForm ? (
             <button
               onClick={() => setShowDisableForm(true)}
@@ -601,7 +606,7 @@ export default function MFASettingsPage() {
                   autoComplete="one-time-code"
                   spellCheck={false}
                   className="input max-w-xs text-center tracking-widest font-mono"
-                  {...registerDisable('code', { 
+                  {...registerDisable('code', {
                     required: t('mfa.codeRequired'),
                     pattern: {
                       value: /^\d{6}$/,

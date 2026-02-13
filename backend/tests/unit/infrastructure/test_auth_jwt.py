@@ -234,6 +234,7 @@ class TestDecodeToken:
             mock_settings.ACCESS_TOKEN_EXPIRE_MINUTES = -1  # Already expired
             mock_settings.JWT_SECRET_KEY = settings.JWT_SECRET_KEY
             mock_settings.JWT_ALGORITHM = settings.JWT_ALGORITHM
+            mock_settings.APP_NAME = settings.APP_NAME
 
             token = create_access_token(user_id)
 

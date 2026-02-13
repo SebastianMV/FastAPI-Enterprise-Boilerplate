@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsPage from './SettingsPage';
 
 const mockNavigate = vi.fn();
@@ -18,9 +18,11 @@ vi.mock('@/services/api', () => ({
 }));
 
 const mockLogout = vi.fn();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock partial user
 let mockUser: any = { first_name: 'John', last_name: 'Doe', email: 'john@test.com', is_superuser: false, id: 'u1' };
 
 vi.mock('@/stores/authStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
   useAuthStore: (selector: (s: any) => any) =>
     selector({ user: mockUser, logout: mockLogout }),
 }));
@@ -41,6 +43,7 @@ vi.mock('@/i18n', () => ({
 }));
 
 vi.mock('@/components/common/Modal', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   ConfirmModal: ({ isOpen, onConfirm, title }: any) =>
     isOpen ? (
       <div data-testid="confirm-modal">
@@ -48,6 +51,7 @@ vi.mock('@/components/common/Modal', () => ({
         <button onClick={onConfirm}>Confirm</button>
       </div>
     ) : null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   AlertModal: ({ isOpen, title, message }: any) =>
     isOpen ? <div data-testid="alert-modal"><h2>{title}</h2><p>{message}</p></div> : null,
 }));
@@ -77,7 +81,7 @@ describe('SettingsPage', () => {
   it('shows user profile card', () => {
     renderPage();
     expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('john@test.com')).toBeInTheDocument();
+    expect(screen.getByText('jo***@test.com')).toBeInTheDocument();
   });
 
   it('shows user role', () => {

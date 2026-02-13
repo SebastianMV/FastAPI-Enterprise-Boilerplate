@@ -17,7 +17,6 @@ except ImportError:
     S3StorageAdapter = None  # type: ignore[assignment, misc]
 
 
-
 @pytest.mark.skipif(not HAS_BOTO3, reason="boto3 not installed")
 class TestS3StorageAdapter:
     """Tests for S3StorageAdapter."""

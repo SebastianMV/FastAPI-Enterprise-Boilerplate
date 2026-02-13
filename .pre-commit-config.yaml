@@ -52,8 +52,8 @@ repos:
         additional_dependencies: ["bandit[toml]"]
         files: ^backend/app/
 
-  # Security scanning — Semgrep (custom rules from 18 audits)
-  # These rules codify patterns found in 18 consecutive security audits:
+  # Security scanning — Semgrep (custom rules from 24 audits)
+  # These rules codify patterns found in 24 consecutive security audits (788 fixes):
   # str(e) in HTTP responses, f-strings in logger, tokens in localStorage,
   # ungated console.error, raw fetch() instead of axios, eval(), etc.
   - repo: https://github.com/semgrep/semgrep
@@ -76,3 +76,78 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
+
+  # =========================================================================
+  # Local Quality Gates — executable enforcement of project rules
+  # =========================================================================
+  # These hooks convert passive documentation (AGENTS.md, copilot-instructions.md)
+  # into executable checks. They run the security meta-test suite that scans
+  # source files for pattern violations found across 24 audits.
+  # See: backend/tests/security/test_security_meta.py
+  # ADR: docs/adr/006-semgrep-custom-rules.md
+  # =========================================================================
+  - repo: local
+    hooks:
+      # --- Security meta-tests (static source scanning) ---
+      - id: security-meta-tests
+        name: Security pattern enforcement (meta-tests)
+        entry: python -m pytest backend/tests/security/test_security_meta.py -x -q --no-header --tb=short
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      # --- Docker image pin check (staging/prod) ---
+      - id: docker-image-pins
+        name: Docker images must be pinned to minor version
+        entry: python -c "
+          import re, sys;
+          files = ['docker-compose.staging.yml', 'docker-compose.prod.yml'];
+          errors = [];
+          [errors.extend(
+            f'{f}:{i}: {l.strip()}'
+            for i, l in enumerate(open(f).readlines(), 1)
+            if re.search(r'image:\s+\S+:latest', l) or re.search(r'image:\s+\S+:\d+-', l)
+          ) for f in files if __import__('os').path.exists(f)];
+          (print('\n'.join(errors)) or sys.exit(1)) if errors else None
+          "
+        language: system
+        pass_filenames: false
+        files: docker-compose\.(staging|prod)\.yml$
+
+      # --- Secrets fail-safe check (no :- defaults for secrets in prod) ---
+      - id: secrets-failsafe
+        name: Secrets must use fail-fast (no fallback defaults in prod)
+        entry: python -c "
+          import sys;
+          secrets = ['PASSWORD', 'SECRET', 'KEY', 'TOKEN', 'ENCRYPTION'];
+          files = ['docker-compose.staging.yml', 'docker-compose.prod.yml'];
+          errors = [];
+          [errors.extend(
+            f'{f}:{i}: {l.strip()[:80]}'
+            for i, l in enumerate(open(f).readlines(), 1)
+            if ':-' in l and any(s in l.upper() for s in secrets) and ':?' not in l
+          ) for f in files if __import__('os').path.exists(f)];
+          (print('Secrets with fallback defaults (use :? instead of :-):\n' + '\n'.join(errors)) or sys.exit(1)) if errors else None
+          "
+        language: system
+        pass_filenames: false
+        files: docker-compose\.(staging|prod)\.yml$
+
+      # --- No import logging in backend source ---
+      - id: no-stdlib-logging
+        name: Use get_logger() not import logging
+        entry: python -c "
+          import re, sys, pathlib;
+          errors = [
+            f'{p}:{i}: {l.strip()}'
+            for p in pathlib.Path('backend/app').rglob('*.py')
+            if 'logging.py' not in p.name or 'observability' not in str(p.parent)
+            for i, l in enumerate(p.read_text(encoding='utf-8', errors='ignore').splitlines(), 1)
+            if re.match(r'^import logging\b', l.strip()) or re.match(r'^from logging\b', l.strip())
+          ];
+          (print('\n'.join(errors)) or sys.exit(1)) if errors else None
+          "
+        language: system
+        pass_filenames: false
+        files: ^backend/app/.*\.py$

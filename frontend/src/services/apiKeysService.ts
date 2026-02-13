@@ -36,7 +36,8 @@ export interface NewlyCreatedKey {
 export const apiKeysService = {
   list: async (includeRevoked = false): Promise<ApiKeyListResponse> => {
     const response = await api.get<ApiKeyListResponse>(
-      `/api-keys?include_revoked=${includeRevoked}`,
+      '/api-keys',
+      { params: { include_revoked: includeRevoked } },
     );
     return response.data;
   },

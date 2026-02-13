@@ -37,7 +37,9 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = Field(default=10, ge=1, le=100)
     DB_MAX_OVERFLOW: int = Field(default=20, ge=0, le=100)
     DB_POOL_TIMEOUT: int = Field(default=30, ge=1)
-    DB_POOL_RECYCLE: int = Field(default=3600, ge=60, description="Recycle connections after N seconds")
+    DB_POOL_RECYCLE: int = Field(
+        default=3600, ge=60, description="Recycle connections after N seconds"
+    )
     DB_ECHO: bool = Field(default=False, description="Log SQL queries")
     DB_SSL_REQUIRED: bool = Field(
         default=False,
@@ -395,7 +397,7 @@ class Settings(BaseSettings):
         return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     @property
-    def REDIS_URL(self) -> str:
+    def REDIS_URL(self) -> str:  # noqa: N802
         """Alias for redis_url (for consistency)."""
         return self.redis_url
 

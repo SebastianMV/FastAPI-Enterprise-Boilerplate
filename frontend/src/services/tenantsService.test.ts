@@ -1,7 +1,7 @@
 /**
  * Unit tests for tenantsService.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGet = vi.fn();
 const mockPost = vi.fn();
@@ -32,7 +32,7 @@ describe('tenantsService', () => {
   it('should filter by is_active', async () => {
     mockGet.mockResolvedValueOnce({ data: { items: [], total: 0 } });
     await tenantsService.list({ is_active: true });
-    expect(mockGet).toHaveBeenCalledWith('/tenants', { params: { is_active: true } });
+    expect(mockGet).toHaveBeenCalledWith('/tenants', { params: { skip: 0, limit: 20, is_active: true } });
   });
 
   it('should get a tenant', async () => {

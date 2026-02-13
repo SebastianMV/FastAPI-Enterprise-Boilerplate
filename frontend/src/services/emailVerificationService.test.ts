@@ -28,8 +28,8 @@ describe('emailVerificationService', () => {
 
   it('should verify email with token', async () => {
     mockPost.mockResolvedValueOnce({ data: { message: 'Verified', success: true } });
-    const result = await emailVerificationService.verifyEmail('my-token');
-    expect(mockPost).toHaveBeenCalledWith('/auth/verify-email', { token: 'my-token' });
+    const result = await emailVerificationService.verifyEmail('abcdefghij-verification-token');
+    expect(mockPost).toHaveBeenCalledWith('/auth/verify-email', { token: 'abcdefghij-verification-token' });
     expect(result.success).toBe(true);
   });
 

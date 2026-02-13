@@ -48,12 +48,10 @@ def health() -> None:
 
     # Database check
     db_ok = asyncio.run(check_database())
-    db_status = "[green]✓[/green]" if db_ok else "[red]✗[/red]"
     typer.echo(f"Database: {'Connected' if db_ok else 'Failed'}")
 
     # Redis check
     redis_ok = asyncio.run(check_redis())
-    redis_status = "[green]✓[/green]" if redis_ok else "[red]✗[/red]"
     typer.echo(f"Redis: {'Connected' if redis_ok else 'Failed'}")
 
     # Overall status

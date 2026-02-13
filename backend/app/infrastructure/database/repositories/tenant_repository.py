@@ -178,7 +178,9 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
 
     async def count(self, *, is_active: bool | None = None) -> int:
         """Count total tenants."""
-        stmt = select(func.count(TenantModel.id)).where(TenantModel.is_deleted.is_(False))
+        stmt = select(func.count(TenantModel.id)).where(
+            TenantModel.is_deleted.is_(False)
+        )
 
         if is_active is not None:
             stmt = stmt.where(TenantModel.is_active == is_active)
@@ -200,9 +202,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         count = result.scalar() or 0
         return count > 0
 
-    async def domain_exists(
-        self, domain: str, exclude_id: UUID | None = None
-    ) -> bool:
+    async def domain_exists(self, domain: str, exclude_id: UUID | None = None) -> bool:
         """Check if domain already exists."""
         stmt = select(func.count(TenantModel.id)).where(
             TenantModel.domain == domain,

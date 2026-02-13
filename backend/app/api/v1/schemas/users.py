@@ -86,10 +86,10 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    email: str
-    first_name: str
-    last_name: str
-    avatar_url: str | None = None
+    email: str = Field(max_length=320)
+    first_name: str = Field(max_length=100)
+    last_name: str = Field(max_length=100)
+    avatar_url: str | None = Field(default=None, max_length=2048)
     is_active: bool
     is_superuser: bool
     created_at: datetime

@@ -1,7 +1,7 @@
 /**
  * Unit tests for auditLogsService.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGet = vi.fn();
 
@@ -17,14 +17,14 @@ describe('auditLogsService', () => {
   it('should list audit logs', async () => {
     mockGet.mockResolvedValueOnce({ data: { items: [], total: 0, skip: 0, limit: 20 } });
     const result = await auditLogsService.list({ action: 'login', limit: 20 });
-    expect(mockGet).toHaveBeenCalledWith('/audit-logs', { params: { action: 'login', limit: 20 } });
+    expect(mockGet).toHaveBeenCalledWith('/audit-logs', { params: { action: 'login', skip: 0, limit: 20 } });
     expect(result.total).toBe(0);
   });
 
   it('should list without filters', async () => {
     mockGet.mockResolvedValueOnce({ data: { items: [], total: 0 } });
     await auditLogsService.list();
-    expect(mockGet).toHaveBeenCalledWith('/audit-logs', { params: undefined });
+    expect(mockGet).toHaveBeenCalledWith('/audit-logs', { params: { skip: 0, limit: 20 } });
   });
 
   it('should get a single audit log', async () => {
@@ -38,7 +38,7 @@ describe('auditLogsService', () => {
   it('should get my activity', async () => {
     mockGet.mockResolvedValueOnce({ data: { items: [], total: 0 } });
     await auditLogsService.getMyActivity({ limit: 5 });
-    expect(mockGet).toHaveBeenCalledWith('/audit-logs/my-activity', { params: { limit: 5 } });
+    expect(mockGet).toHaveBeenCalledWith('/audit-logs/my-activity', { params: { limit: 5, skip: 0 } });
   });
 
   it('should get recent logins', async () => {
@@ -50,7 +50,7 @@ describe('auditLogsService', () => {
   it('should get resource history', async () => {
     mockGet.mockResolvedValueOnce({ data: { items: [], total: 0 } });
     await auditLogsService.getResourceHistory('user', 'u1', { skip: 0 });
-    expect(mockGet).toHaveBeenCalledWith('/audit-logs/resource/user/u1', { params: { skip: 0 } });
+    expect(mockGet).toHaveBeenCalledWith('/audit-logs/resource/user/u1', { params: { skip: 0, limit: 20 } });
   });
 
   it('should get actions list', async () => {

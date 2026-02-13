@@ -149,9 +149,7 @@ class TenantRepositoryPort(ABC):
         ...
 
     @abstractmethod
-    async def domain_exists(
-        self, domain: str, exclude_id: UUID | None = None
-    ) -> bool:
+    async def domain_exists(self, domain: str, exclude_id: UUID | None = None) -> bool:
         """
         Check if domain already exists.
 

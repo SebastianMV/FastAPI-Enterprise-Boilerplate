@@ -218,6 +218,7 @@ class TestRevokeMyApiKeyEndpoint:
             mock_session,
             key_id=key_id,
             user_id=user_id,
+            tenant_id=None,
         )
 
     @pytest.mark.asyncio
@@ -240,7 +241,7 @@ class TestRevokeMyApiKeyEndpoint:
                 )
 
         assert exc_info.value.status_code == 404
-        assert "API key not found" in exc_info.value.detail
+        assert exc_info.value.detail["code"] == "API_KEY_NOT_FOUND"
 
     @pytest.mark.asyncio
     async def test_revoke_api_key_wrong_user(self) -> None:

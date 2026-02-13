@@ -45,7 +45,7 @@ class RedisCache:
                 return json.loads(data)
             return None
         except Exception as e:
-            logger.warning("Cache get error: %s", e)
+            logger.warning("cache_get_error", error_type=type(e).__name__)
             return None
 
     async def get_and_delete(self, key: str) -> Any:
@@ -61,7 +61,7 @@ class RedisCache:
                 return json.loads(data)
             return None
         except Exception as e:
-            logger.warning("Cache get_and_delete error: %s", e)
+            logger.warning("cache_get_and_delete_error", error_type=type(e).__name__)
             return None
 
     async def set(
@@ -79,7 +79,7 @@ class RedisCache:
                 await self._client.set(key, data)
             return True
         except Exception as e:
-            logger.warning("Cache set error: %s", e)
+            logger.warning("cache_set_error", error_type=type(e).__name__)
             return False
 
     async def delete(self, key: str) -> bool:
@@ -88,7 +88,7 @@ class RedisCache:
             await self._client.delete(key)
             return True
         except Exception as e:
-            logger.warning("Cache delete error: %s", e)
+            logger.warning("cache_delete_error", error_type=type(e).__name__)
             return False
 
     async def exists(self, key: str) -> bool:
@@ -96,7 +96,7 @@ class RedisCache:
         try:
             return bool(await self._client.exists(key))
         except Exception as e:
-            logger.warning("Cache exists error: %s", e)
+            logger.warning("cache_exists_error", error_type=type(e).__name__)
             return False
 
 
@@ -133,7 +133,7 @@ async def close_cache() -> None:
             await _cache_client.aclose()
             logger.info("Redis cache connection closed")
         except Exception as e:
-            logger.warning("Error closing Redis cache: %s", e)
+            logger.warning("redis_cache_close_error", error_type=type(e).__name__)
         finally:
             _cache_client = None
 

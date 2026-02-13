@@ -72,7 +72,11 @@ def _make_config(name="test_entity", fields=None, default_sort="-created_at"):
                 exportable=True,
             ),
         ]
-    mock_model = MagicMock()
+    # Use spec to control which attributes hasattr() finds on the model.
+    # This prevents MagicMock from auto-creating tenant_id, which would
+    # trigger the tenant-aware validation in _apply_tenant_filter().
+    field_names = [f.name for f in fields]
+    mock_model = MagicMock(spec=field_names + ["__name__"])
     mock_model.__name__ = name
     return EntityConfig(
         name=name,
@@ -401,7 +405,7 @@ class TestGenerateErrors:
             patch.object(reporter, "get_summary", return_value=None),
         ):
             req = ReportRequest(entity="test_entity", format="xml")  # type: ignore
-            with pytest.raises(ValueError, match="Unsupported format"):
+            with pytest.raises(ValueError, match="Unsupported.*format"):
                 await reporter.generate(req)
 
     @pytest.mark.asyncio

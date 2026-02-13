@@ -123,14 +123,19 @@ class TestGetDashboardStats:
         user_id = uuid4()
         mock_session = AsyncMock()
 
-        # Mock execute to return different results for different queries
-        mock_result = MagicMock()
-        mock_result.scalar.return_value = 100
-        mock_result.scalar_one.return_value = 10
-        mock_session.execute.return_value = mock_result
+        # Mock execute to return different results for aggregated queries
+        mock_user_result = MagicMock()
+        mock_user_result.one.return_value = (100, 80, 25, 10, 5)
+        mock_role_result = MagicMock()
+        mock_role_result.scalar.return_value = 5
+        mock_api_key_result = MagicMock()
+        mock_api_key_result.one.return_value = (50, 40)
+        mock_session.execute.side_effect = [
+            mock_user_result, mock_role_result, mock_api_key_result,
+        ]
 
         result = await get_dashboard_stats(
-            current_user_id=user_id, session=mock_session
+            current_user_id=user_id, tenant_id=None, session=mock_session
         )
 
         assert isinstance(result, DashboardStatsResponse)
@@ -142,13 +147,19 @@ class TestGetDashboardStats:
         user_id = uuid4()
         mock_session = AsyncMock()
 
-        mock_result = MagicMock()
-        mock_result.scalar.return_value = 0
-        mock_result.scalar_one.return_value = 0
-        mock_session.execute.return_value = mock_result
+        # Mock execute for aggregated queries returning zeros
+        mock_user_result = MagicMock()
+        mock_user_result.one.return_value = (0, 0, 0, 0, 0)
+        mock_role_result = MagicMock()
+        mock_role_result.scalar.return_value = 0
+        mock_api_key_result = MagicMock()
+        mock_api_key_result.one.return_value = (0, 0)
+        mock_session.execute.side_effect = [
+            mock_user_result, mock_role_result, mock_api_key_result,
+        ]
 
         result = await get_dashboard_stats(
-            current_user_id=user_id, session=mock_session
+            current_user_id=user_id, tenant_id=None, session=mock_session
         )
 
         assert isinstance(result, DashboardStatsResponse)
@@ -211,9 +222,9 @@ class TestGetRecentActivity:
         mock_result.scalars.return_value.all.return_value = []
         mock_session.execute.return_value = mock_result
 
-        # Default limit is 10
+        # Default limit is 10 — pass explicitly since Query() isn't resolved outside DI
         result = await get_recent_activity(
-            current_user_id=user_id, session=mock_session
+            limit=10, current_user_id=user_id, tenant_id=None, session=mock_session
         )
 
         assert isinstance(result, RecentActivityResponse)

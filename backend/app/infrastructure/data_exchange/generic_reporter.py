@@ -1,4 +1,4 @@
-# Copyright (c) 2025-2026 SebastiÃ¡n MuÃ±oz
+# Copyright (c) 2025-2026 Sebastián Muñoz
 # Licensed under the MIT License
 
 """
@@ -60,14 +60,15 @@ class GenericReporter(ReportPort):
         """
         self.session = session
 
-    def _apply_tenant_filter(self, query: Any, config: EntityConfig, tenant_id: UUID | None) -> Any:
-        """Apply tenant filter to query, logging a warning when tenant_id is missing for tenant-aware models."""
+    def _apply_tenant_filter(
+        self, query: Any, config: EntityConfig, tenant_id: UUID | None
+    ) -> Any:
+        """Apply tenant filter to query, raising error when tenant_id is missing for tenant-aware models."""
         if tenant_id and hasattr(config.model, "tenant_id"):
             return query.where(config.model.tenant_id == tenant_id)
         if not tenant_id and hasattr(config.model, "tenant_id"):
-            logger.warning(
-                "Report query without tenant_id on tenant-aware model %s",
-                config.model.__name__,
+            raise ValueError(
+                "tenant_id is required for tenant-aware model reports"
             )
         return query
 
@@ -231,7 +232,7 @@ class GenericReporter(ReportPort):
                         key = (
                             f"{group_field}:{value}"
                             if value
-                            else f"{group_field}:(vacÃ­o)"
+                            else f"{group_field}:(vacío)"
                         )
                         grouped_counts[key] = count
 
@@ -285,7 +286,7 @@ class GenericReporter(ReportPort):
         # Apply filters
         query = self._apply_filters(query, config, request)
 
-        # Apply date range â€” validate field against exportable fields
+        # Apply date range — validate field against exportable fields
         allowed_fields = {f.name for f in config.fields}
         if (
             request.date_range_field
@@ -512,13 +513,15 @@ class GenericReporter(ReportPort):
 
         # Build page number content
         page_number_content = (
-            '"PÃ¡gina " counter(page) " de " counter(pages)'
+            '"Página " counter(page) " de " counter(pages)'
             if show_page_numbers
             else '""'
         )
 
-        def _escape_css_string(value: str) -> str:
+        def _escape_css_string(value: str | None) -> str:
             """Escape a value for safe interpolation into CSS content: strings."""
+            if not value:
+                return ""
             return (
                 value.replace("\\", "\\\\")
                 .replace('"', '\\"')
@@ -530,7 +533,9 @@ class GenericReporter(ReportPort):
         # Build header left content (company name or empty)
         safe_css_company = _escape_css_string(company_name)
         safe_css_header = _escape_css_string(header_text)
-        header_left = f'"{safe_css_company}"' if company_name else f'"{safe_css_header}"'
+        header_left = (
+            f'"{safe_css_company}"' if company_name else f'"{safe_css_header}"'
+        )
 
         # Build footer content
         generated_text = f"Generated: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M')}"
@@ -736,7 +741,7 @@ class GenericReporter(ReportPort):
     @staticmethod
     def _sanitize_formula(value: str) -> str:
         """Prevent Excel formula injection by prefixing dangerous chars with a single-quote."""
-        if value and value[0] in ('=', '+', '-', '@', '\t', '\r'):
+        if value and value[0] in ("=", "+", "-", "@", "\t", "\r"):
             return "'" + value
         return value
 
@@ -747,7 +752,7 @@ class GenericReporter(ReportPort):
         if isinstance(value, UUID):
             return str(value)
         if isinstance(value, bool):
-            return "SÃ­" if value else "No"
+            return "S\u00ed" if value else "No"
         if isinstance(value, str):
             return self._sanitize_formula(value)
         return value
@@ -759,7 +764,7 @@ class GenericReporter(ReportPort):
         if isinstance(value, datetime):
             return html.escape(value.strftime("%Y-%m-%d %H:%M"))
         if isinstance(value, bool):
-            return "âœ“" if value else "âœ—"
+            return "✓" if value else "✗"
         if isinstance(value, UUID):
             return html.escape(str(value)[:8] + "...")
         return html.escape(str(value))

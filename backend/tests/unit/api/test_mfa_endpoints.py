@@ -181,11 +181,30 @@ class TestMFASchemas:
 class TestMFAHelpers:
     """Tests for MFA helper functions."""
 
-    def test_get_mfa_config_not_found(self) -> None:
+    @pytest.mark.asyncio
+    async def test_get_mfa_config_not_found(self) -> None:
         """Test get_mfa_config returns None when not found."""
-        from app.api.v1.endpoints.mfa import get_mfa_config
+        from app.application.services.mfa_config_service import get_mfa_config
 
-        result = get_mfa_config("nonexistent-user")
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
+
+        mock_session = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = None
+        mock_session.execute.return_value = mock_result
+
+        with (
+            patch(
+                "app.application.services.mfa_config_service._get_redis",
+                AsyncMock(return_value=mock_cache),
+            ),
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                return_value=mock_session,
+            ),
+        ):
+            result = await get_mfa_config(str(uuid4()))
 
         assert result is None
 

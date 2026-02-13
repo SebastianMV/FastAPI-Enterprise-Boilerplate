@@ -43,7 +43,7 @@ class TestNotificationSchemas:
         """Test NotificationResponse with read notification."""
         from app.api.v1.endpoints.notifications import NotificationResponse
 
-        read_at = datetime.now(UTC).isoformat()
+        read_at = datetime.now(UTC)
         response = NotificationResponse(
             id=str(uuid4()),
             type="success",
@@ -203,7 +203,7 @@ class TestListNotificationsEndpoint:
         mock_notification.title = "Test"
         mock_notification.message = "Message"
         mock_notification.priority = "normal"
-        mock_notification.metadata = None
+        mock_notification.extra_data = None
         mock_notification.action_url = None
         mock_notification.read_at = None
         mock_notification.created_at = datetime.now(UTC)
@@ -247,7 +247,7 @@ class TestListNotificationsEndpoint:
         mock_notification.title = "Unread Test"
         mock_notification.message = "Unread Message"
         mock_notification.priority = "normal"
-        mock_notification.metadata = None
+        mock_notification.extra_data = None
         mock_notification.action_url = None
         mock_notification.read_at = None  # Unread
         mock_notification.created_at = datetime.now(UTC)
@@ -347,7 +347,7 @@ class TestGetNotificationEndpoint:
             )
 
         assert exc_info.value.status_code == 404
-        assert "Notification not found" in exc_info.value.detail
+        assert "Notification not found" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_get_notification_success(self) -> None:
@@ -365,7 +365,7 @@ class TestGetNotificationEndpoint:
         mock_notification.title = "Found"
         mock_notification.message = "This notification was found"
         mock_notification.priority = "high"
-        mock_notification.metadata = {"extra": "data"}
+        mock_notification.extra_data = {"extra": "data"}
         mock_notification.action_url = "https://example.com"
         mock_notification.read_at = datetime.now(UTC)
         mock_notification.created_at = datetime.now(UTC)
@@ -380,7 +380,7 @@ class TestGetNotificationEndpoint:
             session=mock_session,
         )
 
-        assert result.id == str(notification_id)
+        assert result.id == notification_id
         assert result.title == "Found"
         assert result.is_read is True
 

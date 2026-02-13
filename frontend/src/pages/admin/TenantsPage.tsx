@@ -1,30 +1,30 @@
+import { AlertModal, ConfirmModal, Modal } from '@/components/common/Modal';
+import { tenantsService, type CreateTenantData, type Tenant, type UpdateTenantData } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
+import { maskEmail, sanitizeCssColor, sanitizeText } from '@/utils/security';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+    AlertTriangle,
+    Building2,
+    Calendar,
+    CheckCircle,
+    Crown,
+    Edit,
+    Globe,
+    Loader2,
+    Mail,
+    Plus,
+    RefreshCw,
+    Search,
+    Settings,
+    ShieldCheck,
+    Trash2,
+    Users,
+    XCircle,
+} from 'lucide-react';
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { tenantsService, type Tenant, type CreateTenantData, type UpdateTenantData } from '@/services/api';
-import { sanitizeCssColor, maskEmail, sanitizeText } from '@/utils/security';
-import { useAuthStore } from '@/stores/authStore';
-import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
-import {
-  Building2,
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Loader2,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  ShieldCheck,
-  AlertTriangle,
-  Crown,
-  Globe,
-  Mail,
-  Settings,
-  Calendar,
-  Users,
-} from 'lucide-react';
 
 // Plan badges
 const planColors: Record<string, string> = {
@@ -234,7 +234,7 @@ export default function TenantsPage() {
   ) || [];
 
   // Helper to clean empty strings from form data
-  const cleanFormData = <T extends Record<string, unknown>>(data: T): Partial<T> => {
+  const cleanFormData = <T extends object>(data: T): Partial<T> => {
     const cleaned: Partial<T> = {};
     for (const [key, value] of Object.entries(data)) {
       if (value !== '' && value !== undefined && value !== null) {
@@ -400,12 +400,12 @@ export default function TenantsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                      {tenant.name}
+                      {sanitizeText(tenant.name)}
                       {tenant.is_verified && (
                         <ShieldCheck className="h-4 w-4 text-green-500" />
                       )}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">@{tenant.slug}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">@{sanitizeText(tenant.slug)}</p>
                   </div>
                 </div>
 
@@ -459,7 +459,7 @@ export default function TenantsPage() {
                     {t('tenants.maxUsers', { count: tenant.settings.max_users })}
                   </span>
                   <span>
-                    {tenant.settings.enable_2fa && t('tenants.feature2fa')} 
+                    {tenant.settings.enable_2fa && t('tenants.feature2fa')}
                     {tenant.settings.enable_api_keys && ` • ${t('tenants.featureApiKeys')}`}
                   </span>
                 </div>

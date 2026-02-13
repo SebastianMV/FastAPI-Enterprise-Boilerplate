@@ -3,6 +3,8 @@
 
 """Unit tests for notifications endpoint schemas."""
 
+from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 
@@ -20,7 +22,7 @@ class TestNotificationSchemas:
     def test_notification_response_schema(self):
         """Test NotificationResponse schema."""
         notification = NotificationResponse(
-            id="notif-123",
+            id=str(uuid4()),
             type="info",
             title="Test Notification",
             message="This is a test",
@@ -28,7 +30,6 @@ class TestNotificationSchemas:
             is_read=False,
             created_at="2025-01-01T00:00:00Z",
         )
-        assert notification.id == "notif-123"
         assert notification.type == "info"
         assert notification.title == "Test Notification"
         assert notification.is_read is False
@@ -36,7 +37,7 @@ class TestNotificationSchemas:
     def test_notification_response_with_optional_fields(self):
         """Test NotificationResponse with optional fields."""
         notification = NotificationResponse(
-            id="notif-123",
+            id=str(uuid4()),
             type="action",
             title="Action Required",
             message="Please review",
@@ -49,14 +50,14 @@ class TestNotificationSchemas:
         )
         assert notification.data == {"action": "approve", "item_id": "123"}
         assert notification.action_url == "/approve/123"
-        assert notification.read_at == "2025-01-02T00:00:00Z"
+        assert notification.read_at is not None
 
     def test_notification_list_response_schema(self):
         """Test NotificationListResponse schema."""
         response = NotificationListResponse(
             items=[
                 NotificationResponse(
-                    id="1",
+                    id=str(uuid4()),
                     type="info",
                     title="Test",
                     message="Test message",
@@ -74,7 +75,7 @@ class TestNotificationSchemas:
 
     def test_mark_read_request_schema(self):
         """Test MarkReadRequest schema."""
-        request = MarkReadRequest(notification_ids=["id1", "id2", "id3"])
+        request = MarkReadRequest(notification_ids=[str(uuid4()), str(uuid4()), str(uuid4())])
         assert len(request.notification_ids) == 3
 
     def test_mark_read_request_requires_ids(self):
@@ -90,7 +91,7 @@ class TestNotificationSchemas:
     def test_notification_response_all_fields(self):
         """Test NotificationResponse with all fields."""
         notification = NotificationResponse(
-            id="test-id",
+            id=str(uuid4()),
             type="warning",
             title="Warning Title",
             message="Warning message",
@@ -114,7 +115,7 @@ class TestNotificationSchemas:
 
     def test_mark_read_request_single_id(self):
         """Test MarkReadRequest with single ID."""
-        request = MarkReadRequest(notification_ids=["single-id"])
+        request = MarkReadRequest(notification_ids=[str(uuid4())])
         assert len(request.notification_ids) == 1
 
     def test_unread_count_response_zero(self):

@@ -1,7 +1,7 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
 # Licensed under the MIT License
 
-"""Unit tests for Redis client singleton."""
+"""Unit tests for Redis client wrapper (delegates to centralized cache)."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -13,112 +13,78 @@ from app.infrastructure.cache.redis_client import (
 )
 
 
-@pytest.fixture(autouse=True)
-def reset_redis_client():
-    """Reset Redis client singleton between tests."""
-    import app.infrastructure.cache.redis_client as redis_client_module
-
-    redis_client_module._redis_client = None
-    yield
-    redis_client_module._redis_client = None
-
-
 class TestGetRedisClient:
-    """Test Redis client initialization."""
+    """Test Redis client retrieval via centralized cache."""
 
     @pytest.mark.asyncio
-    async def test_creates_new_client_if_none_exists(self):
-        """Test that get_redis_client creates a new client if none exists."""
+    async def test_returns_redis_client_from_cache(self):
+        """Test that get_redis_client returns client from get_cache()."""
         mock_redis = MagicMock()
+        mock_cache = MagicMock()
+        mock_cache.get_redis_client.return_value = mock_redis
 
-        with patch("redis.asyncio.Redis", return_value=mock_redis) as mock_redis_class:
+        with patch(
+            "app.infrastructure.cache.redis_client.get_cache",
+            return_value=mock_cache,
+        ):
             client = await get_redis_client()
 
-            assert client == mock_redis
-            mock_redis_class.assert_called_once()
-            # Verify it was called with proper settings
-            call_kwargs = mock_redis_class.call_args.kwargs
-            assert "host" in call_kwargs
-            assert "port" in call_kwargs
-            assert "db" in call_kwargs
-            assert call_kwargs["decode_responses"] is True
+            assert client is mock_redis
+            mock_cache.get_redis_client.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_returns_existing_client_if_already_exists(self):
-        """Test that get_redis_client returns the existing client (singleton)."""
-        mock_redis = MagicMock()
+    async def test_calls_get_cache(self):
+        """Test that get_redis_client calls get_cache()."""
+        mock_cache = MagicMock()
+        mock_cache.get_redis_client.return_value = MagicMock()
 
-        with patch("redis.asyncio.Redis", return_value=mock_redis) as mock_redis_class:
-            # First call creates client
-            client1 = await get_redis_client()
-            # Second call should return the same instance
-            client2 = await get_redis_client()
-
-            assert client1 is client2
-            # Redis should only be instantiated once
-            assert mock_redis_class.call_count == 1
-
-    @pytest.mark.asyncio
-    async def test_uses_settings_from_config(self):
-        """Test that Redis client uses settings from app config."""
-        from app.config import settings
-
-        mock_redis = MagicMock()
-
-        with patch("redis.asyncio.Redis", return_value=mock_redis) as mock_redis_class:
+        with patch(
+            "app.infrastructure.cache.redis_client.get_cache",
+            return_value=mock_cache,
+        ) as mock_get_cache:
             await get_redis_client()
 
-            mock_redis_class.assert_called_once_with(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                password=settings.REDIS_PASSWORD,
-                db=settings.REDIS_DB,
-                decode_responses=True,
-            )
+            mock_get_cache.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_returns_same_client_on_multiple_calls(self):
+        """Test that multiple calls return consistent client from cache."""
+        mock_redis = MagicMock()
+        mock_cache = MagicMock()
+        mock_cache.get_redis_client.return_value = mock_redis
+
+        with patch(
+            "app.infrastructure.cache.redis_client.get_cache",
+            return_value=mock_cache,
+        ):
+            client1 = await get_redis_client()
+            client2 = await get_redis_client()
+
+            assert client1 is mock_redis
+            assert client2 is mock_redis
 
 
 class TestCloseRedisClient:
-    """Test Redis client cleanup."""
+    """Test Redis client close (no-op — lifecycle managed by cache singleton)."""
 
     @pytest.mark.asyncio
-    async def test_closes_existing_client(self):
-        """Test that close_redis_client closes and clears the client."""
-        mock_redis = AsyncMock()
-        mock_redis.close = AsyncMock()
-
-        with patch("redis.asyncio.Redis", return_value=mock_redis):
-            # Create a client
-            await get_redis_client()
-
-            # Close it
-            await close_redis_client()
-
-            # Verify close was called
-            mock_redis.close.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_does_nothing_if_no_client_exists(self):
-        """Test that close_redis_client does nothing if client is None."""
-        # This should not raise an exception
+    async def test_close_does_not_raise(self):
+        """Test that close_redis_client completes without error."""
+        # close_redis_client is a no-op; just verify it doesn't raise
         await close_redis_client()
 
     @pytest.mark.asyncio
-    async def test_resets_singleton_after_close(self):
-        """Test that closing client allows creating a new one."""
-        mock_redis1 = AsyncMock()
-        mock_redis1.close = AsyncMock()
-        mock_redis2 = AsyncMock()
-        mock_redis2.close = AsyncMock()
+    async def test_get_client_works_after_close(self):
+        """Test that get_redis_client works after close (since close is no-op)."""
+        mock_redis = MagicMock()
+        mock_cache = MagicMock()
+        mock_cache.get_redis_client.return_value = mock_redis
 
-        with patch("redis.asyncio.Redis", side_effect=[mock_redis1, mock_redis2]):
-            # Create first client
-            client1 = await get_redis_client()
-            assert client1 is mock_redis1
+        await close_redis_client()
 
-            # Close it
-            await close_redis_client()
-
-            # Create new client (should be different instance)
-            client2 = await get_redis_client()
-            assert client2 is mock_redis2
-            assert client1 is not client2
+        with patch(
+            "app.infrastructure.cache.redis_client.get_cache",
+            return_value=mock_cache,
+        ):
+            client = await get_redis_client()
+            assert client is mock_redis

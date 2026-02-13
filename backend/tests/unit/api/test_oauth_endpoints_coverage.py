@@ -67,7 +67,7 @@ class TestAuthorizeEndpoint:
             )
 
         assert exc.value.status_code == 400
-        assert "Unsupported OAuth provider" in exc.value.detail
+        assert "Unsupported OAuth provider" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_authorize_success(
@@ -174,10 +174,13 @@ class TestCallbackEndpoint:
         """Test callback with error from provider."""
         from fastapi import HTTPException
 
+        mock_response = MagicMock()
+
         with pytest.raises(HTTPException) as exc:
             await callback(
                 provider="google",
                 session=mock_session,
+                response=mock_response,
                 code="code",
                 state="state",
                 error="access_denied",
@@ -185,17 +188,20 @@ class TestCallbackEndpoint:
             )
 
         assert exc.value.status_code == 400
-        assert "User denied access" in exc.value.detail
+        assert "AUTH_FAILED" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_callback_invalid_provider(self, mock_session: MagicMock) -> None:
         """Test callback with invalid provider."""
         from fastapi import HTTPException
 
+        mock_response = MagicMock()
+
         with pytest.raises(HTTPException) as exc:
             await callback(
                 provider="invalid",
                 session=mock_session,
+                response=mock_response,
                 code="code",
                 state="state",
                 error=None,
@@ -203,22 +209,29 @@ class TestCallbackEndpoint:
             )
 
         assert exc.value.status_code == 400
-        assert "Unsupported OAuth provider" in exc.value.detail
+        assert "Unsupported OAuth provider" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_callback_service_error(self, mock_session: MagicMock) -> None:
         """Test callback when service raises error."""
+        from fastapi import HTTPException
+
+        from app.domain.exceptions.base import DomainException
+
+        mock_response = MagicMock()
+
         with patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls:
             mock_service = AsyncMock()
-            mock_service.handle_callback.side_effect = ValueError("Invalid state")
+            mock_service.handle_callback.side_effect = DomainException(
+                message="Invalid state"
+            )
             mock_service_cls.return_value = mock_service
-
-            from fastapi import HTTPException
 
             with pytest.raises(HTTPException) as exc:
                 await callback(
                     provider="google",
                     session=mock_session,
+                    response=mock_response,
                     code="invalid_code",
                     state="invalid_state",
                     error=None,
@@ -234,8 +247,18 @@ class TestCallbackEndpoint:
         """Test successful callback."""
         mock_connection = MagicMock()
         mock_connection.id = uuid4()
+        mock_response = MagicMock()
+        mock_user.is_superuser = False
+        mock_user.roles = None
 
-        with patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls:
+        with (
+            patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls,
+            patch("app.api.v1.endpoints.oauth.create_access_token", return_value="access_token"),
+            patch("app.api.v1.endpoints.oauth.create_refresh_token", return_value="refresh_token"),
+            patch("app.api.v1.endpoints.oauth.decode_token", return_value={"jti": "test-jti"}),
+            patch("app.api.v1.endpoints.oauth.hash_jti", return_value="hashed-jti"),
+            patch("app.api.v1.endpoints.oauth.SQLAlchemySessionRepository") as mock_repo_cls,
+        ):
             mock_service = AsyncMock()
             mock_service.handle_callback.return_value = (
                 mock_user,
@@ -243,26 +266,20 @@ class TestCallbackEndpoint:
                 True,
             )
             mock_service_cls.return_value = mock_service
+            mock_repo_cls.return_value = AsyncMock()
 
-            with patch("app.api.v1.endpoints.oauth.create_access_token") as mock_access:
-                with patch(
-                    "app.api.v1.endpoints.oauth.create_refresh_token"
-                ) as mock_refresh:
-                    mock_access.return_value = "access_token"
-                    mock_refresh.return_value = "refresh_token"
+            result = await callback(
+                provider="google",
+                session=mock_session,
+                response=mock_response,
+                code="valid_code",
+                state="valid_state",
+                error=None,
+                error_description=None,
+            )
 
-                    result = await callback(
-                        provider="google",
-                        session=mock_session,
-                        code="valid_code",
-                        state="valid_state",
-                        error=None,
-                        error_description=None,
-                    )
-
-                    assert result.access_token == "access_token"
-                    assert result.refresh_token == "refresh_token"
-                    assert result.is_new_user is True
+            assert result.is_new_user is True
+            assert result.user_id == mock_user.id
 
 
 class TestCallbackRedirectEndpoint:
@@ -282,7 +299,7 @@ class TestCallbackRedirectEndpoint:
         )
 
         assert result.status_code == 302
-        assert "error=access_denied" in str(result.headers.get("location", ""))
+        assert "error=provider_error" in str(result.headers.get("location", ""))
 
     @pytest.mark.asyncio
     async def test_callback_redirect_invalid_provider(
@@ -307,9 +324,13 @@ class TestCallbackRedirectEndpoint:
         self, mock_session: MagicMock
     ) -> None:
         """Test callback redirect when service fails."""
+        from app.domain.exceptions.base import DomainException
+
         with patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls:
             mock_service = AsyncMock()
-            mock_service.handle_callback.side_effect = ValueError("Auth failed")
+            mock_service.handle_callback.side_effect = DomainException(
+                message="Auth failed"
+            )
             mock_service_cls.return_value = mock_service
 
             result = await callback_redirect(
@@ -332,8 +353,17 @@ class TestCallbackRedirectEndpoint:
         """Test successful callback redirect."""
         mock_connection = MagicMock()
         mock_connection.id = uuid4()
+        mock_user.is_superuser = False
+        mock_user.roles = None
 
-        with patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls:
+        with (
+            patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls,
+            patch("app.api.v1.endpoints.oauth.create_access_token", return_value="token123"),
+            patch("app.api.v1.endpoints.oauth.create_refresh_token", return_value="refresh123"),
+            patch("app.api.v1.endpoints.oauth.decode_token", return_value={"jti": "test-jti"}),
+            patch("app.api.v1.endpoints.oauth.hash_jti", return_value="hashed-jti"),
+            patch("app.api.v1.endpoints.oauth.SQLAlchemySessionRepository") as mock_repo_cls,
+        ):
             mock_service = AsyncMock()
             mock_service.handle_callback.return_value = (
                 mock_user,
@@ -341,27 +371,21 @@ class TestCallbackRedirectEndpoint:
                 False,
             )
             mock_service_cls.return_value = mock_service
+            mock_repo_cls.return_value = AsyncMock()
 
-            with patch("app.api.v1.endpoints.oauth.create_access_token") as mock_access:
-                with patch(
-                    "app.api.v1.endpoints.oauth.create_refresh_token"
-                ) as mock_refresh:
-                    mock_access.return_value = "token123"
-                    mock_refresh.return_value = "refresh123"
+            result = await callback_redirect(
+                provider="google",
+                session=mock_session,
+                code="valid_code",
+                state="valid_state",
+                error=None,
+                error_description=None,
+                frontend_url="http://localhost:3000",
+            )
 
-                    result = await callback_redirect(
-                        provider="google",
-                        session=mock_session,
-                        code="valid_code",
-                        state="valid_state",
-                        error=None,
-                        error_description=None,
-                        frontend_url="http://localhost:3000",
-                    )
-
-                    assert result.status_code == 302
-                    location = str(result.headers.get("location", ""))
-                    assert "access_token=token123" in location
+            assert result.status_code == 302
+            location = str(result.headers.get("location", ""))
+            assert "is_new_user=False" in location
 
 
 class TestListConnectionsEndpoint:

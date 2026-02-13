@@ -6,6 +6,7 @@
 from dataclasses import dataclass, field
 
 from app.domain.entities.base import TenantSoftDeletableEntity
+from app.domain.exceptions.base import ValidationError as DomainValidationError
 
 
 @dataclass
@@ -61,8 +62,9 @@ class Permission:
         """
         parts = permission_str.split(":")
         if len(parts) != 2:
-            raise ValueError(
-                "Invalid permission format. Expected 'resource:action'"
+            raise DomainValidationError(
+                message="Invalid permission format. Expected 'resource:action'",
+                field="permission",
             )
         return cls(resource=parts[0], action=parts[1])
 

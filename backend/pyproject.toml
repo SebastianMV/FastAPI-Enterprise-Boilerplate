@@ -143,15 +143,75 @@ ignore = [
     "S101",   # assert used (needed in domain logic validators)
     "S104",   # binding to 0.0.0.0 (needed in Docker/uvicorn)
     "RET504", # unnecessary assignment before return (readability)
+    # === Framework & formatter patterns ===
+    "B008",   # function-call-in-default-argument (FastAPI Depends/Query/Path/Body pattern)
+    "W291",   # trailing whitespace (handled by ruff format)
+    "W293",   # blank-line-with-whitespace (handled by ruff format)
+    "E712",   # true-false-comparison (SQLAlchemy column comparisons: Model.col == True)
+    "E402",   # module-import-not-at-top-of-file (middleware registration, logger setup)
+    # === Gradual migration / style preferences ===
+    "UP042",  # replace-str-enum (gradual StrEnum migration)
+    "UP046",  # non-pep695-generic-class (Python 3.12+ syntax, gradual adoption)
+    "SIM102", # collapsible-if (expanded form often clearer)
+    "PERF401",# manual-list-comprehension (clarity over micro-optimization)
+    # === Naming conventions (contextual) ===
+    "N806",   # non-lowercase-variable-in-function (SQLAlchemy models, class refs)
+    "N811",   # constant-imported-as-non-constant
+    "N818",   # error-suffix-on-exception-name (existing exception hierarchy)
+    # === Datetime (strptime from user input / DB values) ===
+    "DTZ007", # call-datetime-strptime-without-zone
+    # === Logging (explicit exc_info patterns) ===
+    "G201",   # logging-exc-info (explicit exc_info=True is valid)
+    "LOG014", # exc-info-outside-except-handler
+    # === Typing optimization (not correctness) ===
+    "TC001",  # typing-only-first-party-import
+    "TC002",  # typing-only-third-party-import
+    "TC003",  # typing-only-standard-library-import
+    # === False positives on field names (token_type, password_hash, etc.) ===
+    "S105",   # hardcoded-password-string
+    "S106",   # hardcoded-password-func-arg
+    "S608",   # hardcoded-sql-expression (parameterized query building in ORM)
+    "S311",   # suspicious-non-cryptographic-random-usage (non-security use)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
+    # --- Security (relaxed for test fixtures) ---
     "S101",   # assert is expected in tests
     "S105",   # hardcoded passwords in test fixtures
     "S106",   # hardcoded password argument in tests
+    "S110",   # try-except-pass (intentional in error-path tests)
     "S311",   # pseudo-random in tests is fine
+    "S324",   # hashlib insecure (test data hashing)
     "T20",    # print in tests is fine
+    # --- Code quality (relaxed for test readability) ---
+    "F841",   # unused-variable (side-effect assignments for setup)
+    "F811",   # redefined-while-unused (fixture/parametrize overrides)
+    "B004",   # unreliable-callable-check
+    "B007",   # unused-loop-control-variable
+    "B017",   # assert-raises-exception (broad exception assertions)
+    "B904",   # raise-without-from-inside-except
+    "N802",   # invalid-function-name (test method naming)
+    "N806",   # non-lowercase-variable-in-function (test variable naming)
+    "E402",   # module-import-not-at-top-of-file (conftest patterns)
+    "E711",   # none-comparison (assertion patterns)
+    "E731",   # lambda-assignment
+    "C408",   # unnecessary-collection-call
+    # --- Simplification (clarity over brevity in tests) ---
+    "SIM102", # collapsible-if
+    "SIM105", # suppressible-exception
+    "SIM108", # if-else-block-instead-of-if-exp
+    "SIM110", # reimplemented-builtin
+    "SIM113", # enumerate-for-loop
+    "SIM117", # multiple-with-statements
+    "SIM118", # in-dict-keys
+    "SIM222", # expr-or-true
+    # --- Datetime (test fixtures use naive datetimes) ---
+    "DTZ",    # all datetime timezone rules
+    # --- Style (gradual migration, not blocking tests) ---
+    "UP042",  # replace-str-enum
+    "PERF401",# manual-list-comprehension
+    "TCH",    # typing-only imports
 ]
 "app/cli/**" = [
     "T20",    # print is fine in CLI commands

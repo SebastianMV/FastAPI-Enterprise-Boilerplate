@@ -3,7 +3,6 @@
 
 """Unit tests for domain exceptions."""
 
-
 from app.domain.exceptions.base import (
     AuthenticationError,
     AuthorizationError,
@@ -50,7 +49,7 @@ class TestEntityNotFoundError:
         )
 
         assert "User" in str(exc)
-        assert "123" in str(exc)
+        assert "not found" in str(exc)
         assert exc.code == "ENTITY_NOT_FOUND"
 
 
@@ -89,8 +88,9 @@ class TestAuthorizationError:
             action="delete",
         )
 
-        assert "delete" in str(exc)
-        assert "users" in str(exc)
+        assert str(exc) == "Insufficient permissions"
+        assert exc.resource == "users"
+        assert exc.action == "delete"
         assert exc.code == "AUTHORIZATION_DENIED"
 
     def test_authorization_error_custom_message(self):
@@ -128,6 +128,6 @@ class TestRateLimitExceededError:
             retry_after_seconds=120,
         )
 
-        assert "120" in str(exc)
+        assert "Rate limit exceeded" in str(exc)
         assert exc.code == "RATE_LIMIT_EXCEEDED"
         assert exc.retry_after_seconds == 120

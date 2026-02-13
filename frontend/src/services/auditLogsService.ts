@@ -1,5 +1,5 @@
-import api from './api';
 import { clampPaginationParams } from '@/utils/security';
+import api from './api';
 
 // Audit Log Types
 export interface AuditLog {
@@ -49,8 +49,8 @@ export const auditLogsService = {
         }
       }
     }
-    const response = await api.get<AuditLogListResponse>('/audit-logs', { 
-      params: safeFilters 
+    const response = await api.get<AuditLogListResponse>('/audit-logs', {
+      params: safeFilters
     });
     return response.data;
   },
@@ -62,7 +62,16 @@ export const auditLogsService = {
 
   getMyActivity: async (filters?: AuditLogFilters): Promise<AuditLogListResponse> => {
     const { skip, limit } = clampPaginationParams(filters);
-    const response = await api.get<AuditLogListResponse>('/audit-logs/my-activity', { params: { ...filters, skip, limit } });
+    const ALLOWED_FILTER_KEYS = new Set(['action', 'resource_type', 'start_date', 'end_date']);
+    const safeFilters: Record<string, unknown> = { skip, limit };
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (ALLOWED_FILTER_KEYS.has(key) && value !== undefined) {
+          safeFilters[key] = value;
+        }
+      }
+    }
+    const response = await api.get<AuditLogListResponse>('/audit-logs/my-activity', { params: safeFilters });
     return response.data;
   },
 
@@ -76,7 +85,16 @@ export const auditLogsService = {
 
   getResourceHistory: async (resourceType: string, resourceId: string, filters?: AuditLogFilters): Promise<AuditLogListResponse> => {
     const { skip, limit } = clampPaginationParams(filters);
-    const response = await api.get<AuditLogListResponse>(`/audit-logs/resource/${encodeURIComponent(resourceType)}/${encodeURIComponent(resourceId)}`, { params: { ...filters, skip, limit } });
+    const ALLOWED_FILTER_KEYS = new Set(['action', 'start_date', 'end_date']);
+    const safeFilters: Record<string, unknown> = { skip, limit };
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (ALLOWED_FILTER_KEYS.has(key) && value !== undefined) {
+          safeFilters[key] = value;
+        }
+      }
+    }
+    const response = await api.get<AuditLogListResponse>(`/audit-logs/resource/${encodeURIComponent(resourceType)}/${encodeURIComponent(resourceId)}`, { params: safeFilters });
     return response.data;
   },
 

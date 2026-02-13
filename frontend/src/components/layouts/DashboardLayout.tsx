@@ -1,30 +1,30 @@
-import { useState, useEffect, useRef } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useShallow } from 'zustand/react/shallow';
-import { useAuthStore } from '@/stores/authStore';
-import { useConfigStore } from '@/stores/configStore';
-import { maskEmail } from '@/utils/security';
+import EmailVerificationBanner from '@/components/common/EmailVerificationBanner';
 import SearchBar from '@/components/common/SearchBar';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
-import EmailVerificationBanner from '@/components/common/EmailVerificationBanner';
+import { useAuthStore } from '@/stores/authStore';
+import { useConfigStore } from '@/stores/configStore';
+import { maskEmail, sanitizeText } from '@/utils/security';
 import {
-  LayoutDashboard,
-  Users,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  ChevronDown,
-  User,
-  Shield,
-  Key,
-  Globe,
-  Bell,
-  FileText,
-  Building2,
-  ArrowLeftRight,
+    ArrowLeftRight,
+    Bell,
+    Building2,
+    ChevronDown,
+    FileText,
+    Globe,
+    Key,
+    LayoutDashboard,
+    LogOut,
+    Menu,
+    Settings,
+    Shield,
+    User,
+    Users,
+    X,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Main dashboard layout with sidebar navigation.
@@ -41,7 +41,12 @@ export default function DashboardLayout() {
 
   // Fetch feature config on mount
   useEffect(() => {
-    fetchFeatures();
+    let cancelled = false;
+    (async () => {
+      await fetchFeatures();
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
   }, [fetchFeatures]);
 
   // Close user menu on click outside
@@ -142,7 +147,7 @@ export default function DashboardLayout() {
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 text-slate-500 hover:text-slate-700"
-            aria-label={t('common.menu', 'Open menu')}
+            aria-label={t('common.menu')}
           >
             <Menu className="w-6 h-6" />
           </button>
@@ -167,25 +172,25 @@ export default function DashboardLayout() {
             >
               <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-medium">
-                  {user?.first_name?.charAt(0) || 'U'}
+                  {sanitizeText(user?.first_name?.charAt(0) || 'U')}
                 </span>
               </div>
               <span className="hidden md:block text-sm text-slate-700 dark:text-slate-300">
-                {user?.first_name} {user?.last_name}
+                {sanitizeText(user?.first_name ?? '')} {sanitizeText(user?.last_name ?? '')}
               </span>
               <ChevronDown className="w-4 h-4 text-slate-500" />
             </button>
 
             {/* Dropdown */}
             {userMenuOpen && (
-              <div role="menu" aria-label={t('userMenu.title', 'User menu')} className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1">
+              <div role="menu" aria-label={t('userMenu.title')} className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1">
                 <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
                   <p className="text-sm font-medium text-slate-900 dark:text-white">
-                    {user?.first_name} {user?.last_name}
+                    {sanitizeText(user?.first_name ?? '')} {sanitizeText(user?.last_name ?? '')}
                   </p>
                   <p className="text-xs text-slate-500 truncate">{user?.email ? maskEmail(user.email) : ''}</p>
                 </div>
-                
+
                 {/* Profile & Account Links */}
                 <div className="py-1">
                   <button
@@ -233,7 +238,7 @@ export default function DashboardLayout() {
                     <span>{t('userMenu.security')}</span>
                   </button>
                 </div>
-                
+
                 {/* Sign out */}
                 <div className="border-t border-slate-200 dark:border-slate-700 py-1">
                   <button
@@ -254,7 +259,7 @@ export default function DashboardLayout() {
             </div>
           </div>
         </header>
-        
+
         {/* Email verification banner */}
         <EmailVerificationBanner />
 

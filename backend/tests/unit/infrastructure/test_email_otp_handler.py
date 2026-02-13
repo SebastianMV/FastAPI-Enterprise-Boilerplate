@@ -10,7 +10,8 @@ functionality used for 2FA without authenticator apps.
 
 import json
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
+from hashlib import sha256
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -45,14 +46,22 @@ class TestEmailOTPHandler:
     """Tests for EmailOTPHandler class."""
 
     @pytest.fixture
-    def mock_redis(self) -> MagicMock:
-        """Create a mock Redis client."""
-        return MagicMock()
+    def mock_redis(self) -> AsyncMock:
+        """Create a mock async Redis client."""
+        redis = AsyncMock()
+        redis.ttl = AsyncMock(return_value=0)
+        redis.setex = AsyncMock()
+        redis.get = AsyncMock(return_value=None)
+        redis.delete = AsyncMock(return_value=0)
+        return redis
 
     @pytest.fixture
-    def handler(self, mock_redis: MagicMock) -> EmailOTPHandler:
-        """Create an EmailOTPHandler with mocked Redis."""
-        return EmailOTPHandler(redis_client=mock_redis)
+    def handler(self, mock_redis: AsyncMock) -> EmailOTPHandler:
+        """Create an EmailOTPHandler with mocked _get_redis."""
+        h = EmailOTPHandler()
+        # Patch _get_redis to return our mock
+        h._get_redis = AsyncMock(return_value=mock_redis)  # type: ignore[method-assign]
+        return h
 
     # ===========================================
     # Configuration Tests
@@ -65,33 +74,26 @@ class TestEmailOTPHandler:
         assert handler.MAX_ATTEMPTS == 3
         assert handler.COOLDOWN_SECONDS == 60
 
-    def test_redis_client_injection(self, mock_redis: MagicMock) -> None:
-        """Test Redis client can be injected."""
-        handler = EmailOTPHandler(redis_client=mock_redis)
-        assert handler._redis is mock_redis
+    def test_constructor_no_args(self) -> None:
+        """Test EmailOTPHandler can be created without arguments."""
+        handler = EmailOTPHandler()
+        assert handler is not None
 
-    def test_get_redis_returns_injected_client(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
-    ) -> None:
-        """Test _get_redis returns injected client."""
-        result = handler._get_redis()
-        assert result is mock_redis
+    @pytest.mark.asyncio
+    async def test_get_redis_uses_cache_infrastructure(self) -> None:
+        """Test _get_redis gets client from cache infrastructure."""
+        handler = EmailOTPHandler()
+        mock_cache = MagicMock()
+        mock_redis_client = AsyncMock()
+        mock_cache.get_redis_client.return_value = mock_redis_client
 
-    @patch("app.infrastructure.auth.email_otp_handler.redis")
-    @patch("app.infrastructure.auth.email_otp_handler.settings")
-    def test_get_redis_creates_connection_when_no_client(
-        self, mock_settings: MagicMock, mock_redis_module: MagicMock
-    ) -> None:
-        """Test _get_redis creates connection when no client injected."""
-        mock_settings.redis_url = "redis://localhost:6379/0"
-        mock_redis_module.from_url.return_value = MagicMock()
+        with patch(
+            "app.infrastructure.cache.get_cache",
+            return_value=mock_cache,
+        ):
+            result = await handler._get_redis()
 
-        handler = EmailOTPHandler()  # No redis_client
-        result = handler._get_redis()
-
-        mock_redis_module.from_url.assert_called_once_with(
-            "redis://localhost:6379/0", decode_responses=True
-        )
+        assert result is mock_redis_client
 
     # ===========================================
     # Code Generation Tests
@@ -136,35 +138,38 @@ class TestEmailOTPHandler:
     # Cooldown Tests
     # ===========================================
 
-    def test_can_generate_otp_no_cooldown(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_can_generate_otp_no_cooldown(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test can_generate_otp returns True when no cooldown."""
         mock_redis.ttl.return_value = 0
 
-        can_generate, remaining = handler.can_generate_otp("user-123")
+        can_generate, remaining = await handler.can_generate_otp("user-123")
 
         assert can_generate is True
         assert remaining == 0
 
-    def test_can_generate_otp_with_cooldown(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_can_generate_otp_with_cooldown(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test can_generate_otp returns False during cooldown."""
         mock_redis.ttl.return_value = 30
 
-        can_generate, remaining = handler.can_generate_otp("user-123")
+        can_generate, remaining = await handler.can_generate_otp("user-123")
 
         assert can_generate is False
         assert remaining == 30
 
-    def test_can_generate_otp_expired_cooldown(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_can_generate_otp_expired_cooldown(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test can_generate_otp when cooldown key expired."""
         mock_redis.ttl.return_value = -2  # Key doesn't exist
 
-        can_generate, remaining = handler.can_generate_otp("user-123")
+        can_generate, remaining = await handler.can_generate_otp("user-123")
 
         assert can_generate is True
         assert remaining == 0
@@ -173,70 +178,77 @@ class TestEmailOTPHandler:
     # OTP Generation Tests
     # ===========================================
 
-    def test_generate_otp_success(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_generate_otp_success(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test successful OTP generation."""
         mock_redis.ttl.return_value = 0  # No cooldown
 
-        code = handler.generate_otp("user-123")
+        code = await handler.generate_otp("user-123")
 
         assert code is not None
         assert len(code) == 6
         assert code.isdigit()
 
-        # Verify Redis calls
-        assert mock_redis.setex.call_count == 2  # OTP + cooldown
+        # Verify Redis calls (OTP + cooldown)
+        assert mock_redis.setex.call_count == 2
 
-    def test_generate_otp_during_cooldown(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_generate_otp_during_cooldown(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test OTP generation blocked during cooldown."""
         mock_redis.ttl.return_value = 45  # 45 seconds remaining
 
-        code = handler.generate_otp("user-123")
+        code = await handler.generate_otp("user-123")
 
         assert code is None
         mock_redis.setex.assert_not_called()
 
-    def test_generate_otp_custom_expiry(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_generate_otp_custom_expiry(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test OTP generation with custom expiry."""
         mock_redis.ttl.return_value = 0
 
-        code = handler.generate_otp("user-123", expiry_minutes=5)
+        code = await handler.generate_otp("user-123", expiry_minutes=5)
 
         assert code is not None
         # Check the OTP storage call used correct expiry (5 * 60 = 300 seconds)
         otp_call = mock_redis.setex.call_args_list[0]
         assert otp_call[0][1] == 300  # 5 minutes in seconds
 
-    def test_generate_otp_custom_purpose(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_generate_otp_custom_purpose(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test OTP generation with custom purpose."""
         mock_redis.ttl.return_value = 0
 
-        code = handler.generate_otp("user-123", purpose="password_reset")
+        code = await handler.generate_otp("user-123", purpose="password_reset")
 
         assert code is not None
         otp_call = mock_redis.setex.call_args_list[0]
         key = otp_call[0][0]
         assert "password_reset" in key
 
-    def test_generate_otp_stores_correct_data(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_generate_otp_stores_hashed_code(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
-        """Test OTP generation stores correct data structure."""
+        """Test OTP generation stores hashed code (not plaintext)."""
         mock_redis.ttl.return_value = 0
 
-        code = handler.generate_otp("user-123")
+        code = await handler.generate_otp("user-123")
 
         otp_call = mock_redis.setex.call_args_list[0]
         stored_data = json.loads(otp_call[0][2])
 
-        assert stored_data["code"] == code
+        # Should store code_hash, not plaintext code
+        assert "code_hash" in stored_data
+        assert stored_data["code_hash"] == sha256(code.encode()).hexdigest()
         assert "expires_at" in stored_data
         assert stored_data["attempts"] == 0
 
@@ -244,89 +256,96 @@ class TestEmailOTPHandler:
     # OTP Verification Tests
     # ===========================================
 
-    def test_verify_otp_success(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_success(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test successful OTP verification."""
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
+        code = "123456"
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256(code.encode()).hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 0,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.verify_otp("user-123", "123456")
+        result = await handler.verify_otp("user-123", code)
 
         assert result is True
         mock_redis.delete.assert_called_once()
 
-    def test_verify_otp_no_otp_found(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_no_otp_found(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test verification fails when no OTP exists."""
         mock_redis.get.return_value = None
 
-        result = handler.verify_otp("user-123", "123456")
+        result = await handler.verify_otp("user-123", "123456")
 
         assert result is False
 
-    def test_verify_otp_expired(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_expired(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test verification fails for expired OTP."""
+        code = "123456"
         expires_at = (datetime.now(UTC) - timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256(code.encode()).hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 0,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.verify_otp("user-123", "123456")
+        result = await handler.verify_otp("user-123", code)
 
         assert result is False
         mock_redis.delete.assert_called_once()
 
-    def test_verify_otp_wrong_code(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_wrong_code(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test verification fails for wrong code."""
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256("123456".encode()).hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 0,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.verify_otp("user-123", "654321")
+        result = await handler.verify_otp("user-123", "654321")
 
         assert result is False
         # Should increment attempts
         mock_redis.setex.assert_called_once()
 
-    def test_verify_otp_increments_attempts(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_increments_attempts(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test verification increments attempts on failure."""
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256("123456".encode()).hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 1,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.verify_otp("user-123", "000000")
+        result = await handler.verify_otp("user-123", "000000")
 
         assert result is False
 
@@ -335,77 +354,84 @@ class TestEmailOTPHandler:
         stored_data = json.loads(setex_call[0][2])
         assert stored_data["attempts"] == 2
 
-    def test_verify_otp_max_attempts_exceeded(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_max_attempts_exceeded(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test verification fails when max attempts exceeded."""
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256("123456".encode()).hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 3,  # Max is 3
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.verify_otp("user-123", "123456")
+        result = await handler.verify_otp("user-123", "123456")
 
         assert result is False
         mock_redis.delete.assert_called_once()
 
-    def test_verify_otp_without_consume(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_without_consume(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test verification without consuming OTP."""
+        code = "123456"
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256(code.encode()).hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 0,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.verify_otp("user-123", "123456", consume=False)
+        result = await handler.verify_otp("user-123", code, consume=False)
 
         assert result is True
         mock_redis.delete.assert_not_called()
 
-    def test_verify_otp_strips_whitespace(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_strips_whitespace(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test verification strips whitespace from code."""
+        code = "123456"
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256(code.encode()).hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 0,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.verify_otp("user-123", "  123456  ")
+        result = await handler.verify_otp("user-123", "  123456  ")
 
         assert result is True
 
-    def test_verify_otp_custom_purpose(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_verify_otp_custom_purpose(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test verification with custom purpose."""
+        code = "123456"
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256(code.encode()).hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 0,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        handler.verify_otp("user-123", "123456", purpose="password_reset")
+        await handler.verify_otp("user-123", code, purpose="password_reset")
 
         mock_redis.get.assert_called_with("email_otp:password_reset:user-123")
 
@@ -413,34 +439,37 @@ class TestEmailOTPHandler:
     # OTP Invalidation Tests
     # ===========================================
 
-    def test_invalidate_otp_success(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_invalidate_otp_success(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test successful OTP invalidation."""
         mock_redis.delete.return_value = 1
 
-        result = handler.invalidate_otp("user-123")
+        result = await handler.invalidate_otp("user-123")
 
         assert result is True
         mock_redis.delete.assert_called_with("email_otp:login:user-123")
 
-    def test_invalidate_otp_none_exists(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_invalidate_otp_none_exists(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test invalidation when no OTP exists."""
         mock_redis.delete.return_value = 0
 
-        result = handler.invalidate_otp("user-123")
+        result = await handler.invalidate_otp("user-123")
 
         assert result is False
 
-    def test_invalidate_otp_custom_purpose(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_invalidate_otp_custom_purpose(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test invalidation with custom purpose."""
         mock_redis.delete.return_value = 1
 
-        handler.invalidate_otp("user-123", purpose="password_reset")
+        await handler.invalidate_otp("user-123", purpose="password_reset")
 
         mock_redis.delete.assert_called_with("email_otp:password_reset:user-123")
 
@@ -448,81 +477,86 @@ class TestEmailOTPHandler:
     # Remaining Attempts Tests
     # ===========================================
 
-    def test_get_remaining_attempts_full(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_get_remaining_attempts_full(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test remaining attempts when no attempts made."""
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256("123456".encode()).hexdigest(),
                 "expires_at": datetime.now(UTC).isoformat(),
                 "attempts": 0,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.get_remaining_attempts("user-123")
+        result = await handler.get_remaining_attempts("user-123")
 
         assert result == 3
 
-    def test_get_remaining_attempts_some_used(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_get_remaining_attempts_some_used(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test remaining attempts when some attempts used."""
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256("123456".encode()).hexdigest(),
                 "expires_at": datetime.now(UTC).isoformat(),
                 "attempts": 2,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.get_remaining_attempts("user-123")
+        result = await handler.get_remaining_attempts("user-123")
 
         assert result == 1
 
-    def test_get_remaining_attempts_none_left(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_get_remaining_attempts_none_left(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test remaining attempts when all used."""
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256("123456".encode()).hexdigest(),
                 "expires_at": datetime.now(UTC).isoformat(),
                 "attempts": 3,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        result = handler.get_remaining_attempts("user-123")
+        result = await handler.get_remaining_attempts("user-123")
 
         assert result == 0
 
-    def test_get_remaining_attempts_no_otp(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_get_remaining_attempts_no_otp(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test remaining attempts when no OTP exists."""
         mock_redis.get.return_value = None
 
-        result = handler.get_remaining_attempts("user-123")
+        result = await handler.get_remaining_attempts("user-123")
 
         assert result == 0
 
-    def test_get_remaining_attempts_custom_purpose(
-        self, handler: EmailOTPHandler, mock_redis: MagicMock
+    @pytest.mark.asyncio
+    async def test_get_remaining_attempts_custom_purpose(
+        self, handler: EmailOTPHandler, mock_redis: AsyncMock
     ) -> None:
         """Test remaining attempts with custom purpose."""
         otp_data = json.dumps(
             {
-                "code": "123456",
+                "code_hash": sha256("123456".encode()).hexdigest(),
                 "expires_at": datetime.now(UTC).isoformat(),
                 "attempts": 1,
             }
         )
         mock_redis.get.return_value = otp_data
 
-        handler.get_remaining_attempts("user-123", purpose="password_reset")
+        await handler.get_remaining_attempts("user-123", purpose="password_reset")
 
         mock_redis.get.assert_called_with("email_otp:password_reset:user-123")
 

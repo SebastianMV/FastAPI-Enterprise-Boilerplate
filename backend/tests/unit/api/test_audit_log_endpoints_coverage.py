@@ -222,6 +222,7 @@ class TestGetMyActivity:
             offset=0,
             start_date=None,
             end_date=None,
+            tenant_id=None,
         )
 
 
@@ -262,6 +263,7 @@ class TestGetResourceHistory:
         """Test getting resource history."""
         from app.api.v1.endpoints.audit_logs import get_resource_history
 
+        tenant_id = mock_audit_logs[0].tenant_id
         user_id = uuid4()
         resource_id = str(uuid4())
         mock_repo = AsyncMock()
@@ -271,6 +273,7 @@ class TestGetResourceHistory:
             resource_type="user",
             resource_id=resource_id,
             current_user_id=user_id,
+            tenant_id=tenant_id,
             skip=0,
             limit=50,
             repo=mock_repo,
@@ -284,6 +287,7 @@ class TestGetResourceHistory:
         """Test getting resource history with invalid type."""
         from app.api.v1.endpoints.audit_logs import get_resource_history
 
+        tenant_id = uuid4()
         user_id = uuid4()
         resource_id = str(uuid4())
         mock_repo = AsyncMock()
@@ -293,6 +297,7 @@ class TestGetResourceHistory:
                 resource_type="INVALID",
                 resource_id=resource_id,
                 current_user_id=user_id,
+                tenant_id=tenant_id,
                 skip=0,
                 limit=50,
                 repo=mock_repo,

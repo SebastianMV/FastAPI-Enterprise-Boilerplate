@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ProfilePage from './ProfilePage';
 
@@ -18,6 +18,7 @@ vi.mock('@/services/api', () => ({
 }));
 
 const mockFetchUser = vi.fn();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock partial user
 let mockUser: any = {
   first_name: 'John',
   last_name: 'Doe',
@@ -30,6 +31,7 @@ let mockUser: any = {
 };
 
 vi.mock('@/stores/authStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
   useAuthStore: (selector?: (s: any) => any) => {
     const state = { user: mockUser, fetchUser: mockFetchUser };
     return selector ? selector(state) : state;
@@ -41,6 +43,7 @@ vi.mock('@/components/profile/ConnectedAccounts', () => ({
 }));
 
 vi.mock('@/components/common/Modal', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   ConfirmModal: ({ isOpen, onConfirm, title }: any) =>
     isOpen ? (
       <div data-testid="confirm-modal">
@@ -48,6 +51,7 @@ vi.mock('@/components/common/Modal', () => ({
         <button onClick={onConfirm}>Confirm</button>
       </div>
     ) : null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   AlertModal: ({ isOpen, title, message }: any) =>
     isOpen ? <div data-testid="alert-modal"><h2>{title}</h2><p>{message}</p></div> : null,
 }));
@@ -84,7 +88,8 @@ describe('ProfilePage', () => {
   it('displays user info in header card', () => {
     renderPage();
     expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getAllByText('john@test.com').length).toBeGreaterThanOrEqual(1);
+    // Email is masked in the Account Details sidebar (maskEmail: "jo***@test.com")
+    expect(screen.getAllByText(/jo\*\*\*@test\.com/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows user role badge', () => {

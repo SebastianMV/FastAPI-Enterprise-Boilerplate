@@ -55,7 +55,7 @@ class EmailOTPHandler:
     MAX_ATTEMPTS = 3
     COOLDOWN_SECONDS = 60  # Between OTP generations
 
-    async def _get_redis(self) -> "redis.Redis":
+    async def _get_redis(self):  # type: ignore[no-untyped-def]
         """Get async Redis connection via application cache infrastructure."""
         from app.infrastructure.cache import get_cache
 
@@ -115,9 +115,9 @@ class EmailOTPHandler:
         can_generate, remaining = await self.can_generate_otp(user_id)
         if not can_generate:
             logger.warning(
-                "OTP generation blocked for user %s: cooldown %ds remaining",
-                user_id,
-                remaining,
+                "otp_generation_blocked",
+                user_id=user_id,
+                cooldown_remaining=remaining,
             )
             return None
 
@@ -140,7 +140,7 @@ class EmailOTPHandler:
         cooldown_key = self._get_cooldown_key(user_id)
         await r.setex(cooldown_key, self.COOLDOWN_SECONDS, "1")
 
-        logger.info("Generated OTP for user %s, purpose: %s", user_id, purpose)
+        logger.info("otp_generated", user_id=user_id, purpose=purpose)
         return code
 
     async def verify_otp(
@@ -168,7 +168,7 @@ class EmailOTPHandler:
         # Get stored OTP
         data = await r.get(key)
         if not data:
-            logger.warning("No OTP found for user %s", user_id)
+            logger.warning("otp_not_found", user_id=user_id)
             return False
 
         otp_data = json.loads(str(data))
@@ -177,14 +177,14 @@ class EmailOTPHandler:
         expires_at = datetime.fromisoformat(otp_data["expires_at"])
         if datetime.now(UTC) > expires_at:
             await r.delete(key)
-            logger.warning("OTP expired for user %s", user_id)
+            logger.warning("otp_expired", user_id=user_id)
             return False
 
         # Check attempts
         attempts = otp_data.get("attempts", 0)
         if attempts >= self.MAX_ATTEMPTS:
             await r.delete(key)
-            logger.warning("OTP max attempts exceeded for user %s", user_id)
+            logger.warning("otp_max_attempts_exceeded", user_id=user_id)
             return False
 
         # Verify code (timing-safe comparison against stored hash)
@@ -201,17 +201,17 @@ class EmailOTPHandler:
                 json.dumps(otp_data),
             )
             logger.warning(
-                "Invalid OTP attempt %d/%d for user %s",
-                attempts + 1,
-                self.MAX_ATTEMPTS,
-                user_id,
+                "otp_invalid_attempt",
+                attempt=attempts + 1,
+                max_attempts=self.MAX_ATTEMPTS,
+                user_id=user_id,
             )
             return False
 
         # Valid OTP
         if consume:
             await r.delete(key)
-            logger.info("OTP verified and consumed for user %s", user_id)
+            logger.info("otp_verified", user_id=user_id)
 
         return True
 

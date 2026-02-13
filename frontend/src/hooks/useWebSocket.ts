@@ -27,6 +27,7 @@ import { sanitizeText } from '../utils/security';
 
 // Debug logging - only in development
 const DEBUG = import.meta.env.DEV;
+// eslint-disable-next-line no-console -- debug logging gated behind DEV flag
 const debugLog = (...args: unknown[]) => DEBUG && console.log(...args);
 
 // Message types matching backend

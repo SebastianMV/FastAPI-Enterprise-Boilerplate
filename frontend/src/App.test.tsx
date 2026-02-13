@@ -1,9 +1,9 @@
 /**
  * Unit tests for App component — route wiring, ProtectedRoute, AdminRoute.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock all lazy-loaded pages to simple stubs
 vi.mock('@/pages/auth/LoginPage', () => ({
@@ -67,6 +67,8 @@ vi.mock('@/pages/data/DataExchangePage', () => ({
 // Mock DashboardLayout to simply render children
 vi.mock('@/components/layouts/DashboardLayout', () => ({
   default: () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- vitest mock factory requires synchronous imports
+    // @ts-expect-error -- vitest mock factory: require() is untyped but works at runtime
     const { Outlet } = require('react-router-dom');
     return <div data-testid="dashboard-layout"><Outlet /></div>;
   },
@@ -155,6 +157,7 @@ describe('App', () => {
 
     it('should render dashboard when authenticated', async () => {
       mockAuthState.isAuthenticated = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial mock user
       mockAuthState.user = { id: '1', email: 'a@b.com', is_superuser: false } as any;
       renderApp('/dashboard');
       await waitFor(() => {
@@ -164,7 +167,8 @@ describe('App', () => {
 
     it('should render users page when authenticated', async () => {
       mockAuthState.isAuthenticated = true;
-      mockAuthState.user = { id: '1', email: 'a@b.com', is_superuser: false } as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial mock user
+      mockAuthState.user = { id: '1', email: 'a@b.com', is_superuser: true } as any;
       renderApp('/users');
       await waitFor(() => {
         expect(screen.getByTestId('users-page')).toBeInTheDocument();
@@ -175,6 +179,7 @@ describe('App', () => {
   describe('AdminRoute', () => {
     it('should show access denied for non-superuser on admin routes', async () => {
       mockAuthState.isAuthenticated = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial mock user
       mockAuthState.user = { id: '1', email: 'a@b.com', is_superuser: false } as any;
       renderApp('/roles');
       await waitFor(() => {
@@ -184,6 +189,7 @@ describe('App', () => {
 
     it('should render admin page for superuser', async () => {
       mockAuthState.isAuthenticated = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial mock user
       mockAuthState.user = { id: '1', email: 'admin@b.com', is_superuser: true } as any;
       renderApp('/roles');
       await waitFor(() => {
@@ -203,6 +209,7 @@ describe('App', () => {
   describe('Root redirect', () => {
     it('should redirect / to /dashboard when authenticated', async () => {
       mockAuthState.isAuthenticated = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial mock user
       mockAuthState.user = { id: '1', email: 'a@b.com', is_superuser: false } as any;
       renderApp('/');
       await waitFor(() => {
@@ -234,6 +241,7 @@ describe('App', () => {
 
     it('should not call fetchUser when user exists', async () => {
       mockAuthState.isAuthenticated = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial mock user
       mockAuthState.user = { id: '1', email: 'a@b.com' } as any;
       renderApp('/login');
       await waitFor(() => {

@@ -116,7 +116,7 @@ class TestGetTemplate:
         config = _make_config()
         with patch.object(EntityRegistry, "get", return_value=config):
             importer = GenericImporter(AsyncMock())
-            with pytest.raises(ValueError, match="Unsupported format"):
+            with pytest.raises(ValueError, match="Unsupported.*format"):
                 importer.get_template("test_entity", format="xml")
 
     def test_entity_not_found(self):

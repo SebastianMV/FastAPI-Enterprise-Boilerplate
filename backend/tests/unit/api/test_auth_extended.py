@@ -27,15 +27,17 @@ class TestRefreshTokenEndpoint:
 
         request = RefreshTokenRequest(refresh_token="invalid-token")
         mock_session = AsyncMock()
+        mock_http_request = MagicMock()
+        mock_http_request.cookies = {}
 
-        with patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate:
+        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
             mock_validate.side_effect = AuthenticationError(
                 code="INVALID_TOKEN",
                 message="Token is invalid",
             )
 
             with pytest.raises(HTTPException) as exc_info:
-                await refresh_token(request=request, session=mock_session)
+                await refresh_token(request=request, session=mock_session, http_request=mock_http_request)
 
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail["code"] == "INVALID_TOKEN"
@@ -48,9 +50,11 @@ class TestRefreshTokenEndpoint:
 
         request = RefreshTokenRequest(refresh_token="valid-refresh-token")
         mock_session = AsyncMock()
+        mock_http_request = MagicMock()
+        mock_http_request.cookies = {}
         user_id = uuid4()
 
-        with patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate:
+        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(uuid4()),
@@ -64,7 +68,7 @@ class TestRefreshTokenEndpoint:
                 mock_repo_class.return_value = mock_repo
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await refresh_token(request=request, session=mock_session)
+                    await refresh_token(request=request, session=mock_session, http_request=mock_http_request)
 
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail["code"] == "USER_NOT_FOUND"
@@ -77,13 +81,15 @@ class TestRefreshTokenEndpoint:
 
         request = RefreshTokenRequest(refresh_token="valid-refresh-token")
         mock_session = AsyncMock()
+        mock_http_request = MagicMock()
+        mock_http_request.cookies = {}
         user_id = uuid4()
 
         mock_user = MagicMock()
         mock_user.id = user_id
         mock_user.is_active = False
 
-        with patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate:
+        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(uuid4()),
@@ -97,7 +103,7 @@ class TestRefreshTokenEndpoint:
                 mock_repo_class.return_value = mock_repo
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await refresh_token(request=request, session=mock_session)
+                    await refresh_token(request=request, session=mock_session, http_request=mock_http_request)
 
         assert exc_info.value.status_code == 403
         assert exc_info.value.detail["code"] == "USER_INACTIVE"
@@ -110,6 +116,8 @@ class TestRefreshTokenEndpoint:
 
         request = RefreshTokenRequest(refresh_token="valid-refresh-token")
         mock_session = AsyncMock()
+        mock_http_request = MagicMock()
+        mock_http_request.cookies = {}
         user_id = uuid4()
         tenant_id = uuid4()
 
@@ -120,7 +128,7 @@ class TestRefreshTokenEndpoint:
         mock_user.is_superuser = False
         mock_user.roles = []
 
-        with patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate:
+        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(tenant_id),
@@ -133,16 +141,20 @@ class TestRefreshTokenEndpoint:
                 mock_repo.get_by_id.return_value = mock_user
                 mock_repo_class.return_value = mock_repo
 
-                with patch(
-                    "app.api.v1.endpoints.auth.create_access_token",
-                    return_value="new-access-token",
-                ), patch(
-                    "app.api.v1.endpoints.auth.create_refresh_token",
-                    return_value="new-refresh-token",
+                with (
+                    patch(
+                        "app.application.use_cases.auth.refresh.create_access_token",
+                        return_value="new-access-token",
+                    ),
+                    patch(
+                        "app.application.use_cases.auth.refresh.create_refresh_token",
+                        return_value="new-refresh-token",
+                    ),
                 ):
                     result = await refresh_token(
                         request=request,
                         session=mock_session,
+                        http_request=mock_http_request,
                     )
 
         assert result.access_token == "new-access-token"
@@ -158,7 +170,20 @@ class TestLogoutEndpoint:
         from app.api.v1.endpoints.auth import logout
 
         user_id = uuid4()
-        result = await logout(current_user_id=user_id)
+        mock_request = MagicMock()
+        mock_request.cookies = {}
+        mock_response = MagicMock()
+
+        with patch("app.application.use_cases.auth.logout.LogoutUseCase") as mock_uc_cls:
+            mock_uc = AsyncMock()
+            mock_uc_cls.return_value = mock_uc
+
+            result = await logout(
+                current_user_id=user_id,
+                request=mock_request,
+                response=mock_response,
+                authorization="",
+            )
 
         assert result.success is True
         assert "logged out" in result.message.lower()
@@ -222,6 +247,8 @@ class TestChangePasswordEndpoint:
         )
         user_id = uuid4()
         mock_session = AsyncMock()
+        mock_current_user = MagicMock()
+        mock_current_user.id = user_id
 
         with patch(
             "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
@@ -233,7 +260,7 @@ class TestChangePasswordEndpoint:
             with pytest.raises(HTTPException) as exc_info:
                 await change_password(
                     request=request,
-                    current_user_id=user_id,
+                    current_user=mock_current_user,
                     session=mock_session,
                 )
 
@@ -252,6 +279,8 @@ class TestChangePasswordEndpoint:
         )
         user_id = uuid4()
         mock_session = AsyncMock()
+        mock_current_user = MagicMock()
+        mock_current_user.id = user_id
 
         mock_user = MagicMock()
         mock_user.id = user_id
@@ -264,13 +293,16 @@ class TestChangePasswordEndpoint:
             mock_repo.get_by_id.return_value = mock_user
             mock_repo_class.return_value = mock_repo
 
-            with patch(
-                "app.api.v1.endpoints.auth.verify_password",
-                return_value=False,
-            ), pytest.raises(HTTPException) as exc_info:
+            with (
+                patch(
+                    "app.api.v1.endpoints.auth.verify_password",
+                    return_value=False,
+                ),
+                pytest.raises(HTTPException) as exc_info,
+            ):
                 await change_password(
                     request=request,
-                    current_user_id=user_id,
+                    current_user=mock_current_user,
                     session=mock_session,
                 )
 
@@ -289,6 +321,8 @@ class TestChangePasswordEndpoint:
         )
         user_id = uuid4()
         mock_session = AsyncMock()
+        mock_current_user = MagicMock()
+        mock_current_user.id = user_id
 
         mock_user = MagicMock()
         mock_user.id = user_id
@@ -301,13 +335,22 @@ class TestChangePasswordEndpoint:
             mock_repo.get_by_id.return_value = mock_user
             mock_repo_class.return_value = mock_repo
 
-            with patch(
-                "app.api.v1.endpoints.auth.verify_password",
-                return_value=True,
-            ), patch("app.api.v1.endpoints.auth.hash_password"):
+            with (
+                patch(
+                    "app.api.v1.endpoints.auth.verify_password",
+                    return_value=True,
+                ),
+                patch("app.api.v1.endpoints.auth.hash_password"),
+                patch(
+                    "app.infrastructure.database.repositories.session_repository.SQLAlchemySessionRepository"
+                ) as mock_session_repo_cls,
+            ):
+                mock_session_repo = AsyncMock()
+                mock_session_repo_cls.return_value = mock_session_repo
+
                 result = await change_password(
                     request=request,
-                    current_user_id=user_id,
+                    current_user=mock_current_user,
                     session=mock_session,
                 )
 
@@ -342,17 +385,22 @@ class TestForgotPasswordEndpoint:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_class.return_value = mock_repo
 
-            # Patch email service import inside the function
-            with patch(
-                "app.infrastructure.email.get_email_service"
-            ) as mock_email_service:
-                mock_service = AsyncMock()
-                mock_email_service.return_value = mock_service
+            with patch("app.infrastructure.cache.get_cache") as mock_get_cache:
+                mock_cache = AsyncMock()
+                mock_cache.get.return_value = None
+                mock_get_cache.return_value = mock_cache
 
-                result = await forgot_password(
-                    request=request,
-                    session=mock_session,
-                )
+                # Patch email service import inside the function
+                with patch(
+                    "app.infrastructure.email.get_email_service"
+                ) as mock_email_service:
+                    mock_service = AsyncMock()
+                    mock_email_service.return_value = mock_service
+
+                    result = await forgot_password(
+                        request=request,
+                        session=mock_session,
+                    )
 
         assert result.success is True
         assert "email" in result.message.lower() or "account" in result.message.lower()
@@ -373,10 +421,11 @@ class TestForgotPasswordEndpoint:
             mock_repo.get_by_email.return_value = None
             mock_repo_class.return_value = mock_repo
 
-            result = await forgot_password(
-                request=request,
-                session=mock_session,
-            )
+            with patch("asyncio.sleep", new_callable=AsyncMock):
+                result = await forgot_password(
+                    request=request,
+                    session=mock_session,
+                )
 
         # Should return same success message to prevent email enumeration
         assert result.success is True
@@ -403,10 +452,11 @@ class TestForgotPasswordEndpoint:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_class.return_value = mock_repo
 
-            result = await forgot_password(
-                request=request,
-                session=mock_session,
-            )
+            with patch("asyncio.sleep", new_callable=AsyncMock):
+                result = await forgot_password(
+                    request=request,
+                    session=mock_session,
+                )
 
         # Should still return success to prevent enumeration
         assert result.success is True
@@ -495,19 +545,33 @@ class TestAuthEdgeCases:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_class.return_value = mock_repo
 
-            with patch(
-                "app.api.v1.endpoints.auth.verify_password",
-                return_value=True,
-            ), patch(
-                "app.api.v1.endpoints.auth.create_access_token",
-                return_value="access",
-            ), patch(
-                "app.api.v1.endpoints.auth.create_refresh_token",
-                return_value="refresh",
-            ), patch(
-                "app.infrastructure.auth.jwt_handler.decode_token",
-                return_value={"jti": "mfa-test-jti"},
+            with (
+                patch(
+                    "app.application.use_cases.auth.login.verify_password",
+                    return_value=True,
+                ),
+                patch(
+                    "app.application.use_cases.auth.login.create_access_token",
+                    return_value="access",
+                ),
+                patch(
+                    "app.application.use_cases.auth.login.create_refresh_token",
+                    return_value="refresh",
+                ),
+                patch(
+                    "app.application.use_cases.auth.login.decode_token",
+                    return_value={"jti": "mfa-test-jti"},
+                ),
+                patch(
+                    "app.application.services.mfa_config_service.get_mfa_config",
+                    new_callable=AsyncMock,
+                    return_value=None,
+                ),
+                patch(
+                    "app.infrastructure.database.repositories.session_repository.SQLAlchemySessionRepository"
+                ) as mock_session_repo_cls,
             ):
+                mock_session_repo_cls.return_value = AsyncMock()
                 mock_http_request = MagicMock()
                 result = await login(
                     request=request,

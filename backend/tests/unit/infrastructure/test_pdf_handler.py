@@ -5,7 +5,6 @@
 Unit tests for PDF handler.
 """
 
-
 from app.infrastructure.data_exchange.pdf_handler import (
     ChartData,
     ChartType,

@@ -189,6 +189,7 @@ async def create_user(
 async def update_self(
     request: UserUpdateSelf,
     current_user_id: CurrentUserId,
+    tenant_id: CurrentTenantId,
     session: DbSession,
 ) -> UserResponse:
     """
@@ -200,6 +201,13 @@ async def update_self(
     user = await repo.get_by_id(current_user_id)
 
     if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "USER_NOT_FOUND", "message": "User not found"},
+        )
+
+    # Defense-in-depth: verify user belongs to current tenant
+    if tenant_id and user.tenant_id and user.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
@@ -361,7 +369,7 @@ def _validate_image_magic(content: bytes, content_type: str) -> bool:
     for sig in sigs:
         if content[: len(sig)] == sig:
             # Extra check for WebP: bytes 8-12 must be 'WEBP'
-            if content_type == "image/webp" and content[8:12] != b"WEBP":
+            if content_type == "image/webp" and content[8:12] != b"WEBP":  # noqa: SIM103
                 return False
             return True
     return False
@@ -375,6 +383,7 @@ def _validate_image_magic(content: bytes, content_type: str) -> bool:
 )
 async def upload_avatar(
     current_user_id: CurrentUserId,
+    tenant_id: CurrentTenantId,
     session: DbSession,
     file: UploadFile = File(..., description="Image file (JPEG, PNG, GIF, WebP)"),
 ) -> UserResponse:
@@ -428,6 +437,13 @@ async def upload_avatar(
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
 
+    # Defense-in-depth: verify user belongs to current tenant
+    if tenant_id and user.tenant_id and user.tenant_id != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "USER_NOT_FOUND", "message": "User not found"},
+        )
+
     # Generate unique filename with extension allowlist
     ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
     file_ext = (
@@ -456,7 +472,7 @@ async def upload_avatar(
         )
         avatar_url = storage_file.path
     except Exception as e:
-        logger.error("Failed to upload avatar for user %s: %s", current_user_id, e)
+        logger.error("avatar_upload_failed", user_id=str(current_user_id), error=type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -475,7 +491,7 @@ async def upload_avatar(
             await storage.delete(old_path)
         except Exception as e:
             # Log but ignore errors when deleting old avatar
-            logger.debug("Failed to delete old avatar %s: %s", user.avatar_url, e)
+            logger.debug("avatar_old_delete_failed", avatar_url=user.avatar_url, error=type(e).__name__)
 
     # Update user with new avatar URL
     user.avatar_url = avatar_url
@@ -493,6 +509,7 @@ async def upload_avatar(
 )
 async def delete_avatar(
     current_user_id: CurrentUserId,
+    tenant_id: CurrentTenantId,
     session: DbSession,
 ) -> MessageResponse:
     """Delete the current user's avatar."""
@@ -500,6 +517,13 @@ async def delete_avatar(
     user = await repo.get_by_id(current_user_id)
 
     if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "USER_NOT_FOUND", "message": "User not found"},
+        )
+
+    # Defense-in-depth: verify user belongs to current tenant
+    if tenant_id and user.tenant_id and user.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
@@ -520,7 +544,7 @@ async def delete_avatar(
         await storage.delete(old_path)
     except Exception as e:
         # Continue even if delete fails, but log it
-        logger.debug("Failed to delete avatar file %s: %s", user.avatar_url, e)
+        logger.debug("avatar_delete_failed", avatar_url=user.avatar_url, error=type(e).__name__)
 
     # Update user
     user.avatar_url = None

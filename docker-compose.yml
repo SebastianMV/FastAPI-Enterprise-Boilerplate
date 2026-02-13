@@ -45,7 +45,7 @@ services:
         condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --timeout-keep-alive 75
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -71,7 +71,7 @@ services:
   # Nginx Reverse Proxy (Development)
   # ===========================================
   nginx:
-    image: nginx:1.28-alpine
+    image: nginx:1.29-alpine
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:80"
@@ -81,7 +81,7 @@ services:
       - vite
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/"]
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:80/" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -117,7 +117,7 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5173/"]
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:5173/" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -151,9 +151,9 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/alembic/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/alembic/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U boilerplate"]
+      test: [ "CMD-SHELL", "pg_isready -U boilerplate" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -185,7 +185,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "devpassword", "--no-auth-warning", "ping"]
+      test: [ "CMD", "redis-cli", "-a", "devpassword", "--no-auth-warning", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -211,10 +211,15 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.65
     ports:
-      - "127.0.0.1:16686:16686"  # UI
-      - "127.0.0.1:4317:4317"    # OTLP gRPC
+      - "127.0.0.1:16686:16686" # UI
+      - "127.0.0.1:4317:4317" # OTLP gRPC
     profiles:
       - observability
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:14269/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     security_opt:
       - no-new-privileges:true
     cap_drop:

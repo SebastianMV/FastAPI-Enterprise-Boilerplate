@@ -9,6 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from app.domain.entities.base import AuditableEntity
+from app.domain.exceptions import BusinessRuleViolationError
 
 
 @dataclass
@@ -63,7 +64,9 @@ class TenantSettings:
             primary_color=data.get("primary_color", "#3B82F6"),
             logo_url=data.get("logo_url"),
             password_min_length=max(int(data.get("password_min_length", 8)), 1),
-            session_timeout_minutes=max(int(data.get("session_timeout_minutes", 60)), 1),
+            session_timeout_minutes=max(
+                int(data.get("session_timeout_minutes", 60)), 1
+            ),
             require_email_verification=data.get("require_email_verification", True),
         )
 
@@ -123,7 +126,10 @@ class Tenant(AuditableEntity):
         """Update subscription plan."""
         valid_plans = {"free", "starter", "professional", "enterprise"}
         if plan not in valid_plans:
-            raise ValueError("Invalid plan. Must be one of: free, starter, professional, enterprise")
+            raise BusinessRuleViolationError(
+                message="Invalid plan. Must be one of: free, starter, professional, enterprise",
+                rule="valid_plan_required",
+            )
 
         self.plan = plan
         self.plan_expires_at = expires_at

@@ -1,22 +1,22 @@
 /**
  * Connected Accounts component for OAuth provider management.
- * 
+ *
  * Displays linked OAuth providers and allows users to connect/disconnect accounts.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import { 
-  Link2, 
-  Unlink, 
-  Loader2, 
-  CheckCircle, 
-  AlertCircle,
-  ExternalLink
-} from 'lucide-react';
+import { ConfirmModal } from '@/components/common/Modal';
 import { oauthService, type OAuthConnection } from '@/services/api';
 import { maskEmail } from '@/utils/security';
-import { ConfirmModal } from '@/components/common/Modal';
+import {
+    AlertCircle,
+    CheckCircle,
+    ExternalLink,
+    Link2,
+    Loader2,
+    Unlink
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Display configuration for OAuth providers — NOT the same as OAUTH_PROVIDERS from oauthService.ts.
 // This has JSX icons and Tailwind classes for the profile UI; oauthService has string IDs for API calls.
@@ -88,7 +88,12 @@ export default function ConnectedAccounts() {
   }, []);
 
   useEffect(() => {
-    fetchConnections();
+    let cancelled = false;
+    (async () => {
+      await fetchConnections();
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
   }, [fetchConnections]);
 
   const handleConnect = async (provider: string) => {

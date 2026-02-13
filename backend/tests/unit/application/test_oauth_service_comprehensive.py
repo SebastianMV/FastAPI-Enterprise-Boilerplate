@@ -19,6 +19,12 @@ from app.domain.entities.oauth import (
     OAuthUserInfo,
 )
 from app.domain.entities.user import User
+from app.domain.exceptions.base import (
+    AuthenticationError,
+    BusinessRuleViolationError,
+    ConflictError,
+    EntityNotFoundError,
+)
 from app.infrastructure.auth.oauth_providers import OAuthTokenResponse
 
 
@@ -168,7 +174,7 @@ class TestHandleCallback:
     async def test_handle_callback_invalid_state(self, oauth_service):
         """Test callback with invalid state."""
         with patch.object(oauth_service, "_get_oauth_state", return_value=None):
-            with pytest.raises(ValueError, match="Invalid or expired OAuth state"):
+            with pytest.raises(AuthenticationError, match="Invalid or expired OAuth state"):
                 await oauth_service.handle_callback(
                     provider=OAuthProvider.GOOGLE,
                     code="auth_code",
@@ -192,7 +198,7 @@ class TestHandleCallback:
         )
 
         with patch.object(oauth_service, "_get_oauth_state", return_value=state_data):
-            with pytest.raises(ValueError, match="Provider mismatch"):
+            with pytest.raises(AuthenticationError, match="Provider mismatch"):
                 await oauth_service.handle_callback(
                     provider=OAuthProvider.GITHUB,  # Different provider
                     code="auth_code",
@@ -306,6 +312,11 @@ class TestFindOrCreateUser:
         with (
             patch.object(
                 oauth_service,
+                "_check_allowed_domains",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
+                oauth_service,
                 "_get_oauth_connection",
                 new_callable=AsyncMock,
                 return_value=existing_connection,
@@ -321,7 +332,7 @@ class TestFindOrCreateUser:
             ),
         ):
             user, connection, is_new = await oauth_service._find_or_create_user(
-                tenant_id=uuid4(),
+                tenant_id=sample_user.tenant_id,
                 user_info=sample_oauth_user_info,
                 tokens=sample_oauth_tokens,
             )
@@ -348,6 +359,11 @@ class TestFindOrCreateUser:
         mock_connection = MagicMock()
 
         with (
+            patch.object(
+                oauth_service,
+                "_check_allowed_domains",
+                new_callable=AsyncMock,
+            ),
             patch.object(
                 oauth_service,
                 "_get_oauth_connection",
@@ -594,7 +610,7 @@ class TestHelperMethods:
 
         oauth_service._session.execute = AsyncMock(return_value=mock_result)
 
-        with pytest.raises(ValueError, match="No default tenant found"):
+        with pytest.raises(EntityNotFoundError, match="No default tenant found"):
             await oauth_service._get_default_tenant_id()
 
     @pytest.mark.asyncio
@@ -691,13 +707,16 @@ class TestHelperMethods:
         mock_connection = MagicMock()
         mock_connection.user_id = different_user_id  # Different user
 
-        with patch.object(
-            oauth_service,
-            "_get_oauth_connection",
-            new_callable=AsyncMock,
-            return_value=mock_connection,
-        ), pytest.raises(
-            ValueError, match="This OAuth account is linked to another user"
+        with (
+            patch.object(
+                oauth_service,
+                "_get_oauth_connection",
+                new_callable=AsyncMock,
+                return_value=mock_connection,
+            ),
+            pytest.raises(
+                ConflictError, match="This OAuth account is linked to another user"
+            ),
         ):
             await oauth_service._link_oauth_account(
                 user_id=sample_user.id,
@@ -714,6 +733,11 @@ class TestHelperMethods:
         mock_connection = MagicMock()
 
         with (
+            patch.object(
+                oauth_service,
+                "_check_allowed_domains",
+                new_callable=AsyncMock,
+            ),
             patch.object(
                 oauth_service,
                 "_get_oauth_connection",
@@ -766,7 +790,7 @@ class TestHelperMethods:
         )
 
         with pytest.raises(
-            ValueError,
+            BusinessRuleViolationError,
             match="Cannot unlink primary OAuth account without setting a password",
         ):
             await oauth_service.unlink_oauth_account(user_id, connection_id)
@@ -818,8 +842,8 @@ class TestPrivateMethods:
         mock_model.provider_username = None
         mock_model.provider_display_name = "Test User"
         mock_model.provider_avatar_url = "https://example.com/avatar.jpg"
-        mock_model.access_token = "access_token"
-        mock_model.refresh_token = "refresh_token"
+        mock_model.access_token = None
+        mock_model.refresh_token = None
         mock_model.token_expires_at = datetime.now(UTC)
         mock_model.scopes = ["email", "profile"]
         mock_model.raw_data = {}
@@ -878,12 +902,13 @@ class TestPrivateMethods:
         oauth_service._session.execute = AsyncMock(return_value=mock_result)
         oauth_service._session.flush = AsyncMock()
 
-        await oauth_service._update_oauth_connection(
-            connection_id=connection_id,
-            access_token="new_access_token",
-            refresh_token="new_refresh_token",
-            expires_in=3600,
-        )
+        with patch("app.application.services.oauth_service.encrypt_value", side_effect=lambda x: x):
+            await oauth_service._update_oauth_connection(
+                connection_id=connection_id,
+                access_token="new_access_token",
+                refresh_token="new_refresh_token",
+                expires_in=3600,
+            )
 
         assert mock_model.access_token == "new_access_token"
         assert mock_model.refresh_token == "new_refresh_token"
@@ -1059,6 +1084,11 @@ class TestPrivateMethods:
         with (
             patch.object(
                 oauth_service,
+                "_check_allowed_domains",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
+                oauth_service,
                 "_get_oauth_connection",
                 new_callable=AsyncMock,
                 return_value=mock_connection,
@@ -1071,7 +1101,8 @@ class TestPrivateMethods:
                 "_get_user_by_id",
                 new_callable=AsyncMock,
                 return_value=None,
-            ),pytest.raises(ValueError, match="User not found for OAuth connection")
+            ),
+            pytest.raises(EntityNotFoundError, match="User not found for OAuth connection"),
         ):
             await oauth_service._find_or_create_user(
                 tenant_id=tenant_id,
@@ -1107,7 +1138,8 @@ class TestPrivateMethods:
                 "_get_user_by_id",
                 new_callable=AsyncMock,
                 return_value=None,
-            ),pytest.raises(ValueError, match="User not found")
+            ),
+            pytest.raises(EntityNotFoundError, match="User not found"),
         ):
             await oauth_service._link_oauth_account(
                 user_id=user_id,
@@ -1131,7 +1163,8 @@ class TestPrivateMethods:
             updated_at=datetime.now(UTC),
         )
 
-        result = oauth_service._model_to_sso_config(mock_model)
+        with patch("app.application.services.oauth_service.decrypt_value", side_effect=lambda x: x):
+            result = oauth_service._model_to_sso_config(mock_model)
 
         assert result is not None
         assert str(result.id) == str(mock_model.id)

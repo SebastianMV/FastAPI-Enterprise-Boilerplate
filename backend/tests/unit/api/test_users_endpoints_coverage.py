@@ -74,7 +74,7 @@ class TestListUsersEndpoint:
 
             assert result.total == 50
             assert result.pages == 5
-            mock_repo.list.assert_called_once_with(skip=20, limit=10, is_active=True)
+            mock_repo.list.assert_called_once_with(skip=20, limit=10, is_active=True, tenant_id=None)
 
     @pytest.mark.asyncio
     async def test_list_users_filter_active(self) -> None:
@@ -98,7 +98,7 @@ class TestListUsersEndpoint:
             )
 
             mock_repo.list.assert_called_once()
-            mock_repo.count.assert_called_once_with(is_active=False)
+            mock_repo.count.assert_called_once_with(is_active=False, tenant_id=None)
 
 
 class TestGetUserEndpoint:
@@ -123,6 +123,7 @@ class TestGetUserEndpoint:
                 await get_user(
                     user_id=user_id,
                     current_user_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -224,6 +225,7 @@ class TestUpdateUserEndpoint:
                     user_id=user_id,
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -254,6 +256,7 @@ class TestUpdateUserEndpoint:
                     user_id=user_id,
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -287,6 +290,7 @@ class TestUpdateUserEndpoint:
                     user_id=user_id,
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -306,7 +310,7 @@ class TestDeleteUserEndpoint:
             "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
         ) as mock_repo_cls:
             mock_repo = AsyncMock()
-            mock_repo.delete.side_effect = EntityNotFoundError("User not found")
+            mock_repo.get_by_id.return_value = None  # User not found in pre-check
             mock_repo_cls.return_value = mock_repo
 
             from fastapi import HTTPException
@@ -315,6 +319,7 @@ class TestDeleteUserEndpoint:
                 await delete_user(
                     user_id=user_id,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -326,16 +331,32 @@ class TestDeleteUserEndpoint:
         user_id = uuid4()
         mock_session = MagicMock()
 
-        with patch(
-            "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
-        ) as mock_repo_cls:
+        mock_user = MagicMock()
+        mock_user.id = user_id
+        mock_user.tenant_id = None
+
+        with (
+            patch(
+                "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
+            ) as mock_repo_cls,
+            patch(
+                "app.api.v1.endpoints.users.SQLAlchemySessionRepository"
+            ),
+            patch(
+                "app.api.v1.endpoints.users.DeleteUserUseCase"
+            ) as mock_use_case_cls,
+        ):
             mock_repo = AsyncMock()
-            mock_repo.delete.return_value = None
+            mock_repo.get_by_id.return_value = mock_user
             mock_repo_cls.return_value = mock_repo
+
+            mock_use_case = AsyncMock()
+            mock_use_case_cls.return_value = mock_use_case
 
             result = await delete_user(
                 user_id=user_id,
                 superuser_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -366,6 +387,7 @@ class TestUpdateSelfEndpoint:
                 await update_self(
                     request=request,
                     current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -437,6 +459,7 @@ class TestUpdateUserFieldVariations:
                 user_id=user_id,
                 request=request,
                 superuser_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -444,4 +467,5 @@ class TestUpdateUserFieldVariations:
             # Verify all fields were updated
             assert mock_user.first_name == "NewFirst"
             assert mock_user.last_name == "NewLast"
-            assert mock_user.is_active is False
+            # Use case calls user.deactivate() rather than setting is_active directly
+            mock_user.deactivate.assert_called_once()

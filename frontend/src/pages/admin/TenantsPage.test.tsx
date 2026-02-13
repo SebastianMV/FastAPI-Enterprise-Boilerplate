@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TenantsPage from './TenantsPage';
 
 // Mock services
@@ -27,6 +27,7 @@ vi.mock('@/services/api', () => ({
 let mockUser = { is_superuser: true, first_name: 'Admin', last_name: 'User', email: 'admin@test.com' };
 
 vi.mock('@/stores/authStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
   useAuthStore: (selector?: (s: any) => any) => {
     const state = { user: mockUser };
     return selector ? selector(state) : state;
@@ -35,8 +36,10 @@ vi.mock('@/stores/authStore', () => ({
 
 // Mock Modal components
 vi.mock('@/components/common/Modal', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   Modal: ({ isOpen, children, title }: any) =>
     isOpen ? <div data-testid="modal"><h2>{title}</h2>{children}</div> : null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   ConfirmModal: ({ isOpen, onConfirm, title, message }: any) =>
     isOpen ? (
       <div data-testid="confirm-modal">
@@ -45,6 +48,7 @@ vi.mock('@/components/common/Modal', () => ({
         <button onClick={onConfirm}>Confirm</button>
       </div>
     ) : null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   AlertModal: ({ isOpen, title, message }: any) =>
     isOpen ? <div data-testid="alert-modal"><h2>{title}</h2><p>{message}</p></div> : null,
 }));
@@ -204,7 +208,7 @@ describe('TenantsPage', () => {
   it('displays tenant email and domain when present', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('admin@acme.com')).toBeInTheDocument();
+      expect(screen.getByText('ad***@acme.com')).toBeInTheDocument();
     });
     expect(screen.getByText('acme.com')).toBeInTheDocument();
   });

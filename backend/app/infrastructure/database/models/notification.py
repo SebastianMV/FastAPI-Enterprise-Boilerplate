@@ -4,10 +4,11 @@
 """SQLAlchemy model for Notification entity."""
 
 from datetime import datetime
-from uuid import uuid4
+from typing import Any
+from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.entities.notification import NotificationPriority, NotificationType
@@ -26,21 +27,21 @@ class NotificationModel(Base):
 
     # Primary key
     id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PgUUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
 
     # Tenant isolation
     tenant_id: Mapped[UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        PgUUID(as_uuid=True),
         nullable=True,  # Null for system-wide notifications
         index=True,
     )
 
     # Target user
     user_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PgUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -63,7 +64,7 @@ class NotificationModel(Base):
     )
 
     # Rich content metadata
-    extra_data: Mapped[dict] = mapped_column(
+    extra_data: Mapped[dict[str, Any]] = mapped_column(
         "metadata",  # Column name in DB
         JSONBCompat,
         nullable=False,
@@ -90,7 +91,7 @@ class NotificationModel(Base):
     )
 
     # Delivery status per channel
-    delivery_status: Mapped[dict] = mapped_column(
+    delivery_status: Mapped[dict[str, Any]] = mapped_column(
         JSONBCompat,
         nullable=False,
         server_default="{}",

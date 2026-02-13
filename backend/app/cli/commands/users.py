@@ -72,6 +72,7 @@ async def _create_superuser(
     """Async implementation of create-superuser command."""
     from app.cli.utils import get_or_create_default_tenant
     from app.domain.entities.user import User
+    from app.domain.exceptions.base import ValidationError as DomainValidationError
     from app.domain.value_objects.email import Email
     from app.domain.value_objects.password import Password
     from app.infrastructure.auth.jwt_handler import hash_password
@@ -83,16 +84,16 @@ async def _create_superuser(
     try:
         # Validate email
         validated_email = Email(email)
-    except ValueError:
+    except (ValueError, DomainValidationError):
         console.print("[red]Invalid email format[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     try:
         # Validate password
         validated_password = Password(password)
-    except ValueError:
+    except (ValueError, DomainValidationError):
         console.print("[red]Password does not meet security requirements[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     async with async_session_maker() as session:
         repo = SQLAlchemyUserRepository(session)

@@ -28,7 +28,7 @@ class TestRateLimitExceeded:
     def test_creates_exception_with_retry_after(self):
         exc = RateLimitExceeded(retry_after=30)
         assert exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS
-        assert "30 seconds" in exc.detail
+        assert exc.detail == "Rate limit exceeded. Please try again later."
         assert exc.headers is not None  # Type narrowing
         assert exc.headers["Retry-After"] == "30"
 
@@ -57,65 +57,71 @@ class TestSlidingWindowEntry:
 class TestInMemoryRateLimiter:
     """Tests for InMemoryRateLimiter."""
 
-    def test_allows_first_request(self):
+    @pytest.mark.asyncio
+    async def test_allows_first_request(self):
         limiter = InMemoryRateLimiter()
-        allowed, remaining, retry_after = limiter.is_allowed("key1", 10, 60)
+        allowed, remaining, retry_after = await limiter.is_allowed("key1", 10, 60)
         assert allowed is True
         assert remaining == 9
         assert retry_after == 0
 
-    def test_allows_up_to_limit(self):
+    @pytest.mark.asyncio
+    async def test_allows_up_to_limit(self):
         limiter = InMemoryRateLimiter()
         key = "test_key"
 
         for i in range(10):
-            allowed, remaining, retry_after = limiter.is_allowed(key, 10, 60)
+            allowed, remaining, retry_after = await limiter.is_allowed(key, 10, 60)
             assert allowed is True
             assert remaining == 10 - i - 1
 
-    def test_blocks_over_limit(self):
+    @pytest.mark.asyncio
+    async def test_blocks_over_limit(self):
         limiter = InMemoryRateLimiter()
         key = "blocked_key"
 
         # Use up the limit
         for _ in range(5):
-            limiter.is_allowed(key, 5, 60)
+            await limiter.is_allowed(key, 5, 60)
 
         # Next request should be blocked
-        allowed, remaining, retry_after = limiter.is_allowed(key, 5, 60)
+        allowed, remaining, retry_after = await limiter.is_allowed(key, 5, 60)
         assert allowed is False
         assert remaining == 0
         assert retry_after > 0
 
-    def test_retry_after_is_positive(self):
+    @pytest.mark.asyncio
+    async def test_retry_after_is_positive(self):
         limiter = InMemoryRateLimiter()
         key = "retry_key"
 
         for _ in range(3):
-            limiter.is_allowed(key, 3, 60)
+            await limiter.is_allowed(key, 3, 60)
 
-        allowed, _, retry_after = limiter.is_allowed(key, 3, 60)
+        allowed, _, retry_after = await limiter.is_allowed(key, 3, 60)
         assert allowed is False
         assert retry_after >= 1
 
-    def test_different_keys_independent(self):
+    @pytest.mark.asyncio
+    async def test_different_keys_independent(self):
         limiter = InMemoryRateLimiter()
 
         # Use up limit for key1
         for _ in range(5):
-            limiter.is_allowed("key1", 5, 60)
+            await limiter.is_allowed("key1", 5, 60)
 
         # key2 should still be allowed
-        allowed, remaining, _ = limiter.is_allowed("key2", 5, 60)
+        allowed, remaining, _ = await limiter.is_allowed("key2", 5, 60)
         assert allowed is True
         assert remaining == 4
 
-    def test_cleanup_removes_old_entries(self):
+    @pytest.mark.asyncio
+    async def test_cleanup_removes_old_entries(self):
         limiter = InMemoryRateLimiter()
         key = "cleanup_key"
 
         # Add some requests
-        limiter.is_allowed(key, 10, 60)
+        await limiter.is_allowed(key, 10, 60)
         assert key in limiter._requests
 
         # Manually set old timestamps
@@ -127,11 +133,12 @@ class TestInMemoryRateLimiter:
         # Key should be removed
         assert key not in limiter._requests
 
-    def test_cleanup_keeps_recent_entries(self):
+    @pytest.mark.asyncio
+    async def test_cleanup_keeps_recent_entries(self):
         limiter = InMemoryRateLimiter()
         key = "keep_key"
 
-        limiter.is_allowed(key, 10, 60)
+        await limiter.is_allowed(key, 10, 60)
         limiter.cleanup(max_age=3600)
 
         # Recent entry should be kept
@@ -290,7 +297,7 @@ class TestRateLimitMiddleware:
             mock_settings.RATE_LIMIT_ENABLED = True
             with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
                 mock_limiter = Mock()
-                mock_limiter.is_allowed = Mock(return_value=(True, 99, 0))
+                mock_limiter.is_allowed = AsyncMock(return_value=(True, 99, 0))
                 mock_limiter_fn.return_value = mock_limiter
 
                 app.add_middleware(RateLimitMiddleware)
@@ -318,7 +325,7 @@ class TestRateLimitMiddleware:
             mock_settings.RATE_LIMIT_ENABLED = True
             with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
                 mock_limiter = Mock()
-                mock_limiter.is_allowed = Mock(return_value=(True, 99, 0))
+                mock_limiter.is_allowed = AsyncMock(return_value=(True, 99, 0))
                 mock_limiter_fn.return_value = mock_limiter
 
                 app.add_middleware(RateLimitMiddleware)
@@ -349,7 +356,7 @@ class TestRateLimitMiddleware:
             mock_settings.RATE_LIMIT_ENABLED = True
             with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
                 mock_limiter = Mock()
-                mock_limiter.is_allowed = Mock(return_value=(True, 99, 0))
+                mock_limiter.is_allowed = AsyncMock(return_value=(True, 99, 0))
                 mock_limiter_fn.return_value = mock_limiter
 
                 app.add_middleware(RateLimitMiddleware)
@@ -379,7 +386,7 @@ class TestRateLimitMiddleware:
             mock_settings.RATE_LIMIT_ENABLED = True
             with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
                 mock_limiter = Mock()
-                mock_limiter.is_allowed = Mock(return_value=(True, 99, 0))
+                mock_limiter.is_allowed = AsyncMock(return_value=(True, 99, 0))
                 mock_limiter_fn.return_value = mock_limiter
 
                 app.add_middleware(RateLimitMiddleware)
@@ -407,7 +414,7 @@ class TestRateLimitMiddleware:
             mock_settings.RATE_LIMIT_ENABLED = True
             with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
                 mock_limiter = Mock()
-                mock_limiter.is_allowed = Mock(return_value=(True, 99, 0))
+                mock_limiter.is_allowed = AsyncMock(return_value=(True, 99, 0))
                 mock_limiter_fn.return_value = mock_limiter
 
                 app.add_middleware(RateLimitMiddleware)
@@ -443,7 +450,7 @@ class TestRateLimitMiddleware:
             mock_settings.RATE_LIMIT_ENABLED = True
             with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
                 mock_limiter = Mock()
-                mock_limiter.is_allowed = Mock(return_value=(True, 99, 0))
+                mock_limiter.is_allowed = AsyncMock(return_value=(True, 99, 0))
                 mock_limiter_fn.return_value = mock_limiter
 
                 app.add_middleware(RateLimitMiddleware)
@@ -474,7 +481,7 @@ class TestRateLimitMiddleware:
             mock_settings.RATE_LIMIT_ENABLED = True
             with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
                 mock_limiter = Mock()
-                mock_limiter.is_allowed = Mock(return_value=(True, 99, 0))
+                mock_limiter.is_allowed = AsyncMock(return_value=(True, 99, 0))
                 mock_limiter_fn.return_value = mock_limiter
 
                 app.add_middleware(RateLimitMiddleware)
@@ -504,7 +511,7 @@ class TestRateLimitMiddleware:
             mock_settings.RATE_LIMIT_ENABLED = True
             with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
                 mock_limiter = Mock()
-                mock_limiter.is_allowed = Mock(return_value=(False, 0, 30))
+                mock_limiter.is_allowed = AsyncMock(return_value=(False, 0, 30))
                 mock_limiter_fn.return_value = mock_limiter
 
                 app.add_middleware(RateLimitMiddleware)
@@ -531,7 +538,7 @@ class TestRateLimitDecorator:
 
         with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
             mock_limiter = Mock()
-            mock_limiter.is_allowed = Mock(return_value=(True, 9, 0))
+            mock_limiter.is_allowed = AsyncMock(return_value=(True, 9, 0))
             mock_limiter_fn.return_value = mock_limiter
 
             result = await test_endpoint(mock_request)
@@ -547,7 +554,7 @@ class TestRateLimitDecorator:
 
         with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
             mock_limiter = Mock()
-            mock_limiter.is_allowed = Mock(return_value=(False, 0, 45))
+            mock_limiter.is_allowed = AsyncMock(return_value=(False, 0, 45))
             mock_limiter_fn.return_value = mock_limiter
 
             with pytest.raises(RateLimitExceeded):
@@ -570,7 +577,7 @@ class TestRateLimitDecorator:
 
         with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
             mock_limiter = Mock()
-            mock_limiter.is_allowed = Mock(return_value=(True, 9, 0))
+            mock_limiter.is_allowed = AsyncMock(return_value=(True, 9, 0))
             mock_limiter_fn.return_value = mock_limiter
 
             await test_endpoint(mock_request)
@@ -595,7 +602,7 @@ class TestRateLimitDecorator:
 
         with patch("app.middleware.rate_limit.get_rate_limiter") as mock_limiter_fn:
             mock_limiter = Mock()
-            mock_limiter.is_allowed = Mock(return_value=(True, 9, 0))
+            mock_limiter.is_allowed = AsyncMock(return_value=(True, 9, 0))
             mock_limiter_fn.return_value = mock_limiter
 
             result = await test_endpoint(request=mock_request)

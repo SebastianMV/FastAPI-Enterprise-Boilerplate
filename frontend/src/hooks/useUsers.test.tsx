@@ -1,12 +1,12 @@
 /**
  * Tests for useUsers hooks.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useUsers, useUser, useCreateUser, useUpdateUser, useDeleteUser } from './useUsers';
 import { usersService } from '@/services/api';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useCreateUser, useDeleteUser, useUpdateUser, useUser, useUsers } from './useUsers';
 
 // Mock the users service
 vi.mock('@/services/api', () => ({
@@ -19,7 +19,7 @@ vi.mock('@/services/api', () => ({
   },
 }));
 
-const mockUsersService = usersService as {
+const mockUsersService = usersService as unknown as {
   list: ReturnType<typeof vi.fn>;
   get: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
@@ -66,7 +66,7 @@ describe('useUsers hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockUsers);
-      expect(mockUsersService.list).toHaveBeenCalledWith(undefined);
+      expect(mockUsersService.list).toHaveBeenCalledWith({ skip: 0, limit: 20 });
     });
 
     it('should pass pagination params to list', async () => {
@@ -128,7 +128,7 @@ describe('useUsers hooks', () => {
 
   describe('useCreateUser', () => {
     it('should create a new user', async () => {
-      const newUser = { email: 'new@example.com', password: 'password123' };
+      const newUser = { email: 'new@example.com', password: 'password123', first_name: 'New', last_name: 'User' };
       const createdUser = { id: '3', ...newUser };
       mockUsersService.create.mockResolvedValue(createdUser);
 
@@ -152,7 +152,7 @@ describe('useUsers hooks', () => {
         wrapper: createWrapper(),
       });
 
-      result.current.mutate({ email: 'existing@example.com', password: 'pass' });
+      result.current.mutate({ email: 'existing@example.com', password: 'pass', first_name: 'Existing', last_name: 'User' });
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -162,7 +162,7 @@ describe('useUsers hooks', () => {
 
   describe('useUpdateUser', () => {
     it('should update an existing user', async () => {
-      const updateData = { full_name: 'Updated Name' };
+      const updateData = { first_name: 'Updated Name' };
       const updatedUser = { id: '1', email: 'user@example.com', ...updateData };
       mockUsersService.update.mockResolvedValue(updatedUser);
 

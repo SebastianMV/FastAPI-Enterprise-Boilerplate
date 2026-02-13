@@ -238,9 +238,7 @@ class TestAuthenticateAPIKey:
         mock_result.scalars.return_value.all.return_value = [mock_model]
         session.execute = AsyncMock(return_value=mock_result)
 
-        with patch(
-            "app.infrastructure.auth.api_key_handler.verify_password", return_value=True
-        ), pytest.raises(AuthenticationError) as exc_info:
+        with pytest.raises(AuthenticationError) as exc_info:
             await authenticate_api_key(session, full_key)
 
         assert "expired" in str(exc_info.value)
@@ -280,10 +278,7 @@ class TestAuthenticateAPIKey:
         session.execute = AsyncMock(return_value=mock_result)
         session.flush = AsyncMock()
 
-        with patch(
-            "app.infrastructure.auth.api_key_handler.verify_password", return_value=True
-        ):
-            result = await authenticate_api_key(session, full_key)
+        result = await authenticate_api_key(session, full_key)
 
         assert result.id == key_id
         assert mock_model.usage_count == 1
@@ -321,9 +316,7 @@ class TestAuthenticateAPIKey:
         session.execute = AsyncMock(return_value=mock_result)
         session.flush = AsyncMock()
 
-        with patch(
-            "app.infrastructure.auth.api_key_handler.verify_password", return_value=True
-        ), pytest.raises(AuthorizationError):
+        with pytest.raises(AuthorizationError):
             await authenticate_api_key(
                 session, full_key, required_scopes=["admin:write"]
             )

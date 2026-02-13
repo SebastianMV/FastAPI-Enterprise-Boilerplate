@@ -3,7 +3,6 @@
 
 """Unit tests for search endpoint schemas."""
 
-
 from app.api.v1.endpoints.search import (
     SearchFilterRequest,
     SearchHitResponse,

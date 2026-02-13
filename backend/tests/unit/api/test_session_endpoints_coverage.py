@@ -114,6 +114,7 @@ class TestListSessionsEndpoint:
         from app.api.v1.endpoints.sessions import list_sessions
 
         user_id = mock_sessions[0].user_id
+        tenant_id = mock_sessions[0].tenant_id
         mock_db = AsyncMock()
 
         with patch(
@@ -124,7 +125,7 @@ class TestListSessionsEndpoint:
             mock_repo_class.return_value = mock_repo
 
             result = await list_sessions(
-                user_id=user_id, session=mock_db, request=MagicMock(), credentials=None
+                user_id=user_id, tenant_id=tenant_id, session=mock_db, request=MagicMock(), credentials=None
             )
 
             assert result.total == 2
@@ -162,6 +163,7 @@ class TestRevokeSessionEndpoint:
                 result = await revoke_session(
                     session_id=session_id,
                     user_id=user_id,
+                    tenant_id=mock_sessions[0].tenant_id,
                     session=mock_db,
                     credentials=None,
                 )
@@ -194,6 +196,7 @@ class TestRevokeSessionEndpoint:
                     await revoke_session(
                         session_id=session_id,
                         user_id=user_id,
+                        tenant_id=mock_sessions[0].tenant_id,
                         session=mock_db,
                         credentials=None,
                     )
@@ -207,6 +210,7 @@ class TestRevokeSessionEndpoint:
         from app.api.v1.endpoints.sessions import revoke_session
 
         user_id = uuid4()
+        tenant_id = uuid4()
         session_id = uuid4()
         mock_db = AsyncMock()
 
@@ -226,6 +230,7 @@ class TestRevokeSessionEndpoint:
                     await revoke_session(
                         session_id=session_id,
                         user_id=user_id,
+                        tenant_id=tenant_id,
                         session=mock_db,
                         credentials=None,
                     )
@@ -257,6 +262,7 @@ class TestRevokeSessionEndpoint:
                     await revoke_session(
                         session_id=session_id,
                         user_id=other_user_id,
+                        tenant_id=mock_sessions[0].tenant_id,
                         session=mock_db,
                         credentials=None,
                     )
@@ -289,6 +295,7 @@ class TestRevokeSessionEndpoint:
                     await revoke_session(
                         session_id=session_id,
                         user_id=user_id,
+                        tenant_id=mock_sessions[0].tenant_id,
                         session=mock_db,
                         credentials=None,
                     )
@@ -305,6 +312,7 @@ class TestRevokeAllSessionsEndpoint:
         from app.api.v1.endpoints.sessions import revoke_all_sessions
 
         user_id = uuid4()
+        tenant_id = uuid4()
         current_jti = str(uuid4())
         mock_db = AsyncMock()
 
@@ -321,12 +329,12 @@ class TestRevokeAllSessionsEndpoint:
                 mock_get_jti.return_value = current_jti
 
                 result = await revoke_all_sessions(
-                    user_id=user_id, session=mock_db, credentials=None
+                    user_id=user_id, tenant_id=tenant_id, session=mock_db, credentials=None
                 )
 
                 assert result.revoked_count == 3
                 mock_repo.revoke_all_except.assert_awaited_once_with(
-                    user_id, UUID(current_jti)
+                    user_id, UUID(current_jti), tenant_id=tenant_id
                 )
 
     @pytest.mark.asyncio
@@ -335,6 +343,7 @@ class TestRevokeAllSessionsEndpoint:
         from app.api.v1.endpoints.sessions import revoke_all_sessions
 
         user_id = uuid4()
+        tenant_id = uuid4()
         mock_db = AsyncMock()
 
         with patch(
@@ -350,11 +359,11 @@ class TestRevokeAllSessionsEndpoint:
                 mock_get_jti.return_value = None
 
                 result = await revoke_all_sessions(
-                    user_id=user_id, session=mock_db, credentials=None
+                    user_id=user_id, tenant_id=tenant_id, session=mock_db, credentials=None
                 )
 
                 assert result.revoked_count == 5
-                mock_repo.revoke_all.assert_awaited_once_with(user_id)
+                mock_repo.revoke_all.assert_awaited_once_with(user_id, tenant_id=tenant_id)
 
     @pytest.mark.asyncio
     async def test_revoke_all_invalid_uuid_jti(self):
@@ -362,6 +371,7 @@ class TestRevokeAllSessionsEndpoint:
         from app.api.v1.endpoints.sessions import revoke_all_sessions
 
         user_id = uuid4()
+        tenant_id = uuid4()
         mock_db = AsyncMock()
 
         with patch(
@@ -377,8 +387,8 @@ class TestRevokeAllSessionsEndpoint:
                 mock_get_jti.return_value = "not-a-uuid"
 
                 result = await revoke_all_sessions(
-                    user_id=user_id, session=mock_db, credentials=None
+                    user_id=user_id, tenant_id=tenant_id, session=mock_db, credentials=None
                 )
 
                 assert result.revoked_count == 5
-                mock_repo.revoke_all.assert_awaited_once_with(user_id)
+                mock_repo.revoke_all.assert_awaited_once_with(user_id, tenant_id=tenant_id)

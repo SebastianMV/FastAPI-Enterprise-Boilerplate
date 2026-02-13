@@ -7,7 +7,7 @@
 
 # Stage 1: Builder
 # Pin to specific minor version for reproducibility.
-# Update periodically and verify with: docker pull python:3.13-slim
+# Update periodically and verify with: docker pull python:3.14-slim
 FROM python:3.14-slim AS builder
 
 WORKDIR /build
@@ -60,7 +60,7 @@ RUN rm -rf tests/ scripts/ .pytest_cache/ __pycache__/ *.md .git/
 USER appuser
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # Expose port
@@ -68,10 +68,10 @@ EXPOSE 8000
 
 # Production command with optimized settings
 CMD ["uvicorn", "app.main:app", \
-     "--host", "0.0.0.0", \
-     "--port", "8000", \
-     "--workers", "4", \
-     "--loop", "uvloop", \
-     "--http", "httptools", \
-     "--timeout-keep-alive", "75", \
-     "--no-access-log"]
+    "--host", "0.0.0.0", \
+    "--port", "8000", \
+    "--workers", "4", \
+    "--loop", "uvloop", \
+    "--http", "httptools", \
+    "--timeout-keep-alive", "75", \
+    "--no-access-log"]

@@ -6,7 +6,7 @@
 # It creates the app_user role used for RLS enforcement.
 # SECURITY: APP_USER_PASSWORD must be set before deploying.
 
-set -e
+set -euo pipefail
 
 : "${APP_USER_PASSWORD:?APP_USER_PASSWORD environment variable must be set}"
 

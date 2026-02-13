@@ -102,19 +102,18 @@ class ConsoleEmailSender(EmailSenderPort):
         """Print email to console."""
         recipients = ", ".join(r.formatted() for r in message.to)
 
-        logger.info("=" * 60)
-        logger.info("📧 EMAIL (Console Mode - Not Actually Sent)")
-        logger.info("=" * 60)
-        logger.info("To: %s", recipients)
-        logger.info("Subject: %s", message.subject)
-        logger.info("-" * 60)
-        logger.info("TEXT BODY:")
+        logger.info("email_console_separator")
+        logger.info("email_console_mode")
+        logger.info("email_console_separator")
+        logger.info("email_console_send", recipients=recipients, subject=message.subject)
+        logger.info("email_console_body_separator")
+        logger.info("email_console_text_body")
         logger.info(
             message.text_body[:500] + "..."
             if len(message.text_body) > 500
             else message.text_body
         )
-        logger.info("=" * 60)
+        logger.info("email_console_separator")
 
         return True
 
@@ -188,11 +187,11 @@ class SMTPEmailSender(EmailSenderPort):
                 start_tls=self.start_tls,
             )
 
-            logger.info("Email sent successfully to %d recipient(s)", len(message.to))
+            logger.info("email_sent", recipient_count=len(message.to))
             return True
 
         except Exception as e:
-            logger.error("Failed to send email: %s", type(e).__name__)
+            logger.error("email_send_failed", error_type=type(e).__name__)
             return False
 
     async def send_batch(self, messages: list[EmailMessage]) -> dict[str, bool]:

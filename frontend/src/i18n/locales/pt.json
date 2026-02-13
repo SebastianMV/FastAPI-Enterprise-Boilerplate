@@ -107,6 +107,11 @@
     "socialConnect": "Conectar",
     "socialContinue": "Continuar com",
     "socialConnectError": "Erro ao conectar",
+    "layoutAriaLabel": "Autenticação",
+    "invalidResetLink": "Link de redefinição inválido",
+    "resetLinkExpired": "Este link de redefinição de senha é inválido ou expirou. Por favor, solicite um novo.",
+    "requestNewLink": "Solicitar novo link",
+    "resetFailed": "Falha ao redefinir a senha. O link pode ter expirado.",
     "mfa": {
       "title": "Autenticação de Dois Fatores",
       "codeMustBe6Digits": "O código deve ter 6 dígitos",
@@ -869,7 +874,9 @@
     "importError": "Falha ao importar dados",
     "reportError": "Falha ao gerar relatório",
     "reportTitle": "Relatório de {{entity}}",
-    "reportPlaceholder": "Relatório de {{entity}}"
+    "reportPlaceholder": "Relatório de {{entity}}",
+    "fileTooLarge": "O arquivo é muito grande. O tamanho máximo é {{maxSize}}MB.",
+    "maxFileSize": "Máx {{maxSize}}MB"
   },
   "search": {
     "title": "Busca",

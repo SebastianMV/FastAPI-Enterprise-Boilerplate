@@ -64,7 +64,7 @@ export default function SettingsPage() {
       logout();
       navigate('/login');
     },
-    onError: (error: Error) => {
+    onError: (_error: Error) => {
       setShowDeleteModal(false);
       setAlertModal({
         isOpen: true,

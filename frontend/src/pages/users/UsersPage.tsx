@@ -1,26 +1,26 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { usersService, rolesService, type User } from '@/services/api';
+import { AlertModal, ConfirmModal, Modal } from '@/components/common/Modal';
+import { rolesService, usersService, type User } from '@/services/api';
 import { sanitizeText } from '@/utils/security';
 import { EMAIL_PATTERN, PASSWORD_PATTERN } from '@/utils/validation';
-import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Loader2,
-  UserPlus,
-  Mail,
-  Lock,
-  User as UserIcon,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Shield,
+    CheckCircle,
+    Edit,
+    Loader2,
+    Lock,
+    Mail,
+    Plus,
+    RefreshCw,
+    Search,
+    Shield,
+    Trash2,
+    User as UserIcon,
+    UserPlus,
+    XCircle,
 } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 interface CreateUserFormData {
   email: string;
@@ -58,7 +58,7 @@ export default function UsersPage() {
   }>({ isOpen: false, title: '', message: '', variant: 'success' });
   const [page, setPage] = useState(1);
   const pageSize = 20;
-  
+
   const queryClient = useQueryClient();
 
   // Fetch users
@@ -425,7 +425,7 @@ export default function UsersPage() {
                   disabled={page === 1}
                   className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  {t('common.previous', 'Previous')}
+                  {t('common.previous')}
                 </button>
                 <span className="text-sm text-slate-600 dark:text-slate-400">
                   {page} / {totalPages}
@@ -435,7 +435,7 @@ export default function UsersPage() {
                   disabled={page === totalPages}
                   className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  {t('common.next', 'Next')}
+                  {t('common.next')}
                 </button>
               </div>
             )}
@@ -531,7 +531,7 @@ export default function UsersPage() {
                   },
                   pattern: {
                     value: PASSWORD_PATTERN,
-                    message: t('validation.passwordComplexity', 'Password must include uppercase, lowercase, number, and special character'),
+                    message: t('validation.passwordComplexity'),
                   },
                 })}
                 type="password"

@@ -347,9 +347,12 @@ class TestWebSocketEndpointFlow:
         mock_websocket = AsyncMock()
         mock_websocket.close = AsyncMock()
 
-        with patch.object(ws_module.settings, "WEBSOCKET_ENABLED", True), patch(
-            "app.api.v1.endpoints.websocket.authenticate_websocket",
-            return_value=None,
+        with (
+            patch.object(ws_module.settings, "WEBSOCKET_ENABLED", True),
+            patch(
+                "app.api.v1.endpoints.websocket.authenticate_websocket",
+                return_value=None,
+            ),
         ):
             await websocket_endpoint(mock_websocket, token=None)
 

@@ -1,5 +1,5 @@
+import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import i18n from '../../i18n';
 
 interface ErrorBoundaryProps {
@@ -36,6 +36,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     // Log to console in development only; in production this should report
     // to Sentry, LogRocket, etc.
     if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console -- development-only error logging
       console.error('[ErrorBoundary] Uncaught error:', error, errorInfo);
     }
   }
@@ -76,10 +77,10 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
           {/* Message */}
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {i18n.t('errorBoundary.title', 'Something went wrong')}
+              {i18n.t('errorBoundary.title')}
             </h1>
             <p className="text-slate-600 dark:text-slate-400">
-              {i18n.t('errorBoundary.description', 'An unexpected error occurred. You can try reloading the page or going back to the home page.')}
+              {i18n.t('errorBoundary.description')}
             </p>
           </div>
 
@@ -90,14 +91,14 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
               className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
-              {i18n.t('errorBoundary.reload', 'Reload page')}
+              {i18n.t('errorBoundary.reload')}
             </button>
             <button
               onClick={this.handleGoHome}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
               <Home className="w-4 h-4" />
-              {i18n.t('errorBoundary.goHome', 'Go home')}
+              {i18n.t('errorBoundary.goHome')}
             </button>
           </div>
 
@@ -105,7 +106,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
           {isDev && this.state.error && (
             <details className="mt-6 text-left rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
               <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300">
-                {i18n.t('errorBoundary.details', 'Error details (dev only)')}
+                {i18n.t('errorBoundary.details')}
               </summary>
               <pre className="mt-3 overflow-auto rounded bg-slate-100 dark:bg-slate-900 p-3 text-xs text-red-700 dark:text-red-400 whitespace-pre-wrap">
                 {this.state.error.toString()}
@@ -115,7 +116,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                 onClick={this.handleReset}
                 className="mt-3 text-xs text-primary-600 hover:underline"
               >
-                {i18n.t('errorBoundary.recover', 'Try to recover (reset boundary)')}
+                {i18n.t('errorBoundary.recover')}
               </button>
             </details>
           )}

@@ -22,17 +22,19 @@ class TestInMemoryRateLimiter:
         """Create a fresh rate limiter for each test."""
         return InMemoryRateLimiter()
 
-    def test_allows_requests_under_limit(self, limiter):
+    @pytest.mark.asyncio
+    async def test_allows_requests_under_limit(self, limiter):
         """Should allow requests under the limit."""
         key = "test_user"
         limit = 10
         window = 60
 
         for i in range(limit):
-            allowed, remaining, retry_after = limiter.is_allowed(key, limit, window)
+            allowed, remaining, retry_after = await limiter.is_allowed(key, limit, window)
             assert allowed is True, f"Request {i + 1} should be allowed"
 
-    def test_blocks_requests_over_limit(self, limiter):
+    @pytest.mark.asyncio
+    async def test_blocks_requests_over_limit(self, limiter):
         """Should block requests over the limit."""
         key = "test_user"
         limit = 5
@@ -40,13 +42,14 @@ class TestInMemoryRateLimiter:
 
         # Exhaust the limit
         for _ in range(limit):
-            limiter.is_allowed(key, limit, window)
+            await limiter.is_allowed(key, limit, window)
 
         # Next request should be blocked
-        allowed, remaining, retry_after = limiter.is_allowed(key, limit, window)
+        allowed, remaining, retry_after = await limiter.is_allowed(key, limit, window)
         assert allowed is False
 
-    def test_reset_after_window(self, limiter):
+    @pytest.mark.asyncio
+    async def test_reset_after_window(self, limiter):
         """Should reset counter after window expires."""
         key = "test_user"
         limit = 5
@@ -54,20 +57,21 @@ class TestInMemoryRateLimiter:
 
         # Exhaust the limit
         for _ in range(limit):
-            limiter.is_allowed(key, limit, window)
+            await limiter.is_allowed(key, limit, window)
 
         # Should be blocked
-        allowed, _, _ = limiter.is_allowed(key, limit, window)
+        allowed, _, _ = await limiter.is_allowed(key, limit, window)
         assert allowed is False
 
         # Wait for window to expire
         time.sleep(1.1)
 
         # Should be allowed again
-        allowed, _, _ = limiter.is_allowed(key, limit, window)
+        allowed, _, _ = await limiter.is_allowed(key, limit, window)
         assert allowed is True
 
-    def test_returns_remaining_count(self, limiter):
+    @pytest.mark.asyncio
+    async def test_returns_remaining_count(self, limiter):
         """Should return correct remaining count."""
         key = "test_user"
         limit = 10
@@ -75,13 +79,14 @@ class TestInMemoryRateLimiter:
 
         # Use 3 requests
         for _ in range(3):
-            limiter.is_allowed(key, limit, window)
+            await limiter.is_allowed(key, limit, window)
 
-        allowed, remaining, _ = limiter.is_allowed(key, limit, window)
+        allowed, remaining, _ = await limiter.is_allowed(key, limit, window)
         assert allowed is True
         assert remaining == limit - 4  # 10 - 4 = 6
 
-    def test_returns_retry_after_when_blocked(self, limiter):
+    @pytest.mark.asyncio
+    async def test_returns_retry_after_when_blocked(self, limiter):
         """Should return retry_after when blocked."""
         key = "test_user"
         limit = 5
@@ -89,39 +94,41 @@ class TestInMemoryRateLimiter:
 
         # Exhaust the limit
         for _ in range(limit):
-            limiter.is_allowed(key, limit, window)
+            await limiter.is_allowed(key, limit, window)
 
         # Check retry_after
-        allowed, remaining, retry_after = limiter.is_allowed(key, limit, window)
+        allowed, remaining, retry_after = await limiter.is_allowed(key, limit, window)
         assert allowed is False
         assert remaining == 0
         assert retry_after > 0
 
-    def test_different_keys_independent(self, limiter):
+    @pytest.mark.asyncio
+    async def test_different_keys_independent(self, limiter):
         """Different keys should have independent limits."""
         limit = 5
         window = 60
 
         # Exhaust limit for user1
         for _ in range(limit):
-            limiter.is_allowed("user1", limit, window)
+            await limiter.is_allowed("user1", limit, window)
 
         # user1 blocked
-        allowed, _, _ = limiter.is_allowed("user1", limit, window)
+        allowed, _, _ = await limiter.is_allowed("user1", limit, window)
         assert allowed is False
 
         # user2 should still be allowed
-        allowed, _, _ = limiter.is_allowed("user2", limit, window)
+        allowed, _, _ = await limiter.is_allowed("user2", limit, window)
         assert allowed is True
 
-    def test_cleanup_removes_old_entries(self, limiter):
+    @pytest.mark.asyncio
+    async def test_cleanup_removes_old_entries(self, limiter):
         """Should cleanup old entries to prevent memory leak."""
         key = "test_user"
         limit = 10
         window = 1  # 1 second window
 
         # Add entries
-        limiter.is_allowed(key, limit, window)
+        await limiter.is_allowed(key, limit, window)
         assert key in limiter._requests
 
         # Wait for entries to expire

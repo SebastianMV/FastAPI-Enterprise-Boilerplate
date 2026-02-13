@@ -107,6 +107,11 @@
     "socialConnect": "Conectar",
     "socialContinue": "Continuar con",
     "socialConnectError": "Error al conectar",
+    "layoutAriaLabel": "Autenticación",
+    "invalidResetLink": "Enlace de restablecimiento inválido",
+    "resetLinkExpired": "Este enlace de restablecimiento de contraseña es inválido o ha expirado. Por favor, solicita uno nuevo.",
+    "requestNewLink": "Solicitar nuevo enlace",
+    "resetFailed": "Error al restablecer la contraseña. El enlace puede haber expirado.",
     "mfa": {
       "title": "Autenticación de Dos Factores",
       "codeMustBe6Digits": "El código debe ser de 6 dígitos",
@@ -845,7 +850,9 @@
     "importError": "Error al importar datos",
     "reportError": "Error al generar reporte",
     "reportTitle": "Reporte de {{entity}}",
-    "reportPlaceholder": "Reporte de {{entity}}"
+    "reportPlaceholder": "Reporte de {{entity}}",
+    "fileTooLarge": "El archivo es demasiado grande. El tamaño máximo es {{maxSize}}MB.",
+    "maxFileSize": "Máx {{maxSize}}MB"
   },
   "search": {
     "title": "Buscar",
@@ -925,8 +932,11 @@
   "validation": {
     "required": "Este campo es requerido",
     "invalidEmail": "Dirección de email inválida",
+    "emailInvalid": "Por favor ingresa una dirección de email válida",
     "passwordsMustMatch": "Las contraseñas deben coincidir",
+    "passwordMismatch": "Las contraseñas no coinciden",
     "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+    "passwordMin": "La contraseña debe tener al menos {{min}} caracteres",
     "invalidLength": "Debe tener entre {{min}} y {{max}} caracteres",
     "invalidFormat": "Formato inválido",
     "minLength": "Mínimo {{min}} caracteres",
@@ -934,8 +944,11 @@
   },
   "errors": {
     "general": "Algo salió mal. Por favor intenta de nuevo.",
+    "generic": "Algo salió mal. Por favor intenta de nuevo",
     "network": "Error de red. Por favor verifica tu conexión.",
+    "networkError": "Error de red. Por favor verifica tu conexión",
     "unauthorized": "No estás autorizado para realizar esta acción.",
+    "forbidden": "Acceso denegado",
     "notFound": "El recurso solicitado no fue encontrado.",
     "serverError": "Error del servidor. Por favor intenta más tarde.",
     "validationError": "Por favor verifica tu entrada e intenta de nuevo."

@@ -88,7 +88,7 @@ class UptimeTracker:
             logger.info("Uptime tracker initialized")
 
         except Exception as e:
-            logger.warning("Failed to initialize uptime tracker in Redis: %s", e)
+            logger.warning("uptime_tracker_init_failed", error=type(e).__name__)
 
     async def record_ping(self, is_healthy: bool) -> None:
         """
@@ -132,7 +132,7 @@ class UptimeTracker:
                 )
 
         except Exception as e:
-            logger.warning("Failed to record ping in Redis: %s", e)
+            logger.warning("uptime_record_ping_failed", error=type(e).__name__)
 
     async def get_uptime_percentage(self) -> float:
         """
@@ -164,7 +164,7 @@ class UptimeTracker:
             return 100.0  # No checks yet, assume healthy
 
         except Exception as e:
-            logger.warning("Failed to get uptime percentage: %s", e)
+            logger.warning("uptime_percentage_failed", error=type(e).__name__)
 
             # Fallback to local counters
             if self._local_check_count > 0:
@@ -190,7 +190,7 @@ class UptimeTracker:
                 return datetime.now(UTC) - start_time
 
         except Exception as e:
-            logger.warning("Failed to get uptime duration: %s", e)
+            logger.warning("uptime_duration_failed", error=type(e).__name__)
 
         # Fallback to local start time
         return datetime.now(UTC) - self._start_time
@@ -205,7 +205,7 @@ class UptimeTracker:
                 return datetime.fromisoformat(last_ping_str)
 
         except Exception as e:
-            logger.warning("Failed to get last ping: %s", e)
+            logger.warning("uptime_last_ping_failed", error=type(e).__name__)
 
         return None
 
@@ -231,7 +231,7 @@ class UptimeTracker:
             return [json.loads(incident) for incident in incidents]
 
         except Exception as e:
-            logger.warning("Failed to get recent incidents: %s", e)
+            logger.warning("uptime_recent_incidents_failed", error=type(e).__name__)
             return []
 
     async def get_stats(self) -> dict[str, Any]:

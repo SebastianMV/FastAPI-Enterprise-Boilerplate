@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersService, type User } from '@/services/api';
 import { clampPaginationParams } from '@/utils/security';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 /**
  * Hook for fetching users list.
@@ -31,7 +31,7 @@ export function useCreateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Partial<User> & { password: string }) =>
+    mutationFn: (data: Parameters<typeof usersService.create>[0]) =>
       usersService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

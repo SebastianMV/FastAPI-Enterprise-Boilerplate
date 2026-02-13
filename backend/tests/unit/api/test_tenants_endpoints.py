@@ -156,7 +156,7 @@ class TestCreateTenantEndpoint:
             )
 
         assert exc_info.value.status_code == 409
-        assert "Domain" in str(exc_info.value.detail)
+        assert "domain" in str(exc_info.value.detail).lower()
 
 
 class TestGetTenantRepository:
@@ -168,11 +168,14 @@ class TestGetTenantRepository:
 
         mock_session = MagicMock()
 
-        with patch(
-            "app.api.v1.endpoints.tenants.SQLAlchemyTenantRepository"
-        ) as mock_base_repo, patch(
-            "app.api.v1.endpoints.tenants.get_cached_tenant_repository"
-        ) as mock_get_cached:
+        with (
+            patch(
+                "app.api.v1.endpoints.tenants.SQLAlchemyTenantRepository"
+            ) as mock_base_repo,
+            patch(
+                "app.api.v1.endpoints.tenants.get_cached_tenant_repository"
+            ) as mock_get_cached,
+        ):
             mock_cached_repo = MagicMock()
             mock_get_cached.return_value = mock_cached_repo
 

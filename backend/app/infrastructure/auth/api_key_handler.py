@@ -8,6 +8,8 @@ Provides generation, validation, and management of API keys
 for machine-to-machine authentication.
 """
 
+import hashlib as _hashlib
+import hmac as _hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -17,11 +19,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.api_key import APIKey
 from app.domain.exceptions.base import AuthenticationError, AuthorizationError
-from app.infrastructure.auth.jwt_handler import hash_password, verify_password
 from app.infrastructure.database.models.api_key import APIKeyModel
 from app.infrastructure.observability.logging import get_logger
-import hashlib as _hashlib
-import hmac as _hmac
 
 logger = get_logger(__name__)
 
@@ -131,10 +130,7 @@ def validate_api_key_format(key: str) -> bool:
         return False
 
     # Check minimum length
-    if len(key) < len(API_KEY_PREFIX) + 1 + 20:
-        return False
-
-    return True
+    return len(key) >= len(API_KEY_PREFIX) + 1 + 20
 
 
 async def authenticate_api_key(
@@ -183,12 +179,12 @@ async def authenticate_api_key(
             break
 
     if not valid_model:
-        logger.warning("API key authentication failed: prefix=%s", prefix)
+        logger.warning("api_key_auth_failed", prefix=prefix)
         raise AuthenticationError(message="Invalid API key")
 
     # Check expiration
     if valid_model.expires_at and datetime.now(UTC) > valid_model.expires_at:
-        logger.warning("API key expired: id=%s", valid_model.id)
+        logger.warning("api_key_expired", key_id=str(valid_model.id))
         raise AuthenticationError(message="API key has expired")
 
     # Convert to entity
@@ -198,10 +194,10 @@ async def authenticate_api_key(
     if required_scopes:
         if not api_key.has_all_scopes(required_scopes):
             logger.warning(
-                "API key lacks required scopes: id=%s, required=%s, has=%s",
-                api_key.id,
-                required_scopes,
-                api_key.scopes,
+                "api_key_scope_denied",
+                key_id=str(api_key.id),
+                required=required_scopes,
+                has=api_key.scopes,
             )
             raise AuthorizationError(
                 message="API key lacks required permissions",
@@ -218,7 +214,7 @@ async def authenticate_api_key(
     valid_model.usage_count += 1
     await session.flush()
 
-    logger.info("API key authenticated: id=%s, name=%s", api_key.id, api_key.name)
+    logger.info("api_key_authenticated", key_id=str(api_key.id), name=api_key.name)
 
     return api_key
 
@@ -272,7 +268,7 @@ async def create_api_key(
     await session.flush()
     await session.refresh(model)
 
-    logger.info("API key created: id=%s, name=%s, user=%s", model.id, name, user_id)
+    logger.info("api_key_created", key_id=str(model.id), name=name, user_id=str(user_id))
 
     return full_key, _model_to_entity(model)
 
@@ -281,6 +277,7 @@ async def revoke_api_key(
     session: AsyncSession,
     key_id: UUID,
     user_id: UUID,
+    tenant_id: UUID | None = None,
 ) -> bool:
     """
     Revoke an API key.
@@ -289,6 +286,7 @@ async def revoke_api_key(
         session: Database session
         key_id: API key ID to revoke
         user_id: User performing the revocation
+        tenant_id: Tenant ID for isolation
 
     Returns:
         True if revoked, False if not found
@@ -296,8 +294,10 @@ async def revoke_api_key(
     stmt = select(APIKeyModel).where(
         APIKeyModel.id == key_id,
         APIKeyModel.user_id == user_id,
-        APIKeyModel.is_deleted == False,
+        APIKeyModel.is_deleted.is_(False),
     )
+    if tenant_id:
+        stmt = stmt.where(APIKeyModel.tenant_id == tenant_id)
     result = await session.execute(stmt)
     model = result.scalar_one_or_none()
 
@@ -310,7 +310,7 @@ async def revoke_api_key(
 
     await session.flush()
 
-    logger.info("API key revoked: id=%s, by=%s", key_id, user_id)
+    logger.info("api_key_revoked", key_id=str(key_id), user_id=str(user_id))
 
     return True
 
@@ -319,6 +319,7 @@ async def list_user_api_keys(
     session: AsyncSession,
     user_id: UUID,
     include_revoked: bool = False,
+    tenant_id: UUID | None = None,
 ) -> list[APIKey]:
     """
     List API keys for a user.
@@ -327,16 +328,20 @@ async def list_user_api_keys(
         session: Database session
         user_id: User ID
         include_revoked: Include revoked/deleted keys
+        tenant_id: Tenant ID for isolation
 
     Returns:
         List of APIKey entities
     """
     stmt = select(APIKeyModel).where(APIKeyModel.user_id == user_id)
 
+    if tenant_id:
+        stmt = stmt.where(APIKeyModel.tenant_id == tenant_id)
+
     if not include_revoked:
         stmt = stmt.where(
-            APIKeyModel.is_active == True,
-            APIKeyModel.is_deleted == False,
+            APIKeyModel.is_active.is_(True),
+            APIKeyModel.is_deleted.is_(False),
         )
 
     stmt = stmt.order_by(APIKeyModel.created_at.desc())

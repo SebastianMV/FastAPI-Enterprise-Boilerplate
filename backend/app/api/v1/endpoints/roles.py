@@ -12,7 +12,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentTenantId, CurrentUserId, DbSession, SuperuserId, require_permission
+from app.api.deps import (
+    CurrentTenantId,
+    CurrentUserId,
+    DbSession,
+    SuperuserId,
+    require_permission,
+)
 from app.api.v1.schemas.common import MessageResponse
 from app.api.v1.schemas.roles import (
     AssignRoleRequest,
@@ -26,13 +32,14 @@ from app.api.v1.schemas.roles import (
 from app.application.services.acl_service import ACLService
 from app.domain.entities.role import Permission, Role
 from app.domain.exceptions.base import ConflictError, EntityNotFoundError
+from app.domain.exceptions.base import ValidationError as DomainValidationError
 from app.infrastructure.database.connection import get_db_session
-from app.infrastructure.database.repositories.role_repository import (
-    SQLAlchemyRoleRepository,
-)
 from app.infrastructure.database.repositories.cached_role_repository import (
     CachedRoleRepository,
     get_cached_role_repository,
+)
+from app.infrastructure.database.repositories.role_repository import (
+    SQLAlchemyRoleRepository,
 )
 from app.infrastructure.database.repositories.user_repository import (
     SQLAlchemyUserRepository,
@@ -82,12 +89,13 @@ async def list_roles(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "NO_TENANT", "message": "Tenant context required"},
         )
-    
+
     roles = await repo.list(tenant_id=tenant_id, skip=skip, limit=limit)
-    
+    total = await repo.count(tenant_id=tenant_id)
+
     return RoleListResponse(
         items=[_role_to_response(r) for r in roles],
-        total=len(roles),
+        total=total,
     )
 
 
@@ -106,13 +114,13 @@ async def get_role(
 ) -> RoleResponse:
     """Get role by ID with caching."""
     role = await repo.get_by_id(role_id)
-    
+
     if not role:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "ROLE_NOT_FOUND", "message": "Role not found"},
         )
-    
+
     # Validate tenant ownership — prevent cross-tenant role access.
     # When tenant_id is present, only allow roles that belong to this tenant
     # or system roles (tenant_id=None) which are shared.
@@ -121,7 +129,7 @@ async def get_role(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "ROLE_NOT_FOUND", "message": "Role not found"},
         )
-    
+
     return _role_to_response(role)
 
 
@@ -144,13 +152,13 @@ async def create_role(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "NO_TENANT", "message": "Tenant context required"},
         )
-    
+
     # Validate permissions format
     permissions = []
     for perm_str in request.permissions:
         try:
             permissions.append(Permission.from_string(perm_str))
-        except ValueError:
+        except (ValueError, DomainValidationError):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
@@ -158,9 +166,9 @@ async def create_role(
                     "message": "Invalid permission format. Expected 'resource:action'.",
                 },
             ) from None
-    
+
     from uuid import uuid4
-    
+
     role = Role(
         id=uuid4(),
         tenant_id=tenant_id,
@@ -170,13 +178,13 @@ async def create_role(
         is_system=False,
         created_by=superuser_id,
     )
-    
+
     repo = SQLAlchemyRoleRepository(session)
-    
+
     try:
         created_role = await repo.create(role)
         return _role_to_response(created_role)
-    
+
     except ConflictError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -200,44 +208,47 @@ async def update_role(
     """Update role (admin only)."""
     repo = SQLAlchemyRoleRepository(session)
     role = await repo.get_by_id(role_id)
-    
+
     if not role:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "ROLE_NOT_FOUND", "message": "Role not found"},
         )
-    
+
     # Validate tenant ownership
     if tenant_id and role.tenant_id and role.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "ROLE_NOT_FOUND", "message": "Role not found"},
         )
-    
+
     if request.name is not None:
         role.name = request.name
-    
+
     if request.description is not None:
         role.description = request.description
-    
+
     if request.permissions is not None:
         permissions = []
         for perm_str in request.permissions:
             try:
                 permissions.append(Permission.from_string(perm_str))
-            except ValueError:
+            except (ValueError, DomainValidationError):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail={"code": "INVALID_PERMISSION", "message": "Invalid permission format. Expected 'resource:action'."},
+                    detail={
+                        "code": "INVALID_PERMISSION",
+                        "message": "Invalid permission format. Expected 'resource:action'.",
+                    },
                 ) from None
         role.permissions = permissions
-    
+
     role.mark_updated(by_user=superuser_id)
-    
+
     try:
         updated_role = await repo.update(role)
         return _role_to_response(updated_role)
-    
+
     except EntityNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -259,7 +270,7 @@ async def delete_role(
 ) -> MessageResponse:
     """Delete role (admin only). System roles cannot be deleted."""
     repo = SQLAlchemyRoleRepository(session)
-    
+
     # Validate tenant ownership before deletion
     role = await repo.get_by_id(role_id)
     if not role:
@@ -272,20 +283,20 @@ async def delete_role(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "ROLE_NOT_FOUND", "message": "Role not found"},
         )
-    
+
     try:
         await repo.delete(role_id)
         return MessageResponse(
             message="Role deleted successfully",
             success=True,
         )
-    
+
     except EntityNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": e.code, "message": e.message},
         ) from e
-    
+
     except ConflictError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -309,7 +320,7 @@ async def get_user_permissions(
     # Authorization: only self or superuser can view permissions
     if user_id != current_user_id:
         from app.infrastructure.database.models.user import UserModel
-        
+
         requester = await session.get(UserModel, current_user_id)
         if not requester or not requester.is_superuser:
             raise HTTPException(
@@ -319,10 +330,10 @@ async def get_user_permissions(
                     "message": "Only superusers can view other users' permissions",
                 },
             )
-    
+
     role_repo = SQLAlchemyRoleRepository(session)
     user_repo = SQLAlchemyUserRepository(session)
-    
+
     # Get user
     user = await user_repo.get_by_id(user_id)
     if not user:
@@ -336,17 +347,17 @@ async def get_user_permissions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     # Get user's roles
     roles = await role_repo.get_user_roles(user_id)
-    
+
     # Get ACL service to compute permissions
     acl_service = ACLService(role_repo)
     permissions = await acl_service.get_user_permissions(
         user_id=user_id,
         is_superuser=user.is_superuser,
     )
-    
+
     return UserPermissionsResponse(
         user_id=user_id,
         permissions=permissions,
@@ -369,7 +380,7 @@ async def assign_role(
     """Assign role to user (admin only)."""
     user_repo = SQLAlchemyUserRepository(session)
     role_repo = SQLAlchemyRoleRepository(session)
-    
+
     # Verify user exists
     user = await user_repo.get_by_id(request.user_id)
     if not user:
@@ -377,14 +388,14 @@ async def assign_role(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     # Verify user belongs to the same tenant
     if tenant_id and user.tenant_id and user.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     # Verify role exists
     role = await role_repo.get_by_id(request.role_id)
     if not role:
@@ -392,19 +403,19 @@ async def assign_role(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "ROLE_NOT_FOUND", "message": "Role not found"},
         )
-    
+
     # Verify role belongs to the same tenant
     if tenant_id and role.tenant_id and role.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "ROLE_NOT_FOUND", "message": "Role not found"},
         )
-    
+
     # Add role to user
     user.add_role(request.role_id)
     user.mark_updated(by_user=superuser_id)
     await user_repo.update(user)
-    
+
     return MessageResponse(
         message="Role assigned to user",
         success=True,
@@ -425,7 +436,7 @@ async def revoke_role(
 ) -> MessageResponse:
     """Revoke role from user (admin only)."""
     user_repo = SQLAlchemyUserRepository(session)
-    
+
     # Verify user exists
     user = await user_repo.get_by_id(request.user_id)
     if not user:
@@ -433,19 +444,19 @@ async def revoke_role(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     # Verify user belongs to the same tenant
     if tenant_id and user.tenant_id and user.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "USER_NOT_FOUND", "message": "User not found"},
         )
-    
+
     # Remove role from user
     user.remove_role(request.role_id)
     user.mark_updated(by_user=superuser_id)
     await user_repo.update(user)
-    
+
     return MessageResponse(
         message="Role revoked from user",
         success=True,

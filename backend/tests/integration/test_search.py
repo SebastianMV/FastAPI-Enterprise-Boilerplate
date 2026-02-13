@@ -7,7 +7,6 @@ Full-Text Search Integration Tests.
 Tests for search functionality using PostgreSQL FTS.
 """
 
-
 import pytest
 from httpx import AsyncClient
 

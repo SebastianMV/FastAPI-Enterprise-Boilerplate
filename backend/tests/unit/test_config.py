@@ -4,8 +4,6 @@
 """Tests for application configuration module."""
 
 
-
-
 class TestSettingsDefaults:
     """Tests for Settings default values."""
 

@@ -1,11 +1,11 @@
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Suspense, lazy, useEffect, useCallback } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import { useShallow } from 'zustand/react/shallow';
-import { AUTH_LOGOUT_EVENT } from '@/services/api';
-import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { AUTH_LOGOUT_EVENT } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
+import { Loader2 } from 'lucide-react';
+import { Suspense, lazy, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 
 // Layouts - loaded immediately (used on all pages)
 import AuthLayout from '@/components/layouts/AuthLayout';
@@ -100,9 +100,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
  * Main application component.
  */
 export default function App() {
-  const { isAuthenticated, user, fetchUser, logout } = useAuthStore(
+  const { user, fetchUser, logout } = useAuthStore(
     useShallow((s) => ({
-      isAuthenticated: s.isAuthenticated,
       user: s.user,
       fetchUser: s.fetchUser,
       logout: s.logout,
@@ -125,12 +124,17 @@ export default function App() {
   // Since we no longer persist user/isAuthenticated to localStorage,
   // we always try fetchUser() once to check if valid cookies exist.
   useEffect(() => {
+    let cancelled = false;
     if (!user) {
-      fetchUser().catch(() => {
-        // No valid session — mark initialization complete
-        useAuthStore.setState({ isInitializing: false });
-      });
+      (async () => {
+        try { await fetchUser(); } catch {
+          if (!cancelled) {
+            useAuthStore.setState({ isInitializing: false });
+          }
+        }
+      })();
     }
+    return () => { cancelled = true; };
   }, [user, fetchUser]);
 
   return (
@@ -145,10 +149,10 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         </Route>
-        
+
         {/* OAuth callback - no layout */}
         <Route path="/auth/oauth/callback" element={<OAuthCallbackPage />} />
-        
+
         {/* Email verification - no layout */}
         <Route path="/verify-email" element={<VerifyEmailPage />} />
 
@@ -163,7 +167,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
-          
+
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/settings" element={<SettingsPage />} />
@@ -172,7 +176,7 @@ export default function App() {
           <Route path="/security/mfa" element={<MFASettingsPage />} />
           <Route path="/security/sessions" element={<SessionsPage />} />
           <Route path="/security/audit" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
-          
+
           {/* Admin-only routes — require superuser */}
           <Route path="/admin/tenants" element={<AdminRoute><TenantsPage /></AdminRoute>} />
           <Route path="/admin/data" element={<AdminRoute><DataExchangePage /></AdminRoute>} />

@@ -42,7 +42,7 @@ class TestUsersEndpointCoverage:
         tenant_id = uuid4()
 
         # Mock Email to raise ValueError
-        with patch("app.api.v1.endpoints.users.Email") as mock_email:
+        with patch("app.application.use_cases.users.create_user.Email") as mock_email:
             mock_email.side_effect = ValueError("Invalid email format")
 
             from fastapi import HTTPException
@@ -79,8 +79,8 @@ class TestUsersEndpointCoverage:
 
         # Mock Password to raise ValueError
         with (
-            patch("app.api.v1.endpoints.users.Email") as mock_email,
-            patch("app.api.v1.endpoints.users.Password") as mock_password,
+            patch("app.application.use_cases.users.create_user.Email") as mock_email,
+            patch("app.application.use_cases.users.create_user.Password") as mock_password,
         ):
             mock_email.return_value = MagicMock()  # Email validates OK
             mock_password.side_effect = ValueError("Password too weak")
@@ -96,7 +96,7 @@ class TestUsersEndpointCoverage:
                 )
 
             assert exc.value.status_code == 400
-            assert "WEAK_PASSWORD" in str(exc.value.detail)
+            assert "INVALID_PASSWORD" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_create_user_email_exists(self, mock_session):
@@ -118,8 +118,8 @@ class TestUsersEndpointCoverage:
         tenant_id = uuid4()
 
         with (
-            patch("app.api.v1.endpoints.users.Email") as mock_email,
-            patch("app.api.v1.endpoints.users.Password") as mock_password,
+            patch("app.application.use_cases.users.create_user.Email") as mock_email,
+            patch("app.application.use_cases.users.create_user.Password") as mock_password,
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
@@ -167,14 +167,16 @@ class TestUsersEndpointCoverage:
         tenant_id = uuid4()
 
         with (
-            patch("app.api.v1.endpoints.users.Email") as mock_email,
-            patch("app.api.v1.endpoints.users.Password") as mock_password,
+            patch("app.application.use_cases.users.create_user.Email") as mock_email,
+            patch("app.application.use_cases.users.create_user.Password") as mock_password,
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch("app.api.v1.endpoints.users.hash_password", return_value="hashed"),
+            patch("app.application.use_cases.users.create_user.hash_password", return_value="hashed"),
         ):
-            mock_email.return_value = MagicMock()
+            mock_email_obj = MagicMock()
+            mock_email_obj.value = "new@example.com"
+            mock_email.return_value = mock_email_obj
             mock_pass_obj = MagicMock()
             mock_pass_obj.value = "Password123!"
             mock_password.return_value = mock_pass_obj
@@ -220,6 +222,7 @@ class TestUsersEndpointCoverage:
                 await update_self(
                     request=request,
                     current_user_id=current_user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -244,7 +247,7 @@ class TestUsersEndpointCoverage:
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch("app.api.v1.endpoints.users.Email") as mock_email,
+            patch("app.application.use_cases.users.update_user.Email") as mock_email,
         ):
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_user
@@ -259,6 +262,7 @@ class TestUsersEndpointCoverage:
                     user_id=user_id,
                     request=request,
                     superuser_id=superuser_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -279,10 +283,13 @@ class TestUsersEndpointCoverage:
         mock_user.id = current_user_id
         mock_user.avatar_url = None
 
+        # PNG magic bytes so file-content validation passes
+        png_header = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+
         mock_file = MagicMock(spec=UploadFile)
         mock_file.filename = "avatar.png"
         mock_file.content_type = "image/png"
-        mock_file.read = AsyncMock(return_value=b"fake image data")
+        mock_file.read = AsyncMock(return_value=png_header)
 
         with (
             patch(
@@ -304,6 +311,7 @@ class TestUsersEndpointCoverage:
                 await upload_avatar(
                     file=mock_file,
                     current_user_id=current_user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -421,6 +429,7 @@ class TestRolesEndpointCoverage:
                     role_id=role_id,
                     request=request,
                     superuser_id=superuser_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -460,6 +469,7 @@ class TestRolesEndpointCoverage:
                     role_id=role_id,
                     request=request,
                     superuser_id=superuser_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 

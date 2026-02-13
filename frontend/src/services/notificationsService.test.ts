@@ -1,7 +1,7 @@
 /**
  * Unit tests for notificationsService.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGet = vi.fn();
 const mockPost = vi.fn();
@@ -33,7 +33,7 @@ describe('notificationsService', () => {
   it('should list without params', async () => {
     mockGet.mockResolvedValueOnce({ data: { items: [], total: 0, unread_count: 0 } });
     await notificationsService.list();
-    expect(mockGet).toHaveBeenCalledWith('/notifications', { params: undefined });
+    expect(mockGet).toHaveBeenCalledWith('/notifications', { params: { skip: 0, limit: 20, unread_only: undefined } });
   });
 
   it('should getAll notifications', async () => {

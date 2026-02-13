@@ -8,6 +8,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.api.v1.schemas.common import TokenStr
+
 # ===========================================
 # Request Schemas
 # ===========================================
@@ -150,16 +152,17 @@ class VerifyEmailTokenRequest(BaseModel):
 class TokenResponse(BaseModel):
     """Authentication token response."""
 
-    access_token: str = Field(
+    access_token: TokenStr = Field(
         ...,
         description="JWT access token (short-lived)",
     )
-    refresh_token: str = Field(
+    refresh_token: TokenStr = Field(
         ...,
         description="JWT refresh token (long-lived)",
     )
     token_type: str = Field(
         default="bearer",
+        max_length=20,
         description="Token type (always 'bearer')",
     )
     expires_in: int = Field(
@@ -174,9 +177,9 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    email: str
-    first_name: str
-    last_name: str
+    email: str = Field(max_length=320)
+    first_name: str = Field(max_length=100)
+    last_name: str = Field(max_length=100)
     is_active: bool
     is_superuser: bool
     email_verified: bool = False

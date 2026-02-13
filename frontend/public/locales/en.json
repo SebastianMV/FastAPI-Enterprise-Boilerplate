@@ -11,6 +11,7 @@
     "actions": "Actions",
     "confirm": "Confirm",
     "back": "Back",
+    "previous": "Previous",
     "next": "Next",
     "submit": "Submit",
     "close": "Close",
@@ -19,7 +20,23 @@
     "success": "Success",
     "error": "Error",
     "warning": "Warning",
-    "info": "Information"
+    "info": "Information",
+    "untitled": "Untitled",
+    "closeDialog": "Close dialog",
+    "ok": "OK",
+    "signOut": "Sign out",
+    "note": "Note",
+    "accessDenied": "You don't have permission to access this page",
+    "fetchError": "Failed to fetch data",
+    "na": "N/A",
+    "never": "Never",
+    "retry": "Retry",
+    "brandName": "FastAPI Enterprise",
+    "brandLogoAlt": "Application logo",
+    "placeholderFirstName": "e.g. John",
+    "placeholderLastName": "e.g. Doe",
+    "placeholderEmail": "e.g. user@example.com",
+    "menu": "Open menu"
   },
   "auth": {
     "login": "Login",
@@ -81,8 +98,38 @@
       "enterManually": "Or enter this code manually",
       "backupCodes": "Backup Codes",
       "backupCodesDescription": "Save these backup codes in a secure location. Each code can only be used once.",
-      "enterCode": "Please enter your 6-digit authentication code"
-    }
+      "enterCode": "Please enter your 6-digit authentication code",
+      "codeMustBe6Digits": "Code must be 6 digits"
+    },
+    "loginFailed": "Login failed. Please try again.",
+    "registrationFailed": "Registration failed. Please try again.",
+    "requestFailed": "Failed to process request",
+    "didntReceiveEmail": "Didn't receive the email? Check your spam folder or try again.",
+    "tryAnotherEmail": "Try Another Email",
+    "rememberPassword": "Remember your password?",
+    "passwordRequirements": "Password requirements:",
+    "passwordReqMinChars": "At least 8 characters",
+    "passwordReqUppercase": "One uppercase letter",
+    "passwordReqLowercase": "One lowercase letter",
+    "passwordReqNumber": "One number",
+    "passwordReqSpecial": "One special character (!@#$...)",
+    "emailVerified": "Email Verified!",
+    "emailVerifiedSuccess": "Your email has been verified successfully.",
+    "goToDashboard": "Go to Dashboard",
+    "verificationFailed": "Verification Failed",
+    "verificationError": "Verification failed",
+    "invalidResetLink": "Invalid Reset Link",
+    "resetLinkExpired": "This password reset link is invalid or has expired. Please request a new one.",
+    "requestNewLink": "Request New Link",
+    "resetFailed": "Failed to reset password. The link may have expired.",
+    "noTokenProvided": "No Token Provided",
+    "noTokenMessage": "No verification token provided.",
+    "socialSignUp": "Sign up with",
+    "socialConnect": "Connect",
+    "socialContinue": "Continue with",
+    "socialConnectError": "Failed to connect",
+    "layoutAriaLabel": "Authentication",
+    "registrationDisabled": "Registration is currently disabled"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -117,7 +164,28 @@
     "loadingDashboard": "Loading dashboard...",
     "failedToLoad": "Failed to load dashboard data. Please try again.",
     "refreshData": "Refresh Data",
-    "lastUpdated": "Last updated"
+    "lastUpdated": "Last updated",
+    "overview": "Here's what's happening with your application today.",
+    "vsLastMonth": "vs last month",
+    "quickActions": "Quick Actions",
+    "addUser": "Add User",
+    "apiKeys": "API Keys",
+    "settings": "Settings",
+    "security": "Security",
+    "userOverview": "User Overview",
+    "newUsersLast7Days": "New users (last 7 days)",
+    "newUsersLast30Days": "New users (last 30 days)",
+    "activeInactive": "Active / Inactive",
+    "events": "events",
+    "noRecentActivity": "No recent activity",
+    "justNow": "Just now",
+    "minAgo": "{{count}} min ago",
+    "hAgo": "{{count}}h ago",
+    "dAgo": "{{count}}d ago",
+    "statTotalUsers": "Total Users",
+    "statActiveUsers": "Active Users",
+    "statApiKeys": "API Keys",
+    "statRoles": "Roles"
   },
   "users": {
     "title": "Users",
@@ -151,7 +219,9 @@
     "userDeleted": "User Deleted",
     "createError": "Failed to create user. Please try again.",
     "updateError": "Failed to update user. Please try again.",
-    "deleteError": "Failed to delete user. Please try again."
+    "deleteError": "Failed to delete user. Please try again.",
+    "subtitle": "Manage user accounts and permissions",
+    "showingCount": "Showing {{showing}} of {{total}} users"
   },
   "roles": {
     "title": "Roles",
@@ -205,7 +275,9 @@
       "read": "read",
       "update": "update",
       "delete": "delete"
-    }
+    },
+    "namePlaceholder": "e.g., Editor, Viewer, Manager",
+    "loadError": "Failed to load roles. Please try again."
   },
   "profile": {
     "title": "My Profile",
@@ -264,7 +336,36 @@
       "profile": "Profile Information",
       "security": "Security",
       "connections": "Connected Accounts"
-    }
+    },
+    "connectedAccountsDescription": "Link your social accounts for easier sign-in and additional features",
+    "connectedAs": "Connected as {{account}}",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "disconnectSuccess": "{{provider}} account disconnected",
+    "connectError": "Failed to connect account",
+    "disconnectError": "Failed to disconnect account",
+    "whyConnect": "Why connect accounts?",
+    "whyConnectReasons": {
+      "faster": "Sign in faster with one click",
+      "noPassword": "No need to remember another password",
+      "sync": "Sync profile information automatically"
+    },
+    "emailVerification": {
+      "verifyYourEmail": "Verify your email",
+      "verifyDescription": "Please verify your email address to access all features.",
+      "emailSent": "Verification email sent!",
+      "resend": "Resend verification",
+      "dismiss": "Dismiss"
+    },
+    "changePhoto": "Change photo",
+    "avatarUploadError": "Failed to upload avatar. Please try again.",
+    "invalidFileType": "Please select a valid image file (JPEG, PNG, GIF, or WebP).",
+    "fileTooLarge": "Image must be less than 5MB.",
+    "activeSessions": "Active Sessions",
+    "activeSessionsDescription": "Manage your active login sessions across devices.",
+    "viewAllSessions": "View All Sessions"
   },
   "settings": {
     "title": "Settings",
@@ -294,31 +395,71 @@
     "enableNotifications": "Enable Notifications",
     "disableNotifications": "Disable Notifications",
     "deleteAccount": "Delete Account",
-    "deleteAccountWarning": "Are you sure you want to delete your account? This action cannot be undone.",
+    "deleteAccountWarning": "Are you sure you want to delete your account? This action uses soft delete and can be reversed by an administrator. You will be logged out immediately.",
     "dangerZone": "Danger Zone",
     "features": "Features",
     "featuresDescription": "Optional features configured by system administrator",
     "websocketConnection": "WebSocket Connection",
     "websocketDescription": "Real-time bidirectional communication",
     "realtimeNotifications": "Real-time Notifications",
-    "realtimeNotificationsDescription": "Push notifications via WebSocket",
+    "realtimeNotificationsDescription": "Instant notification delivery via WebSocket",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "securityDescription": "Manage your account security settings",
+    "switchToLanguage": "Switch to {{language}}",
+    "languageRegionDescription": "Set your language and timezone",
+    "appearanceDescription": "Customize the look and feel",
+    "themeUpdated": "Theme Updated",
+    "themeChangedTo": "Theme changed to {{theme}}.",
+    "timezoneUpdated": "Timezone Updated",
+    "timezoneChangedTo": "Timezone changed to {{timezone}}.",
+    "notificationsUpdated": "Notifications Updated",
+    "notificationsToggled": "Notifications {{status}}.",
+    "deleteAccountDescription": "Delete your account. This uses soft delete and can be reversed by an administrator.",
+    "deletingAccount": "Deleting...",
+    "featuresNote": "These features are configured via environment variables by the system administrator. Contact your administrator to enable or disable optional features.",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "twoFactorAuthDescription": "Add an extra layer of security to your account",
+    "activeSessions": "Active Sessions",
+    "activeSessionsDescription": "View and manage your active sessions across devices",
+    "deleteError": "Failed to delete account. Please try again."
   },
   "validation": {
     "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "passwordsMustMatch": "Passwords must match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "invalidLength": "Must be between {{min}} and {{max}} characters",
+    "invalidFormat": "Invalid format",
+    "minLength": "Must be at least {{min}} characters",
+    "maxLength": "Must be at most {{max}} characters",
     "emailInvalid": "Please enter a valid email address",
     "passwordMin": "Password must be at least {{min}} characters",
+    "passwordMax": "Password must be at most {{max}} characters",
     "passwordMismatch": "Passwords do not match",
-    "minLength": "Must be at least {{min}} characters",
-    "maxLength": "Must be at most {{max}} characters"
+    "passwordRequired": "Password is required",
+    "passwordUppercase": "Password must contain an uppercase letter",
+    "passwordLowercase": "Password must contain a lowercase letter",
+    "passwordDigit": "Password must contain a digit",
+    "passwordSpecial": "Password must contain a special character",
+    "passwordStrength": "Password must contain uppercase, lowercase, digit and special character",
+    "passwordComplexity": "Password must include uppercase, lowercase, number, and special character"
+  },
+  "file": {
+    "tooLarge": "File size exceeds {{maxMB}}MB limit",
+    "empty": "File is empty",
+    "invalidExtension": "Invalid file type. Allowed: {{allowed}}",
+    "invalidMimeType": "Invalid file MIME type. Allowed: {{allowed}}"
   },
   "errors": {
-    "generic": "Something went wrong. Please try again",
-    "notFound": "Page not found",
+    "general": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
     "unauthorized": "You are not authorized to access this page",
-    "forbidden": "Access denied",
+    "notFound": "Page not found",
     "serverError": "Server error. Please try again later",
+    "validationError": "Please check your input and try again.",
+    "generic": "Something went wrong. Please try again",
+    "forbidden": "Access denied",
     "networkError": "Network error. Please check your connection"
   },
   "audit": {
@@ -363,13 +504,13 @@
       "ipAddress": "IP Address"
     },
     "pagination": {
-      "showing": "Showing",
-      "to": "to",
-      "of": "of",
-      "entries": "entries",
       "previous": "Previous",
       "next": "Next",
       "page": "Page",
+      "of": "of",
+      "showing": "Showing",
+      "to": "to",
+      "entries": "entries",
       "range": "Showing {{from}} to {{to}} of {{total}} entries",
       "pageOf": "Page {{page}} of {{totalPages}}"
     },
@@ -388,22 +529,30 @@
       "API_KEY_CREATED": "Created API key",
       "API_KEY_REVOKED": "Revoked API key"
     },
-    "pagination": {
-      "previous": "Previous",
-      "next": "Next",
-      "page": "Page",
-      "of": "of",
-      "showing": "Showing",
-      "to": "to",
-      "entries": "entries",
-      "range": "Showing {{from}} to {{to}} of {{total}} entries",
-      "pageOf": "Page {{page}} of {{totalPages}}"
-    },
     "detailsModal": {
       "title": "Audit Log Details",
       "close": "Close",
       "metadata": "Metadata",
-      "changes": "Changes"
+      "changes": "Changes",
+      "id": "ID",
+      "resourceType": "Resource Type",
+      "actorEmail": "Actor Email",
+      "system": "System",
+      "resourceName": "Resource Name",
+      "reason": "Reason",
+      "userAgent": "User Agent",
+      "before": "Before",
+      "after": "After"
+    },
+    "loadError": "Failed to load audit logs",
+    "resourceTypes": {
+      "user": "User",
+      "role": "Role",
+      "tenant": "Tenant",
+      "api_key": "API Key",
+      "session": "Session",
+      "notification": "Notification",
+      "sso_configuration": "SSO Configuration"
     }
   },
   "apiKeys": {
@@ -427,7 +576,20 @@
     "name": "Name",
     "prefix": "Prefix",
     "expires": "Expires",
-    "scopes": "Scopes",
+    "scopes": {
+      "usersRead": "Read Users",
+      "usersReadDesc": "View user information",
+      "usersWrite": "Write Users",
+      "usersWriteDesc": "Create and update users",
+      "rolesRead": "Read Roles",
+      "rolesReadDesc": "View roles and permissions",
+      "rolesWrite": "Write Roles",
+      "rolesWriteDesc": "Manage roles",
+      "apiKeysRead": "Read API Keys",
+      "apiKeysReadDesc": "View API keys",
+      "apiKeysWrite": "Write API Keys",
+      "apiKeysWriteDesc": "Manage API keys"
+    },
     "savedKey": "I've Saved My Key",
     "revoked": "Revoked",
     "expired": "Expired",
@@ -450,20 +612,7 @@
     "createError": "Failed to create API key",
     "usingApiKeys": "Using API Keys",
     "usingDescription": "API keys provide programmatic access to the API without requiring user authentication.",
-    "scopes": {
-      "usersRead": "Read Users",
-      "usersReadDesc": "View user information",
-      "usersWrite": "Write Users",
-      "usersWriteDesc": "Create and update users",
-      "rolesRead": "Read Roles",
-      "rolesReadDesc": "View roles and permissions",
-      "rolesWrite": "Write Roles",
-      "rolesWriteDesc": "Manage roles",
-      "apiKeysRead": "Read API Keys",
-      "apiKeysReadDesc": "View API keys",
-      "apiKeysWrite": "Write API Keys",
-      "apiKeysWriteDesc": "Manage API keys"
-    }
+    "usageExampleCommand": "curl -H \"X-API-Key: your_api_key_here\" https://your-api-domain.com/v1/users"
   },
   "notifications": {
     "title": "Notifications",
@@ -490,7 +639,10 @@
       "minutesAgo": "{{count}}m ago",
       "hoursAgo": "{{count}}h ago",
       "daysAgo": "{{count}}d ago"
-    }
+    },
+    "fetchError": "Failed to fetch notifications",
+    "deleteTitle": "Delete Notification",
+    "deleteConfirm": "Are you sure you want to delete this notification?"
   },
   "sessions": {
     "title": "Active Sessions",
@@ -516,7 +668,10 @@
       "minutesAgo": "{{count}} min ago",
       "hoursAgo": "{{count}} hours ago",
       "daysAgo": "{{count}} days ago"
-    }
+    },
+    "sessionRevokedMessage": "Session has been revoked successfully.",
+    "allSessionsRevokedMessage": "All other sessions have been revoked.",
+    "browserOnOs": "{{browser}} on {{os}}"
   },
   "mfa": {
     "title": "Two-Factor Authentication",
@@ -566,7 +721,11 @@
     "recommendedApps": "Google Authenticator, Microsoft Authenticator, Authy, 1Password, or any TOTP-compatible app.",
     "lostDevice": "Use one of your backup codes to sign in, then reconfigure 2FA with a new device.",
     "fetchError": "Failed to fetch MFA status",
-    "setupError": "Failed to setup MFA. Please try again."
+    "setupError": "Failed to setup MFA. Please try again.",
+    "qrCodeAlt": "MFA QR Code",
+    "copyCode": "Copy backup code",
+    "lostDeviceQuestion": "Lost your device?",
+    "lostDeviceAnswer": "Use one of your backup codes to sign in, then reconfigure 2FA with a new device."
   },
   "tenants": {
     "title": "Tenant Management",
@@ -646,7 +805,12 @@
       "primaryColor": "Primary Color",
       "yes": "Yes",
       "no": "No"
-    }
+    },
+    "localeEnglish": "English",
+    "localeSpanish": "Español",
+    "localePortuguese": "Português",
+    "feature2fa": "2FA",
+    "featureApiKeys": "API Keys"
   },
   "data": {
     "title": "Data Exchange",
@@ -684,7 +848,7 @@
     "skipped": "Skipped",
     "errors": "Errors",
     "errorDetails": "Error Details",
-    "reportTitle": "Report Title",
+    "reportTitle": "{{entity}} Report",
     "reportFormat": "Report Format",
     "availableFields": "Available Fields",
     "generateReportButton": "Generate Report",
@@ -693,7 +857,16 @@
     "templateError": "Failed to download template",
     "validateError": "Failed to validate file",
     "importError": "Failed to import data",
-    "reportError": "Failed to generate report"
+    "reportError": "Failed to generate report",
+    "acceptedFormats": "CSV, Excel",
+    "tabNavigation": "Data exchange tabs",
+    "importRowError": "Row {{row}}: {{field}} — validation failed",
+    "moreErrors": "... and {{count}} more errors",
+    "reportTitleLabel": "Report Title",
+    "reportPlaceholder": "{{entity}} Report",
+    "fileTooLarge": "File is too large. Maximum size is {{maxSize}}MB.",
+    "maxFileSize": "Max {{maxSize}}MB",
+    "invalidFileType": "Invalid file type. Only CSV, XLSX and XLS files are accepted."
   },
   "search": {
     "title": "Search",
@@ -739,7 +912,14 @@
     "page": "Page {{current}} of {{total}}",
     "previous": "Previous",
     "next": "Next",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "noResultsFor": "No results found for \"{{query}}\"",
+    "searchAll": "Search all for \"{{query}}\"",
+    "results": "Results",
+    "suggestions": "Suggestions",
+    "recentSearches": "Recent Searches",
+    "actionOnResource": "{{action}} on {{resource}}",
+    "byActor": "By: {{email}}"
   },
   "oauth": {
     "processing": "Processing authentication...",
@@ -757,24 +937,52 @@
     "authError": "Authentication failed: {{error}}",
     "invalidCallback": "Invalid callback: missing authorization code or state",
     "invalidState": "Invalid state parameter",
-    "authFailedGeneric": "Authentication failed. Please try again."
+    "authFailedGeneric": "Authentication failed. Please try again.",
+    "connectionFailed": "Failed to connect to provider",
+    "signUpWith": "Sign up with",
+    "connect": "Connect",
+    "continueWith": "Continue with"
   },
-  "validation": {
-    "required": "This field is required",
-    "invalidEmail": "Invalid email address",
-    "passwordsMustMatch": "Passwords must match",
-    "passwordTooShort": "Password must be at least 8 characters",
-    "invalidLength": "Must be between {{min}} and {{max}} characters",
-    "invalidFormat": "Invalid format",
-    "minLength": "Minimum {{min}} characters",
-    "maxLength": "Maximum {{max}} characters"
+  "userMenu": {
+    "title": "User menu",
+    "myProfile": "My Profile",
+    "languagePreferences": "Language & Preferences",
+    "apiKeys": "API Keys",
+    "security": "Security"
   },
-  "errors": {
-    "general": "Something went wrong. Please try again.",
-    "network": "Network error. Please check your connection.",
-    "unauthorized": "You are not authorized to perform this action.",
-    "notFound": "The requested resource was not found.",
-    "serverError": "Server error. Please try again later.",
-    "validationError": "Please check your input and try again."
+  "notificationsDropdown": {
+    "title": "Notifications",
+    "defaultTitle": "Notification",
+    "markAllRead": "Mark all read",
+    "noNotifications": "No notifications yet",
+    "emptyDescription": "We'll notify you when something arrives",
+    "viewAll": "View all notifications",
+    "justNow": "Just now",
+    "minuteAgo": "{{count}} minute ago",
+    "minutesAgo": "{{count}} minutes ago",
+    "hourAgo": "{{count}} hour ago",
+    "hoursAgo": "{{count}} hours ago",
+    "dayAgo": "{{count}} day ago",
+    "daysAgo": "{{count}} days ago",
+    "weekAgo": "{{count}} week ago",
+    "weeksAgo": "{{count}} weeks ago",
+    "monthAgo": "{{count}} month ago",
+    "monthsAgo": "{{count}} months ago",
+    "yearAgo": "{{count}} year ago",
+    "yearsAgo": "{{count}} years ago",
+    "markAsRead": "Mark as read",
+    "connected": "Connected",
+    "disconnected": "Disconnected"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. You can try reloading the page or going back to the home page.",
+    "reload": "Reload page",
+    "goHome": "Go home",
+    "details": "Error details (dev only)",
+    "recover": "Try to recover (reset boundary)"
+  },
+  "config": {
+    "fetchError": "Failed to load configuration"
   }
 }

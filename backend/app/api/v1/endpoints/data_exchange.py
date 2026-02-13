@@ -17,8 +17,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
-    get_current_tenant_id,
-    get_current_user,
+    CurrentTenantId,
     require_permission,
 )
 from app.domain.ports.data_exchange import (
@@ -43,8 +42,6 @@ MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
 # Type aliases
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
-CurrentUser = Annotated[Any, Depends(get_current_user)]
-CurrentTenantId = Annotated[Any, Depends(get_current_tenant_id)]
 DataReader = Annotated[UUID, Depends(require_permission("data", "read"))]
 DataWriter = Annotated[UUID, Depends(require_permission("data", "write"))]
 
@@ -231,7 +228,9 @@ async def export_data(
     current_user_id: DataReader,
     tenant_id: CurrentTenantId = None,
     format: str = Query("csv", enum=["csv", "excel", "json"]),
-    columns: str | None = Query(None, description="Comma-separated column names", max_length=500),
+    columns: str | None = Query(
+        None, description="Comma-separated column names", max_length=500
+    ),
 ) -> StreamingResponse:
     """
     Export entity data to a file.
@@ -344,10 +343,13 @@ async def download_template(
     try:
         template = importer.get_template(entity, format)
     except ValueError as e:
-        logger.warning("Template generation failed for %s: %s", entity, e)
+        logger.warning("template_generation_failed", entity=entity, error=type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "TEMPLATE_GENERATION_FAILED", "message": "Failed to generate import template"},
+            detail={
+                "code": "TEMPLATE_GENERATION_FAILED",
+                "message": "Failed to generate import template",
+            },
         ) from e
 
     filename = f"{entity}_template.{format if format == 'csv' else 'xlsx'}"
@@ -399,10 +401,13 @@ async def import_data(
 
     # Server-side file size validation
     # Check reported size first (if available) to fail fast
-    if hasattr(file, 'size') and file.size and file.size > MAX_IMPORT_FILE_SIZE:
+    if hasattr(file, "size") and file.size and file.size > MAX_IMPORT_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail={"code": "FILE_TOO_LARGE", "message": "File too large. Maximum size is 50 MB."},
+            detail={
+                "code": "FILE_TOO_LARGE",
+                "message": "File too large. Maximum size is 50 MB.",
+            },
         )
 
     # Stream-check actual size to avoid loading entire file into memory
@@ -412,7 +417,10 @@ async def import_data(
         if file_size > MAX_IMPORT_FILE_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail={"code": "FILE_TOO_LARGE", "message": "File too large. Maximum size is 50 MB."},
+                detail={
+                    "code": "FILE_TOO_LARGE",
+                    "message": "File too large. Maximum size is 50 MB.",
+                },
             )
     await file.seek(0)
 
@@ -425,7 +433,10 @@ async def import_data(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "UNSUPPORTED_FILE_TYPE", "message": "Unsupported file type. Use CSV or Excel (.xlsx)."},
+            detail={
+                "code": "UNSUPPORTED_FILE_TYPE",
+                "message": "Unsupported file type. Use CSV or Excel (.xlsx).",
+            },
         )
 
     from app.domain.ports.import_export import ImportRequest
@@ -500,7 +511,10 @@ async def generate_report(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "INVALID_DATE", "message": "Invalid date_from format. Use ISO 8601."},
+                detail={
+                    "code": "INVALID_DATE",
+                    "message": "Invalid date_from format. Use ISO 8601.",
+                },
             ) from None
     if request.date_to:
         try:
@@ -508,7 +522,10 @@ async def generate_report(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "INVALID_DATE", "message": "Invalid date_to format. Use ISO 8601."},
+                detail={
+                    "code": "INVALID_DATE",
+                    "message": "Invalid date_to format. Use ISO 8601.",
+                },
             ) from None
 
     reporter = get_reporter(session)

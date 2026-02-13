@@ -43,6 +43,15 @@ class TestHealthEndpoints:
         mock_uptime = MagicMock()
         mock_uptime.record_ping = AsyncMock()
 
+        # Mock the DB session to avoid real DB connection
+        mock_session = AsyncMock()
+        mock_session.execute = AsyncMock()
+        mock_session_maker = MagicMock()
+        mock_session_maker.return_value.__aenter__ = AsyncMock(
+            return_value=mock_session
+        )
+        mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=False)
+
         with (
             patch(
                 "app.infrastructure.monitoring.get_metrics_service",
@@ -51,6 +60,10 @@ class TestHealthEndpoints:
             patch(
                 "app.infrastructure.monitoring.get_uptime_tracker",
                 return_value=mock_uptime,
+            ),
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
             ),
         ):
             result = await readiness_check()

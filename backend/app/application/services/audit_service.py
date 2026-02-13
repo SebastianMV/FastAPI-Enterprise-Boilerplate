@@ -14,6 +14,9 @@ from uuid import UUID
 
 from app.domain.entities.audit_log import AuditAction, AuditLog, AuditResourceType
 from app.domain.ports.audit_log_repository import AuditLogRepository
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AuditService:

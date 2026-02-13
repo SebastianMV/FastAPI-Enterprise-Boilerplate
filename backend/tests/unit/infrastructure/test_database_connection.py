@@ -65,12 +65,14 @@ class TestGetDbSession:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), patch(
-            "app.middleware.tenant.get_current_tenant_id", return_value=None
-        ), patch("app.infrastructure.database.connection.set_tenant_context"):
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            patch("app.middleware.tenant.get_current_tenant_id", return_value=None),
+            patch("app.infrastructure.database.connection.set_tenant_context"),
+        ):
             async for session in get_db_session():
                 assert session is mock_session
 
@@ -85,14 +87,18 @@ class TestGetDbSession:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), patch(
-            "app.middleware.tenant.get_current_tenant_id", return_value=tenant_id
-        ), patch(
-            "app.infrastructure.database.connection.set_tenant_context"
-        ) as mock_set_ctx:
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            patch(
+                "app.middleware.tenant.get_current_tenant_id", return_value=tenant_id
+            ),
+            patch(
+                "app.infrastructure.database.connection.set_tenant_context"
+            ) as mock_set_ctx,
+        ):
             async for session in get_db_session():
                 pass
             mock_set_ctx.assert_called_once_with(mock_session, tenant_id)
@@ -107,11 +113,12 @@ class TestGetDbSession:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), patch(
-            "app.middleware.tenant.get_current_tenant_id", return_value=None
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            patch("app.middleware.tenant.get_current_tenant_id", return_value=None),
         ):
             async for session in get_db_session():
                 pass
@@ -129,12 +136,14 @@ class TestGetDbSession:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), patch(
-            "app.middleware.tenant.get_current_tenant_id", return_value=None
-        ), pytest.raises(Exception):
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            patch("app.middleware.tenant.get_current_tenant_id", return_value=None),
+            pytest.raises(Exception),
+        ):
             async for session in get_db_session():
                 pass
 
@@ -150,11 +159,12 @@ class TestGetDbSession:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), patch(
-            "app.middleware.tenant.get_current_tenant_id", return_value=None
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            patch("app.middleware.tenant.get_current_tenant_id", return_value=None),
         ):
             async for session in get_db_session():
                 pass
@@ -175,10 +185,13 @@ class TestGetDbContext:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), patch("app.infrastructure.database.connection.set_tenant_context"):
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            patch("app.infrastructure.database.connection.set_tenant_context"),
+        ):
             async with get_db_context() as session:
                 assert session is mock_session
 
@@ -193,12 +206,15 @@ class TestGetDbContext:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), patch(
-            "app.infrastructure.database.connection.set_tenant_context"
-        ) as mock_set_ctx:
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            patch(
+                "app.infrastructure.database.connection.set_tenant_context"
+            ) as mock_set_ctx,
+        ):
             async with get_db_context(tenant_id=tenant_id) as session:
                 pass
             mock_set_ctx.assert_called_once_with(mock_session, tenant_id)
@@ -213,12 +229,15 @@ class TestGetDbContext:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), patch(
-            "app.infrastructure.database.connection.set_tenant_context"
-        ) as mock_set_ctx:
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            patch(
+                "app.infrastructure.database.connection.set_tenant_context"
+            ) as mock_set_ctx,
+        ):
             async with get_db_context(tenant_id=None) as session:
                 pass
             mock_set_ctx.assert_not_called()
@@ -252,10 +271,13 @@ class TestGetDbContext:
         )
         mock_session_maker.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch(
-            "app.infrastructure.database.connection.async_session_maker",
-            mock_session_maker,
-        ), pytest.raises(ValueError):
+        with (
+            patch(
+                "app.infrastructure.database.connection.async_session_maker",
+                mock_session_maker,
+            ),
+            pytest.raises(ValueError),
+        ):
             async with get_db_context() as session:
                 raise ValueError("Test error")
 
@@ -287,14 +309,16 @@ class TestInitDatabase:
     @pytest.mark.asyncio
     async def test_calls_alembic_upgrade(self):
         """Test that init_database calls alembic upgrade head."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        mock_process = AsyncMock()
+        mock_process.communicate = AsyncMock(return_value=(b"", b""))
+        mock_process.returncode = 0
 
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process) as mock_exec:
             await init_database()
 
-            mock_run.assert_called_once()
-            call_args = mock_run.call_args
-            assert call_args[0][0] == ["alembic", "upgrade", "head"]
+            mock_exec.assert_called_once()
+            call_args = mock_exec.call_args
+            assert call_args[0][:3] == ("alembic", "upgrade", "head")
 
     @pytest.mark.asyncio
     async def test_handles_alembic_error(self):
@@ -305,13 +329,14 @@ class TestInitDatabase:
         mock_begin_ctx.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_begin_ctx.__aexit__ = AsyncMock(return_value=None)
 
+        mock_process = AsyncMock()
+        mock_process.communicate = AsyncMock(return_value=(b"", b"Migration error"))
+        mock_process.returncode = 1
+
         with (
-            patch("subprocess.run") as mock_run,
+            patch("asyncio.create_subprocess_exec", return_value=mock_process),
             patch("app.infrastructure.database.connection.engine") as mock_engine,
         ):
-            mock_run.return_value = MagicMock(
-                returncode=1, stdout="", stderr="Migration error"
-            )
             mock_engine.begin.return_value = mock_begin_ctx
 
             # Should not raise, just log warning and fallback to create_all

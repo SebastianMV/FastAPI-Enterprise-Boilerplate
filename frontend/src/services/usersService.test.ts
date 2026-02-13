@@ -1,7 +1,7 @@
 /**
  * Unit tests for usersService.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGet = vi.fn();
 const mockPost = vi.fn();
@@ -27,7 +27,7 @@ describe('usersService', () => {
     it('should GET /users with default params', async () => {
       mockGet.mockResolvedValueOnce({ data: { items: [], total: 0, skip: 0, limit: 20 } });
       const result = await usersService.list();
-      expect(mockGet).toHaveBeenCalledWith('/users', { params: undefined });
+      expect(mockGet).toHaveBeenCalledWith('/users', { params: { skip: 0, limit: 20 } });
       expect(result.items).toEqual([]);
     });
 
@@ -50,7 +50,7 @@ describe('usersService', () => {
 
   describe('create', () => {
     it('should POST /users', async () => {
-      const newUser = { email: 'new@b.com', password: 'Pass123!', first_name: 'New' };
+      const newUser = { email: 'new@b.com', password: 'Pass123!', first_name: 'New', last_name: 'User' };
       mockPost.mockResolvedValueOnce({ data: { id: 'u2', ...newUser } });
       const result = await usersService.create(newUser);
       expect(mockPost).toHaveBeenCalledWith('/users', newUser);

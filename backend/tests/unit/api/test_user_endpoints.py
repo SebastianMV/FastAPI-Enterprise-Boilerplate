@@ -335,6 +335,7 @@ class TestGetUserEndpoint:
             result = await get_user(
                 user_id=user_id,
                 current_user_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -360,6 +361,7 @@ class TestGetUserEndpoint:
                 await get_user(
                     user_id=uuid4(),
                     current_user_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 

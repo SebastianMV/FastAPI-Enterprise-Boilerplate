@@ -12,6 +12,9 @@ from uuid import UUID
 from app.domain.entities.role import Permission, Role
 from app.domain.exceptions.base import AuthorizationError
 from app.domain.ports.role_repository import RoleRepositoryPort
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ACLService:
@@ -58,11 +61,7 @@ class ACLService:
         roles = await self._role_repository.get_user_roles(user_id)
 
         # Check if any role has the permission
-        for role in roles:
-            if role.has_permission(resource, action):
-                return True
-
-        return False
+        return any(role.has_permission(resource, action) for role in roles)
 
     async def require_permission(
         self,
@@ -92,8 +91,14 @@ class ACLService:
         )
 
         if not has_permission:
+            logger.warning(
+                "permission_denied",
+                user_id=str(user_id),
+                resource=resource,
+                action=action,
+            )
             raise AuthorizationError(
-                message=f"Permission denied: {resource}:{action}",
+                message="Insufficient permissions",
                 resource=resource,
                 action=action,
             )
@@ -124,7 +129,7 @@ class ACLService:
         for role in roles:
             permissions.update(role.permission_strings)
 
-        return sorted(list(permissions))
+        return sorted(permissions)
 
     async def can_access_resources(
         self,

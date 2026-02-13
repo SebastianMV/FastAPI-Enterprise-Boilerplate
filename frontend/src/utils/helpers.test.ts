@@ -15,7 +15,9 @@ describe('helpers', () => {
     });
 
     it('should handle conditional classes', () => {
-      expect(cn('base', true && 'active', false && 'hidden')).toBe('base active');
+      const isActive = true;
+      const isHidden = false;
+      expect(cn('base', isActive && 'active', isHidden && 'hidden')).toBe('base active');
     });
 
     it('should merge tailwind classes correctly', () => {

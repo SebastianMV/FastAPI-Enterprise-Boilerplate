@@ -84,7 +84,7 @@ class UpdateUserUseCase:
         if request.email is not None:
             try:
                 email = Email(request.email)
-            except ValueError:
+            except (ValueError, ValidationError):
                 raise ValidationError(
                     message="Invalid email format",
                     field="email",

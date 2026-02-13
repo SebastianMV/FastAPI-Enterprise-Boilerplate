@@ -11,6 +11,18 @@ import pytest
 from app.domain.exceptions.base import AuthenticationError
 
 
+def _make_mock_request():
+    """Create mock request for dependency injection tests."""
+
+    class _State:
+        pass
+
+    mock_req = MagicMock()
+    mock_req.cookies = {}
+    mock_req.state = _State()
+    return mock_req
+
+
 class TestGetCurrentUserId:
     """Tests for get_current_user_id dependency."""
 
@@ -22,7 +34,9 @@ class TestGetCurrentUserId:
         from app.api.deps import get_current_user_id
 
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_id(credentials=None)
+            await get_current_user_id(
+                credentials=None, request=_make_mock_request()
+            )
 
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail["code"] == "MISSING_TOKEN"
@@ -38,7 +52,9 @@ class TestGetCurrentUserId:
 
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {"sub": str(user_id)}
-            result = await get_current_user_id(credentials=mock_credentials)
+            result = await get_current_user_id(
+                credentials=mock_credentials, request=_make_mock_request()
+            )
 
         assert result == user_id
 
@@ -58,7 +74,9 @@ class TestGetCurrentUserId:
             )
 
             with pytest.raises(HTTPException) as exc_info:
-                await get_current_user_id(credentials=mock_credentials)
+                await get_current_user_id(
+                    credentials=mock_credentials, request=_make_mock_request()
+                )
 
         assert exc_info.value.status_code == 401
 
@@ -71,7 +89,9 @@ class TestGetCurrentTenantId:
         """Test missing credentials returns None."""
         from app.api.deps import get_current_tenant_id
 
-        result = await get_current_tenant_id(credentials=None)
+        result = await get_current_tenant_id(
+            credentials=None, request=_make_mock_request()
+        )
 
         assert result is None
 
@@ -86,7 +106,9 @@ class TestGetCurrentTenantId:
 
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {"tenant_id": str(tenant_id)}
-            result = await get_current_tenant_id(credentials=mock_credentials)
+            result = await get_current_tenant_id(
+                credentials=mock_credentials, request=_make_mock_request()
+            )
 
         assert result == tenant_id
 
@@ -100,7 +122,9 @@ class TestGetCurrentTenantId:
 
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {"sub": str(uuid4())}
-            result = await get_current_tenant_id(credentials=mock_credentials)
+            result = await get_current_tenant_id(
+                credentials=mock_credentials, request=_make_mock_request()
+            )
 
         assert result is None
 
@@ -116,7 +140,9 @@ class TestGetCurrentTenantId:
             mock_validate.side_effect = AuthenticationError(
                 "INVALID_TOKEN", "Token is invalid"
             )
-            result = await get_current_tenant_id(credentials=mock_credentials)
+            result = await get_current_tenant_id(
+                credentials=mock_credentials, request=_make_mock_request()
+            )
 
         assert result is None
 
@@ -132,7 +158,11 @@ class TestRequireSuperuser:
         from app.api.deps import require_superuser
 
         with pytest.raises(HTTPException) as exc_info:
-            await require_superuser(credentials=None)
+            await require_superuser(
+                credentials=None,
+                request=_make_mock_request(),
+                session=AsyncMock(),
+            )
 
         assert exc_info.value.status_code == 401
 
@@ -145,6 +175,11 @@ class TestRequireSuperuser:
 
         mock_credentials = MagicMock()
         mock_credentials.credentials = "valid_token"
+        mock_session = AsyncMock()
+        mock_user = MagicMock()
+        mock_user.is_active = True
+        mock_user.is_superuser = False
+        mock_session.get.return_value = mock_user
 
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {
@@ -153,7 +188,11 @@ class TestRequireSuperuser:
             }
 
             with pytest.raises(HTTPException) as exc_info:
-                await require_superuser(credentials=mock_credentials)
+                await require_superuser(
+                    credentials=mock_credentials,
+                    request=_make_mock_request(),
+                    session=mock_session,
+                )
 
         assert exc_info.value.status_code == 403
         assert exc_info.value.detail["code"] == "FORBIDDEN"
@@ -166,13 +205,22 @@ class TestRequireSuperuser:
         user_id = uuid4()
         mock_credentials = MagicMock()
         mock_credentials.credentials = "valid_token"
+        mock_session = AsyncMock()
+        mock_user = MagicMock()
+        mock_user.is_active = True
+        mock_user.is_superuser = True
+        mock_session.get.return_value = mock_user
 
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "is_superuser": True,
             }
-            result = await require_superuser(credentials=mock_credentials)
+            result = await require_superuser(
+                credentials=mock_credentials,
+                request=_make_mock_request(),
+                session=mock_session,
+            )
 
         assert result == user_id
 
@@ -200,7 +248,11 @@ class TestRequirePermission:
         mock_session = AsyncMock()
 
         with pytest.raises(HTTPException) as exc_info:
-            await checker(credentials=None, session=mock_session)
+            await checker(
+                credentials=None,
+                request=_make_mock_request(),
+                session=mock_session,
+            )
 
         assert exc_info.value.status_code == 401
 
@@ -216,12 +268,21 @@ class TestRequirePermission:
         mock_credentials.credentials = "valid_token"
         mock_session = AsyncMock()
 
+        mock_user = MagicMock()
+        mock_user.is_active = True
+        mock_user.is_superuser = True
+        mock_session.get.return_value = mock_user
+
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "is_superuser": True,
             }
-            result = await checker(credentials=mock_credentials, session=mock_session)
+            result = await checker(
+                credentials=mock_credentials,
+                request=_make_mock_request(),
+                session=mock_session,
+            )
 
         assert result == user_id
 

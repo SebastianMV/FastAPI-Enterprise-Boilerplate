@@ -168,6 +168,7 @@ class NotificationService:
         self,
         notification_id: UUID,
         user_id: UUID,
+        tenant_id: UUID | None = None,
     ) -> Notification | None:
         """
         Get a notification by ID.
@@ -175,15 +176,19 @@ class NotificationService:
         Args:
             notification_id: Notification ID
             user_id: User ID (for access control)
+            tenant_id: Optional tenant ID for defense-in-depth isolation
 
         Returns:
             Notification entity or None
         """
-        stmt = select(NotificationModel).where(
+        conditions = [
             NotificationModel.id == notification_id,
             NotificationModel.user_id == user_id,
             NotificationModel.is_deleted == False,
-        )
+        ]
+        if tenant_id is not None:
+            conditions.append(NotificationModel.tenant_id == tenant_id)
+        stmt = select(NotificationModel).where(*conditions)
 
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -198,6 +203,7 @@ class NotificationService:
         category: str | None = None,
         limit: int = 50,
         offset: int = 0,
+        tenant_id: UUID | None = None,
     ) -> list[Notification]:
         """
         Get notifications for a user.
@@ -208,14 +214,18 @@ class NotificationService:
             category: Filter by category
             limit: Max results
             offset: Pagination offset
+            tenant_id: Optional tenant ID for defense-in-depth isolation
 
         Returns:
             List of notifications
         """
-        stmt = select(NotificationModel).where(
+        conditions = [
             NotificationModel.user_id == user_id,
             NotificationModel.is_deleted == False,
-        )
+        ]
+        if tenant_id is not None:
+            conditions.append(NotificationModel.tenant_id == tenant_id)
+        stmt = select(NotificationModel).where(*conditions)
 
         if unread_only:
             stmt = stmt.where(NotificationModel.is_read == False)
@@ -235,6 +245,7 @@ class NotificationService:
         self,
         user_id: UUID,
         category: str | None = None,
+        tenant_id: UUID | None = None,
     ) -> int:
         """
         Get count of unread notifications.
@@ -242,17 +253,21 @@ class NotificationService:
         Args:
             user_id: User ID
             category: Optional category filter
+            tenant_id: Optional tenant ID for defense-in-depth isolation
 
         Returns:
             Count of unread notifications
         """
         from sqlalchemy import func
 
-        stmt = select(func.count(NotificationModel.id)).where(
+        conditions = [
             NotificationModel.user_id == user_id,
             NotificationModel.is_read == False,
             NotificationModel.is_deleted == False,
-        )
+        ]
+        if tenant_id is not None:
+            conditions.append(NotificationModel.tenant_id == tenant_id)
+        stmt = select(func.count(NotificationModel.id)).where(*conditions)
 
         if category:
             stmt = stmt.where(NotificationModel.category == category)

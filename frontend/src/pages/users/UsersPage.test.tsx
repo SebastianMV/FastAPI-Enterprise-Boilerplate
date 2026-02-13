@@ -23,8 +23,10 @@ vi.mock('@/services/api', () => ({
 }));
 
 vi.mock('@/components/common/Modal', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   Modal: ({ isOpen, children, title }: any) =>
     isOpen ? <div data-testid="modal"><h2>{title}</h2>{children}</div> : null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   ConfirmModal: ({ isOpen, onConfirm, title }: any) =>
     isOpen ? (
       <div data-testid="confirm-modal">
@@ -32,6 +34,7 @@ vi.mock('@/components/common/Modal', () => ({
         <button onClick={onConfirm}>Confirm</button>
       </div>
     ) : null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock component props
   AlertModal: ({ isOpen, title, message }: any) =>
     isOpen ? <div data-testid="alert-modal"><h2>{title}</h2><p>{message}</p></div> : null,
 }));

@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Search, X, Loader2, User, FileText, MessageSquare, Clock } from 'lucide-react';
-import { searchService, type SearchHit } from '@/services/api';
 import { useDebounce } from '@/hooks/useDebounce';
-import { sanitizeSearchQuery, maskEmail, sanitizeText } from '@/utils/security';
+import { searchService, type SearchHit } from '@/services/api';
+import { maskEmail, sanitizeSearchQuery, sanitizeText } from '@/utils/security';
+import { Clock, FileText, Loader2, MessageSquare, Search, User, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -13,14 +13,14 @@ interface SearchBarProps {
 
 /**
  * Global search bar with autocomplete suggestions.
- * 
+ *
  * Features:
  * - Debounced search input
  * - Quick search results dropdown
  * - Keyboard navigation
  * - Recent searches
  */
-export default function SearchBar({ 
+export default function SearchBar({
   placeholder,
   className = ''
 }: SearchBarProps) {
@@ -114,7 +114,7 @@ export default function SearchBar({
     const handleClickOutside = (event: MouseEvent) => {
       if (
         event.target instanceof Node &&
-        dropdownRef.current && 
+        dropdownRef.current &&
         !dropdownRef.current.contains(event.target) &&
         !inputRef.current?.contains(event.target)
       ) {
@@ -129,7 +129,7 @@ export default function SearchBar({
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const totalItems = results.length + suggestions.length;
-    
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -154,14 +154,14 @@ export default function SearchBar({
     }
   };
 
-  const handleSearch = (searchQuery: string) => {
+  const handleSearch = useCallback((searchQuery: string) => {
     if (!searchQuery.trim()) return;
     saveRecentSearch(searchQuery);
     setIsOpen(false);
     navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-  };
+  }, [saveRecentSearch, navigate]);
 
-  const handleResultClick = (result: SearchHit) => {
+  const handleResultClick = useCallback((result: SearchHit) => {
     setIsOpen(false);
     // Navigate based on result type
     const source = result.source as Record<string, unknown>;
@@ -170,7 +170,7 @@ export default function SearchBar({
     } else {
       navigate(`/documents/${encodeURIComponent(result.id)}`);
     }
-  };
+  }, [navigate]);
 
   const getResultIcon = (result: SearchHit) => {
     const source = result.source as Record<string, unknown> | undefined;
@@ -185,10 +185,10 @@ export default function SearchBar({
     const source = result.source as Record<string, unknown> | undefined;
     if (!source) return t('common.untitled');
     if (source.first_name && source.last_name) {
-      return `${source.first_name} ${source.last_name}`;
+      return sanitizeText(`${source.first_name} ${source.last_name}`);
     }
-    if (source.title) return String(source.title);
-    if (source.name) return String(source.name);
+    if (source.title) return sanitizeText(String(source.title));
+    if (source.name) return sanitizeText(String(source.name));
     return t('common.untitled');
   };
 
@@ -197,7 +197,7 @@ export default function SearchBar({
     if (!source) return '';
     // Mask emails for privacy (defense-in-depth against PII exposure)
     if (source.email) return maskEmail(String(source.email));
-    if (source.description) return String(source.description).slice(0, 50);
+    if (source.description) return sanitizeText(String(source.description).slice(0, 50));
     return '';
   };
 

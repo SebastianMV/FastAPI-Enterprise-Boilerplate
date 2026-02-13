@@ -50,7 +50,7 @@ class CachedTenantRepository:
         # Try cache
         cached = await cache.get(cache_key)
         if cached:
-            logger.debug("Cache hit: tenant %s", tenant_id)
+            logger.debug("cache_hit_tenant", tenant_id=str(tenant_id))
             return self._dict_to_tenant(cached)
 
         # Fetch from DB
@@ -70,7 +70,7 @@ class CachedTenantRepository:
         # Try cache
         cached = await cache.get(cache_key)
         if cached:
-            logger.debug("Cache hit: tenant slug %s", slug)
+            logger.debug("cache_hit_tenant_slug", slug=slug)
             return self._dict_to_tenant(cached)
 
         # Fetch from DB
@@ -93,7 +93,7 @@ class CachedTenantRepository:
         # Try cache
         cached = await cache.get(cache_key)
         if cached:
-            logger.debug("Cache hit: tenant domain %s", domain)
+            logger.debug("cache_hit_tenant_domain", domain=domain)
             return self._dict_to_tenant(cached)
 
         # Fetch from DB
@@ -146,7 +146,7 @@ class CachedTenantRepository:
         # Try cache
         cached = await cache.get(cache_key)
         if cached:
-            logger.debug("Cache hit: tenant list")
+            logger.debug("cache_hit_tenant_list")
             return [self._dict_to_tenant(t) for t in cached]
 
         # Fetch from DB

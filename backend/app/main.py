@@ -20,6 +20,7 @@ from app.domain.exceptions.base import (
     DomainException,
     EntityNotFoundError,
     RateLimitExceededError,
+    ServiceUnavailableError,
     ValidationError,
 )
 from app.infrastructure.observability.logging import get_logger
@@ -38,8 +39,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Startup
     from app.infrastructure.database.connection import init_database
 
-    logger.info("🚀 Starting %s v%s", settings.APP_NAME, settings.APP_VERSION)
-    logger.info("📍 Environment: %s", settings.ENVIRONMENT)
+    logger.info("starting_application", app_name=settings.APP_NAME, version=settings.APP_VERSION)
+    logger.info("environment_info", environment=settings.ENVIRONMENT)
 
     # Setup logging
     from app.infrastructure.observability.logging import setup_logging
@@ -59,7 +60,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         await init_database()
         logger.info("✅ Database initialized")
     except Exception as e:
-        logger.error("\u274c Database initialization failed: %s", type(e).__name__)
+        logger.error("database_init_failed", error_type=type(e).__name__)
         raise  # Fatal: do not start app without database
 
     # Initialize uptime tracker
@@ -70,7 +71,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         await uptime_tracker.initialize()
         logger.info("✅ Uptime tracker initialized")
     except Exception as e:
-        logger.warning("⚠️ Uptime tracker initialization failed (non-critical): %s", e)
+        logger.warning("uptime_tracker_init_failed", error_type=type(e).__name__)
 
     yield
 
@@ -265,12 +266,23 @@ async def rate_limit_error_handler(
     )
 
 
+@app.exception_handler(ServiceUnavailableError)
+async def service_unavailable_error_handler(
+    _request: Request, exc: ServiceUnavailableError
+) -> JSONResponse:
+    """503 — required service unavailable."""
+    return JSONResponse(
+        status_code=503,
+        content={"detail": exc.message, "code": exc.code},
+    )
+
+
 @app.exception_handler(DomainException)
 async def domain_exception_handler(
     _request: Request, exc: DomainException
 ) -> JSONResponse:
     """500 — catch-all for any unhandled domain exception."""
-    logger.error("Unhandled domain exception: %s", exc, exc_info=True)
+    logger.error("unhandled_domain_exception", exception_type=type(exc).__name__, code=exc.code, exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error", "code": exc.code},
@@ -282,7 +294,7 @@ async def unexpected_exception_handler(
     _request: Request, exc: Exception
 ) -> JSONResponse:
     """500 — catch-all for completely unexpected exceptions."""
-    logger.error("Unexpected exception: %s", exc, exc_info=True)
+    logger.error("unexpected_exception", exception_type=type(exc).__name__, exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error", "code": "INTERNAL_ERROR"},

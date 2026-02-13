@@ -42,39 +42,40 @@ class TestAuthPasswordReset:
 
         from fastapi import HTTPException
 
-        with pytest.raises(HTTPException) as exc:
-            await reset_password(request=request, session=mock_session)
+        mock_cache = AsyncMock()
+        mock_cache.get_and_delete = AsyncMock(return_value=None)
+
+        with patch("app.infrastructure.cache.get_cache", return_value=mock_cache):
+            with pytest.raises(HTTPException) as exc:
+                await reset_password(request=request, session=mock_session)
 
         assert exc.value.status_code == 400
         assert "INVALID_TOKEN" in str(exc.value.detail)
 
     @pytest.mark.asyncio
-    async def test_reset_password_expired_token(self, mock_session):
-        """Test reset_password with expired token (lines 746-747)."""
-        import app.api.v1.endpoints.auth as auth_module
+    async def test_reset_password_cache_failure_returns_invalid(self, mock_session):
+        """Test reset_password when cache lookup fails (returns INVALID_TOKEN)."""
         from app.api.v1.endpoints.auth import reset_password
         from app.api.v1.schemas.auth import ResetPasswordRequest
 
-        # Add an expired token
-        expired_time = datetime.now(UTC) - timedelta(hours=2)
-        auth_module._password_reset_tokens["expired_reset_123"] = {
-            "user_id": uuid4(),
-            "email": "test@example.com",
-            "expires_at": expired_time,
-        }
-
         request = ResetPasswordRequest(
-            token="expired_reset_123",
+            token="some_token_12345",
             new_password="NewPassword123!",
         )
 
         from fastapi import HTTPException
 
-        with pytest.raises(HTTPException) as exc:
-            await reset_password(request=request, session=mock_session)
+        mock_cache = AsyncMock()
+        mock_cache.get_and_delete = AsyncMock(
+            side_effect=Exception("Redis connection error")
+        )
+
+        with patch("app.infrastructure.cache.get_cache", return_value=mock_cache):
+            with pytest.raises(HTTPException) as exc:
+                await reset_password(request=request, session=mock_session)
 
         assert exc.value.status_code == 400
-        assert "TOKEN_EXPIRED" in str(exc.value.detail)
+        assert "INVALID_TOKEN" in str(exc.value.detail)
 
 
 # =============================================================================
@@ -89,7 +90,6 @@ class TestUsersDeleteAndAvatar:
     async def test_delete_user_not_found(self, mock_session):
         """Test delete_user with non-existent user (line 297)."""
         from app.api.v1.endpoints.users import delete_user
-        from app.domain.exceptions.base import EntityNotFoundError
 
         user_id = uuid4()
         superuser_id = uuid4()
@@ -98,9 +98,7 @@ class TestUsersDeleteAndAvatar:
             "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
         ) as mock_repo_cls:
             mock_repo = AsyncMock()
-            mock_repo.delete.side_effect = EntityNotFoundError(
-                code="USER_NOT_FOUND", message="User not found"
-            )
+            mock_repo.get_by_id.return_value = None  # User not found in pre-check
             mock_repo_cls.return_value = mock_repo
 
             from fastapi import HTTPException
@@ -109,6 +107,7 @@ class TestUsersDeleteAndAvatar:
                 await delete_user(
                     user_id=user_id,
                     superuser_id=superuser_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -144,6 +143,7 @@ class TestUsersDeleteAndAvatar:
             # Should succeed even if storage delete fails
             result = await delete_avatar(
                 current_user_id=current_user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -172,6 +172,7 @@ class TestUsersDeleteAndAvatar:
             with pytest.raises(HTTPException) as exc:
                 await delete_avatar(
                     current_user_id=current_user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -223,6 +224,7 @@ class TestRolesUpdateAndPermissions:
                     role_id=role_id,
                     request=request,
                     superuser_id=superuser_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -257,6 +259,7 @@ class TestRolesUpdateAndPermissions:
                 await get_user_permissions(
                     user_id=user_id,
                     current_user_id=current_user_id,  # Fixed parameter name
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -549,7 +552,7 @@ class TestMFADisable:
 
             # Should raise 401 for invalid password
             assert exc_info.value.status_code == 401
-            assert "Invalid password" in exc_info.value.detail
+            assert exc_info.value.detail["code"] == "INVALID_PASSWORD"
             mock_user.verify_password.assert_called_once()
 
     @pytest.mark.asyncio
@@ -751,7 +754,7 @@ class TestUsersAdditionalCoverage:
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch("app.api.v1.endpoints.users.hash_password") as mock_hash,
+            patch("app.application.use_cases.users.create_user.hash_password") as mock_hash,
         ):
             mock_repo = AsyncMock()
             mock_repo.get_by_email.return_value = None
@@ -796,6 +799,7 @@ class TestUsersAdditionalCoverage:
                 await update_self(
                     request=request,
                     current_user_id=current_user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -873,6 +877,7 @@ class TestRolesAdditionalCoverage:
                 role_id=role_id,
                 request=request,
                 superuser_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -910,8 +915,8 @@ class TestAuthRegisterFlow:
             patch(
                 "app.infrastructure.database.repositories.tenant_repository.SQLAlchemyTenantRepository"
             ) as mock_tenant_repo,
-            patch("app.api.v1.endpoints.auth.Email") as mock_email,
-            patch("app.api.v1.endpoints.auth.hash_password") as mock_hash,
+            patch("app.application.use_cases.auth.register.Email") as mock_email,
+            patch("app.application.use_cases.auth.register.hash_password") as mock_hash,
         ):
             mock_email.return_value = MagicMock()
             mock_hash.return_value = "hashed_password"
@@ -971,19 +976,22 @@ class TestAuthTokenRotation:
         mock_session_repo_instance.revoke = AsyncMock()
         mock_session_repo_instance.create = AsyncMock()
 
+        mock_http_request = MagicMock()
+        mock_http_request.cookies = {}  # No cookie fallback
+
         with (
-            patch("app.api.v1.endpoints.auth.validate_refresh_token") as mock_validate,
+            patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate,
             patch(
                 "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
             ) as mock_user_repo,
             patch(
                 "app.infrastructure.database.repositories.session_repository.SQLAlchemySessionRepository"
             ) as mock_session_repo,
-            patch("app.api.v1.endpoints.auth.create_access_token") as mock_access,
-            patch("app.api.v1.endpoints.auth.create_refresh_token") as mock_refresh,
-            patch("app.api.v1.endpoints.auth.hash_password") as mock_hash,
-            patch("app.infrastructure.auth.jwt_handler.decode_token") as mock_decode,
-            patch("app.api.v1.endpoints.auth.settings") as mock_settings,
+            patch("app.application.use_cases.auth.refresh.create_access_token") as mock_access,
+            patch("app.application.use_cases.auth.refresh.create_refresh_token") as mock_refresh,
+            patch("app.application.use_cases.auth.refresh.hash_jti") as mock_hash,
+            patch("app.application.use_cases.auth.refresh.decode_token") as mock_decode,
+            patch("app.application.use_cases.auth.refresh.settings") as mock_settings,
         ):
             # Setup mocks
             mock_validate.return_value = {
@@ -1003,8 +1011,14 @@ class TestAuthTokenRotation:
             mock_hash.return_value = "hashed_jti"
             mock_decode.return_value = {"jti": "new_jti_456"}
             mock_settings.ACCESS_TOKEN_EXPIRE_MINUTES = 15
+            mock_settings.REFRESH_TOKEN_EXPIRE_DAYS = 7
+            mock_settings.ENVIRONMENT = "testing"
 
-            result = await refresh_token(request=request, session=mock_session)
+            result = await refresh_token(
+                request=request,
+                session=mock_session,
+                http_request=mock_http_request,
+            )
 
             assert result.access_token == "new_access_token"
             assert result.refresh_token == "new_refresh_token"
@@ -1026,6 +1040,9 @@ class TestAuthChangePasswordFlow:
             new_password="weakpass1",  # min 8 chars but weak
         )
 
+        mock_user = MagicMock()
+        mock_user.id = uuid4()
+
         with patch("app.api.v1.endpoints.auth.Password") as mock_password:
             mock_password.side_effect = ValueError("Password must contain uppercase")
 
@@ -1034,7 +1051,7 @@ class TestAuthChangePasswordFlow:
             with pytest.raises(HTTPException) as exc:
                 await change_password(
                     request=request,
-                    current_user_id=uuid4(),
+                    current_user=mock_user,
                     session=mock_session,
                 )
 
@@ -1113,7 +1130,7 @@ class TestAuthResendVerification:
             mock_get_email.return_value = mock_email_service
 
             result = await send_verification_email(
-                user_id=mock_user.id,
+                current_user=mock_user,
                 session=mock_session,
             )
 
@@ -1136,12 +1153,12 @@ class TestUsersAvatarUpload:
 
         from app.api.v1.endpoints.users import upload_avatar
 
-        # Create mock file
-        file_content = b"fake image content"
+        # Create mock file with valid PNG magic bytes
+        png_header = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
         mock_file = MagicMock(spec=UploadFile)
         mock_file.filename = "avatar.png"
         mock_file.content_type = "image/png"
-        mock_file.read = AsyncMock(return_value=file_content)
+        mock_file.read = AsyncMock(return_value=png_header)
 
         current_user_id = uuid4()
 
@@ -1160,6 +1177,7 @@ class TestUsersAvatarUpload:
 
         mock_storage_file = MagicMock()
         mock_storage_file.url = "/storage/avatars/new.png"
+        mock_storage_file.path = "/storage/avatars/new.png"
 
         with (
             patch(
@@ -1180,6 +1198,7 @@ class TestUsersAvatarUpload:
             result = await upload_avatar(
                 file=mock_file,
                 current_user_id=current_user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -1193,12 +1212,12 @@ class TestUsersAvatarUpload:
 
         from app.api.v1.endpoints.users import upload_avatar
 
-        # Create mock file
-        file_content = b"fake image content"
+        # Create mock file with valid PNG magic bytes
+        png_header = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
         mock_file = MagicMock(spec=UploadFile)
         mock_file.filename = "avatar.png"
         mock_file.content_type = "image/png"
-        mock_file.read = AsyncMock(return_value=file_content)
+        mock_file.read = AsyncMock(return_value=png_header)
 
         current_user_id = uuid4()
 
@@ -1217,6 +1236,7 @@ class TestUsersAvatarUpload:
 
         mock_storage_file = MagicMock()
         mock_storage_file.url = "/storage/avatars/new.png"
+        mock_storage_file.path = "/storage/avatars/new.png"
 
         with (
             patch(
@@ -1239,6 +1259,7 @@ class TestUsersAvatarUpload:
             result = await upload_avatar(
                 file=mock_file,
                 current_user_id=current_user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -1262,6 +1283,7 @@ class TestUsersDeleteFlow:
             await delete_user(
                 user_id=user_id,
                 superuser_id=user_id,  # Same as user_id = self-deletion
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -1349,6 +1371,7 @@ class TestRolesAdditionalFlows:
                     role_id=role_id,
                     request=request,
                     superuser_id=uuid4(),
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -1399,6 +1422,7 @@ class TestRolesAdditionalFlows:
             result = await get_user_permissions(
                 user_id=user_id,
                 current_user_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -1527,8 +1551,8 @@ class TestUsersCreateSuccess:
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch("app.api.v1.endpoints.users.hash_password") as mock_hash,
-            patch("app.api.v1.endpoints.users.Email") as mock_email,
+            patch("app.application.use_cases.users.create_user.hash_password") as mock_hash,
+            patch("app.application.use_cases.users.create_user.Email") as mock_email,
         ):
             mock_repo = AsyncMock()
             mock_repo.exists_by_email.return_value = False  # Email does not exist
@@ -1536,7 +1560,9 @@ class TestUsersCreateSuccess:
             mock_repo_cls.return_value = mock_repo
 
             mock_hash.return_value = "hashed_password"
-            mock_email.return_value = MagicMock()
+            mock_email_instance = MagicMock()
+            mock_email_instance.value = "newuser@example.com"
+            mock_email.return_value = mock_email_instance
 
             result = await create_user(
                 request=request,
@@ -1574,6 +1600,7 @@ class TestUsersUpdateSelfNotFound:
                 await update_self(
                     request=request,
                     current_user_id=current_user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -1610,9 +1637,11 @@ class TestAuthVerifyEmail:
 
             from fastapi import HTTPException
 
+            from app.api.v1.schemas.auth import VerifyEmailTokenRequest
+
             with pytest.raises(HTTPException) as exc:
                 await verify_email(
-                    token="valid_token",
+                    request=VerifyEmailTokenRequest(token="valid_token"),
                     session=mock_session,
                 )
 
@@ -1648,9 +1677,11 @@ class TestAuthVerifyEmail:
 
             from fastapi import HTTPException
 
+            from app.api.v1.schemas.auth import VerifyEmailTokenRequest
+
             with pytest.raises(HTTPException) as exc:
                 await verify_email(
-                    token="expired_token",
+                    request=VerifyEmailTokenRequest(token="expired_token"),
                     session=mock_session,
                 )
 
@@ -1926,14 +1957,10 @@ class TestAuthEmailExceptionPaths:
                 return_value=mock_email_service,
             ),
             patch(
-                "app.api.v1.endpoints.auth.create_access_token",
-                return_value="access_token",
+                "app.application.use_cases.auth.register.hash_password",
+                return_value="hashed_password",
             ),
-            patch(
-                "app.api.v1.endpoints.auth.create_refresh_token",
-                return_value="refresh_token",
-            ),
-            patch("app.api.v1.endpoints.auth.settings") as mock_settings,
+            patch("app.application.use_cases.auth.register.settings") as mock_settings,
         ):
             mock_user_repo = AsyncMock()
             mock_user_repo.get_by_email.return_value = None
@@ -1947,14 +1974,16 @@ class TestAuthEmailExceptionPaths:
             mock_settings.EMAIL_VERIFICATION_REQUIRED = True
             mock_settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS = 24
             mock_settings.CORS_ORIGINS = ["http://localhost:3000"]
+            mock_settings.FRONTEND_URL = "http://localhost:3000"
             mock_settings.ACCESS_TOKEN_EXPIRE_MINUTES = 30
             mock_settings.REFRESH_TOKEN_EXPIRE_DAYS = 7
 
             # Registration should succeed despite email failure
             result = await register(request=request, session=mock_db_session)
 
-            assert result.tokens.access_token == "access_token"
-            assert result.tokens.refresh_token == "refresh_token"
+            # With EMAIL_VERIFICATION_REQUIRED=True, tokens are not issued
+            assert result.user is not None
+            assert result.tokens is None
 
     @pytest.mark.asyncio
     async def test_forgot_password_email_exception_silent(self, mock_db_session):
@@ -1979,6 +2008,10 @@ class TestAuthEmailExceptionPaths:
             side_effect=Exception("Email service error")
         )
 
+        mock_cache = AsyncMock()
+        mock_cache.get = AsyncMock(return_value=None)  # No rate limit
+        mock_cache.set = AsyncMock()
+
         with (
             patch("app.api.v1.endpoints.auth.SQLAlchemyUserRepository") as MockUserRepo,
             patch(
@@ -1986,7 +2019,7 @@ class TestAuthEmailExceptionPaths:
                 return_value=mock_email_service,
             ),
             patch("app.api.v1.endpoints.auth.settings") as mock_settings,
-            patch("app.api.v1.endpoints.auth._password_reset_tokens", {}),
+            patch("app.infrastructure.cache.get_cache", return_value=mock_cache),
             patch(
                 "app.api.v1.endpoints.auth.secrets.token_urlsafe",
                 return_value="reset_token",
@@ -2004,82 +2037,28 @@ class TestAuthEmailExceptionPaths:
             assert result.success is True
 
     @pytest.mark.asyncio
+    @pytest.mark.skip(
+        reason="Password reset tokens now stored in Redis with TTL-based expiry; "
+        "cleanup is automatic — no in-memory dict to test"
+    )
     async def test_forgot_password_cleans_expired_tokens(self, mock_db_session):
         """
-        Test forgot_password cleans up expired tokens (line 663 - del statement).
+        Test forgot_password cleans up expired tokens.
+        SKIPPED: Token storage moved from in-memory dict to Redis with TTL.
+        Redis handles expiry automatically.
         """
-        from app.api.v1.endpoints.auth import _password_reset_tokens, forgot_password
-        from app.api.v1.schemas.auth import ForgotPasswordRequest
-
-        request = ForgotPasswordRequest(email="existing@example.com")
-
-        mock_user = MagicMock()
-        mock_user.id = uuid4()
-        mock_user.email = "existing@example.com"
-        mock_user.first_name = "Test"
-        mock_user.is_active = True
-        mock_user.is_deleted = False
-
-        # Add an expired token to be cleaned up
-        expired_token = "expired_token_123"
-        _password_reset_tokens[expired_token] = {
-            "user_id": uuid4(),
-            "email": "old@example.com",
-            "expires_at": datetime.now(UTC) - timedelta(hours=1),  # Expired
-        }
-
-        # Mock email service
-        mock_email_service = MagicMock()
-        mock_email_service.send_password_reset_email = AsyncMock()
-
-        with (
-            patch("app.api.v1.endpoints.auth.SQLAlchemyUserRepository") as MockUserRepo,
-            patch(
-                "app.infrastructure.email.get_email_service",
-                return_value=mock_email_service,
-            ),
-            patch("app.api.v1.endpoints.auth.settings") as mock_settings,
-            patch(
-                "app.api.v1.endpoints.auth.secrets.token_urlsafe",
-                return_value="new_reset_token",
-            ),
-        ):
-            mock_user_repo = AsyncMock()
-            mock_user_repo.get_by_email.return_value = mock_user
-            MockUserRepo.return_value = mock_user_repo
-
-            mock_settings.FRONTEND_URL = "http://localhost:3000"
-
-            try:
-                result = await forgot_password(request=request, session=mock_db_session)
-
-                assert result.success is True
-                # Expired token should be cleaned up
-                assert expired_token not in _password_reset_tokens
-            finally:
-                # Cleanup any tokens we added
-                if expired_token in _password_reset_tokens:
-                    del _password_reset_tokens[expired_token]
-                if "new_reset_token" in _password_reset_tokens:
-                    del _password_reset_tokens["new_reset_token"]
+        pass
 
     @pytest.mark.asyncio
     async def test_reset_password_email_exception_silent(self, mock_db_session):
         """
         Test reset_password handles email exception silently (lines 790-791).
         """
-        from app.api.v1.endpoints.auth import _password_reset_tokens, reset_password
+        from app.api.v1.endpoints.auth import reset_password
         from app.api.v1.schemas.auth import ResetPasswordRequest
 
         user_id = uuid4()
         token = "valid_reset_token"
-
-        # Set up token in the tokens dict
-        _password_reset_tokens[token] = {
-            "user_id": user_id,
-            "email": "test@example.com",
-            "expires_at": datetime.now(UTC) + timedelta(hours=1),
-        }
 
         request = ResetPasswordRequest(
             token=token,
@@ -2091,7 +2070,18 @@ class TestAuthEmailExceptionPaths:
         mock_user.email = "test@example.com"
         mock_user.first_name = "Test"
         mock_user.password_hash = "old_hash"
-        mock_user.set_password = MagicMock()
+        mock_user.updated_at = None
+
+        # Mock cache to return valid token data
+        mock_cache = AsyncMock()
+        mock_cache.get_and_delete = AsyncMock(
+            return_value={"user_id": str(user_id)}
+        )
+        mock_cache.delete = AsyncMock()
+
+        # Mock session repo for session revocation
+        mock_session_repo_instance = AsyncMock()
+        mock_session_repo_instance.revoke_all = AsyncMock()
 
         # Mock email service to raise exception
         mock_email_service = MagicMock()
@@ -2101,23 +2091,24 @@ class TestAuthEmailExceptionPaths:
 
         with (
             patch("app.api.v1.endpoints.auth.SQLAlchemyUserRepository") as MockUserRepo,
+            patch("app.infrastructure.cache.get_cache", return_value=mock_cache),
             patch(
                 "app.infrastructure.email.get_email_service",
                 return_value=mock_email_service,
             ),
+            patch(
+                "app.infrastructure.database.repositories.session_repository.SQLAlchemySessionRepository"
+            ) as MockSessionRepo,
         ):
             mock_user_repo = AsyncMock()
             mock_user_repo.get_by_id.return_value = mock_user
             mock_user_repo.update.return_value = mock_user
             MockUserRepo.return_value = mock_user_repo
 
-            try:
-                result = await reset_password(request=request, session=mock_db_session)
-                assert result.success is True
-            finally:
-                # Clean up token
-                if token in _password_reset_tokens:
-                    del _password_reset_tokens[token]
+            MockSessionRepo.return_value = mock_session_repo_instance
+
+            result = await reset_password(request=request, session=mock_db_session)
+            assert result.success is True
 
     @pytest.mark.asyncio
     async def test_send_verification_email_exception_silent(self, mock_db_session):
@@ -2161,7 +2152,7 @@ class TestAuthEmailExceptionPaths:
 
             # Should succeed despite email failure
             result = await send_verification_email(
-                user_id=user_id, session=mock_db_session
+                current_user=mock_user, session=mock_db_session
             )
 
             assert result.success is True
@@ -2200,7 +2191,12 @@ class TestAuthEmailExceptionPaths:
             mock_settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS = 24
 
             with pytest.raises(HTTPException) as exc:
-                await verify_email(token="expired_token", session=mock_db_session)
+                from app.api.v1.schemas.auth import VerifyEmailTokenRequest
+
+                await verify_email(
+                    request=VerifyEmailTokenRequest(token="expired_token"),
+                    session=mock_db_session,
+                )
 
             assert exc.value.status_code == 400
             assert "TOKEN_EXPIRED" in str(exc.value.detail)
@@ -2301,6 +2297,7 @@ class TestUsersEndpointsCoverage:
             result = await update_self(
                 request=request,
                 current_user_id=user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -2356,6 +2353,7 @@ class TestUsersEndpointsCoverage:
             result = await update_self(
                 request=request,
                 current_user_id=user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -2407,6 +2405,7 @@ class TestUsersEndpointsCoverage:
             result = await update_self(
                 request=request,
                 current_user_id=user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -2430,6 +2429,7 @@ class TestUsersEndpointsCoverage:
             await upload_avatar(
                 file=mock_file,
                 current_user_id=user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -2443,11 +2443,14 @@ class TestUsersEndpointsCoverage:
 
         user_id = uuid4()
 
+        # Valid JPEG header + padding to exceed 5MB limit
+        jpeg_header = b"\xff\xd8\xff"
+        large_content = jpeg_header + b"\x00" * (6 * 1024 * 1024)
+
         mock_file = MagicMock()
         mock_file.content_type = "image/jpeg"
         mock_file.filename = "test.jpg"
-        # 6MB file (over 5MB limit)
-        mock_file.read = AsyncMock(return_value=b"x" * (6 * 1024 * 1024))
+        mock_file.read = AsyncMock(return_value=large_content)
 
         from fastapi import HTTPException
 
@@ -2455,6 +2458,7 @@ class TestUsersEndpointsCoverage:
             await upload_avatar(
                 file=mock_file,
                 current_user_id=user_id,
+                tenant_id=None,
                 session=mock_session,
             )
 
@@ -2471,7 +2475,7 @@ class TestUsersEndpointsCoverage:
         mock_file = MagicMock()
         mock_file.content_type = "image/jpeg"
         mock_file.filename = "test.jpg"
-        mock_file.read = AsyncMock(return_value=b"x" * 1024)  # 1KB file
+        mock_file.read = AsyncMock(return_value=b"\xff\xd8\xff" + b"\x00" * 1024)
 
         with patch(
             "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
@@ -2486,6 +2490,7 @@ class TestUsersEndpointsCoverage:
                 await upload_avatar(
                     file=mock_file,
                     current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -2502,7 +2507,7 @@ class TestUsersEndpointsCoverage:
         mock_file = MagicMock()
         mock_file.content_type = "image/jpeg"
         mock_file.filename = "test.jpg"
-        mock_file.read = AsyncMock(return_value=b"x" * 1024)  # 1KB file
+        mock_file.read = AsyncMock(return_value=b"\xff\xd8\xff" + b"\x00" * 1024)
 
         mock_user = MagicMock()
         mock_user.id = user_id
@@ -2528,6 +2533,7 @@ class TestUsersEndpointsCoverage:
                 await upload_avatar(
                     file=mock_file,
                     current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -2553,6 +2559,7 @@ class TestUsersEndpointsCoverage:
             with pytest.raises(HTTPException) as exc:
                 await delete_avatar(
                     current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -2582,6 +2589,7 @@ class TestUsersEndpointsCoverage:
             with pytest.raises(HTTPException) as exc:
                 await delete_avatar(
                     current_user_id=user_id,
+                    tenant_id=None,
                     session=mock_session,
                 )
 
@@ -2639,6 +2647,7 @@ class TestRolesDescriptionCoverage:
                 role_id=role_id,
                 request=request,
                 superuser_id=superuser_id,
+                tenant_id=None,
                 session=mock_session,
             )
 

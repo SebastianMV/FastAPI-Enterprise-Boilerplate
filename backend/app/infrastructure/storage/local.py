@@ -77,9 +77,12 @@ class LocalStorageAdapter(StoragePort):
         self._base_path.mkdir(parents=True, exist_ok=True)
 
         self._base_url = base_url or "/files"
-        self._secret_key = secret_key or hashlib.sha256(
-            f"storage-signing:{settings.JWT_SECRET_KEY}".encode()
-        ).hexdigest()
+        self._secret_key = (
+            secret_key
+            or hashlib.sha256(
+                f"storage-signing:{settings.JWT_SECRET_KEY}".encode()
+            ).hexdigest()
+        )
 
     @property
     def backend_name(self) -> str:
@@ -96,7 +99,7 @@ class LocalStorageAdapter(StoragePort):
         try:
             full_path.resolve().relative_to(self._base_path.resolve())
         except ValueError:
-            raise ValueError("Path traversal detected")
+            raise ValueError("Path traversal detected") from None
 
         return full_path
 
@@ -230,7 +233,9 @@ class LocalStorageAdapter(StoragePort):
         files = []
         count = 0
 
-        for root, _, filenames in await asyncio.to_thread(lambda: list(os.walk(search_path))):
+        for root, _, filenames in await asyncio.to_thread(
+            lambda: list(os.walk(search_path))
+        ):
             for filename in filenames:
                 # Skip metadata files
                 if filename.endswith(".meta"):

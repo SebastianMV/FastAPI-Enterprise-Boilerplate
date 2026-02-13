@@ -92,7 +92,7 @@ class MetricsService:
 
         except Exception as e:
             elapsed_ms = (time.perf_counter() - start_time) * 1000
-            logger.warning("Redis health check failed: %s", e)
+            logger.warning("redis_health_check_failed", error=type(e).__name__)
             self._redis_healthy = False
             self._last_redis_check = datetime.now(UTC)
             return False, elapsed_ms
@@ -125,7 +125,9 @@ class MetricsService:
                 sample_count=0,
             )
 
-        if self._sorted_cache is None or len(self._sorted_cache) != len(self._response_times):
+        if self._sorted_cache is None or len(self._sorted_cache) != len(
+            self._response_times
+        ):
             self._sorted_cache = sorted(self._response_times)
         sorted_times = self._sorted_cache
         count = len(sorted_times)

@@ -8,8 +8,6 @@ Tests for WebSocket module initialization and lazy loading.
 """
 
 
-
-
 class TestWebSocketModule:
     """Tests for WebSocket module initialization."""
 

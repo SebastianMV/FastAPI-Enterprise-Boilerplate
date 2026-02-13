@@ -1,7 +1,7 @@
 # =============================================================================
 # Semgrep Custom Rules — Backend Security
 # =============================================================================
-# Codified lessons from 19 security audits on this project.
+# Codified lessons from 24 security audits on this project (788 fixes).
 # These rules catch the EXACT patterns that were found repeatedly.
 #
 # Run: semgrep --config .semgrep/ backend/app/
@@ -470,3 +470,157 @@ rules:
       cwe: "CWE-348: Use of Less Trusted Source"
       category: security
       confidence: MEDIUM
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # NEW RULES — Added post-Audit 24 retrospective (Feb 2026)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-html-string-interpolation
+    patterns:
+      - pattern-either:
+          - pattern: f"<$TAG>{$VAR}</$TAG>"
+          - pattern: f"<$TAG ...>{$VAR}</$TAG>"
+          - pattern: f"...<$TAG>{$VAR}...</$TAG>..."
+    message: >
+      User input interpolated into HTML strings must be escaped with
+      html.escape() to prevent XSS. Use html.escape(user_input) before
+      interpolation. Found in 21+ locations in report_templates and
+      pdf_handler across Audits 15-22.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audits 15-22 (21+ XSS fixes in report_templates, pdf_handler)"
+      cwe: "CWE-79: Cross-site Scripting"
+      category: security
+      confidence: MEDIUM
+
+  - id: no-bare-str-field-in-schema
+    patterns:
+      - pattern: |
+          class $SCHEMA(BaseModel):
+              ...
+              $FIELD: str
+              ...
+    pattern-not:
+      - pattern: |
+          class $SCHEMA(BaseModel):
+              ...
+              $FIELD: str = Field(..., max_length=...)
+              ...
+    message: >
+      Pydantic schema fields of type `str` should use constrained types with
+      max_length to prevent DoS via oversized payloads. Use ShortStr (50),
+      NameStr (200), or TextStr (2000) from schemas/common.py instead of bare
+      `str`. Found in ~40 schema fields across Audits 20-24.
+    languages: [python]
+    severity: INFO
+    metadata:
+      audit-ref: "Audits 20-24 (~40 max_length fixes)"
+      cwe: "CWE-770: Allocation of Resources Without Limits"
+      category: security
+      confidence: LOW
+    paths:
+      include:
+        - backend/app/api/
+
+  - id: no-password-field-without-min-length
+    patterns:
+      - pattern: |
+          $FIELD: str = Field(...)
+    pattern-where-python: >
+      "password" in str(meta_vars["$FIELD"]).lower() and
+      "min_length" not in str(meta_vars)
+    message: >
+      Password fields must have min_length constraint (typically 8).
+      Use Field(min_length=8, max_length=128).
+    languages: [python]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-521: Weak Password Requirements"
+      category: security
+      confidence: MEDIUM
+
+  - id: no-localstorage-in-backend-response
+    patterns:
+      - pattern-either:
+          - pattern: |
+              return {..., "localStorage": ..., ...}
+          - pattern: |
+              return {..., "sessionStorage": ..., ...}
+    message: >
+      Backend should never instruct frontend to use localStorage/sessionStorage
+      for sensitive data. Use HttpOnly cookies instead.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-922: Insecure Storage"
+      category: security
+      confidence: LOW
+
+  - id: no-csv-formula-injection
+    patterns:
+      - pattern-either:
+          - pattern: writer.writerow($DATA)
+          - pattern: $WS.append($DATA)
+    pattern-not-inside: |
+      ... = _sanitize_cell(...)
+      ...
+    message: >
+      CSV/Excel cell values starting with =, +, -, @, \t, \r can trigger
+      formula injection. Sanitize cell values by prefixing with a single quote
+      or stripping leading special chars. Fixed in Audits 17-18 (pdf/excel
+      handlers).
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audits 17-18 (csv/excel formula injection)"
+      cwe: "CWE-1236: Improper Neutralization of Formula Elements in a CSV File"
+      category: security
+      confidence: LOW
+
+  - id: no-token-in-url-query-params
+    patterns:
+      - pattern-either:
+          - pattern: f"...?token={$TOKEN}..."
+          - pattern: f"...&token={$TOKEN}..."
+          - pattern: f"...?access_token={$TOKEN}..."
+          - pattern: f"...&refresh_token={$TOKEN}..."
+    message: >
+      Never put tokens in URL query parameters. They appear in server logs,
+      browser history, referer headers, and proxy logs. Use HttpOnly cookies
+      or POST request body. Fixed in Audits 1-5.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audits 1-5 (token migration)"
+      cwe: "CWE-598: Use of GET Request Method With Sensitive Query Strings"
+      category: security
+      confidence: HIGH
+
+  - id: endpoint-missing-tenant-id
+    patterns:
+      - pattern: |
+          @router.$METHOD(...)
+          async def $FUNC(...):
+              ...
+              select($MODEL)
+              ...
+    pattern-not:
+      - pattern: |
+          @router.$METHOD(...)
+          async def $FUNC(..., tenant_id: ..., ...):
+              ...
+    message: >
+      Endpoint performs a database query but does not receive CurrentTenantId.
+      All data-accessing endpoints must include tenant_id: CurrentTenantId to
+      enforce tenant isolation. Found in 32+ endpoints across Audits 4-14.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audits 4-14 (32+ tenant isolation fixes)"
+      cwe: "CWE-863: Incorrect Authorization"
+      category: security
+      confidence: LOW
+    paths:
+      include:
+        - backend/app/api/

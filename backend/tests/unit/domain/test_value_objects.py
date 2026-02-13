@@ -6,6 +6,8 @@
 import pytest
 from pydantic import ValidationError
 
+from app.domain.exceptions.base import ValidationError as DomainValidationError
+
 
 class TestEmailValueObject:
     """Tests for Email value object."""
@@ -28,7 +30,7 @@ class TestEmailValueObject:
         """Test invalid email format raises error."""
         from app.domain.value_objects.email import Email
 
-        with pytest.raises((ValueError, ValidationError)):
+        with pytest.raises(DomainValidationError):
             Email("not-an-email")
 
     def test_email_equality(self) -> None:
@@ -61,7 +63,7 @@ class TestPasswordValueObject:
         """Test password too short raises error."""
         from app.domain.value_objects.password import Password
 
-        with pytest.raises((ValueError, ValidationError)):
+        with pytest.raises(DomainValidationError):
             Password("short")
 
     def test_password_str_representation(self) -> None:
@@ -96,7 +98,7 @@ class TestPermissionEntity:
         """Test invalid permission format raises error."""
         from app.domain.entities.role import Permission
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DomainValidationError):
             Permission.from_string("invalid_format")
 
     def test_permission_equality(self) -> None:

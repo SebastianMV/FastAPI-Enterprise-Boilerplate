@@ -7,7 +7,6 @@ Unit tests for telemetry infrastructure.
 Tests for OpenTelemetry decorators and utilities.
 """
 
-
 import pytest
 
 from app.infrastructure.observability.telemetry import (

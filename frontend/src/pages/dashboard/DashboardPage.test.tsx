@@ -4,10 +4,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DashboardPage from './DashboardPage';
 
 // Mock auth store
 vi.mock('@/stores/authStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
   useAuthStore: (selector: (s: any) => any) =>
     selector({
       user: { id: '1', first_name: 'Admin', last_name: 'User', is_superuser: true },
@@ -70,10 +72,13 @@ const sampleHealth = {
 };
 
 function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <DashboardPage />
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

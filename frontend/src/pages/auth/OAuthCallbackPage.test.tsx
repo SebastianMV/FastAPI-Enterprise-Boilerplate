@@ -50,6 +50,8 @@ describe('OAuthCallbackPage', () => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockFetchUser.mockResolvedValue({});
+    // Set up sessionStorage for CSRF state verification
+    sessionStorage.setItem('oauth_state', 'google_xyz');
     // Mock window.location.reload
     Object.defineProperty(window, 'location', {
       value: { ...originalLocation, reload: vi.fn() },
@@ -59,6 +61,7 @@ describe('OAuthCallbackPage', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    sessionStorage.clear();
     Object.defineProperty(window, 'location', {
       value: originalLocation,
       writable: true,
@@ -117,6 +120,7 @@ describe('OAuthCallbackPage', () => {
   });
 
   it('shows success for new user', async () => {
+    sessionStorage.setItem('oauth_state', 'github_xyz');
     mockApiGet.mockResolvedValue({
       data: {
         access_token: 'token',
@@ -160,10 +164,10 @@ describe('OAuthCallbackPage', () => {
     });
   });
 
-  it('shows try again on error', async () => {
+  it('shows error message on error param', async () => {
     renderPage('?error=access_denied');
     await waitFor(() => {
-      expect(screen.getByText('oauth.tryAgain')).toBeInTheDocument();
+      expect(screen.getByText(/oauth.authFailedGeneric/)).toBeInTheDocument();
     });
   });
 

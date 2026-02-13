@@ -9,7 +9,7 @@ Provides endpoints for:
 - Delete notifications
 """
 
-from datetime import UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -18,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentTenantId, CurrentUser
+from app.api.deps import CurrentTenantId, CurrentUser, require_permission
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.database.models.notification import NotificationModel
 
@@ -36,16 +36,16 @@ class NotificationResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    type: str
-    title: str
-    message: str
-    priority: str
+    id: UUID
+    type: str = Field(max_length=50)
+    title: str = Field(max_length=200)
+    message: str = Field(max_length=2000)
+    priority: str = Field(max_length=20)
     data: dict[str, Any] | None = None
-    action_url: str | None = None
+    action_url: str | None = Field(default=None, max_length=2048)
     is_read: bool
-    read_at: str | None = None
-    created_at: str
+    read_at: datetime | None = None
+    created_at: datetime
 
 
 class NotificationListResponse(BaseModel):
@@ -129,7 +129,7 @@ async def list_notifications(
     return NotificationListResponse(
         items=[
             NotificationResponse(
-                id=str(n.id),
+                id=n.id,
                 type=n.type,
                 title=n.title,
                 message=n.message,
@@ -137,8 +137,8 @@ async def list_notifications(
                 data=n.extra_data,
                 action_url=n.action_url,
                 is_read=n.read_at is not None,
-                read_at=n.read_at.isoformat() if n.read_at else None,
-                created_at=n.created_at.isoformat(),
+                read_at=n.read_at,
+                created_at=n.created_at,
             )
             for n in notifications
         ],
@@ -192,11 +192,14 @@ async def get_notification(
     if not notification:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOTIFICATION_NOT_FOUND", "message": "Notification not found"},
+            detail={
+                "code": "NOTIFICATION_NOT_FOUND",
+                "message": "Notification not found",
+            },
         )
 
     return NotificationResponse(
-        id=str(notification.id),
+        id=notification.id,
         type=notification.type,
         title=notification.title,
         message=notification.message,
@@ -204,8 +207,8 @@ async def get_notification(
         data=notification.extra_data,
         action_url=notification.action_url,
         is_read=notification.read_at is not None,
-        read_at=notification.read_at.isoformat() if notification.read_at else None,
-        created_at=notification.created_at.isoformat(),
+        read_at=notification.read_at,
+        created_at=notification.created_at,
     )
 
 
@@ -266,6 +269,7 @@ async def mark_all_as_read(
 async def delete_notification(
     notification_id: UUID,
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Delete a notification (soft delete)."""
@@ -281,13 +285,19 @@ async def delete_notification(
         .values(is_deleted=True, deleted_at=datetime.now(UTC))
     )
 
-    result = await session.execute(stmt)
+    if tenant_id:
+        stmt = stmt.where(NotificationModel.tenant_id == tenant_id)
+
+    cursor_result = await session.execute(stmt)
     await session.commit()
 
-    if result.rowcount == 0:
+    if cursor_result.rowcount == 0:  # type: ignore[union-attr]
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOTIFICATION_NOT_FOUND", "message": "Notification not found"},
+            detail={
+                "code": "NOTIFICATION_NOT_FOUND",
+                "message": "Notification not found",
+            },
         )
 
 
@@ -304,7 +314,7 @@ async def delete_read_notifications(
         update(NotificationModel)
         .where(
             NotificationModel.user_id == current_user.id,
-            NotificationModel.read_at.isnot(None),
+            NotificationModel.read_at.is_not(None),
             NotificationModel.is_deleted.is_(False),
         )
         .values(is_deleted=True, deleted_at=datetime.now(UTC))

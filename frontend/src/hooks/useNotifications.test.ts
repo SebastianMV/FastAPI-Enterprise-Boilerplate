@@ -1,9 +1,9 @@
 /**
  * Tests for useNotifications hook.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useNotifications, type Notification } from './useNotifications';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useNotifications } from './useNotifications';
 
 // Mock the useWebSocket hook
 vi.mock('./useWebSocket', () => ({
@@ -14,27 +14,28 @@ vi.mock('./useWebSocket', () => ({
   })),
 }));
 
-// Mock notifications data
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'info',
-    title: 'Test Notification',
-    message: 'This is a test',
-    priority: 'normal',
-    is_read: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    type: 'warning',
-    title: 'Warning',
-    message: 'This is a warning',
-    priority: 'high',
-    is_read: true,
-    created_at: new Date().toISOString(),
-  },
-];
+// Mock the notifications store — isConnected now comes from the Zustand store
+vi.mock('@/stores/notificationsStore', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
+    useNotificationsStore: (selector: (s: any) => any) =>
+      selector({
+        notifications: [],
+        unreadCount: 0,
+        isConnected: false,
+        addNotification: vi.fn(),
+        setNotifications: vi.fn(),
+        markAsRead: vi.fn(),
+        markAllAsRead: vi.fn(),
+        removeNotification: vi.fn(),
+        setUnreadCount: vi.fn(),
+      }),
+  };
+});
+
+
 
 // Mock the api module
 vi.mock('../services/api', () => ({
@@ -61,10 +62,10 @@ describe('useNotifications', () => {
       expect(result.current.error).toBeNull();
     });
 
-    it('should return isConnected from WebSocket', () => {
+    it('should return isConnected from store', () => {
       const { result } = renderHook(() => useNotifications({ autoFetch: false }));
 
-      expect(result.current.isConnected).toBe(true);
+      expect(result.current.isConnected).toBe(false);
     });
 
     it('should have fetchNotifications function', () => {

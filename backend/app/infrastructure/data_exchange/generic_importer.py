@@ -16,10 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.ports.data_exchange import EntityConfig, EntityRegistry, ImportMode
 from app.domain.ports.import_export import (
     DataImportError,
+    DataImportWarning,
     ImportPort,
     ImportRequest,
     ImportResult,
-    DataImportWarning,
 )
 from app.infrastructure.data_exchange.csv_handler import get_csv_handler
 from app.infrastructure.data_exchange.excel_handler import (
@@ -293,7 +293,7 @@ class GenericImporter(ImportPort):
                         )
 
             except Exception as e:
-                logger.warning("Import error at row %d: %s", row_num, e)
+                logger.warning("import_row_error", row_num=row_num, error_type=type(e).__name__)
                 result["errors"].append(
                     DataImportError(
                         row=row_num,
@@ -309,7 +309,7 @@ class GenericImporter(ImportPort):
             try:
                 await self.session.flush()
             except Exception as e:
-                logger.warning("Import flush failed: %s", e)
+                logger.warning("import_flush_failed", error_type=type(e).__name__)
                 await self.session.rollback()
                 result["errors"].append(
                     DataImportError(

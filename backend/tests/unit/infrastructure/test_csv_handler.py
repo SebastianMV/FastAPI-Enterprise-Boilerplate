@@ -6,7 +6,6 @@ Tests for CSV handler implementation.
 """
 
 
-
 class TestCSVHandlerInit:
     """Test CSV handler initialization."""
 

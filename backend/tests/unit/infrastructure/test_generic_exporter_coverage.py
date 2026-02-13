@@ -73,7 +73,11 @@ def _make_config(
                 exportable=False,
             ),
         ]
-    mock_model = MagicMock()
+    # Use spec to control which attributes hasattr() finds on the model.
+    # This prevents MagicMock from auto-creating tenant_id, which would
+    # trigger the tenant-aware validation in _apply_tenant_filter().
+    field_names = [f.name for f in fields]
+    mock_model = MagicMock(spec=field_names + ["__name__"])
     mock_model.__name__ = name
     kwargs: dict = dict(
         name=name,
@@ -84,6 +88,8 @@ def _make_config(
     )
     if default_sort is not None:
         kwargs["default_sort"] = default_sort
+    else:
+        kwargs["default_sort"] = ""
     return EntityConfig(**kwargs)
 
 
@@ -274,7 +280,8 @@ class TestExportExcel:
             patch(
                 "app.infrastructure.data_exchange.generic_exporter.is_excel_available",
                 return_value=False,
-            ),pytest.raises(ValueError, match="Excel support not available")
+            ),
+            pytest.raises(ValueError, match="Excel support not available"),
         ):
             await exporter.export(
                 ExportRequest(entity="test_entity", format=ExportFormat.EXCEL)

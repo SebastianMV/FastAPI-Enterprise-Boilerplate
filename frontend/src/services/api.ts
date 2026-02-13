@@ -159,6 +159,7 @@ api.interceptors.response.use(
         refreshPromise = null;
         
         if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console -- development-only error logging
           console.error('[API] Token refresh failed');
         }
         

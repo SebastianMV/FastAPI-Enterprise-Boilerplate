@@ -112,9 +112,13 @@ async def get_dashboard_stats(
     # Use actual calendar month boundaries for accurate growth comparison
     current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     if current_month_start.month == 1:
-        prev_month_start = current_month_start.replace(year=current_month_start.year - 1, month=12)
+        prev_month_start = current_month_start.replace(
+            year=current_month_start.year - 1, month=12
+        )
     else:
-        prev_month_start = current_month_start.replace(month=current_month_start.month - 1)
+        prev_month_start = current_month_start.replace(
+            month=current_month_start.month - 1
+        )
     prev_month_end = current_month_start
     last_month_start = prev_month_start
     last_month_end = prev_month_end
@@ -126,7 +130,7 @@ async def get_dashboard_stats(
     user_stats_result = await session.execute(
         select(
             func.count(UserModel.id),
-            func.sum(case((UserModel.is_active == True, 1), else_=0)),
+            func.sum(case((UserModel.is_active.is_(True), 1), else_=0)),
             func.sum(case((UserModel.created_at >= last_30_days, 1), else_=0)),
             func.sum(case((UserModel.created_at >= last_7_days, 1), else_=0)),
             func.sum(
@@ -171,7 +175,7 @@ async def get_dashboard_stats(
     api_key_stats_result = await session.execute(
         select(
             func.count(APIKeyModel.id),
-            func.sum(case((APIKeyModel.is_active == True, 1), else_=0)),
+            func.sum(case((APIKeyModel.is_active.is_(True), 1), else_=0)),
         ).where(*api_key_tenant_filter)
     )
     api_key_row = api_key_stats_result.one()
@@ -333,7 +337,7 @@ async def get_system_health(
         await session.execute(text("SELECT 1"))
         db_status = "healthy"
     except Exception:
-        logger.warning("Database health check failed")
+        logger.warning("database_health_check_failed")
         db_status = "unhealthy"
 
     # Check Redis health and get metrics

@@ -3,7 +3,7 @@
 # ===========================================
 
 # Stage 1: Base
-# Pin to minor; update patch periodically: docker pull python:3.13-slim
+# Pin to minor; update patch periodically: docker pull python:3.14-slim
 FROM python:3.14-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

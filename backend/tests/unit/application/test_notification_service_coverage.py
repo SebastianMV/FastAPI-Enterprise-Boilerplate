@@ -8,9 +8,11 @@ Tests convenience methods and edge cases.
 """
 
 from datetime import UTC, datetime
+from html import escape as _html_escape
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+import html as html_mod
 import pytest
 
 from app.domain.entities.notification import (
@@ -66,7 +68,7 @@ class TestNotificationServiceConvenienceMethods:
             assert call_kwargs["user_id"] == user_id
             assert call_kwargs["tenant_id"] == tenant_id
             assert call_kwargs["type"] == NotificationType.WELCOME
-            assert "Welcome" in call_kwargs["title"]
+            assert call_kwargs["title"] == "notification.welcome.title"
 
     @pytest.mark.asyncio
     async def test_notify_password_changed(self, mock_session, mock_ws_manager):
@@ -113,8 +115,7 @@ class TestNotificationServiceConvenienceMethods:
 
             mock_create.assert_called_once()
             call_kwargs = mock_create.call_args.kwargs
-            assert ip_address in call_kwargs["message"]
-            assert location in call_kwargs["message"]
+            assert call_kwargs["message"] == "notification.loginAlert.message"
             assert call_kwargs["metadata"]["ip_address"] == ip_address
             assert call_kwargs["metadata"]["location"] == location
 
@@ -136,7 +137,7 @@ class TestNotificationServiceConvenienceMethods:
             result = await service.notify_login_alert(user_id, ip_address)
 
             call_kwargs = mock_create.call_args.kwargs
-            assert ip_address in call_kwargs["message"]
+            assert call_kwargs["message"] == "notification.loginAlert.message"
             assert call_kwargs["metadata"]["location"] is None
 
     @pytest.mark.asyncio
@@ -166,8 +167,9 @@ class TestNotificationServiceConvenienceMethods:
             mock_create.assert_called_once()
             call_kwargs = mock_create.call_args.kwargs
             assert call_kwargs["type"] == NotificationType.MENTION
-            assert mentioned_by in call_kwargs["message"]
-            assert context in call_kwargs["message"]
+            assert call_kwargs["message"] == "notification.mention.message"
+            assert call_kwargs["metadata"]["mentioned_by"] == html_mod.escape(mentioned_by)
+            assert call_kwargs["metadata"]["context"] == html_mod.escape(context)
             assert call_kwargs["action_url"] == action_url
 
 

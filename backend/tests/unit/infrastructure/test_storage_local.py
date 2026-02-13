@@ -55,7 +55,7 @@ class TestLocalStorageAdapter:
 
     def test_get_full_path_prevents_directory_traversal(self, adapter):
         """Should prevent directory traversal attacks."""
-        with pytest.raises(ValueError, match="Invalid path"):
+        with pytest.raises(ValueError, match="Path traversal"):
             adapter._get_full_path("../../etc/passwd")
 
     def test_get_full_path_normalizes_leading_slash(self, adapter, temp_dir):

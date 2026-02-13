@@ -76,8 +76,6 @@ class LoginUseCase:
 
         # Account lockout
         if settings.ACCOUNT_LOCKOUT_ENABLED and user.is_locked() and user.locked_until:
-            remaining = user.locked_until - datetime.now(UTC)
-            minutes = max(1, int(remaining.total_seconds() / 60))
             raise AuthenticationError(
                 message="Account is temporarily locked. Please try again later.",
                 code="ACCOUNT_LOCKED",
@@ -168,7 +166,10 @@ class LoginUseCase:
 
     # ------------------------------------------------------------------
     async def _verify_mfa_if_enabled(self, user, mfa_code: str | None) -> None:
-        from app.api.v1.endpoints.mfa import get_mfa_config, save_mfa_config
+        from app.application.services.mfa_config_service import (
+            get_mfa_config,
+            save_mfa_config,
+        )
 
         mfa_config = await get_mfa_config(str(user.id))
 

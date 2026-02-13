@@ -17,6 +17,7 @@ from app.domain.entities.oauth import (
     OAuthUserInfo,
     SSOConfiguration,
 )
+from app.domain.exceptions.base import AuthenticationError, BusinessRuleViolationError
 
 
 @pytest.fixture
@@ -142,7 +143,7 @@ class TestOAuthServiceCallback:
         ) as mock_get:
             mock_get.return_value = None
 
-            with pytest.raises(ValueError, match="Invalid or expired"):
+            with pytest.raises(AuthenticationError, match="Invalid or expired"):
                 await service.handle_callback(
                     OAuthProvider.GOOGLE, "code", "invalid_state"
                 )
@@ -162,7 +163,7 @@ class TestOAuthServiceCallback:
         ) as mock_get:
             mock_get.return_value = mock_oauth_state
 
-            with pytest.raises(ValueError, match="Provider mismatch"):
+            with pytest.raises(AuthenticationError, match="Provider mismatch"):
                 await service.handle_callback(OAuthProvider.GITHUB, "code", "state")
 
 
@@ -227,7 +228,7 @@ class TestOAuthServiceConnections:
 
         mock_session.execute.side_effect = [mock_result_conn, mock_result_user]
 
-        with pytest.raises(ValueError, match="Cannot unlink primary"):
+        with pytest.raises(BusinessRuleViolationError, match="Cannot unlink primary"):
             await service.unlink_oauth_account(user_id, uuid4())
 
     @pytest.mark.asyncio

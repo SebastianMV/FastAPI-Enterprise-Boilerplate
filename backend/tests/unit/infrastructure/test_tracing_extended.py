@@ -23,7 +23,9 @@ class TestTracingSetup:
     def test_tracer_provider_exists(self) -> None:
         """Test tracer provider exists."""
         try:
-            from app.infrastructure.observability.tracing import tracer_provider
+            from app.infrastructure.observability.tracing import (
+                tracer_provider,  # noqa: F401
+            )
 
             # May or may not exist depending on config
         except ImportError:

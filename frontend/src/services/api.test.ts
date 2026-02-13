@@ -1,8 +1,8 @@
 /**
  * Tests for API service layer.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock axios before imports
 vi.mock('axios', () => {
@@ -17,7 +17,7 @@ vi.mock('axios', () => {
       response: { use: vi.fn() },
     },
   };
-  
+
   return {
     default: {
       create: vi.fn(() => mockAxiosInstance),
@@ -39,9 +39,9 @@ describe('API Services', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Get the mocked axios instance
-    mockApi = (axios.create as ReturnType<typeof vi.fn>)();
+    mockApi = (axios.create as unknown as () => typeof mockApi)();
   });
 
   afterEach(() => {
@@ -81,8 +81,8 @@ describe('API Services', () => {
         };
         mockApi.post.mockResolvedValueOnce(mockResponse);
 
-        const credentials = { 
-          email: 'test@example.com', 
+        const credentials = {
+          email: 'test@example.com',
           password: 'password123',
           mfa_code: '123456'
         };
@@ -165,7 +165,7 @@ describe('API Services', () => {
 
         const result = await usersService.list();
 
-        expect(mockApi.get).toHaveBeenCalledWith('/users', { params: undefined });
+        expect(mockApi.get).toHaveBeenCalledWith('/users', { params: { skip: 0, limit: 20 } });
         expect(result).toEqual(mockResponse.data);
       });
 
@@ -182,8 +182,8 @@ describe('API Services', () => {
 
         await usersService.list({ skip: 20, limit: 10 });
 
-        expect(mockApi.get).toHaveBeenCalledWith('/users', { 
-          params: { skip: 20, limit: 10 } 
+        expect(mockApi.get).toHaveBeenCalledWith('/users', {
+          params: { skip: 20, limit: 10 }
         });
       });
     });

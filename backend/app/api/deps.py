@@ -39,12 +39,16 @@ async def _is_token_blacklisted(jti: str) -> bool:
         if _settings.ENVIRONMENT in ("production", "staging"):
             # Fail-closed: reject tokens when Redis is unavailable
             logger.error(
-                "Redis unavailable for token blacklist check — fail-closed: %s", exc
+                "redis_blacklist_check_failed",
+                mode="fail-closed",
+                error_type=type(exc).__name__,
             )
             return True
         # Development: fail-open for convenience
         logger.warning(
-            "Redis unavailable for token blacklist check — fail-open (dev): %s", exc
+            "redis_blacklist_check_failed",
+            mode="fail-open",
+            error_type=type(exc).__name__,
         )
         return False
 

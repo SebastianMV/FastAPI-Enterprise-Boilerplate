@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
+import SocialLoginButtons from '@/components/auth/SocialLoginButtons';
 import { useAuthStore } from '@/stores/authStore';
 import { EMAIL_PATTERN } from '@/utils/validation';
 import { AlertCircle, Loader2, Shield } from 'lucide-react';
-import SocialLoginButtons from '@/components/auth/SocialLoginButtons';
+import { useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface LoginFormData {
   email: string;
@@ -31,7 +31,7 @@ export default function LoginPage() {
   const [mfaCooldownUntil, setMfaCooldownUntil] = useState<number | null>(
     storedCooldown && Number(storedCooldown) > Date.now() ? Number(storedCooldown) : null
   );
-  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Cleanup timer on unmount
   useEffect(() => () => clearTimeout(cooldownTimerRef.current), []);
@@ -91,7 +91,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="group relative rounded-2xl p-8 bg-white border border-slate-200 shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-3xl overflow-hidden">
-          
+
           {/* Logo */}
           <div className="relative text-center mb-6">
             <div className="relative inline-flex items-center justify-center mb-6">
@@ -126,6 +126,7 @@ export default function LoginPage() {
               >
                 {t('auth.emailAddress')}
               </label>
+              {/* eslint-disable jsx-a11y/no-autofocus -- intentional UX: focus email on page load */}
               <input
                 id="email"
                 type="email"
@@ -143,6 +144,7 @@ export default function LoginPage() {
                   },
                 })}
               />
+              {/* eslint-enable jsx-a11y/no-autofocus */}
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
               )}
@@ -205,6 +207,7 @@ export default function LoginPage() {
                   <Shield className="w-4 h-4 inline mr-1" />
                   {t('auth.mfa.code')}
                 </label>
+                {/* eslint-disable jsx-a11y/no-autofocus -- intentional UX: focus MFA code input when MFA required */}
                 <input
                   id="mfa_code"
                   type="text"
@@ -224,6 +227,7 @@ export default function LoginPage() {
                     },
                   })}
                 />
+                {/* eslint-enable jsx-a11y/no-autofocus */}
                 {errors.mfa_code && (
                   <p className="mt-1 text-sm text-red-600">{errors.mfa_code.message}</p>
                 )}

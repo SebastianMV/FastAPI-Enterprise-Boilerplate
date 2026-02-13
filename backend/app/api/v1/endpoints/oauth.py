@@ -16,13 +16,17 @@ from app.api.deps import (
     CurrentTenantId,
     CurrentUser,
     DbSession,
+    SuperuserId,
 )
 from app.application.services.oauth_service import OAuthService
 from app.config import settings
 from app.domain.entities.oauth import OAuthProvider
+from app.domain.exceptions.base import DomainException
 from app.infrastructure.auth import create_access_token, create_refresh_token
 from app.infrastructure.auth.jwt_handler import decode_token, hash_jti
-from app.infrastructure.database.repositories.session_repository import SQLAlchemySessionRepository
+from app.infrastructure.database.repositories.session_repository import (
+    SQLAlchemySessionRepository,
+)
 from app.infrastructure.observability.logging import get_logger
 
 logger = get_logger(__name__)
@@ -41,11 +45,11 @@ class OAuthConnectionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    provider: str
-    provider_email: str | None = None
-    provider_username: str | None = None
-    provider_display_name: str | None = None
-    provider_avatar_url: str | None = None
+    provider: str = Field(max_length=50)
+    provider_email: str | None = Field(default=None, max_length=320)
+    provider_username: str | None = Field(default=None, max_length=200)
+    provider_display_name: str | None = Field(default=None, max_length=200)
+    provider_avatar_url: str | None = Field(default=None, max_length=2048)
     is_primary: bool
     last_used_at: datetime | None = None
     created_at: datetime | None = None
@@ -54,16 +58,16 @@ class OAuthConnectionResponse(BaseModel):
 class OAuthAuthorizeResponse(BaseModel):
     """OAuth authorization response."""
 
-    authorization_url: str
-    state: str
+    authorization_url: str = Field(max_length=4096)
+    state: str = Field(max_length=256)
 
 
 class OAuthTokenResponse(BaseModel):
     """OAuth token response after successful authentication."""
 
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
+    access_token: str = Field(max_length=2048)
+    refresh_token: str = Field(max_length=2048)
+    token_type: str = Field(default="bearer", max_length=20)
     expires_in: int
     user_id: UUID
     is_new_user: bool
@@ -72,7 +76,9 @@ class OAuthTokenResponse(BaseModel):
 class SSOConfigRequest(BaseModel):
     """SSO configuration request."""
 
-    provider: str
+    provider: str = Field(
+        ..., min_length=1, max_length=50, pattern="^[a-z][a-z0-9_-]*$"
+    )
     name: str = Field(..., min_length=1, max_length=100)
     client_id: str = Field(..., min_length=1, max_length=256)
     client_secret: str = Field(..., min_length=1, max_length=512)
@@ -90,13 +96,13 @@ class SSOConfigResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    provider: str
-    name: str
+    provider: str = Field(max_length=50)
+    name: str = Field(max_length=100)
     is_enabled: bool
     auto_create_users: bool
     auto_update_users: bool
     default_role_id: UUID | None = None
-    allowed_domains: list[str]
+    allowed_domains: list[str] = Field(default_factory=list)
     is_required: bool
     created_at: datetime | None = None
 
@@ -130,7 +136,10 @@ async def authorize(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "UNSUPPORTED_PROVIDER", "message": "Unsupported OAuth provider"},
+            detail={
+                "code": "UNSUPPORTED_PROVIDER",
+                "message": "Unsupported OAuth provider",
+            },
         ) from None
 
     service = OAuthService(session)
@@ -174,7 +183,10 @@ async def authorize_redirect(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "UNSUPPORTED_PROVIDER", "message": "Unsupported OAuth provider"},
+            detail={
+                "code": "UNSUPPORTED_PROVIDER",
+                "message": "Unsupported OAuth provider",
+            },
         ) from None
 
     service = OAuthService(session)
@@ -214,7 +226,10 @@ async def callback(
     if error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "AUTH_FAILED", "message": "Authentication failed. Please try again."},
+            detail={
+                "code": "AUTH_FAILED",
+                "message": "Authentication failed. Please try again.",
+            },
         )
 
     try:
@@ -222,7 +237,10 @@ async def callback(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "UNSUPPORTED_PROVIDER", "message": "Unsupported OAuth provider"},
+            detail={
+                "code": "UNSUPPORTED_PROVIDER",
+                "message": "Unsupported OAuth provider",
+            },
         ) from None
 
     service = OAuthService(session)
@@ -233,10 +251,13 @@ async def callback(
             code=code,
             state=state,
         )
-    except ValueError:
+    except DomainException:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "AUTH_FAILED", "message": "Authentication failed. Please try again."},
+            detail={
+                "code": "AUTH_FAILED",
+                "message": "Authentication failed. Please try again.",
+            },
         ) from None
 
     await session.commit()
@@ -323,15 +344,15 @@ async def callback_redirect(
     state: str = Query(...),
     error: str | None = Query(None),
     error_description: str | None = Query(None),
-    frontend_url: str = Query(None, max_length=2048, description="Frontend URL to redirect to"),
+    frontend_url: str = Query(
+        None, max_length=2048, description="Frontend URL to redirect to"
+    ),
 ) -> RedirectResponse:
     """
     Handle OAuth callback and redirect to frontend with tokens.
     """
     # Fallback to configured FRONTEND_URL if not provided
     if not frontend_url:
-        from app.config import settings
-
         frontend_url = settings.FRONTEND_URL
 
     # Validate frontend_url against allowlist to prevent open redirect
@@ -340,8 +361,7 @@ async def callback_redirect(
 
     parsed_frontend = urlparse(frontend_url)
     if not any(
-        urlparse(origin).netloc == parsed_frontend.netloc
-        for origin in allowed_origins
+        urlparse(origin).netloc == parsed_frontend.netloc for origin in allowed_origins
     ):
         frontend_url = settings.FRONTEND_URL
 
@@ -432,7 +452,7 @@ async def callback_redirect(
         )
         return redirect
 
-    except ValueError:
+    except DomainException:
         return RedirectResponse(
             url=f"{frontend_url}/auth/callback?error=auth_failed",
             status_code=status.HTTP_302_FOUND,
@@ -500,7 +520,10 @@ async def link_account(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "UNSUPPORTED_PROVIDER", "message": "Unsupported OAuth provider"},
+            detail={
+                "code": "UNSUPPORTED_PROVIDER",
+                "message": "Unsupported OAuth provider",
+            },
         ) from None
 
     service = OAuthService(session)
@@ -515,8 +538,9 @@ async def link_account(
     )
 
     logger.info(
-        "OAuth account link initiated",
-        extra={"user_id": str(current_user.id), "provider": provider, "action": "oauth_link"},
+        "oauth_link_initiated",
+        user_id=str(current_user.id),
+        provider=provider,
     )
 
     return OAuthAuthorizeResponse(
@@ -546,22 +570,28 @@ async def unlink_account(
             user_id=current_user.id,
             connection_id=connection_id,
         )
-    except ValueError as e:
-        logger.warning("OAuth unlink failed: %s", e)
+    except DomainException:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "UNLINK_FAILED", "message": "Cannot unlink this OAuth connection. Ensure you have another login method configured."},
+            detail={
+                "code": "UNLINK_FAILED",
+                "message": "Cannot unlink this OAuth connection. Ensure you have another login method configured.",
+            },
         ) from None
 
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "CONNECTION_NOT_FOUND", "message": "OAuth connection not found"},
+            detail={
+                "code": "CONNECTION_NOT_FOUND",
+                "message": "OAuth connection not found",
+            },
         )
 
     logger.info(
-        "OAuth account unlinked",
-        extra={"user_id": str(current_user.id), "connection_id": str(connection_id), "action": "oauth_unlink"},
+        "oauth_account_unlinked",
+        user_id=str(current_user.id),
+        connection_id=str(connection_id),
     )
 
     await session.commit()
@@ -580,7 +610,7 @@ async def unlink_account(
 )
 async def list_sso_configs(
     session: DbSession,
-    current_user: CurrentUser,
+    _superuser_id: SuperuserId,
     tenant_id: CurrentTenantId,
 ) -> list[SSOConfigResponse]:
     """
@@ -588,17 +618,13 @@ async def list_sso_configs(
 
     Requires admin privileges.
     """
-    # Check admin privileges
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "FORBIDDEN", "message": "Only superadmins can manage SSO configurations"},
-        )
-
     if not tenant_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "TENANT_REQUIRED", "message": "Tenant ID is required for SSO configuration"},
+            detail={
+                "code": "TENANT_REQUIRED",
+                "message": "Tenant ID is required for SSO configuration",
+            },
         )
 
     service = OAuthService(session)
@@ -632,7 +658,7 @@ async def list_sso_configs(
 async def create_sso_config(
     data: SSOConfigRequest,
     session: DbSession,
-    current_user: CurrentUser,
+    _superuser_id: SuperuserId,
     tenant_id: CurrentTenantId,
 ) -> SSOConfigResponse:
     """
@@ -640,17 +666,13 @@ async def create_sso_config(
 
     Requires admin privileges.
     """
-    # Check admin privileges
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": "FORBIDDEN", "message": "Only superadmins can manage SSO configurations"},
-        )
-
     if not tenant_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "TENANT_REQUIRED", "message": "Tenant ID is required for SSO configuration"},
+            detail={
+                "code": "TENANT_REQUIRED",
+                "message": "Tenant ID is required for SSO configuration",
+            },
         )
 
     try:
@@ -658,7 +680,10 @@ async def create_sso_config(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "UNSUPPORTED_PROVIDER", "message": "Unsupported OAuth provider"},
+            detail={
+                "code": "UNSUPPORTED_PROVIDER",
+                "message": "Unsupported OAuth provider",
+            },
         ) from None
 
     service = OAuthService(session)

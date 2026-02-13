@@ -1,9 +1,9 @@
 /**
  * Unit tests for EmailVerificationBanner component.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import EmailVerificationBanner from './EmailVerificationBanner';
 
 // Mock auth store
@@ -15,6 +15,7 @@ const mockUser = {
 };
 
 vi.mock('@/stores/authStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
   useAuthStore: (selector: (s: any) => any) => selector({ user: mockUser }),
 }));
 

@@ -1,19 +1,19 @@
 /**
  * Notifications dropdown component.
- * 
+ *
  * Displays a bell icon with unread count badge and dropdown
  * showing recent notifications with real-time updates via WebSocket.
  */
 
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Bell, Check, CheckCheck, X, Info, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
-import { useNotificationsStore, type Notification } from '@/stores/notificationsStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { notificationsService } from '@/services/api';
+import { useNotificationsStore, type Notification } from '@/stores/notificationsStore';
+import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { isSafeRedirectUrl, sanitizeText } from '@/utils/security';
+import { AlertCircle, AlertTriangle, Bell, Check, CheckCheck, CheckCircle, Info, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Validate that an action URL is a safe relative path (not an external redirect).
@@ -69,11 +69,11 @@ function NotificationItem({ notification, onMarkAsRead, onClick, t }: Notificati
       </div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm ${!notification.read ? 'font-medium' : ''} text-slate-900 dark:text-white`}>
-          {notification.title}
+          {sanitizeText(notification.title)}
         </p>
         {notification.message && (
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
-            {notification.message}
+            {sanitizeText(notification.message)}
           </p>
         )}
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
@@ -110,7 +110,7 @@ export default function NotificationsDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  
+
   const {
     notifications,
     unreadCount,
@@ -120,7 +120,7 @@ export default function NotificationsDropdown() {
     markAllAsRead,
     setConnected,
   } = useNotificationsStore();
-  
+
   // WebSocket connection for real-time notifications
   useWebSocket({
     autoConnect: true,
@@ -129,10 +129,10 @@ export default function NotificationsDropdown() {
     onNotification: (payload) => {
       // Runtime payload validation (F-03)
       if (typeof payload !== 'object' || payload === null) return;
-      
+
       // Require server-generated ID — drop payloads without one
       if (typeof payload.id !== 'string' || !payload.id) return;
-      
+
       const id = payload.id as string;
       // Validate type against allowed enum values
       const VALID_TYPES: Notification['type'][] = ['info', 'success', 'warning', 'error'];
@@ -140,11 +140,11 @@ export default function NotificationsDropdown() {
         ? (payload.type as Notification['type'])
         : 'info';
       const title = typeof payload.title === 'string' ? sanitizeText(payload.title.slice(0, 200)) : t('notificationsDropdown.defaultTitle');
-      const message = typeof payload.message === 'string' ? sanitizeText(payload.message.slice(0, 1000)) : undefined;
+      const message = typeof payload.message === 'string' ? sanitizeText(payload.message.slice(0, 1000)) : '';
       const created_at = typeof payload.timestamp === 'string' ? payload.timestamp : new Date().toISOString();
       const rawActionUrl = typeof payload.action_url === 'string' ? payload.action_url : undefined;
       const action_url = rawActionUrl && isSafeRedirectUrl(rawActionUrl) ? rawActionUrl : undefined;
-      
+
       const notification: Notification = {
         id,
         type,
@@ -157,7 +157,7 @@ export default function NotificationsDropdown() {
       addNotification(notification);
     },
   });
-  
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -165,13 +165,13 @@ export default function NotificationsDropdown() {
         setIsOpen(false);
       }
     }
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  
+
   // Handle notification click
-  const handleNotificationClick = async (notification: Notification) => {
+  const handleNotificationClick = useCallback(async (notification: Notification) => {
     if (!notification.read) {
       try { await notificationsService.markAsRead(notification.id); } catch { /* non-critical */ }
       markAsRead(notification.id);
@@ -180,8 +180,8 @@ export default function NotificationsDropdown() {
       navigate(notification.action_url);
       setIsOpen(false);
     }
-  };
-  
+  }, [markAsRead, navigate]);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell button */}
@@ -192,14 +192,14 @@ export default function NotificationsDropdown() {
         aria-expanded={isOpen}
       >
         <Bell className="w-5 h-5" />
-        
+
         {/* Unread badge */}
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] text-xs font-medium text-white bg-red-500 rounded-full px-1">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
-        
+
         {/* Connection indicator */}
         <span
           className={`absolute bottom-1 right-1 w-2 h-2 rounded-full border border-white dark:border-slate-800 ${
@@ -208,7 +208,7 @@ export default function NotificationsDropdown() {
           title={isConnected ? t('notificationsDropdown.connected') : t('notificationsDropdown.disconnected')}
         />
       </button>
-      
+
       {/* Dropdown */}
       {isOpen && (
         <div role="region" aria-live="polite" aria-label={t('notificationsDropdown.title')} className="absolute right-0 mt-2 w-80 max-h-[480px] bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
@@ -235,7 +235,7 @@ export default function NotificationsDropdown() {
               </button>
             </div>
           </div>
-          
+
           {/* Notifications list */}
           <div className="max-h-[360px] overflow-y-auto">
             {notifications.length === 0 ? (
@@ -260,7 +260,7 @@ export default function NotificationsDropdown() {
               ))
             )}
           </div>
-          
+
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-2">

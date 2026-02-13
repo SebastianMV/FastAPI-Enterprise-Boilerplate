@@ -1,7 +1,7 @@
 # =============================================================================
 # Semgrep Custom Rules — Frontend Security (React/TypeScript)
 # =============================================================================
-# Codified lessons from 19 security audits on this project.
+# Codified lessons from 24 security audits on this project (788 fixes).
 # These rules catch the EXACT patterns that were found repeatedly.
 #
 # Run: semgrep --config .semgrep/ frontend/src/
@@ -334,3 +334,83 @@ rules:
       cwe: "CWE-704: Incorrect Type Conversion"
       category: security
       confidence: MEDIUM
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # NEW RULES — Added post-Audit 24 retrospective (Feb 2026)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - id: no-unencoded-url-params
+    patterns:
+      - pattern-regex: "\$\{(?!encodeURIComponent)[a-zA-Z_]+\}"
+    pattern-inside: |
+      `/api/...`
+    message: >
+      URL path parameters must be encoded with encodeURIComponent() to prevent
+      path traversal and injection attacks. Use `/api/users/${encodeURIComponent(id)}`
+      instead of `/api/users/${id}`. Fixed in 15+ service files across Audits 14-20.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audits 14-20 (15+ URL encoding fixes)"
+      cwe: "CWE-116: Improper Encoding or Escaping of Output"
+      category: security
+      confidence: LOW
+
+  - id: useeffect-missing-cleanup
+    patterns:
+      - pattern: |
+          useEffect(() => {
+            ...
+            fetch(...)
+            ...
+          }, ...)
+    pattern-not: |
+      useEffect(() => {
+        ...
+        return () => { ... };
+      }, ...)
+    message: >
+      useEffect with async operations (fetch, API calls) should include cleanup
+      with AbortController to prevent state updates on unmounted components and
+      race conditions. Return a cleanup function from useEffect. Fixed in 10+
+      components across Audits 3-14.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audits 3-14 (AbortController, cleanup)"
+      cwe: "CWE-404: Improper Resource Shutdown or Release"
+      category: quality
+      confidence: LOW
+
+  - id: no-raw-error-in-toast
+    patterns:
+      - pattern-either:
+          - pattern: toast.error($ERR.message)
+          - pattern: toast.error(String($ERR))
+          - pattern: showNotification(..., message=String($ERR), ...)
+    message: >
+      Do not pass raw error messages to toast notifications. Use i18n keys
+      for user-facing error messages: toast.error(t('resource.actionFailed')).
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audits 6-13 (error message sanitization)"
+      cwe: "CWE-209"
+      category: security
+      confidence: MEDIUM
+
+  - id: no-inline-event-handler-strings
+    patterns:
+      - pattern-either:
+          - pattern: onClick="..."
+          - pattern: onSubmit="..."
+          - pattern: onChange="..."
+    message: >
+      Inline event handler strings are an XSS risk and forbidden by strict CSP.
+      Use JSX event handlers: onClick={() => handleClick()} instead.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-79"
+      category: security
+      confidence: HIGH

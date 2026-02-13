@@ -108,7 +108,10 @@ class MemoryWebSocketManager(WebSocketPort):
         async with self._lock:
             # Enforce global connection limit
             if len(self._connections) >= self.MAX_TOTAL_CONNECTIONS:
-                logger.warning("WebSocket global connection limit reached (%s)", self.MAX_TOTAL_CONNECTIONS)
+                logger.warning(
+                    "websocket_global_limit_reached",
+                    max_connections=self.MAX_TOTAL_CONNECTIONS,
+                )
                 await websocket.close(code=1013)  # Try Again Later
                 return None
 
@@ -134,8 +137,8 @@ class MemoryWebSocketManager(WebSocketPort):
                 self._tenant_connections[tenant_id].add(connection_id)
 
         logger.info(
-            "WebSocket connected: conn=%s",
-            connection_id,
+            "websocket_connected",
+            connection_id=connection_id,
         )
 
         # Send connection confirmation
@@ -193,7 +196,7 @@ class MemoryWebSocketManager(WebSocketPort):
             # Remove connection
             del self._connections[connection_id]
 
-        logger.info("WebSocket disconnected: conn=%s", connection_id)
+        logger.info("websocket_disconnected", connection_id=connection_id)
 
         # Notify presence if user has no more connections
         if not await self.is_user_online(user_id) and tenant_id:
@@ -212,7 +215,7 @@ class MemoryWebSocketManager(WebSocketPort):
             await websocket.send_json(data)
             return True
         except Exception as e:
-            logger.warning("Failed to send WebSocket message: %s", e)
+            logger.warning("websocket_send_failed", error=type(e).__name__)
             return False
 
     async def send_to_user(
@@ -253,7 +256,7 @@ class MemoryWebSocketManager(WebSocketPort):
         """Broadcast a message to all connected users."""
         sent_count = 0
 
-        for conn_id, (websocket, info) in list(self._connections.items()):
+        for _conn_id, (websocket, info) in list(self._connections.items()):
             if exclude_user and info.user_id == exclude_user:
                 continue
 
@@ -305,7 +308,7 @@ class MemoryWebSocketManager(WebSocketPort):
             # Track in connection info
             connection_info.rooms.add(room_id)
 
-        logger.debug("Connection %s joined room %s", connection_id, room_id)
+        logger.debug("websocket_room_joined", connection_id=connection_id, room_id=room_id)
 
     async def leave_room(
         self,
@@ -328,7 +331,7 @@ class MemoryWebSocketManager(WebSocketPort):
             # Update connection info
             connection_info.rooms.discard(room_id)
 
-        logger.debug("Connection %s left room %s", connection_id, room_id)
+        logger.debug("websocket_room_left", connection_id=connection_id, room_id=room_id)
 
     async def send_to_room(
         self,
@@ -414,7 +417,7 @@ class MemoryWebSocketManager(WebSocketPort):
             self._handlers[message_type] = []
         self._handlers[message_type].append(handler)
 
-        logger.debug("Registered handler for %s", message_type.value)
+        logger.debug("websocket_handler_registered", message_type=message_type.value)
 
     async def handle_message(
         self,
@@ -428,7 +431,7 @@ class MemoryWebSocketManager(WebSocketPort):
             try:
                 await handler(message, connection)
             except Exception as e:
-                logger.error("Error in message handler: %s", e, exc_info=True)
+                logger.error("websocket_handler_error", error=type(e).__name__, exc_info=True)
 
                 # Send error back to sender
                 if connection.connection_id in self._connections:

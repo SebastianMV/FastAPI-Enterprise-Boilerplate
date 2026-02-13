@@ -1,8 +1,8 @@
 /**
  * Unit tests for ErrorBoundary component.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ErrorBoundary from './ErrorBoundary';
 
 // Suppress console.error from intentional error throws
@@ -38,8 +38,8 @@ describe('ErrorBoundary', () => {
         <ThrowError />
       </ErrorBoundary>
     );
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    expect(screen.getByText(/unexpected error/i)).toBeInTheDocument();
+    expect(screen.getByText('errorBoundary.title')).toBeInTheDocument();
+    expect(screen.getByText('errorBoundary.description')).toBeInTheDocument();
   });
 
   it('should show reload and go home buttons', () => {
@@ -48,8 +48,8 @@ describe('ErrorBoundary', () => {
         <ThrowError />
       </ErrorBoundary>
     );
-    expect(screen.getByText('Reload page')).toBeInTheDocument();
-    expect(screen.getByText('Go home')).toBeInTheDocument();
+    expect(screen.getByText('errorBoundary.reload')).toBeInTheDocument();
+    expect(screen.getByText('errorBoundary.goHome')).toBeInTheDocument();
   });
 
   it('should call window.location.reload on reload button click', () => {
@@ -63,7 +63,7 @@ describe('ErrorBoundary', () => {
         <ThrowError />
       </ErrorBoundary>
     );
-    fireEvent.click(screen.getByText('Reload page'));
+    fireEvent.click(screen.getByText('errorBoundary.reload'));
     expect(reloadMock).toHaveBeenCalled();
     Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
   });
@@ -78,7 +78,7 @@ describe('ErrorBoundary', () => {
         <ThrowError />
       </ErrorBoundary>
     );
-    fireEvent.click(screen.getByText('Go home'));
+    fireEvent.click(screen.getByText('errorBoundary.goHome'));
     expect(mockLocation.href).toBe('/');
     Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
   });

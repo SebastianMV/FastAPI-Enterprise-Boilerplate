@@ -221,7 +221,7 @@ class OAuthProviderBase(ABC):
                 )
                 return response.status_code == 200
         except Exception as e:
-            logger.error("Failed to revoke token: %s", e)
+            logger.error("oauth_token_revoke_failed", error=type(e).__name__)
             return False
 
 

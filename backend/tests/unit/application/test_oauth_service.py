@@ -17,6 +17,7 @@ from uuid import uuid4
 import pytest
 
 from app.domain.entities.oauth import OAuthProvider, OAuthState, OAuthUserInfo
+from app.domain.exceptions.base import AuthenticationError, BusinessRuleViolationError
 
 if TYPE_CHECKING:
     from app.application.services.oauth_service import OAuthService
@@ -320,6 +321,10 @@ class TestOAuthServiceGetUserConnections:
         mock_model.provider_username = None
         mock_model.provider_display_name = "Test User"
         mock_model.provider_avatar_url = "https://example.com/avatar.jpg"
+        mock_model.access_token = None
+        mock_model.refresh_token = None
+        mock_model.token_expires_at = None
+        mock_model.raw_data = {}
         mock_model.is_primary = True
         mock_model.is_active = True
         mock_model.scopes = ["email", "profile"]
@@ -413,7 +418,7 @@ class TestOAuthServiceUnlinkAccount:
 
         mock_session.execute.side_effect = [mock_result_conn, mock_result_user]
 
-        with pytest.raises(ValueError, match="Cannot unlink primary"):
+        with pytest.raises(BusinessRuleViolationError, match="Cannot unlink primary"):
             await oauth_service.unlink_oauth_account(
                 user_id=uuid4(),
                 connection_id=uuid4(),
@@ -596,7 +601,7 @@ class TestOAuthServiceHandleCallback:
         """Test handle_callback with invalid state."""
         mock_cache.get.return_value = None
 
-        with pytest.raises(ValueError, match="Invalid or expired OAuth state"):
+        with pytest.raises(AuthenticationError, match="Invalid or expired OAuth state"):
             await oauth_service.handle_callback(
                 provider=OAuthProvider.GOOGLE,
                 code="auth-code",
@@ -619,7 +624,7 @@ class TestOAuthServiceHandleCallback:
             "existing_user_id": None,
         }
 
-        with pytest.raises(ValueError, match="Provider mismatch"):
+        with pytest.raises(AuthenticationError, match="Provider mismatch"):
             await oauth_service.handle_callback(
                 provider=OAuthProvider.GOOGLE,
                 code="auth-code",

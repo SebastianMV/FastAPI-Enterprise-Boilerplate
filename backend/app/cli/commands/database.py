@@ -305,7 +305,7 @@ async def _database_info() -> None:
 
     except Exception:
         console.print("\n[red]✗ Database connection failed (check DATABASE_URL)[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command("migrate")
@@ -340,7 +340,7 @@ def run_migrations(
     except subprocess.CalledProcessError as e:
         console.print("[red]Migration failed:[/red]")
         console.print(e.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command("reset")
@@ -393,4 +393,4 @@ async def _reset_database() -> None:
 
     except Exception:
         console.print("[red]Reset failed (check logs)[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

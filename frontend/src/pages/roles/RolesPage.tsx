@@ -1,21 +1,22 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, Controller, Control } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
+import { AlertModal, ConfirmModal, Modal } from '@/components/common/Modal';
 import { rolesService, type Role } from '@/services/api';
-import { Modal, ConfirmModal, AlertModal } from '@/components/common/Modal';
+import { sanitizeText } from '@/utils/security';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Loader2,
-  Shield,
-  ShieldCheck,
-  RefreshCw,
-  Lock,
-  Users,
+    Edit,
+    Loader2,
+    Lock,
+    Plus,
+    RefreshCw,
+    Search,
+    Shield,
+    ShieldCheck,
+    Trash2,
+    Users,
 } from 'lucide-react';
+import { useState } from 'react';
+import { Control, Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 // Available permissions - matches backend Permission class
 const AVAILABLE_PERMISSIONS = [
@@ -56,7 +57,7 @@ export default function RolesPage() {
     message: string;
     variant: 'success' | 'error';
   }>({ isOpen: false, title: '', message: '', variant: 'success' });
-  
+
   const queryClient = useQueryClient();
 
   // Fetch roles
@@ -347,7 +348,7 @@ export default function RolesPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {role.name}
+                      {sanitizeText(role.name)}
                     </h3>
                     {role.is_system && (
                       <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
@@ -380,7 +381,7 @@ export default function RolesPage() {
 
               {/* Description */}
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
-                {role.description || t('roles.noDescription')}
+                {role.description ? sanitizeText(role.description) : t('roles.noDescription')}
               </p>
 
               {/* Permissions count */}
@@ -397,7 +398,7 @@ export default function RolesPage() {
                       key={perm}
                       className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                     >
-                      {perm}
+                      {sanitizeText(perm)}
                     </span>
                   ))}
                   {role.permissions.length > 4 && (

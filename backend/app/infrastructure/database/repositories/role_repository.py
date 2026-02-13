@@ -72,7 +72,7 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
             raise ConflictError(
                 message="A role with this name already exists",
                 conflicting_field="name",
-            )
+            ) from None
 
     async def update(self, role: Role) -> Role:
         """Update existing role."""
@@ -128,6 +128,25 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
         model.deleted_at = datetime.now(UTC)
 
         await self._session.flush()
+
+    async def count(
+        self,
+        *,
+        tenant_id: UUID,
+    ) -> int:
+        """Count roles for a tenant."""
+        from sqlalchemy import func
+
+        stmt = (
+            select(func.count())
+            .select_from(RoleModel)
+            .where(
+                RoleModel.tenant_id == tenant_id,
+                RoleModel.is_deleted.is_(False),
+            )
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
 
     async def list(
         self,

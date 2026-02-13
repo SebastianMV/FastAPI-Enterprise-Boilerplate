@@ -111,9 +111,11 @@ class TestTenant:
 
     def test_update_plan_invalid(self):
         """Test updating with invalid plan raises error."""
+        from app.domain.exceptions import BusinessRuleViolationError
+
         tenant = Tenant(id=uuid4(), name="Test", slug="test")
 
-        with pytest.raises(ValueError, match="Invalid plan"):
+        with pytest.raises(BusinessRuleViolationError, match="Invalid plan"):
             tenant.update_plan("invalid_plan")
 
     def test_is_plan_expired_no_expiry(self):

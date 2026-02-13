@@ -27,7 +27,7 @@ export default function VerifyEmailPage() {
   // Verify email mutation
   const verifyMutation = useMutation({
     mutationFn: (token: string) => emailVerificationService.verifyEmail(token),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       setStatus('success');
       setMessage(t('auth.emailVerifiedSuccess'));
     },

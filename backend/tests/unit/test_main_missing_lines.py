@@ -26,15 +26,21 @@ class TestLifespanOpenTelemetry:
 
         mock_app = FastAPI()
 
-        with patch(
-            "app.infrastructure.database.connection.init_database",
-            new_callable=AsyncMock,
-        ), patch(
-            "app.infrastructure.database.connection.close_database",
-            new_callable=AsyncMock,
-        ), patch("app.infrastructure.observability.logging.setup_logging"), patch(
-            "app.infrastructure.observability.telemetry.setup_telemetry"
-        ) as mock_setup_telemetry, patch("app.main.settings") as mock_settings:
+        with (
+            patch(
+                "app.infrastructure.database.connection.init_database",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.infrastructure.database.connection.close_database",
+                new_callable=AsyncMock,
+            ),
+            patch("app.infrastructure.observability.logging.setup_logging"),
+            patch(
+                "app.infrastructure.observability.telemetry.setup_telemetry"
+            ) as mock_setup_telemetry,
+            patch("app.main.settings") as mock_settings,
+        ):
             mock_settings.APP_NAME = "Test App"
             mock_settings.APP_VERSION = "1.0.0"
             mock_settings.ENVIRONMENT = "test"
@@ -51,15 +57,21 @@ class TestLifespanOpenTelemetry:
 
         mock_app = FastAPI()
 
-        with patch(
-            "app.infrastructure.database.connection.init_database",
-            new_callable=AsyncMock,
-        ), patch(
-            "app.infrastructure.database.connection.close_database",
-            new_callable=AsyncMock,
-        ), patch("app.infrastructure.observability.logging.setup_logging"), patch(
-            "app.infrastructure.observability.telemetry.setup_telemetry"
-        ) as mock_setup_telemetry, patch("app.main.settings") as mock_settings:
+        with (
+            patch(
+                "app.infrastructure.database.connection.init_database",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.infrastructure.database.connection.close_database",
+                new_callable=AsyncMock,
+            ),
+            patch("app.infrastructure.observability.logging.setup_logging"),
+            patch(
+                "app.infrastructure.observability.telemetry.setup_telemetry"
+            ) as mock_setup_telemetry,
+            patch("app.main.settings") as mock_settings,
+        ):
             mock_settings.APP_NAME = "Test App"
             mock_settings.APP_VERSION = "1.0.0"
             mock_settings.ENVIRONMENT = "test"
@@ -80,15 +92,20 @@ class TestLifespanUptimeTrackerError:
 
         mock_app = FastAPI()
 
-        with patch(
-            "app.infrastructure.database.connection.init_database",
-            new_callable=AsyncMock,
-        ), patch(
-            "app.infrastructure.database.connection.close_database",
-            new_callable=AsyncMock,
-        ), patch("app.infrastructure.observability.logging.setup_logging"), patch(
-            "app.infrastructure.monitoring.get_uptime_tracker"
-        ) as mock_get_uptime:
+        with (
+            patch(
+                "app.infrastructure.database.connection.init_database",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.infrastructure.database.connection.close_database",
+                new_callable=AsyncMock,
+            ),
+            patch("app.infrastructure.observability.logging.setup_logging"),
+            patch(
+                "app.infrastructure.monitoring.get_uptime_tracker"
+            ) as mock_get_uptime,
+        ):
             # Make uptime tracker initialization fail
             mock_tracker = AsyncMock()
             mock_tracker.initialize = AsyncMock(
@@ -116,15 +133,20 @@ class TestLifespanUptimeTrackerError:
 
         mock_app = FastAPI()
 
-        with patch(
-            "app.infrastructure.database.connection.init_database",
-            new_callable=AsyncMock,
-        ), patch(
-            "app.infrastructure.database.connection.close_database",
-            new_callable=AsyncMock,
-        ), patch("app.infrastructure.observability.logging.setup_logging"), patch(
-            "app.infrastructure.monitoring.get_uptime_tracker"
-        ) as mock_get_uptime:
+        with (
+            patch(
+                "app.infrastructure.database.connection.init_database",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.infrastructure.database.connection.close_database",
+                new_callable=AsyncMock,
+            ),
+            patch("app.infrastructure.observability.logging.setup_logging"),
+            patch(
+                "app.infrastructure.monitoring.get_uptime_tracker"
+            ) as mock_get_uptime,
+        ):
             # Make uptime tracker initialization succeed
             mock_tracker = AsyncMock()
             mock_tracker.initialize = AsyncMock()

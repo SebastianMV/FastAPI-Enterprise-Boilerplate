@@ -13,7 +13,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_permission
+from app.api.deps import CurrentTenantId, require_permission
 from app.api.v1.schemas.api_keys import (
     APIKeyCreate,
     APIKeyCreatedResponse,
@@ -40,6 +40,7 @@ router = APIRouter(tags=["api-keys"])
 async def list_my_api_keys(
     include_revoked: bool = Query(default=False),
     current_user_id: UUID = Depends(require_permission("api_keys", "read")),
+    _tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> APIKeyListResponse:
     """List API keys for current user."""
@@ -47,6 +48,7 @@ async def list_my_api_keys(
         session,
         user_id=current_user_id,
         include_revoked=include_revoked,
+        tenant_id=_tenant_id,
     )
 
     return APIKeyListResponse(
@@ -111,6 +113,7 @@ async def create_my_api_key(
 async def revoke_my_api_key(
     key_id: UUID,
     current_user_id: UUID = Depends(require_permission("api_keys", "write")),
+    _tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Revoke an API key."""
@@ -118,6 +121,7 @@ async def revoke_my_api_key(
         session,
         key_id=key_id,
         user_id=current_user_id,
+        tenant_id=_tenant_id,
     )
 
     if not revoked:

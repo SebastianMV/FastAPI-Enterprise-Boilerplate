@@ -8,6 +8,7 @@ from uuid import uuid4
 import pytest
 
 from app.domain.entities.role import Permission, Role
+from app.domain.exceptions.base import ValidationError as DomainValidationError
 
 
 class TestPermission:
@@ -32,10 +33,10 @@ class TestPermission:
 
     def test_permission_from_string_invalid(self):
         """Test invalid permission string raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid permission format"):
+        with pytest.raises((ValueError, DomainValidationError), match="Invalid permission format"):
             Permission.from_string("invalid-format")
 
-        with pytest.raises(ValueError, match="Invalid permission format"):
+        with pytest.raises((ValueError, DomainValidationError), match="Invalid permission format"):
             Permission.from_string("too:many:colons")
 
     def test_permission_equality_with_permission(self):

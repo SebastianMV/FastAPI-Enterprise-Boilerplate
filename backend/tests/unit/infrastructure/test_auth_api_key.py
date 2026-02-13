@@ -3,7 +3,6 @@
 
 """Comprehensive tests for API Key Handler."""
 
-
 import pytest
 
 from app.infrastructure.auth.api_key_handler import (
@@ -44,11 +43,12 @@ class TestGenerateAPIKey:
         assert prefix == expected_prefix
 
     def test_generate_api_key_hash_is_bcrypt(self):
-        """Should hash key using bcrypt."""
+        """Should hash key using SHA-256."""
         _, _, key_hash = generate_api_key()
 
-        # Bcrypt hashes start with $2b$
-        assert key_hash.startswith("$2b$")
+        # SHA-256 hashes are 64 hex characters
+        assert len(key_hash) == 64
+        assert all(c in '0123456789abcdef' for c in key_hash)
 
     def test_generate_api_key_returns_tuple(self):
         """Should return tuple of 3 elements."""
@@ -146,7 +146,9 @@ class TestAPIKeyHandler:
         hashed = handler.hash_key(key)
 
         assert hashed is not None
-        assert hashed.startswith("$2b$")
+        # SHA-256 hashes are 64 hex characters
+        assert len(hashed) == 64
+        assert all(c in '0123456789abcdef' for c in hashed)
 
     def test_verify_key_correct(self, handler):
         """Should verify correct key."""
@@ -214,14 +216,14 @@ class TestAPIKeyEdgeCases:
         # All keys should be unique
         assert len(keys) == len(set(keys))
 
-    def test_hash_same_key_produces_different_hashes(self, handler):
-        """Should produce different hashes due to salt."""
+    def test_hash_same_key_produces_same_hash(self, handler):
+        """Should produce identical hashes (SHA-256 is deterministic)."""
         key = "same_key"
 
         hash1 = handler.hash_key(key)
         hash2 = handler.hash_key(key)
 
-        assert hash1 != hash2
+        assert hash1 == hash2
 
     def test_verify_key_with_empty_strings(self, handler):
         """Should handle empty strings."""

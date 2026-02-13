@@ -184,7 +184,7 @@ class TestSQLAlchemyRoleRepositoryCreate:
         with pytest.raises(ConflictError) as exc_info:
             await repo.create(role)
 
-        assert "DuplicateName" in exc_info.value.message
+        assert "already exists" in exc_info.value.message
         session.rollback.assert_called_once()
 
 

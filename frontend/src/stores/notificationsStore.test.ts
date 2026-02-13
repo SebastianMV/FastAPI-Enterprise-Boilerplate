@@ -1,14 +1,13 @@
 /**
  * Tests for notificationsStore.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { act } from '@testing-library/react';
-import { useNotificationsStore } from './notificationsStore';
 import type { Notification } from '@/services/api';
+import { act } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useNotificationsStore } from './notificationsStore';
 
 const createMockNotification = (overrides: Partial<Notification> = {}): Notification => ({
   id: `notification-${Math.random().toString(36).substr(2, 9)}`,
-  user_id: 'user-1',
   type: 'info',
   title: 'Test Notification',
   message: 'This is a test notification',

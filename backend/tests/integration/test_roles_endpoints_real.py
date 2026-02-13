@@ -115,6 +115,7 @@ async def test_update_role_real_invalid_permission(db_session):
             role_id=role.id,
             request=request,
             superuser_id=uuid4(),
+            tenant_id=None,
             session=db_session,
         )
 
@@ -147,6 +148,7 @@ async def test_get_user_permissions_real_not_found(db_session):
         await get_user_permissions(
             user_id=non_existent_id,
             current_user_id=uuid4(),
+            tenant_id=None,
             session=db_session,
         )
 

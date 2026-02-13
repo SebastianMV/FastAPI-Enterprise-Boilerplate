@@ -147,7 +147,9 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         if tenant_id:
             query = query.where(AuditLogModel.tenant_id == tenant_id)
 
-        query = query.order_by(AuditLogModel.timestamp.desc()).limit(limit).offset(offset)
+        query = (
+            query.order_by(AuditLogModel.timestamp.desc()).limit(limit).offset(offset)
+        )
 
         result = await self._session.execute(query)
         return [self._to_entity(model) for model in result.scalars()]

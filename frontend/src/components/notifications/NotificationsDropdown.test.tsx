@@ -22,6 +22,7 @@ vi.mock('@/services/api', () => ({
 }));
 
 // Mock notifications store
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock notification array
 const mockNotifications: any[] = [];
 const mockMarkAsRead = vi.fn();
 const mockMarkAllAsRead = vi.fn();
@@ -31,7 +32,7 @@ const mockSetConnected = vi.fn();
 vi.mock('@/stores/notificationsStore', () => ({
   useNotificationsStore: () => ({
     notifications: mockNotifications,
-    unreadCount: mockNotifications.filter((n: any) => !n.read).length,
+    unreadCount: mockNotifications.filter((n: unknown) => !(n as Record<string, boolean>).read).length,
     isConnected: false,
     addNotification: mockAddNotification,
     markAsRead: mockMarkAsRead,

@@ -100,6 +100,7 @@ class TestGetUserPermissionsAuth:
             await get_user_permissions(
                 user_id=target_id,
                 current_user_id=viewer_id,
+                tenant_id=None,
                 session=mock_session,
             )
 

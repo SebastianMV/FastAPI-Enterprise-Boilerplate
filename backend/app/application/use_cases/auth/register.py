@@ -170,6 +170,6 @@ class RegisterUseCase:
             )
         except Exception:
             logger.warning(
-                "Failed to send verification email during registration",
+                "verification_email_send_failed",
                 exc_info=True,
             )

@@ -460,7 +460,7 @@ class TestGenericImporterImplementation:
         mock_config = MagicMock()
 
         with patch.object(EntityRegistry, "get", return_value=mock_config):
-            with pytest.raises(ValueError, match="Unsupported format"):
+            with pytest.raises(ValueError, match="Unsupported.*format"):
                 importer.get_template("users", format="xml")
 
     def test_get_template_csv_format(self):
@@ -615,10 +615,12 @@ class TestImportResultActual:
 
     def test_import_result_with_warnings(self):
         """Test ImportResult with warnings."""
-        from app.domain.ports.import_export import ImportResult, DataImportWarning
+        from app.domain.ports.import_export import DataImportWarning, ImportResult
 
         warnings = [
-            DataImportWarning(row=5, field="description", message="Truncated long value"),
+            DataImportWarning(
+                row=5, field="description", message="Truncated long value"
+            ),
         ]
 
         result = ImportResult(
@@ -929,7 +931,7 @@ class TestImportResultErrors:
 
     def test_result_with_warnings(self):
         """Test ImportResult with warnings."""
-        from app.domain.ports.import_export import ImportResult, DataImportWarning
+        from app.domain.ports.import_export import DataImportWarning, ImportResult
 
         warnings = [
             DataImportWarning(row=5, field="description", message="Value truncated"),

@@ -95,3 +95,16 @@ class RateLimitExceededError(DomainException):
         """Set message with retry info."""
         if not self.message:
             self.message = "Rate limit exceeded. Please try again later."
+
+
+@dataclass
+class ServiceUnavailableError(DomainException):
+    """Raised when a required infrastructure service is unavailable."""
+
+    service: str = ""
+    code: str = "SERVICE_UNAVAILABLE"
+
+    def __post_init__(self) -> None:
+        """Set message with service info."""
+        if not self.message:
+            self.message = "Service temporarily unavailable. Please try again later."

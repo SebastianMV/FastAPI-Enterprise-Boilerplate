@@ -42,9 +42,9 @@ class TestMFARequestSchemas:
         assert request.code == "AB12CD34"
 
     def test_mfa_verify_request_with_spaces(self):
-        """Test code with spaces."""
-        request = MFAVerifyRequest(code="123 456")
-        assert request.code == "123 456"
+        """Test code with spaces is rejected by alphanumeric-only pattern."""
+        with pytest.raises(ValidationError):
+            MFAVerifyRequest(code="123 456")
 
     def test_mfa_verify_request_too_short(self):
         """Test code too short."""

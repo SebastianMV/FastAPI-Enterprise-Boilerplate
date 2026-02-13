@@ -119,7 +119,7 @@ class EmailTemplateEngine:
         # Initialize Jinja2 environment
         self._env = Environment(
             loader=FileSystemLoader(str(self._templates_dir)),
-            autoescape=select_autoescape(["html", "xml"]),
+            autoescape=select_autoescape(default=True),
             trim_blocks=True,
             lstrip_blocks=True,
         )

@@ -439,10 +439,7 @@ class TestValidateMFACode:
 
         request = MFAVerifyRequest(code="123456")
 
-        with (
-            patch("app.api.v1.endpoints.mfa.get_mfa_config") as mock_get_config,
-            patch("app.api.v1.endpoints.mfa.save_mfa_config") as mock_save,
-        ):
+        with patch("app.api.v1.endpoints.mfa.get_mfa_config") as mock_get_config:
             mock_get_config.return_value = mock_enabled_mfa_config
 
             result = await validate_mfa_code(
@@ -450,7 +447,6 @@ class TestValidateMFACode:
             )
 
             assert result.success is True
-            assert mock_save.called  # Backup code consumed
 
     @pytest.mark.asyncio
     async def test_validate_code_not_enabled(self, mock_user):

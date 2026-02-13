@@ -100,9 +100,9 @@ class CacheSerializer:
             return obj.isoformat()
         if hasattr(obj, "model_dump"):  # Pydantic models
             return obj.model_dump()
-        raise TypeError(
-            "Object of type %s is not JSON serializable" % type(obj).__name__
-        )
+        if hasattr(obj, "__dict__"):  # Regular Python objects
+            return obj.__dict__
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
 class CacheService:
@@ -160,7 +160,7 @@ class CacheService:
 
         except Exception as e:
             self._stats["errors"] += 1
-            logger.warning("Cache get error for '%s': %s", key, e)
+            logger.warning("cache_get_error", key=key, error_type=type(e).__name__)
             return None
 
     async def set(
@@ -193,7 +193,7 @@ class CacheService:
 
         except Exception as e:
             self._stats["errors"] += 1
-            logger.warning("Cache set error for '%s': %s", key, e)
+            logger.warning("cache_set_error", key=key, error_type=type(e).__name__)
             return False
 
     async def delete(self, key: str) -> bool:
@@ -208,7 +208,7 @@ class CacheService:
 
         except Exception as e:
             self._stats["errors"] += 1
-            logger.warning("Cache delete error for '%s': %s", key, e)
+            logger.warning("cache_delete_error", key=key, error_type=type(e).__name__)
             return False
 
     async def delete_pattern(self, pattern: str) -> int:
@@ -234,14 +234,14 @@ class CacheService:
 
             if keys:
                 await self._client.delete(*keys)  # type: ignore
-                logger.debug("Deleted %d cache keys matching '%s'", len(keys), pattern)
+                logger.debug("cache_keys_deleted", count=len(keys), pattern=pattern)
                 return len(keys)
 
             return 0
 
         except Exception as e:
             self._stats["errors"] += 1
-            logger.warning("Cache delete_pattern error for '%s': %s", pattern, e)
+            logger.warning("cache_delete_pattern_error", pattern=pattern, error_type=type(e).__name__)
             return 0
 
     async def exists(self, key: str) -> bool:
@@ -255,7 +255,7 @@ class CacheService:
 
         except Exception as e:
             self._stats["errors"] += 1
-            logger.warning("Cache exists error for '%s': %s", key, e)
+            logger.warning("cache_exists_error", key=key, error_type=type(e).__name__)
             return False
 
     async def get_or_set(
@@ -310,11 +310,11 @@ class CacheService:
 
         try:
             deleted = await self.delete_pattern("*")
-            logger.info("Cleared %d cache entries", deleted)
+            logger.info("cache_cleared", count=deleted)
             return True
 
         except Exception as e:
-            logger.error("Cache clear_all error: %s", e)
+            logger.error("cache_clear_all_error", error_type=type(e).__name__)
             return False
 
 
@@ -396,7 +396,7 @@ def cached(
             # Try cache
             cached_value = await cache.get(cache_key)
             if cached_value is not None:
-                logger.debug("Cache hit: %s", cache_key)
+                logger.debug("cache_hit", key=cache_key)
                 return cached_value  # type: ignore
 
             # Execute function
@@ -405,7 +405,7 @@ def cached(
             # Cache result
             if result is not None:
                 await cache.set(cache_key, result, ttl)
-                logger.debug("Cache set: %s", cache_key)
+                logger.debug("cache_set", key=cache_key)
 
             return result  # type: ignore
 
@@ -440,7 +440,7 @@ def invalidate_cache(pattern: str) -> Callable[[Callable[P, R]], Callable[P, R]]
             cache = await get_cache_service()
             if cache.is_enabled:
                 await cache.delete_pattern(pattern)
-                logger.debug("Cache invalidated: %s", pattern)
+                logger.debug("cache_invalidated", pattern=pattern)
 
             return result  # type: ignore
 

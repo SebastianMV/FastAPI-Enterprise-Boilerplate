@@ -32,6 +32,7 @@ const mockLogout = vi.fn();
 const mockFetchFeatures = vi.fn();
 
 vi.mock('@/stores/authStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
   useAuthStore: (selector?: (s: any) => any) => {
     const state = { user: mockUser, logout: mockLogout };
     return selector ? selector(state) : state;
@@ -39,6 +40,7 @@ vi.mock('@/stores/authStore', () => ({
 }));
 
 vi.mock('@/stores/configStore', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock store selector
   useConfigStore: (selector?: (s: any) => any) => {
     const state = { fetchFeatures: mockFetchFeatures };
     return selector ? selector(state) : state;
@@ -107,7 +109,7 @@ describe('DashboardLayout', () => {
   it('should show user email in dropdown', () => {
     renderLayout();
     fireEvent.click(screen.getByText('Admin User'));
-    expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+    expect(screen.getByText('ad***@example.com')).toBeInTheDocument();
   });
 
   it('should call logout on sign out click', () => {

@@ -10,7 +10,6 @@ Otherwise, a key is derived from JWT_SECRET_KEY (dev convenience only).
 """
 
 import base64
-import hashlib
 
 from cryptography.fernet import Fernet, InvalidToken
 
@@ -26,8 +25,8 @@ def _derive_fernet_key(secret: str) -> bytes:
     Uses HKDF (HMAC-based Key Derivation Function) which is the
     recommended approach for deriving encryption keys from secrets.
     """
-    from cryptography.hazmat.primitives.kdf.hkdf import HKDF
     from cryptography.hazmat.primitives import hashes as _hashes
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
     hkdf = HKDF(
         algorithm=_hashes.SHA256(),
@@ -49,7 +48,8 @@ def _get_fernet() -> Fernet:
         if settings.ENVIRONMENT not in ("development", "testing"):
             raise ValueError("ENCRYPTION_KEY must be set outside development/testing")
         _logger.warning(
-            "ENCRYPTION_KEY not set, falling back to JWT_SECRET_KEY — DEV ONLY"
+            "encryption_key_fallback_to_jwt_secret",
+            environment="development",
         )
         key = _derive_fernet_key(settings.JWT_SECRET_KEY)
     return Fernet(key)

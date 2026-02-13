@@ -5,6 +5,7 @@
 
 import pytest
 
+from app.domain.exceptions.base import ValidationError as DomainValidationError
 from app.domain.value_objects.email import Email
 
 
@@ -37,22 +38,22 @@ class TestEmail:
 
     def test_invalid_email_empty(self):
         """Test that empty email raises ValueError."""
-        with pytest.raises(ValueError, match="cannot be empty"):
+        with pytest.raises((ValueError, DomainValidationError), match="cannot be empty"):
             Email("")
 
     def test_invalid_email_no_at_sign(self):
         """Test that email without @ raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid email format"):
+        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
             Email("userexample.com")
 
     def test_invalid_email_no_domain(self):
         """Test that email without domain raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid email format"):
+        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
             Email("user@")
 
     def test_invalid_email_no_tld(self):
         """Test that email without TLD raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid email format"):
+        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
             Email("user@example")
 
     def test_email_domain_property(self):
@@ -77,10 +78,10 @@ class TestEmail:
         assert email1 == email2
 
     def test_email_equality_with_string(self):
-        """Test equality with string."""
+        """Test equality with string by wrapping in Email."""
         email = Email("user@example.com")
-        assert email == "user@example.com"
-        assert email == "USER@EXAMPLE.COM"
+        assert email == Email("user@example.com")
+        assert email == Email("USER@EXAMPLE.COM")
 
     def test_email_immutability(self):
         """Test that Email is immutable."""

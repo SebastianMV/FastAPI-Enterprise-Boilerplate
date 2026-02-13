@@ -124,7 +124,7 @@ async def authenticate_websocket(
         return user_id, tenant_id
 
     except Exception as e:
-        logger.warning("WebSocket authentication failed: %s", e)
+        logger.warning("ws_auth_failed", error=type(e).__name__)
         return None
 
 
@@ -197,7 +197,7 @@ async def websocket_endpoint(
                     await manager.handle_message(message, connection)
 
             except Exception as e:
-                logger.error("Error processing WebSocket message: %s", e)
+                logger.error("ws_message_processing_error", error=type(e).__name__)
                 await websocket.send_json(
                     {
                         "type": "error",
@@ -206,10 +206,10 @@ async def websocket_endpoint(
                 )
 
     except WebSocketDisconnect:
-        logger.info("WebSocket disconnected: %s", connection_id)
+        logger.info("ws_disconnected", connection_id=str(connection_id))
 
     except Exception as e:
-        logger.error("WebSocket error: %s", e)
+        logger.error("ws_error", error=type(e).__name__)
 
     finally:
         await manager.disconnect(connection_id)
@@ -269,7 +269,7 @@ async def notifications_endpoint(
                 )
 
     except WebSocketDisconnect:
-        logger.debug("WebSocket disconnected: %s", connection_id)
+        logger.debug("ws_disconnected", connection_id=str(connection_id))
 
     finally:
         await manager.disconnect(connection_id)

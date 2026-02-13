@@ -633,24 +633,23 @@ class TestGetCacheServiceCoverage:
         cache_module._cache_service = None
 
         try:
+            mock_redis_client = AsyncMock()
+            mock_redis_client.ping = AsyncMock()
+
+            mock_cache = MagicMock()
+            mock_cache.get_redis_client.return_value = mock_redis_client
+
             with (
                 patch.object(cache_module, "settings") as mock_settings,
-                patch.object(cache_module, "redis") as mock_redis,
+                patch("app.infrastructure.cache.get_cache", return_value=mock_cache),
             ):
                 mock_settings.CACHE_ENABLED = True
-                mock_settings.REDIS_HOST = "localhost"
-                mock_settings.REDIS_PORT = 6379
-                mock_settings.REDIS_PASSWORD = None
-                mock_settings.REDIS_DB = 0
-
-                mock_client = AsyncMock()
-                mock_client.ping = AsyncMock()
-                mock_redis.Redis.return_value = mock_client
+                mock_settings.CACHE_PREFIX = "test"
 
                 result = await cache_module.get_cache_service()
 
                 assert result is not None
-                mock_client.ping.assert_called_once()
+                mock_redis_client.ping.assert_called_once()
         finally:
             cache_module._cache_service = original
 

@@ -254,6 +254,7 @@ class TestGetRoleEndpoint:
         result = await get_role(
             role_id=role_id,
             current_user_id=uuid4(),
+            tenant_id=None,
             session=mock_session,
             repo=mock_repo,
         )
@@ -276,6 +277,7 @@ class TestGetRoleEndpoint:
             await get_role(
                 role_id=uuid4(),
                 current_user_id=uuid4(),
+                tenant_id=None,
                 session=mock_session,
                 repo=mock_repo,
             )

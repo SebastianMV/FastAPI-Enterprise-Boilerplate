@@ -15,6 +15,18 @@ from fastapi.security import HTTPAuthorizationCredentials
 from app.api.deps import get_current_user_id, require_permission
 
 
+def _make_mock_request():
+    """Create mock request for dependency injection tests."""
+
+    class _State:
+        pass
+
+    mock_req = MagicMock()
+    mock_req.cookies = {}
+    mock_req.state = _State()
+    return mock_req
+
+
 class TestRequirePermission:
     """Tests for require_permission dependency."""
 
@@ -24,6 +36,11 @@ class TestRequirePermission:
         checker = require_permission("users", "write")
 
         mock_session = AsyncMock()
+        mock_user = MagicMock()
+        mock_user.is_active = True
+        mock_user.is_superuser = True
+        mock_session.get.return_value = mock_user
+
         mock_credentials = HTTPAuthorizationCredentials(
             scheme="Bearer", credentials="valid_token"
         )
@@ -38,6 +55,7 @@ class TestRequirePermission:
 
             result = await checker(
                 credentials=mock_credentials,
+                request=_make_mock_request(),
                 session=mock_session,
             )
 
@@ -53,6 +71,7 @@ class TestRequirePermission:
         with pytest.raises(HTTPException) as exc:
             await checker(
                 credentials=None,
+                request=_make_mock_request(),
                 session=mock_session,
             )
 
@@ -79,6 +98,7 @@ class TestRequirePermission:
             with pytest.raises(HTTPException) as exc:
                 await checker(
                     credentials=mock_credentials,
+                    request=_make_mock_request(),
                     session=mock_session,
                 )
 
@@ -107,6 +127,7 @@ class TestRequirePermission:
             with pytest.raises(HTTPException) as exc:
                 await checker(
                     credentials=mock_credentials,
+                    request=_make_mock_request(),
                     session=mock_session,
                 )
 
@@ -139,6 +160,7 @@ class TestRequirePermission:
             with pytest.raises(HTTPException) as exc:
                 await checker(
                     credentials=mock_credentials,
+                    request=_make_mock_request(),
                     session=mock_session,
                 )
 
@@ -154,6 +176,7 @@ class TestRequirePermission:
 
         mock_user = MagicMock()
         mock_user.is_active = True
+        mock_user.is_superuser = False
         mock_user.roles = []  # No roles
         mock_session.get.return_value = mock_user
 
@@ -172,11 +195,12 @@ class TestRequirePermission:
             with pytest.raises(HTTPException) as exc:
                 await checker(
                     credentials=mock_credentials,
+                    request=_make_mock_request(),
                     session=mock_session,
                 )
 
             assert exc.value.status_code == 403
-            assert "Permission denied" in str(exc.value.detail)
+            assert "Insufficient permissions" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_require_permission_with_permission(self) -> None:
@@ -189,6 +213,7 @@ class TestRequirePermission:
 
         mock_user = MagicMock()
         mock_user.is_active = True
+        mock_user.is_superuser = False
         mock_user.roles = [role_id]
         mock_session.get.return_value = mock_user
 
@@ -196,24 +221,29 @@ class TestRequirePermission:
         mock_role = MagicMock()
         mock_role.permissions = ["users:read"]
 
-        mock_result = MagicMock()
-        mock_result.scalars.return_value.all.return_value = [mock_role]
-        mock_session.execute.return_value = mock_result
-
         mock_credentials = HTTPAuthorizationCredentials(
             scheme="Bearer", credentials="valid_token"
         )
 
         user_id = uuid4()
 
-        with patch("app.api.deps.validate_access_token") as mock_validate:
+        with (
+            patch("app.api.deps.validate_access_token") as mock_validate,
+            patch(
+                "app.infrastructure.database.repositories.cached_role_repository.get_cached_role_repository"
+            ) as mock_get_cached,
+        ):
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "is_superuser": False,
             }
+            mock_cached_repo = AsyncMock()
+            mock_cached_repo.get_by_id.return_value = mock_role
+            mock_get_cached.return_value = mock_cached_repo
 
             result = await checker(
                 credentials=mock_credentials,
+                request=_make_mock_request(),
                 session=mock_session,
             )
 
@@ -230,6 +260,7 @@ class TestRequirePermission:
 
         mock_user = MagicMock()
         mock_user.is_active = True
+        mock_user.is_superuser = False
         mock_user.roles = [role_id]
         mock_session.get.return_value = mock_user
 
@@ -237,24 +268,29 @@ class TestRequirePermission:
         mock_role = MagicMock()
         mock_role.permissions = ["*:read"]  # All resources, read action
 
-        mock_result = MagicMock()
-        mock_result.scalars.return_value.all.return_value = [mock_role]
-        mock_session.execute.return_value = mock_result
-
         mock_credentials = HTTPAuthorizationCredentials(
             scheme="Bearer", credentials="valid_token"
         )
 
         user_id = uuid4()
 
-        with patch("app.api.deps.validate_access_token") as mock_validate:
+        with (
+            patch("app.api.deps.validate_access_token") as mock_validate,
+            patch(
+                "app.infrastructure.database.repositories.cached_role_repository.get_cached_role_repository"
+            ) as mock_get_cached,
+        ):
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "is_superuser": False,
             }
+            mock_cached_repo = AsyncMock()
+            mock_cached_repo.get_by_id.return_value = mock_role
+            mock_get_cached.return_value = mock_cached_repo
 
             result = await checker(
                 credentials=mock_credentials,
+                request=_make_mock_request(),
                 session=mock_session,
             )
 
@@ -271,6 +307,7 @@ class TestRequirePermission:
 
         mock_user = MagicMock()
         mock_user.is_active = True
+        mock_user.is_superuser = False
         mock_user.roles = [role_id]
         mock_session.get.return_value = mock_user
 
@@ -278,24 +315,29 @@ class TestRequirePermission:
         mock_role = MagicMock()
         mock_role.permissions = ["users:*"]  # Users resource, all actions
 
-        mock_result = MagicMock()
-        mock_result.scalars.return_value.all.return_value = [mock_role]
-        mock_session.execute.return_value = mock_result
-
         mock_credentials = HTTPAuthorizationCredentials(
             scheme="Bearer", credentials="valid_token"
         )
 
         user_id = uuid4()
 
-        with patch("app.api.deps.validate_access_token") as mock_validate:
+        with (
+            patch("app.api.deps.validate_access_token") as mock_validate,
+            patch(
+                "app.infrastructure.database.repositories.cached_role_repository.get_cached_role_repository"
+            ) as mock_get_cached,
+        ):
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "is_superuser": False,
             }
+            mock_cached_repo = AsyncMock()
+            mock_cached_repo.get_by_id.return_value = mock_role
+            mock_get_cached.return_value = mock_cached_repo
 
             result = await checker(
                 credentials=mock_credentials,
+                request=_make_mock_request(),
                 session=mock_session,
             )
 
@@ -312,6 +354,7 @@ class TestRequirePermission:
 
         mock_user = MagicMock()
         mock_user.is_active = True
+        mock_user.is_superuser = False
         mock_user.roles = [role_id]
         mock_session.get.return_value = mock_user
 
@@ -319,24 +362,29 @@ class TestRequirePermission:
         mock_role = MagicMock()
         mock_role.permissions = ["*:*"]  # All resources, all actions
 
-        mock_result = MagicMock()
-        mock_result.scalars.return_value.all.return_value = [mock_role]
-        mock_session.execute.return_value = mock_result
-
         mock_credentials = HTTPAuthorizationCredentials(
             scheme="Bearer", credentials="valid_token"
         )
 
         user_id = uuid4()
 
-        with patch("app.api.deps.validate_access_token") as mock_validate:
+        with (
+            patch("app.api.deps.validate_access_token") as mock_validate,
+            patch(
+                "app.infrastructure.database.repositories.cached_role_repository.get_cached_role_repository"
+            ) as mock_get_cached,
+        ):
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "is_superuser": False,
             }
+            mock_cached_repo = AsyncMock()
+            mock_cached_repo.get_by_id.return_value = mock_role
+            mock_get_cached.return_value = mock_cached_repo
 
             result = await checker(
                 credentials=mock_credentials,
+                request=_make_mock_request(),
                 session=mock_session,
             )
 
@@ -353,6 +401,7 @@ class TestRequirePermission:
 
         mock_user = MagicMock()
         mock_user.is_active = True
+        mock_user.is_superuser = False
         mock_user.roles = [role_id]
         mock_session.get.return_value = mock_user
 
@@ -360,30 +409,35 @@ class TestRequirePermission:
         mock_role = MagicMock()
         mock_role.permissions = ["users:read", "users:write"]  # No delete
 
-        mock_result = MagicMock()
-        mock_result.scalars.return_value.all.return_value = [mock_role]
-        mock_session.execute.return_value = mock_result
-
         mock_credentials = HTTPAuthorizationCredentials(
             scheme="Bearer", credentials="valid_token"
         )
 
         user_id = uuid4()
 
-        with patch("app.api.deps.validate_access_token") as mock_validate:
+        with (
+            patch("app.api.deps.validate_access_token") as mock_validate,
+            patch(
+                "app.infrastructure.database.repositories.cached_role_repository.get_cached_role_repository"
+            ) as mock_get_cached,
+        ):
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "is_superuser": False,
             }
+            mock_cached_repo = AsyncMock()
+            mock_cached_repo.get_by_id.return_value = mock_role
+            mock_get_cached.return_value = mock_cached_repo
 
             with pytest.raises(HTTPException) as exc:
                 await checker(
                     credentials=mock_credentials,
+                    request=_make_mock_request(),
                     session=mock_session,
                 )
 
             assert exc.value.status_code == 403
-            assert "Permission denied" in str(exc.value.detail)
+            assert "Insufficient permissions" in str(exc.value.detail)
 
 
 class TestGetCurrentUserId:
@@ -403,7 +457,9 @@ class TestGetCurrentUserId:
                 "sub": str(user_id),
             }
 
-            result = await get_current_user_id(credentials=mock_credentials)
+            result = await get_current_user_id(
+                credentials=mock_credentials, request=_make_mock_request()
+            )
 
             assert result == user_id
 
@@ -411,7 +467,9 @@ class TestGetCurrentUserId:
     async def test_get_current_user_id_missing_token(self) -> None:
         """Test getting current user ID without token."""
         with pytest.raises(HTTPException) as exc:
-            await get_current_user_id(credentials=None)
+            await get_current_user_id(
+                credentials=None, request=_make_mock_request()
+            )
 
         assert exc.value.status_code == 401
 
@@ -430,6 +488,8 @@ class TestGetCurrentUserId:
             )
 
             with pytest.raises(HTTPException) as exc:
-                await get_current_user_id(credentials=mock_credentials)
+                await get_current_user_id(
+                    credentials=mock_credentials, request=_make_mock_request()
+                )
 
             assert exc.value.status_code == 401

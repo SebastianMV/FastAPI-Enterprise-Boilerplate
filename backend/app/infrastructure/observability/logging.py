@@ -148,6 +148,11 @@ class ConsoleFormatter(logging.Formatter):
             f"{timestamp} | {level} | {record.name} | {prefix}{record.getMessage()}"
         )
 
+        # Append structured extra fields
+        if hasattr(record, "extra_fields") and record.extra_fields:
+            fields = " ".join(f"{k}={v}" for k, v in record.extra_fields.items())
+            message += f" | {fields}"
+
         if record.exc_info:
             message += f"\n{self.formatException(record.exc_info)}"
 
@@ -158,19 +163,35 @@ class ContextLogger(logging.LoggerAdapter):
     """
     Logger adapter that adds extra context to all log messages.
 
-    Usage:
+    Supports structured logging via keyword arguments::
+
         logger = get_logger(__name__)
-        logger.info("User created", extra_fields={"user_id": "123"})
+        logger.info("user_created", user_id="123", tenant_id="abc")
+        logger.error("db_failed", error_type="ConnectionError", exc_info=True)
+
+    All keyword arguments (except standard logging kwargs) are collected
+    into ``extra["extra_fields"]`` for structured output.
     """
+
+    # kwargs that logging.Logger._log() natively accepts
+    _LOGGING_KWARGS = frozenset({"exc_info", "extra", "stack_info", "stacklevel"})
 
     def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
         """Process log message and add extra context."""
         extra = kwargs.get("extra", {})
 
-        # Add extra_fields if provided
+        # Add extra_fields if provided explicitly
         extra_fields = kwargs.pop("extra_fields", None)
         if extra_fields:
-            extra["extra_fields"] = extra_fields
+            extra.setdefault("extra_fields", {})
+            extra["extra_fields"].update(extra_fields)
+
+        # Collect bare kwargs (e.g. user_id=, tenant_id=) into extra_fields
+        unknown_keys = [k for k in kwargs if k not in self._LOGGING_KWARGS]
+        if unknown_keys:
+            extra.setdefault("extra_fields", {})
+            for key in unknown_keys:
+                extra["extra_fields"][key] = kwargs.pop(key)
 
         kwargs["extra"] = extra
         return msg, kwargs

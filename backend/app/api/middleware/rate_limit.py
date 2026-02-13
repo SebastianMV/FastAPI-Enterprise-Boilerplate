@@ -105,15 +105,28 @@ class RateLimitMiddleware:
         if api_key:
             return f"api:{api_key[:16]}"
 
-        # Fall back to IP
+        # Fall back to IP — only trust X-Forwarded-For from trusted proxies
+        client = scope.get("client")
+        direct_ip = client[0] if client else "unknown"
+
         forwarded = headers.get(b"x-forwarded-for", b"").decode()
-        if forwarded:
+        if forwarded and self._is_trusted_proxy(direct_ip):
             client_ip = forwarded.split(",")[0].strip()
         else:
-            client = scope.get("client")
-            client_ip = client[0] if client else "unknown"
+            client_ip = direct_ip
 
         return f"ip:{client_ip}"
+
+    @staticmethod
+    def _is_trusted_proxy(ip: str) -> bool:
+        """Check if the direct connection comes from a trusted proxy (private network)."""
+        import ipaddress
+
+        try:
+            addr = ipaddress.ip_address(ip)
+            return addr.is_private or addr.is_loopback
+        except ValueError:
+            return False
 
     async def _check_rate_limit(
         self,

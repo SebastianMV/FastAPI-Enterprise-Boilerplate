@@ -62,7 +62,6 @@ try:
         PieChart,
         Reference,
     )
-    from openpyxl.chart.label import DataLabelList  # type: ignore[import-not-found]
     from openpyxl.formatting.rule import (  # type: ignore[import-not-found]
         ColorScaleRule,
         FormulaRule,
@@ -76,9 +75,6 @@ try:
         Side,
     )
     from openpyxl.utils import get_column_letter  # type: ignore[import-not-found]
-    from openpyxl.utils.dataframe import (
-        dataframe_to_rows,  # type: ignore[import-not-found]
-    )
     from openpyxl.worksheet.datavalidation import (
         DataValidation,  # type: ignore[import-not-found]
     )
@@ -389,7 +385,7 @@ class AdvancedExcelHandler:
     @staticmethod
     def _sanitize_formula(value: str) -> str:
         """Prevent Excel formula injection by prefixing dangerous chars with a single-quote."""
-        if value and value[0] in ('=', '+', '-', '@', '\t', '\r'):
+        if value and value[0] in ("=", "+", "-", "@", "\t", "\r"):
             return "'" + value
         return value
 
@@ -484,7 +480,7 @@ class AdvancedExcelHandler:
             ws.add_chart(chart, config.position)
 
         except Exception as e:
-            logger.warning("Failed to add chart: %s", e)
+            logger.warning("excel_chart_failed", error_type=type(e).__name__)
 
     def _add_conditional_format(self, ws: Any, config: ConditionalFormatConfig) -> None:
         """Add conditional formatting rule."""
@@ -525,7 +521,7 @@ class AdvancedExcelHandler:
                 ws.conditional_formatting.add(config.cell_range, rule)
 
         except Exception as e:
-            logger.warning("Failed to add conditional format: %s", e)
+            logger.warning("excel_conditional_format_failed", error_type=type(e).__name__)
 
     def _add_data_validation(self, ws: Any, config: DataValidationConfig) -> None:
         """Add data validation to cells."""
@@ -560,7 +556,7 @@ class AdvancedExcelHandler:
             ws.add_data_validation(dv)
 
         except Exception as e:
-            logger.warning("Failed to add data validation: %s", e)
+            logger.warning("excel_data_validation_failed", error_type=type(e).__name__)
 
     def create_report_with_summary(
         self,
@@ -595,7 +591,7 @@ class AdvancedExcelHandler:
         )
 
         # Add conditional formatting for numeric columns
-        for col_idx, header in enumerate(headers, 1):
+        for col_idx, _header in enumerate(headers, 1):
             col_letter = get_column_letter(col_idx)
             # Simple heuristic: if first data value is numeric, add color scale
             if data and col_idx <= len(data[0]):

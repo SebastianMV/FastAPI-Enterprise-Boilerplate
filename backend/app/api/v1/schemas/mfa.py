@@ -4,6 +4,7 @@
 """MFA (Multi-Factor Authentication) schemas for request/response validation."""
 
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
@@ -44,6 +45,7 @@ class MFADisableRequest(BaseModel):
     )
     password: str = Field(
         ...,
+        min_length=8,
         max_length=128,
         description="User's password for additional verification",
     )
@@ -77,18 +79,21 @@ class MFASetupResponse(BaseModel):
 
     secret: str = Field(
         ...,
+        max_length=200,
         description="TOTP secret for manual entry (base32 encoded)",
         examples=["JBSWY3DPEHPK3PXP"],
     )
     qr_code: str = Field(
         ...,
+        max_length=50000,
         description="Base64-encoded QR code image (data URI)",
     )
     provisioning_uri: str = Field(
         ...,
+        max_length=2048,
         description="otpauth:// URI for authenticator apps",
     )
-    backup_codes: list[str] = Field(
+    backup_codes: list[Annotated[str, Field(max_length=20)]] = Field(
         ...,
         description="One-time backup codes (save these securely)",
     )
@@ -119,7 +124,7 @@ class MFAVerifyResponse(BaseModel):
     """Response after successful MFA verification."""
 
     success: bool = True
-    message: str = "MFA verification successful"
+    message: str = Field(default="MFA verification successful", max_length=500)
     backup_codes_remaining: int | None = Field(
         None,
         description="Remaining backup codes (if a backup code was used)",
@@ -130,7 +135,7 @@ class MFAEnableResponse(BaseModel):
     """Response after successfully enabling MFA."""
 
     success: bool = True
-    message: str = "MFA has been enabled"
+    message: str = Field(default="MFA has been enabled", max_length=500)
     enabled_at: datetime
     backup_codes_remaining: int
 
@@ -139,17 +144,20 @@ class MFADisableResponse(BaseModel):
     """Response after successfully disabling MFA."""
 
     success: bool = True
-    message: str = "MFA has been disabled"
+    message: str = Field(default="MFA has been disabled", max_length=500)
 
 
 class MFABackupCodesResponse(BaseModel):
     """Response containing regenerated backup codes."""
 
-    backup_codes: list[str] = Field(
+    backup_codes: list[Annotated[str, Field(max_length=20)]] = Field(
         ...,
         description="New one-time backup codes (save these securely)",
     )
-    message: str = "New backup codes generated. Previous codes are now invalid."
+    message: str = Field(
+        default="New backup codes generated. Previous codes are now invalid.",
+        max_length=500,
+    )
 
 
 class MFARequiredResponse(BaseModel):
@@ -158,9 +166,13 @@ class MFARequiredResponse(BaseModel):
     mfa_required: bool = True
     mfa_token: str = Field(
         ...,
+        max_length=2048,
         description="Temporary token to use with MFA verification",
     )
-    message: str = "MFA verification required. Please provide your authentication code."
+    message: str = Field(
+        default="MFA verification required. Please provide your authentication code.",
+        max_length=500,
+    )
 
 
 # ===========================================
@@ -172,7 +184,10 @@ class EmailOTPRequestResponse(BaseModel):
     """Response after requesting an Email OTP."""
 
     success: bool = True
-    message: str = "Verification code sent to your email."
+    message: str = Field(
+        default="Verification code sent to your email.",
+        max_length=500,
+    )
     expires_in_minutes: int = Field(
         default=10,
         description="Minutes until the code expires",
@@ -196,4 +211,4 @@ class EmailOTPVerifyResponse(BaseModel):
     """Response after successful Email OTP verification."""
 
     success: bool = True
-    message: str = "Email verification successful."
+    message: str = Field(default="Email verification successful.", max_length=500)

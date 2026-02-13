@@ -58,9 +58,9 @@ class SQLAlchemySessionRepository:
         return self._to_entity(model) if model else None
 
     async def get_user_sessions(
-        self, user_id: UUID, include_revoked: bool = False
+        self, user_id: UUID, include_revoked: bool = False, tenant_id: UUID | None = None
     ) -> list[UserSession]:
-        """Get all sessions for a user."""
+        """Get all sessions for a user, optionally scoped to tenant."""
         stmt = (
             select(UserSessionModel)
             .where(
@@ -68,6 +68,9 @@ class SQLAlchemySessionRepository:
             )
             .order_by(UserSessionModel.last_activity.desc())
         )
+
+        if tenant_id is not None:
+            stmt = stmt.where(UserSessionModel.tenant_id == tenant_id)
 
         if not include_revoked:
             stmt = stmt.where(UserSessionModel.is_revoked.is_(False))
@@ -93,15 +96,20 @@ class SQLAlchemySessionRepository:
         await self._session.flush()
         return result.rowcount > 0  # type: ignore[union-attr]
 
-    async def revoke_all_except(self, user_id: UUID, current_session_id: UUID) -> int:
+    async def revoke_all_except(
+        self, user_id: UUID, current_session_id: UUID, tenant_id: UUID | None = None
+    ) -> int:
         """Revoke all sessions for a user except the current one."""
+        conditions = [
+            UserSessionModel.user_id == user_id,
+            UserSessionModel.id != current_session_id,
+            UserSessionModel.is_revoked.is_(False),
+        ]
+        if tenant_id is not None:
+            conditions.append(UserSessionModel.tenant_id == tenant_id)
         stmt = (
             update(UserSessionModel)
-            .where(
-                UserSessionModel.user_id == user_id,
-                UserSessionModel.id != current_session_id,
-                UserSessionModel.is_revoked.is_(False),
-            )
+            .where(*conditions)
             .values(
                 is_revoked=True,
                 revoked_at=datetime.now(UTC),
@@ -111,14 +119,17 @@ class SQLAlchemySessionRepository:
         await self._session.flush()
         return result.rowcount  # type: ignore[union-attr]
 
-    async def revoke_all(self, user_id: UUID) -> int:
-        """Revoke all sessions for a user."""
+    async def revoke_all(self, user_id: UUID, tenant_id: UUID | None = None) -> int:
+        """Revoke all sessions for a user, optionally scoped to tenant."""
+        conditions = [
+            UserSessionModel.user_id == user_id,
+            UserSessionModel.is_revoked.is_(False),
+        ]
+        if tenant_id is not None:
+            conditions.append(UserSessionModel.tenant_id == tenant_id)
         stmt = (
             update(UserSessionModel)
-            .where(
-                UserSessionModel.user_id == user_id,
-                UserSessionModel.is_revoked.is_(False),
-            )
+            .where(*conditions)
             .values(
                 is_revoked=True,
                 revoked_at=datetime.now(UTC),

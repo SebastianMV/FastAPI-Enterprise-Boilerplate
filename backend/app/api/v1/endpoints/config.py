@@ -8,7 +8,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.api.deps import get_current_user
+from app.api.deps import CurrentTenantId, get_current_user
 from app.config import settings
 from app.domain.entities.user import User
 
@@ -25,6 +25,7 @@ class FeatureConfigResponse(BaseModel):
 @router.get("/features", response_model=FeatureConfigResponse)
 async def get_feature_config(
     current_user: User = Depends(get_current_user),
+    tenant_id: CurrentTenantId = None,
 ) -> FeatureConfigResponse:
     """
     Get current feature configuration.

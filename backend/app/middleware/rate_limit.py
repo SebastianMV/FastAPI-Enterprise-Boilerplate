@@ -201,7 +201,10 @@ def get_rate_limiter() -> InMemoryRateLimiter | RedisRateLimiter:
         if _rate_limiter_fallback_time is not None:
             import time
 
-            if time.monotonic() - _rate_limiter_fallback_time > _RATE_LIMITER_RETRY_INTERVAL:
+            if (
+                time.monotonic() - _rate_limiter_fallback_time
+                > _RATE_LIMITER_RETRY_INTERVAL
+            ):
                 _rate_limiter = None
                 _rate_limiter_fallback_time = None
             else:
@@ -259,7 +262,6 @@ def get_rate_limit_for_path(method: str, path: str) -> tuple[int, int]:
         return RATE_LIMITS[path]
 
     # Check method + path prefix
-    method_path = f"{method}:{path}"
     for pattern, limits in RATE_LIMITS.items():
         if pattern.startswith(method) and path.startswith(pattern.split(":", 1)[-1]):
             return limits
@@ -324,9 +326,9 @@ class RateLimitMiddleware:
 
         if not is_allowed:
             logger.warning(
-                "Rate limit exceeded: key=%s, path=%s",
-                key,
-                path,
+                "rate_limit_exceeded",
+                key=key,
+                path=path,
             )
             # Send 429 response
             response = JSONResponse(
