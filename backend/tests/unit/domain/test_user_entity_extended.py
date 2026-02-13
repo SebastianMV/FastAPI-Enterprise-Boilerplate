@@ -168,6 +168,8 @@ class TestEmailVerification:
 
     def test_generate_verification_token(self):
         """Test generating verification token."""
+        import hashlib
+
         user = User(
             id=uuid4(),
             tenant_id=uuid4(),
@@ -175,11 +177,13 @@ class TestEmailVerification:
             password_hash="hash",
         )
 
-        token = user.generate_verification_token()
+        raw_token = user.generate_verification_token()
 
-        assert isinstance(token, str)
-        assert len(token) > 0
-        assert user.email_verification_token == token
+        assert isinstance(raw_token, str)
+        assert len(raw_token) > 0
+        # Stored token is SHA-256 hash of raw token
+        expected_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        assert user.email_verification_token == expected_hash
         assert user.email_verification_sent_at is not None
 
     def test_verify_email_success(self):

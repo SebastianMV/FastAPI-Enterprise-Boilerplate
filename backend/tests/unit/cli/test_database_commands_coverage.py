@@ -402,7 +402,7 @@ class TestRunMigrationsCommand:
             )
 
             with pytest.raises(typer.Exit) as exc_info:
-                run_migrations()
+                run_migrations(revision="head")
 
             assert exc_info.value.exit_code == 1
 

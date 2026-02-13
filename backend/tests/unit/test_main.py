@@ -119,7 +119,7 @@ class TestLifespan:
 
     @pytest.mark.asyncio
     async def test_lifespan_handles_db_error(self) -> None:
-        """Test lifespan continues even if db init fails."""
+        """Test lifespan raises when db init fails (fatal error)."""
         from fastapi import FastAPI
 
         from app.main import lifespan
@@ -134,7 +134,7 @@ class TestLifespan:
             with patch(
                 "app.infrastructure.database.connection.close_database",
                 new_callable=AsyncMock,
-            ) as mock_close_db:
+            ):
                 with patch("app.infrastructure.observability.logging.setup_logging"):
                     with patch("app.config.settings") as mock_settings:
                         mock_settings.APP_NAME = "Test App"
@@ -142,12 +142,10 @@ class TestLifespan:
                         mock_settings.ENVIRONMENT = "test"
                         mock_settings.OTEL_ENABLED = False
 
-                        # Should not raise - error is logged but app continues
-                        async with lifespan(mock_app):
-                            pass
-
-                        # Shutdown should still be called
-                        mock_close_db.assert_called_once()
+                        # DB init failure is fatal — lifespan re-raises
+                        with pytest.raises(Exception, match="DB connection failed"):
+                            async with lifespan(mock_app):
+                                pass
 
 
 class TestCORSConfiguration:

@@ -120,11 +120,14 @@ class TestUserEmailVerification:
             is_active=True,
             is_superuser=False,
             email_verified=False,
-            email_verification_token="valid_token_456",
-            email_verification_sent_at=datetime.now(UTC) - timedelta(hours=1),
         )
 
-        result = user.verify_email("valid_token_456", token_expire_hours=24)
+        # Use generate_verification_token to properly set up (stores SHA-256 hash)
+        raw_token = user.generate_verification_token()
+        # Backdate sent_at to 1 hour ago (still within 24h expiry)
+        user.email_verification_sent_at = datetime.now(UTC) - timedelta(hours=1)
+
+        result = user.verify_email(raw_token, token_expire_hours=24)
 
         assert result == True
         assert user.email_verified == True
@@ -256,6 +259,8 @@ class TestUserGenerateVerificationToken:
 
     def test_generate_verification_token_creates_token(self):
         """Test generate_verification_token creates a token."""
+        import hashlib
+
         user = User(
             id=uuid4(),
             tenant_id=uuid4(),
@@ -267,11 +272,13 @@ class TestUserGenerateVerificationToken:
             is_superuser=False,
         )
 
-        token = user.generate_verification_token()
+        raw_token = user.generate_verification_token()
 
-        assert token is not None
-        assert len(token) > 0
-        assert user.email_verification_token == token
+        assert raw_token is not None
+        assert len(raw_token) > 0
+        # Stored token is SHA-256 hash of raw token
+        expected_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        assert user.email_verification_token == expected_hash
         assert user.email_verification_sent_at is not None
 
     def test_generate_verification_token_updates_sent_at(self):

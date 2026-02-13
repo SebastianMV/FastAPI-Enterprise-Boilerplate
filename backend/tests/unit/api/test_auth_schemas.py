@@ -99,9 +99,9 @@ class TestRefreshTokenRequest:
         assert request.refresh_token == "some.valid.token"
 
     def test_refresh_token_required(self):
-        """Test refresh_token is required."""
-        with pytest.raises(ValidationError):
-            RefreshTokenRequest()
+        """Test refresh_token has default empty string."""
+        request = RefreshTokenRequest()
+        assert request.refresh_token == ""
 
 
 class TestChangePasswordRequest:

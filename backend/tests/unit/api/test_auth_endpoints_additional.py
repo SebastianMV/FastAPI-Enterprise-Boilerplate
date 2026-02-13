@@ -16,26 +16,24 @@ class TestLogoutEndpoint:
         from app.api.v1.endpoints.auth import logout
 
         user_id = uuid4()
-        future_exp = datetime.now(UTC).timestamp() + 3600
 
-        mock_cache = MagicMock()
-        mock_cache.set = AsyncMock()
+        mock_request = MagicMock()
+        mock_request.cookies = {}
+        mock_response = MagicMock()
 
-        with patch("app.infrastructure.cache.get_cache", return_value=mock_cache):
-            with patch("app.infrastructure.auth.decode_token") as mock_decode:
-                mock_decode.return_value = {
-                    "sub": str(user_id),
-                    "jti": "token-jti-123",
-                    "exp": future_exp,
-                }
+        with patch("app.application.use_cases.auth.logout.LogoutUseCase") as MockUseCase:
+            mock_use_case = AsyncMock()
+            MockUseCase.return_value = mock_use_case
 
-                result = await logout(
-                    authorization="Bearer valid_token",
-                    current_user_id=user_id,
-                )
+            result = await logout(
+                current_user_id=user_id,
+                request=mock_request,
+                response=mock_response,
+                authorization="Bearer valid_token",
+            )
 
-                assert result.success is True
-                assert result.message == "Successfully logged out"
+            assert result.success is True
+            assert result.message == "Successfully logged out"
 
     @pytest.mark.asyncio
     async def test_logout_with_exception(self):
@@ -44,12 +42,19 @@ class TestLogoutEndpoint:
 
         user_id = uuid4()
 
-        with patch("app.infrastructure.auth.decode_token") as mock_decode:
-            mock_decode.side_effect = Exception("Token decode failed")
+        mock_request = MagicMock()
+        mock_request.cookies = {}
+        mock_response = MagicMock()
+
+        with patch("app.application.use_cases.auth.logout.LogoutUseCase") as MockUseCase:
+            mock_use_case = AsyncMock()
+            MockUseCase.return_value = mock_use_case
 
             result = await logout(
-                authorization="Bearer invalid_token",
                 current_user_id=user_id,
+                request=mock_request,
+                response=mock_response,
+                authorization="Bearer invalid_token",
             )
 
             # Should succeed even with exception

@@ -479,14 +479,7 @@ class TestWebSocketEndpointErrorHandling:
             MagicMock(connection_id=connection_id, user_id=user_id)
         ]
 
-        # First receive: valid message that causes processing error
-        # Second receive: WebSocketDisconnect to exit loop gracefully
         from fastapi import WebSocketDisconnect
-
-        mock_websocket.receive_json.side_effect = [
-            {"type": "notification", "payload": {}},
-            WebSocketDisconnect(),
-        ]
 
         # Make handle_message raise an error (line 225-235 coverage)
         mock_manager.handle_message.side_effect = Exception("Processing failed")
@@ -497,9 +490,20 @@ class TestWebSocketEndpointErrorHandling:
                 return_value=mock_manager,
             ),
             patch("app.api.v1.endpoints.websocket.authenticate_websocket") as mock_auth,
+            patch(
+                "app.api.v1.endpoints.websocket._receive_json_safe",
+                new_callable=AsyncMock,
+            ) as mock_receive,
         ):
             # Mock successful authentication - returns (user_id, tenant_id)
             mock_auth.return_value = (user_id, tenant_id)
+
+            # First call: valid message that causes processing error
+            # Second call: WebSocketDisconnect to exit loop gracefully
+            mock_receive.side_effect = [
+                {"type": "notification", "payload": {}},
+                WebSocketDisconnect(),
+            ]
 
             # Should handle error gracefully and exit on disconnect
             await websocket_endpoint(mock_websocket, None)
@@ -508,7 +512,7 @@ class TestWebSocketEndpointErrorHandling:
         assert mock_websocket.send_json.call_count >= 1
         error_call = mock_websocket.send_json.call_args_list[0][0][0]
         assert error_call["type"] == "error"
-        assert "Processing failed" in error_call["payload"]["message"]
+        assert "Failed to process message" in error_call["payload"]["message"]
 
         # Should disconnect in finally block
         mock_manager.disconnect.assert_called_once_with(connection_id)

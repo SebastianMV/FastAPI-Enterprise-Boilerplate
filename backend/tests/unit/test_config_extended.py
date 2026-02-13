@@ -42,7 +42,7 @@ class TestSettingsAppConfig:
         """Test APP_VERSION has default value."""
         from app.config import settings
 
-        assert settings.APP_VERSION == "1.0.0"
+        assert settings.APP_VERSION == "0.9.0"
 
     def test_environment_default(self) -> None:
         """Test ENVIRONMENT has default value."""

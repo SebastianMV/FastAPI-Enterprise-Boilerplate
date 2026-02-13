@@ -34,7 +34,7 @@ class TestSecurityHeadersMiddleware:
         assert response.headers["X-Frame-Options"] == "DENY"
 
         assert "X-XSS-Protection" in response.headers
-        assert response.headers["X-XSS-Protection"] == "1; mode=block"
+        assert response.headers["X-XSS-Protection"] == "0"
 
         assert "Content-Security-Policy" in response.headers
         assert "Referrer-Policy" in response.headers

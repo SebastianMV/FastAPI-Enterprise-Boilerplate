@@ -138,7 +138,7 @@ class TestACLServiceRequirePermission:
                 user_id=user_id, resource="users", action="delete"
             )
 
-        assert "Permission denied" in str(exc_info.value.message)
+        assert "Insufficient permissions" in str(exc_info.value.message)
 
     @pytest.mark.asyncio
     async def test_require_permission_passes_with_permission(self) -> None:

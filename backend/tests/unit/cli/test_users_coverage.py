@@ -43,7 +43,7 @@ class TestCreateSuperuserAsync:
             await _create_superuser("valid@example.com", "weak", "Admin", "User")
 
         assert exc_info.value.exit_code == 1
-        assert "Invalid password" in str(mock_console.print.call_args)
+        assert "Password does not meet security requirements" in str(mock_console.print.call_args)
 
     @pytest.mark.asyncio
     async def test_create_superuser_email_already_exists(self):
