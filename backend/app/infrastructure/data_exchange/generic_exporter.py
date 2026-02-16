@@ -160,6 +160,10 @@ class GenericExporter(ExportPort):
         # Build query
         query = select(config.model)
 
+        # Exclude soft-deleted records
+        if hasattr(config.model, "is_deleted"):
+            query = query.where(config.model.is_deleted.is_(False))
+
         # Apply tenant filter
         query = self._apply_tenant_filter(query, config, tenant_id)
 
@@ -227,6 +231,10 @@ class GenericExporter(ExportPort):
         """
         # Build query
         query = select(config.model)
+
+        # Exclude soft-deleted records
+        if hasattr(config.model, "is_deleted"):
+            query = query.where(config.model.is_deleted.is_(False))
 
         # Apply tenant filter
         query = self._apply_tenant_filter(query, config, request.tenant_id)

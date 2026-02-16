@@ -26,6 +26,7 @@ logger = get_logger(__name__)
 #  Redis helpers
 # ---------------------------------------------------------------------------
 
+
 async def _get_redis() -> Any:
     """Get async Redis connection for MFA storage via infrastructure cache."""
     from app.infrastructure.cache import get_cache
@@ -80,6 +81,7 @@ def _dict_to_mfa_config(data: dict[str, Any]) -> MFAConfig:
 # ---------------------------------------------------------------------------
 #  Public API
 # ---------------------------------------------------------------------------
+
 
 async def get_mfa_config(
     user_id: str,

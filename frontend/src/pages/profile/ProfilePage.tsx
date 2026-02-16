@@ -1,28 +1,28 @@
-import { AlertModal, ConfirmModal } from '@/components/common/Modal';
-import ConnectedAccounts from '@/components/profile/ConnectedAccounts';
-import api, { usersService } from '@/services/api';
-import { useAuthStore } from '@/stores/authStore';
-import { isSafeImageUrl, maskEmail, sanitizeText } from '@/utils/security';
-import { PASSWORD_PATTERN } from '@/utils/validation';
+import { AlertModal, ConfirmModal } from "@/components/common/Modal";
+import ConnectedAccounts from "@/components/profile/ConnectedAccounts";
+import api, { usersService } from "@/services/api";
+import { useAuthStore } from "@/stores/authStore";
+import { isSafeImageUrl, maskEmail, sanitizeText } from "@/utils/security";
+import { PASSWORD_PATTERN } from "@/utils/validation";
 import {
-    AlertCircle,
-    Calendar,
-    Camera,
-    CheckCircle,
-    Key,
-    Link2,
-    Loader2,
-    Lock,
-    Mail,
-    Save,
-    Shield,
-    Trash2,
-    User as UserIcon
-} from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+  AlertCircle,
+  Calendar,
+  Camera,
+  CheckCircle,
+  Key,
+  Link2,
+  Loader2,
+  Lock,
+  Mail,
+  Save,
+  Shield,
+  Trash2,
+  User as UserIcon,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 interface ProfileFormData {
   first_name: string;
@@ -47,16 +47,19 @@ export default function ProfilePage() {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'connections'>('profile');
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "security" | "connections"
+  >("profile");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDeleteAvatarModal, setShowDeleteAvatarModal] = useState(false);
-  const [pendingProfileData, setPendingProfileData] = useState<ProfileFormData | null>(null);
+  const [pendingProfileData, setPendingProfileData] =
+    useState<ProfileFormData | null>(null);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
     title: string;
     message: string;
-    variant: 'success' | 'error';
-  }>({ isOpen: false, title: '', message: '', variant: 'success' });
+    variant: "success" | "error";
+  }>({ isOpen: false, title: "", message: "", variant: "success" });
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,9 +70,9 @@ export default function ProfilePage() {
     reset: resetProfileForm,
   } = useForm<ProfileFormData>({
     defaultValues: {
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
-      email: user?.email || '',
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      email: user?.email || "",
     },
   });
 
@@ -81,36 +84,42 @@ export default function ProfilePage() {
     watch,
   } = useForm<PasswordFormData>();
 
-  const newPassword = watch('new_password');
+  const newPassword = watch("new_password");
 
   // Fetch user data on mount
   useEffect(() => {
     let cancelled = false;
     if (!user) {
       (async () => {
-        try { await fetchUser(); } catch { /* no session */ }
+        try {
+          await fetchUser();
+        } catch {
+          /* no session */
+        }
         if (cancelled) return;
       })();
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user, fetchUser]);
 
   // Update form when user data changes
   useEffect(() => {
     if (user) {
       resetProfileForm({
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
-        email: user.email || '',
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
       });
     }
   }, [user, resetProfileForm]);
 
   // Show confirmation modal before saving
-  const onProfileSubmit = (data: ProfileFormData) => {
+  const onProfileSubmit = useCallback((data: ProfileFormData) => {
     setPendingProfileData(data);
     setShowConfirmModal(true);
-  };
+  }, []);
 
   // Actually save the profile after confirmation
   const handleConfirmSave = useCallback(async () => {
@@ -130,16 +139,16 @@ export default function ProfilePage() {
       await fetchUser();
       setAlertModal({
         isOpen: true,
-        title: t('common.success'),
-        message: t('profile.updateSuccess'),
-        variant: 'success',
+        title: t("common.success"),
+        message: t("profile.updateSuccess"),
+        variant: "success",
       });
     } catch {
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('profile.updateError'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("profile.updateError"),
+        variant: "error",
       });
     } finally {
       setIsLoading(false);
@@ -148,22 +157,24 @@ export default function ProfilePage() {
   }, [pendingProfileData, fetchUser, t]);
 
   // Handle avatar click
-  const handleAvatarClick = () => {
+  const handleAvatarClick = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = useCallback(async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('profile.invalidFileType'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("profile.invalidFileType"),
+        variant: "error",
       });
       return;
     }
@@ -173,9 +184,9 @@ export default function ProfilePage() {
     if (file.size > maxSize) {
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('profile.fileTooLarge'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("profile.fileTooLarge"),
+        variant: "error",
       });
       return;
     }
@@ -186,25 +197,25 @@ export default function ProfilePage() {
       await fetchUser();
       setAlertModal({
         isOpen: true,
-        title: t('common.success'),
-        message: t('profile.avatarUpdateSuccess'),
-        variant: 'success',
+        title: t("common.success"),
+        message: t("profile.avatarUpdateSuccess"),
+        variant: "success",
       });
     } catch {
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('profile.avatarUploadError'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("profile.avatarUploadError"),
+        variant: "error",
       });
     } finally {
       setIsAvatarLoading(false);
       // Reset the input so the same file can be selected again
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
-  };
+  }, [fetchUser, t]);
 
   // Handle delete avatar confirmation
   const handleDeleteAvatar = useCallback(async () => {
@@ -215,16 +226,16 @@ export default function ProfilePage() {
       await fetchUser();
       setAlertModal({
         isOpen: true,
-        title: t('common.success'),
-        message: t('profile.avatarDeleteSuccess'),
-        variant: 'success',
+        title: t("common.success"),
+        message: t("profile.avatarDeleteSuccess"),
+        variant: "success",
       });
     } catch {
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('profile.avatarDeleteError'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("profile.avatarDeleteError"),
+        variant: "error",
       });
     } finally {
       setIsAvatarLoading(false);
@@ -240,28 +251,28 @@ export default function ProfilePage() {
     try {
       // Call password change endpoint using the configured axios instance
       // (sends HttpOnly cookies + CSRF token automatically)
-      await api.post('/auth/change-password', {
+      await api.post("/auth/change-password", {
         current_password: data.current_password,
         new_password: data.new_password,
       });
 
-      setSuccessMessage(t('profile.passwordChangeSuccess'));
+      setSuccessMessage(t("profile.passwordChangeSuccess"));
       resetPasswordForm();
     } catch {
-      setErrorMessage(t('profile.passwordChangeError'));
+      setErrorMessage(t("profile.passwordChangeError"));
     } finally {
       setIsPasswordLoading(false);
     }
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return t('common.never');
+    if (!dateString) return t("common.never");
     return new Date(dateString).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -270,10 +281,10 @@ export default function ProfilePage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {t('profile.title')}
+          {t("profile.title")}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          {t('profile.subtitle')}
+          {t("profile.subtitle")}
         </p>
       </div>
 
@@ -281,14 +292,18 @@ export default function ProfilePage() {
       {successMessage && (
         <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center space-x-3">
           <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-          <p className="text-sm text-green-700 dark:text-green-300">{successMessage}</p>
+          <p className="text-sm text-green-700 dark:text-green-300">
+            {successMessage}
+          </p>
         </div>
       )}
 
       {errorMessage && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center space-x-3">
           <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-          <p className="text-sm text-red-700 dark:text-red-300">{errorMessage}</p>
+          <p className="text-sm text-red-700 dark:text-red-300">
+            {errorMessage}
+          </p>
         </div>
       )}
 
@@ -307,7 +322,8 @@ export default function ProfilePage() {
               ) : (
                 <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-2xl font-bold">
-                    {sanitizeText(user?.first_name?.charAt(0) ?? '')}{sanitizeText(user?.last_name?.charAt(0) ?? '')}
+                    {sanitizeText(user?.first_name?.charAt(0) ?? "")}
+                    {sanitizeText(user?.last_name?.charAt(0) ?? "")}
                   </span>
                 </div>
               )}
@@ -316,7 +332,7 @@ export default function ProfilePage() {
                 disabled={isAvatarLoading}
                 className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
                 type="button"
-                title={t('profile.changePhoto')}
+                title={t("profile.changePhoto")}
               >
                 {isAvatarLoading ? (
                   <Loader2 className="w-6 h-6 text-white animate-spin" />
@@ -339,7 +355,7 @@ export default function ProfilePage() {
                 disabled={isAvatarLoading}
                 className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-50"
                 type="button"
-                title={t('profile.removePhoto')}
+                title={t("profile.removePhoto")}
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -347,24 +363,33 @@ export default function ProfilePage() {
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-              {sanitizeText(user?.first_name ?? '')} {sanitizeText(user?.last_name ?? '')}
+              {sanitizeText(user?.first_name ?? "")}{" "}
+              {sanitizeText(user?.last_name ?? "")}
             </h2>
-            <p className="text-slate-500 dark:text-slate-400">{user?.email ? maskEmail(user.email) : ''}</p>
+            <p className="text-slate-500 dark:text-slate-400">
+              {user?.email ? maskEmail(user.email) : ""}
+            </p>
             <div className="flex items-center space-x-4 mt-2">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                user?.is_superuser
-                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-              }`}>
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  user?.is_superuser
+                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                    : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                }`}
+              >
                 <Shield className="w-3 h-3 mr-1" />
-                {user?.is_superuser ? t('settings.administrator') : t('settings.user')}
+                {user?.is_superuser
+                  ? t("settings.administrator")
+                  : t("settings.user")}
               </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                user?.is_active
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-              }`}>
-                {user?.is_active ? t('users.active') : t('users.inactive')}
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  user?.is_active
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                    : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                }`}
+              >
+                {user?.is_active ? t("users.active") : t("users.inactive")}
               </span>
             </div>
           </div>
@@ -375,99 +400,112 @@ export default function ProfilePage() {
       <div className="border-b border-slate-200 dark:border-slate-700">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('profile')}
+            onClick={() => setActiveTab("profile")}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'profile'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              activeTab === "profile"
+                ? "border-primary-500 text-primary-600 dark:text-primary-400"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             }`}
           >
             <UserIcon className="w-4 h-4 inline-block mr-2" />
-            {t('profile.tabs.profile')}
+            {t("profile.tabs.profile")}
           </button>
           <button
-            onClick={() => setActiveTab('security')}
+            onClick={() => setActiveTab("security")}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'security'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              activeTab === "security"
+                ? "border-primary-500 text-primary-600 dark:text-primary-400"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             }`}
           >
             <Lock className="w-4 h-4 inline-block mr-2" />
-            {t('profile.tabs.security')}
+            {t("profile.tabs.security")}
           </button>
           <button
-            onClick={() => setActiveTab('connections')}
+            onClick={() => setActiveTab("connections")}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'connections'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              activeTab === "connections"
+                ? "border-primary-500 text-primary-600 dark:text-primary-400"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
             }`}
           >
             <Link2 className="w-4 h-4 inline-block mr-2" />
-            {t('profile.tabs.connections')}
+            {t("profile.tabs.connections")}
           </button>
         </nav>
       </div>
 
       {/* Profile Tab Content */}
-      {activeTab === 'profile' && (
+      {activeTab === "profile" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Edit Profile Form */}
           <div className="lg:col-span-2">
             <div className="card">
               <div className="p-6 border-b border-slate-200 dark:border-slate-700">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {t('profile.editProfile')}
+                  {t("profile.editProfile")}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  {t('profile.updatePersonalInfo')}
+                  {t("profile.updatePersonalInfo")}
                 </p>
               </div>
-              <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="p-6 space-y-4">
+              <form
+                onSubmit={handleProfileSubmit(onProfileSubmit)}
+                className="p-6 space-y-4"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      {t('users.firstName')}
+                      {t("users.firstName")}
                     </label>
                     <input
                       type="text"
                       className="input"
                       maxLength={100}
                       spellCheck={false}
-                      {...registerProfile('first_name', { required: t('validation.required') })}
+                      {...registerProfile("first_name", {
+                        required: t("validation.required"),
+                      })}
                     />
                     {profileErrors.first_name && (
-                      <p className="mt-1 text-sm text-red-600">{profileErrors.first_name.message}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {profileErrors.first_name.message}
+                      </p>
                     )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      {t('users.lastName')}
+                      {t("users.lastName")}
                     </label>
                     <input
                       type="text"
                       className="input"
                       maxLength={100}
                       spellCheck={false}
-                      {...registerProfile('last_name', { required: t('validation.required') })}
+                      {...registerProfile("last_name", {
+                        required: t("validation.required"),
+                      })}
                     />
                     {profileErrors.last_name && (
-                      <p className="mt-1 text-sm text-red-600">{profileErrors.last_name.message}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {profileErrors.last_name.message}
+                      </p>
                     )}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {t('auth.emailAddress')}
+                    {t("auth.emailAddress")}
                   </label>
                   <input
                     type="email"
                     className="input bg-slate-50 dark:bg-slate-800"
                     disabled
-                    {...registerProfile('email')}
+                    {...registerProfile("email")}
                   />
-                  <p className="mt-1 text-xs text-slate-500">{t('profile.emailNoChange')}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {t("profile.emailNoChange")}
+                  </p>
                 </div>
                 <div className="pt-4">
                   <button
@@ -478,12 +516,12 @@ export default function ProfilePage() {
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {t('common.loading')}
+                        {t("common.loading")}
                       </>
                     ) : (
                       <>
                         <Save className="w-4 h-4 mr-2" />
-                        {t('common.save')}
+                        {t("common.save")}
                       </>
                     )}
                   </button>
@@ -496,20 +534,26 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                {t('profile.accountDetails')}
+                {t("profile.accountDetails")}
               </h3>
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <Mail className="w-5 h-5 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('auth.emailAddress')}</p>
-                    <p className="text-sm text-slate-900 dark:text-white">{user?.email ? maskEmail(user.email) : ''}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {t("auth.emailAddress")}
+                    </p>
+                    <p className="text-sm text-slate-900 dark:text-white">
+                      {user?.email ? maskEmail(user.email) : ""}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Calendar className="w-5 h-5 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('profile.memberSince')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {t("profile.memberSince")}
+                    </p>
                     <p className="text-sm text-slate-900 dark:text-white">
                       {formatDate(user?.created_at)}
                     </p>
@@ -518,7 +562,9 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-3">
                   <Key className="w-5 h-5 text-slate-400" />
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('profile.lastLogin')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {t("profile.lastLogin")}
+                    </p>
                     <p className="text-sm text-slate-900 dark:text-white">
                       {formatDate(user?.last_login)}
                     </p>
@@ -530,17 +576,17 @@ export default function ProfilePage() {
             {/* MFA Status Card */}
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                {t('profile.twoFactorAuth')}
+                {t("profile.twoFactorAuth")}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                {t('profile.twoFactorDescription')}
+                {t("profile.twoFactorDescription")}
               </p>
               <Link
                 to="/security/mfa"
                 className="btn-secondary w-full text-center"
               >
                 <Shield className="w-4 h-4 mr-2" />
-                {t('profile.configureMfa')}
+                {t("profile.configureMfa")}
               </Link>
             </div>
           </div>
@@ -548,22 +594,25 @@ export default function ProfilePage() {
       )}
 
       {/* Security Tab Content */}
-      {activeTab === 'security' && (
+      {activeTab === "security" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Change Password */}
           <div className="card">
             <div className="p-6 border-b border-slate-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {t('profile.changePassword')}
+                {t("profile.changePassword")}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {t('profile.changePasswordDescription')}
+                {t("profile.changePasswordDescription")}
               </p>
             </div>
-            <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="p-6 space-y-4">
+            <form
+              onSubmit={handlePasswordSubmit(onPasswordSubmit)}
+              className="p-6 space-y-4"
+            >
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('profile.currentPassword')}
+                  {t("profile.currentPassword")}
                 </label>
                 <input
                   type="password"
@@ -571,15 +620,19 @@ export default function ProfilePage() {
                   autoComplete="current-password"
                   spellCheck={false}
                   maxLength={128}
-                  {...registerPassword('current_password', { required: t('validation.required') })}
+                  {...registerPassword("current_password", {
+                    required: t("validation.required"),
+                  })}
                 />
                 {passwordErrors.current_password && (
-                  <p className="mt-1 text-sm text-red-600">{passwordErrors.current_password.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {passwordErrors.current_password.message}
+                  </p>
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('profile.newPassword')}
+                  {t("profile.newPassword")}
                 </label>
                 <input
                   type="password"
@@ -587,22 +640,27 @@ export default function ProfilePage() {
                   autoComplete="new-password"
                   spellCheck={false}
                   maxLength={128}
-                  {...registerPassword('new_password', {
-                    required: t('validation.required'),
-                    minLength: { value: 8, message: t('validation.passwordMin', { min: 8 }) },
+                  {...registerPassword("new_password", {
+                    required: t("validation.required"),
+                    minLength: {
+                      value: 8,
+                      message: t("validation.passwordMin", { min: 8 }),
+                    },
                     pattern: {
                       value: PASSWORD_PATTERN,
-                      message: t('validation.passwordStrength')
-                    }
+                      message: t("validation.passwordStrength"),
+                    },
                   })}
                 />
                 {passwordErrors.new_password && (
-                  <p className="mt-1 text-sm text-red-600">{passwordErrors.new_password.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {passwordErrors.new_password.message}
+                  </p>
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('profile.confirmPassword')}
+                  {t("profile.confirmPassword")}
                 </label>
                 <input
                   type="password"
@@ -610,13 +668,16 @@ export default function ProfilePage() {
                   autoComplete="new-password"
                   spellCheck={false}
                   maxLength={128}
-                  {...registerPassword('confirm_password', {
-                    required: t('validation.required'),
-                    validate: value => value === newPassword || t('profile.passwordsNoMatch')
+                  {...registerPassword("confirm_password", {
+                    required: t("validation.required"),
+                    validate: (value) =>
+                      value === newPassword || t("profile.passwordsNoMatch"),
                   })}
                 />
                 {passwordErrors.confirm_password && (
-                  <p className="mt-1 text-sm text-red-600">{passwordErrors.confirm_password.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {passwordErrors.confirm_password.message}
+                  </p>
                 )}
               </div>
               <div className="pt-4">
@@ -628,12 +689,12 @@ export default function ProfilePage() {
                   {isPasswordLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t('common.loading')}
+                      {t("common.loading")}
                     </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4 mr-2" />
-                      {t('profile.updatePassword')}
+                      {t("profile.updatePassword")}
                     </>
                   )}
                 </button>
@@ -645,32 +706,32 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                {t('profile.twoFactorAuth')}
+                {t("profile.twoFactorAuth")}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                {t('profile.twoFactorDescription')}
+                {t("profile.twoFactorDescription")}
               </p>
               <Link
                 to="/security/mfa"
                 className="btn-secondary w-full text-center"
               >
                 <Shield className="w-4 h-4 mr-2" />
-                {t('profile.configureMfa')}
+                {t("profile.configureMfa")}
               </Link>
             </div>
 
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                {t('profile.activeSessions')}
+                {t("profile.activeSessions")}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                {t('profile.activeSessionsDescription')}
+                {t("profile.activeSessionsDescription")}
               </p>
               <Link
                 to="/security/sessions"
                 className="btn-secondary w-full inline-flex items-center justify-center"
               >
-                {t('profile.viewAllSessions')}
+                {t("profile.viewAllSessions")}
               </Link>
             </div>
           </div>
@@ -678,7 +739,7 @@ export default function ProfilePage() {
       )}
 
       {/* Connected Accounts Tab Content */}
-      {activeTab === 'connections' && (
+      {activeTab === "connections" && (
         <div className="card p-6">
           <ConnectedAccounts />
         </div>
@@ -692,10 +753,10 @@ export default function ProfilePage() {
           setPendingProfileData(null);
         }}
         onConfirm={handleConfirmSave}
-        title={t('profile.saveChanges')}
-        message={t('profile.saveChangesConfirm')}
-        confirmText={isLoading ? t('common.loading') : t('common.save')}
-        cancelText={t('common.cancel')}
+        title={t("profile.saveChanges")}
+        message={t("profile.saveChangesConfirm")}
+        confirmText={isLoading ? t("common.loading") : t("common.save")}
+        cancelText={t("common.cancel")}
         variant="info"
         isLoading={isLoading}
       />
@@ -705,10 +766,12 @@ export default function ProfilePage() {
         isOpen={showDeleteAvatarModal}
         onClose={() => setShowDeleteAvatarModal(false)}
         onConfirm={handleDeleteAvatar}
-        title={t('profile.removePhoto')}
-        message={t('profile.removePhotoConfirm')}
-        confirmText={isAvatarLoading ? t('common.loading') : t('profile.removePhoto')}
-        cancelText={t('common.cancel')}
+        title={t("profile.removePhoto")}
+        message={t("profile.removePhotoConfirm")}
+        confirmText={
+          isAvatarLoading ? t("common.loading") : t("profile.removePhoto")
+        }
+        cancelText={t("common.cancel")}
         variant="danger"
         isLoading={isAvatarLoading}
       />

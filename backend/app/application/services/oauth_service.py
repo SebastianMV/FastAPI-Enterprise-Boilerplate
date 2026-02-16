@@ -27,6 +27,8 @@ from app.domain.exceptions.base import (
     BusinessRuleViolationError,
     ConflictError,
     EntityNotFoundError,
+)
+from app.domain.exceptions.base import (
     ValidationError as DomainValidationError,
 )
 from app.infrastructure.auth.encryption import decrypt_value, encrypt_value
@@ -327,12 +329,18 @@ class OAuthService:
     async def get_user_connections(
         self,
         user_id: UUID,
+        tenant_id: UUID | None = None,
     ) -> list[OAuthConnection]:
         """Get all OAuth connections for a user."""
-        stmt = select(OAuthConnectionModel).where(
+        conditions = [
             OAuthConnectionModel.user_id == user_id,
             OAuthConnectionModel.is_active.is_(True),
-        )
+        ]
+
+        if tenant_id:
+            conditions.append(OAuthConnectionModel.tenant_id == tenant_id)
+
+        stmt = select(OAuthConnectionModel).where(*conditions)
 
         result = await self._session.execute(stmt)
         models = result.scalars().all()
@@ -343,12 +351,18 @@ class OAuthService:
         self,
         user_id: UUID,
         connection_id: UUID,
+        tenant_id: UUID | None = None,
     ) -> bool:
         """Unlink an OAuth account from user."""
-        stmt = select(OAuthConnectionModel).where(
+        conditions = [
             OAuthConnectionModel.id == connection_id,
             OAuthConnectionModel.user_id == user_id,
-        )
+        ]
+
+        if tenant_id:
+            conditions.append(OAuthConnectionModel.tenant_id == tenant_id)
+
+        stmt = select(OAuthConnectionModel).where(*conditions)
 
         result = await self._session.execute(stmt)
         connection = result.scalar_one_or_none()

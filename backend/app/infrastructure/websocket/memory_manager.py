@@ -308,7 +308,9 @@ class MemoryWebSocketManager(WebSocketPort):
             # Track in connection info
             connection_info.rooms.add(room_id)
 
-        logger.debug("websocket_room_joined", connection_id=connection_id, room_id=room_id)
+        logger.debug(
+            "websocket_room_joined", connection_id=connection_id, room_id=room_id
+        )
 
     async def leave_room(
         self,
@@ -331,7 +333,9 @@ class MemoryWebSocketManager(WebSocketPort):
             # Update connection info
             connection_info.rooms.discard(room_id)
 
-        logger.debug("websocket_room_left", connection_id=connection_id, room_id=room_id)
+        logger.debug(
+            "websocket_room_left", connection_id=connection_id, room_id=room_id
+        )
 
     async def send_to_room(
         self,
@@ -431,7 +435,9 @@ class MemoryWebSocketManager(WebSocketPort):
             try:
                 await handler(message, connection)
             except Exception as e:
-                logger.error("websocket_handler_error", error=type(e).__name__, exc_info=True)
+                logger.error(
+                    "websocket_handler_error", error=type(e).__name__, exc_info=True
+                )
 
                 # Send error back to sender
                 if connection.connection_id in self._connections:

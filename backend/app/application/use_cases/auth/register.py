@@ -11,10 +11,10 @@ from uuid import uuid4
 from app.config import settings
 from app.domain.entities.user import User
 from app.domain.exceptions.base import ConflictError, ValidationError
-from app.domain.value_objects.email import Email
-from app.domain.value_objects.password import Password
 from app.domain.ports.tenant_repository import TenantRepositoryPort
 from app.domain.ports.user_repository import UserRepositoryPort
+from app.domain.value_objects.email import Email
+from app.domain.value_objects.password import Password
 from app.infrastructure.auth.jwt_handler import (
     create_access_token,
     create_refresh_token,

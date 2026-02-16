@@ -342,6 +342,11 @@ class GenericImporter(ImportPort):
 
         # Build query
         query = select(config.model)
+
+        # Exclude soft-deleted records
+        if hasattr(config.model, "is_deleted"):
+            query = query.where(config.model.is_deleted.is_(False))
+
         for field_name in config.unique_fields:
             if field_name in row_data:
                 query = query.where(

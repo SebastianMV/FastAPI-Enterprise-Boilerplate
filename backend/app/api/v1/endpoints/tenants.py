@@ -10,7 +10,7 @@ Optimized with Redis caching for frequently accessed tenant data.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_superuser
@@ -173,7 +173,7 @@ async def get_tenant(
     description="Get tenant details by URL slug. Superuser only.",
 )
 async def get_tenant_by_slug(
-    slug: str,
+    slug: str = Path(..., max_length=200),
     _: UUID = Depends(require_superuser),
     repo: SQLAlchemyTenantRepository = Depends(get_tenant_repository),
 ) -> TenantResponse:

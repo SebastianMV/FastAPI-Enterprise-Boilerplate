@@ -40,7 +40,9 @@ class StatItem(BaseModel):
     name: str = Field(max_length=100)
     value: int | str
     change: str = Field(max_length=50)
-    change_type: str = Field(max_length=20, description="positive, negative, or neutral")
+    change_type: str = Field(
+        max_length=20, description="positive, negative, or neutral"
+    )
 
 
 class ActivityItem(BaseModel):

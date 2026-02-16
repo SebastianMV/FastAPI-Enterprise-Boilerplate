@@ -17,6 +17,9 @@ from app.infrastructure.database.repositories.cached_tenant_repository import (
 from app.infrastructure.database.repositories.role_repository import (
     SQLAlchemyRoleRepository,
 )
+from app.infrastructure.database.repositories.session_repository import (
+    SQLAlchemySessionRepository,
+)
 from app.infrastructure.database.repositories.tenant_repository import (
     SQLAlchemyTenantRepository,
 )
@@ -30,6 +33,7 @@ __all__ = [
     "SQLAlchemyRoleRepository",
     "SQLAlchemyTenantRepository",
     "SQLAlchemyAuditLogRepository",
+    "SQLAlchemySessionRepository",
     # Cached repositories
     "CachedRoleRepository",
     "CachedTenantRepository",

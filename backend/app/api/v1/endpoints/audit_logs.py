@@ -68,7 +68,9 @@ async def list_audit_logs(
     tenant_id: CurrentTenantId = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
-    action: str | None = Query(default=None, max_length=50, description="Filter by action type"),
+    action: str | None = Query(
+        default=None, max_length=50, description="Filter by action type"
+    ),
     resource_type: str | None = Query(
         default=None, max_length=50, description="Filter by resource type"
     ),

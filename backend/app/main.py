@@ -39,7 +39,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Startup
     from app.infrastructure.database.connection import init_database
 
-    logger.info("starting_application", app_name=settings.APP_NAME, version=settings.APP_VERSION)
+    logger.info(
+        "starting_application", app_name=settings.APP_NAME, version=settings.APP_VERSION
+    )
     logger.info("environment_info", environment=settings.ENVIRONMENT)
 
     # Setup logging
@@ -282,7 +284,12 @@ async def domain_exception_handler(
     _request: Request, exc: DomainException
 ) -> JSONResponse:
     """500 — catch-all for any unhandled domain exception."""
-    logger.error("unhandled_domain_exception", exception_type=type(exc).__name__, code=exc.code, exc_info=True)
+    logger.error(
+        "unhandled_domain_exception",
+        exception_type=type(exc).__name__,
+        code=exc.code,
+        exc_info=True,
+    )
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error", "code": exc.code},
@@ -294,7 +301,9 @@ async def unexpected_exception_handler(
     _request: Request, exc: Exception
 ) -> JSONResponse:
     """500 — catch-all for completely unexpected exceptions."""
-    logger.error("unexpected_exception", exception_type=type(exc).__name__, exc_info=True)
+    logger.error(
+        "unexpected_exception", exception_type=type(exc).__name__, exc_info=True
+    )
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error", "code": "INTERNAL_ERROR"},

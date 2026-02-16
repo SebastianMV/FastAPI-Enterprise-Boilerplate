@@ -11,6 +11,7 @@ from app.domain.exceptions.base import (
     DomainException,
     EntityNotFoundError,
     RateLimitExceededError,
+    ServiceUnavailableError,
     ValidationError,
 )
 
@@ -22,5 +23,6 @@ __all__ = [
     "DomainException",
     "EntityNotFoundError",
     "RateLimitExceededError",
+    "ServiceUnavailableError",
     "ValidationError",
 ]

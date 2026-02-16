@@ -186,7 +186,9 @@ class ReportTemplateCreate(BaseModel):
 
     # Metadata
     is_public: bool = False
-    tags: list[Annotated[str, Field(max_length=100)]] = Field(default_factory=list, max_length=50)
+    tags: list[Annotated[str, Field(max_length=100)]] = Field(
+        default_factory=list, max_length=50
+    )
 
 
 class ReportTemplateUpdate(BaseModel):
@@ -211,7 +213,9 @@ class ReportTemplateUpdate(BaseModel):
     include_charts: bool | None = None
     watermark: str | None = Field(default=None, max_length=200)
     is_public: bool | None = None
-    tags: list[Annotated[str, Field(max_length=100)]] | None = Field(default=None, max_length=50)
+    tags: list[Annotated[str, Field(max_length=100)]] | None = Field(
+        default=None, max_length=50
+    )
 
 
 class ReportTemplateResponse(BaseModel):
@@ -272,8 +276,12 @@ class ScheduledReportCreate(BaseModel):
     recipients: list[Annotated[str, Field(max_length=320)]] = Field(
         default_factory=list, max_length=100
     )  # Email addresses
-    storage_path: str | None = Field(default=None, max_length=2048)  # For storage delivery
-    webhook_url: str | None = Field(default=None, max_length=2048)  # For webhook delivery
+    storage_path: str | None = Field(
+        default=None, max_length=2048
+    )  # For storage delivery
+    webhook_url: str | None = Field(
+        default=None, max_length=2048
+    )  # For webhook delivery
 
     # Options
     enabled: bool = True
@@ -291,7 +299,9 @@ class ScheduledReportUpdate(BaseModel):
     delivery_method: str | None = Field(
         default=None, pattern="^(email|storage|webhook)$"
     )
-    recipients: list[Annotated[str, Field(max_length=320)]] | None = Field(default=None, max_length=100)
+    recipients: list[Annotated[str, Field(max_length=320)]] | None = Field(
+        default=None, max_length=100
+    )
     storage_path: str | None = Field(default=None, max_length=2048)
     webhook_url: str | None = Field(default=None, max_length=2048)
     enabled: bool | None = None

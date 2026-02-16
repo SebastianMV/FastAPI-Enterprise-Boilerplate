@@ -241,7 +241,11 @@ class CacheService:
 
         except Exception as e:
             self._stats["errors"] += 1
-            logger.warning("cache_delete_pattern_error", pattern=pattern, error_type=type(e).__name__)
+            logger.warning(
+                "cache_delete_pattern_error",
+                pattern=pattern,
+                error_type=type(e).__name__,
+            )
             return 0
 
     async def exists(self, key: str) -> bool:

@@ -9,9 +9,9 @@ from typing import Any
 
 from app.config import settings
 from app.domain.exceptions.base import AuthenticationError
-from app.domain.value_objects.email import Email
 from app.domain.ports.session_repository import SessionRepositoryPort
 from app.domain.ports.user_repository import UserRepositoryPort
+from app.domain.value_objects.email import Email
 from app.infrastructure.auth.jwt_handler import (
     create_access_token,
     create_refresh_token,
@@ -20,6 +20,8 @@ from app.infrastructure.auth.jwt_handler import (
     verify_password,
 )
 from app.infrastructure.observability.logging import get_logger
+
+from app.domain.entities.user import User as UserEntity
 
 logger = get_logger(__name__)
 
@@ -175,7 +177,7 @@ class LoginUseCase:
         )
 
     # ------------------------------------------------------------------
-    async def _verify_mfa_if_enabled(self, user, mfa_code: str | None) -> None:
+    async def _verify_mfa_if_enabled(self, user: UserEntity, mfa_code: str | None) -> None:
         from app.application.services.mfa_config_service import (
             get_mfa_config,
             save_mfa_config,

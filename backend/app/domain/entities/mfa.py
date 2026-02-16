@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-
 BACKUP_CODE_LENGTH = 8  # Length of each backup code (hex chars)
 BACKUP_CODE_COUNT = 10  # Default number of backup codes generated
 

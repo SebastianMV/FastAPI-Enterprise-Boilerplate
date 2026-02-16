@@ -149,7 +149,11 @@ class SMTPEmailSender(EmailSenderPort):
         """Get default from email for SMTP sender."""
         from app.config import settings
 
-        return getattr(settings, "EMAIL_FROM", f"noreply@{getattr(settings, 'APP_DOMAIN', 'localhost')}")
+        return getattr(
+            settings,
+            "EMAIL_FROM",
+            f"noreply@{getattr(settings, 'APP_DOMAIN', 'localhost')}",
+        )
 
     async def send(self, message: EmailMessage) -> bool:
         """Send email via SMTP."""
@@ -262,7 +266,11 @@ class EmailService:
         """Get default from email."""
         from app.config import settings
 
-        return getattr(settings, "EMAIL_FROM", f"noreply@{getattr(settings, 'APP_DOMAIN', 'localhost')}")
+        return getattr(
+            settings,
+            "EMAIL_FROM",
+            f"noreply@{getattr(settings, 'APP_DOMAIN', 'localhost')}",
+        )
 
     def _get_default_from_name(self) -> str:
         """Get default from name."""

@@ -11,7 +11,16 @@ import io
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Path,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -343,7 +352,9 @@ async def download_template(
     try:
         template = importer.get_template(entity, format)
     except ValueError as e:
-        logger.warning("template_generation_failed", entity=entity, error=type(e).__name__)
+        logger.warning(
+            "template_generation_failed", entity=entity, error=type(e).__name__
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={

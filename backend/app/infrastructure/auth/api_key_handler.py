@@ -268,7 +268,9 @@ async def create_api_key(
     await session.flush()
     await session.refresh(model)
 
-    logger.info("api_key_created", key_id=str(model.id), name=name, user_id=str(user_id))
+    logger.info(
+        "api_key_created", key_id=str(model.id), name=name, user_id=str(user_id)
+    )
 
     return full_key, _model_to_entity(model)
 

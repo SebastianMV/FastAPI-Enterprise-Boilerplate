@@ -82,8 +82,6 @@ class LogoutUseCase:
             from app.config import settings
 
             if settings.ENVIRONMENT in ("production", "staging"):
-                logger.error(
-                    "token_blacklist_failed", error=type(exc).__name__
-                )
+                logger.error("token_blacklist_failed", error=type(exc).__name__)
                 raise
             logger.warning("token_blacklist_failed", error=type(exc).__name__)

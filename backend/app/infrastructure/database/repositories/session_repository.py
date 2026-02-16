@@ -58,7 +58,10 @@ class SQLAlchemySessionRepository:
         return self._to_entity(model) if model else None
 
     async def get_user_sessions(
-        self, user_id: UUID, include_revoked: bool = False, tenant_id: UUID | None = None
+        self,
+        user_id: UUID,
+        include_revoked: bool = False,
+        tenant_id: UUID | None = None,
     ) -> list[UserSession]:
         """Get all sessions for a user, optionally scoped to tenant."""
         stmt = (

@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, status
@@ -129,9 +129,8 @@ class BulkRoleAssignment(BaseModel):
         min_length=1,
         max_length=10,
     )
-    operation: str = Field(
+    operation: Literal["assign", "remove"] = Field(
         ...,
-        pattern="^(assign|remove)$",
         description="'assign' to add roles, 'remove' to remove roles",
     )
 
@@ -531,7 +530,11 @@ async def bulk_update_users(
             successful += 1
 
         except Exception as e:
-            logger.error("bulk_user_update_failed", user_id=str(update_data.id), error=type(e).__name__)
+            logger.error(
+                "bulk_user_update_failed",
+                user_id=str(update_data.id),
+                error=type(e).__name__,
+            )
             results.append(
                 BulkOperationItemResult(
                     id=update_data.id,
@@ -685,7 +688,9 @@ async def bulk_delete_users(
             successful += 1
 
         except Exception as e:
-            logger.error("bulk_user_delete_failed", user_id=str(user_id), error=type(e).__name__)
+            logger.error(
+                "bulk_user_delete_failed", user_id=str(user_id), error=type(e).__name__
+            )
             results.append(
                 BulkOperationItemResult(
                     id=user_id,

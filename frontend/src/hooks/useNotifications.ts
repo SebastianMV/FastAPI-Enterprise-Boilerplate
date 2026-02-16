@@ -16,15 +16,15 @@
  * ```
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { notificationsService } from '../services/notificationsService';
-import type { Notification } from '../stores/notificationsStore';
-import { useNotificationsStore } from '../stores/notificationsStore';
-import { sanitizeText, validateActionUrl } from '../utils/security';
-import { useWebSocket } from './useWebSocket';
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { notificationsService } from "../services/notificationsService";
+import type { Notification } from "../stores/notificationsStore";
+import { useNotificationsStore } from "../stores/notificationsStore";
+import { sanitizeText, validateActionUrl } from "../utils/security";
+import { useWebSocket } from "./useWebSocket";
 
-export type { Notification } from '../stores/notificationsStore';
+export type { Notification } from "../stores/notificationsStore";
 
 export interface UseNotificationsOptions {
   /** Auto-fetch on mount */
@@ -47,7 +47,10 @@ export interface UseNotificationsReturn {
   /** WebSocket connected */
   isConnected: boolean;
   /** Fetch notifications */
-  fetchNotifications: (options?: { unreadOnly?: boolean; limit?: number }) => Promise<void>;
+  fetchNotifications: (options?: {
+    unreadOnly?: boolean;
+    limit?: number;
+  }) => Promise<void>;
   /** Mark notification as read */
   markAsRead: (notificationId: string) => Promise<void>;
   /** Mark all as read */
@@ -59,7 +62,7 @@ export interface UseNotificationsReturn {
 }
 
 export function useNotifications(
-  options: UseNotificationsOptions = {}
+  options: UseNotificationsOptions = {},
 ): UseNotificationsReturn {
   const { autoFetch = true, limit = 50, pollInterval = 0 } = options;
   const { t } = useTranslation();
@@ -80,64 +83,73 @@ export function useNotifications(
   const [error, setError] = useState<string | null>(null);
 
   // ── WebSocket → store bridge ──
-  const handleNotification = useCallback((payload: Record<string, unknown>) => {
-    if (
-      typeof payload !== 'object' ||
-      payload === null ||
-      typeof payload.id !== 'string' ||
-      typeof payload.type !== 'string' ||
-      typeof payload.title !== 'string' ||
-      typeof payload.message !== 'string'
-    ) {
-      return;
-    }
+  const handleNotification = useCallback(
+    (payload: Record<string, unknown>) => {
+      if (
+        typeof payload !== "object" ||
+        payload === null ||
+        typeof payload.id !== "string" ||
+        typeof payload.type !== "string" ||
+        typeof payload.title !== "string" ||
+        typeof payload.message !== "string"
+      ) {
+        return;
+      }
 
-    const notification: Notification = {
-      id: payload.id as string,
-      type: (['info', 'success', 'warning', 'error'].includes(payload.type as string)
-        ? payload.type : 'info') as Notification['type'],
-      title: sanitizeText(payload.title as string),
-      message: sanitizeText(payload.message as string),
-      action_url: validateActionUrl(payload.action_url),
-      read: typeof payload.read === 'boolean' ? payload.read : false,
-      created_at: typeof payload.created_at === 'string' ? payload.created_at : new Date().toISOString(),
-    };
+      const notification: Notification = {
+        id: payload.id as string,
+        type: (["info", "success", "warning", "error"].includes(
+          payload.type as string,
+        )
+          ? payload.type
+          : "info") as Notification["type"],
+        title: sanitizeText(payload.title as string),
+        message: sanitizeText(payload.message as string),
+        action_url: validateActionUrl(payload.action_url),
+        read: typeof payload.read === "boolean" ? payload.read : false,
+        created_at:
+          typeof payload.created_at === "string"
+            ? payload.created_at
+            : new Date().toISOString(),
+      };
 
-    storeAdd(notification);
-  }, [storeAdd]);
+      storeAdd(notification);
+    },
+    [storeAdd],
+  );
 
   // Single WebSocket connection shared via the store's `isConnected`
   useWebSocket({ onNotification: handleNotification });
 
   // ── REST operations ──
-  const fetchNotifications = useCallback(async (opts?: {
-    unreadOnly?: boolean;
-    limit?: number;
-  }) => {
-    setIsLoading(true);
-    setError(null);
+  const fetchNotifications = useCallback(
+    async (opts?: { unreadOnly?: boolean; limit?: number }) => {
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const data = await notificationsService.list({
-        unread_only: opts?.unreadOnly,
-        limit: opts?.limit ?? limit,
-      });
+      try {
+        const data = await notificationsService.list({
+          unread_only: opts?.unreadOnly,
+          limit: opts?.limit ?? limit,
+        });
 
-      if (Array.isArray(data.items)) {
-        const sanitized = data.items.map((item: Notification) => ({
-          ...item,
-          title: sanitizeText(item.title),
-          message: sanitizeText(item.message),
-          action_url: validateActionUrl(item.action_url),
-        }));
-        storeSet(sanitized);
+        if (Array.isArray(data.items)) {
+          const sanitized = data.items.map((item: Notification) => ({
+            ...item,
+            title: sanitizeText(item.title),
+            message: sanitizeText(item.message),
+            action_url: validateActionUrl(item.action_url),
+          }));
+          storeSet(sanitized);
+        }
+      } catch {
+        setError(t("notifications.fetchError"));
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      setError(t('notifications.fetchError'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [limit, storeSet, t]);
+    },
+    [limit, storeSet, t],
+  );
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -148,32 +160,38 @@ export function useNotifications(
     }
   }, [storeSetCount]);
 
-  const markAsRead = useCallback(async (notificationId: string) => {
-    try {
-      await notificationsService.markAsRead(notificationId);
-      storeMarkRead(notificationId);
-    } catch {
-      setError(t('notifications.markAsReadError'));
-    }
-  }, [storeMarkRead, t]);
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      try {
+        await notificationsService.markAsRead(notificationId);
+        storeMarkRead(notificationId);
+      } catch {
+        setError(t("notifications.markAsReadError"));
+      }
+    },
+    [storeMarkRead, t],
+  );
 
   const markAllAsRead = useCallback(async () => {
     try {
       await notificationsService.markAllAsRead();
       storeMarkAllRead();
     } catch {
-      setError(t('notifications.markAllAsReadError'));
+      setError(t("notifications.markAllAsReadError"));
     }
   }, [storeMarkAllRead, t]);
 
-  const deleteNotification = useCallback(async (notificationId: string) => {
-    try {
-      await notificationsService.delete(notificationId);
-      storeRemove(notificationId);
-    } catch {
-      setError(t('notifications.deleteError'));
-    }
-  }, [storeRemove, t]);
+  const deleteNotification = useCallback(
+    async (notificationId: string) => {
+      try {
+        await notificationsService.delete(notificationId);
+        storeRemove(notificationId);
+      } catch {
+        setError(t("notifications.deleteError"));
+      }
+    },
+    [storeRemove, t],
+  );
 
   const clearRead = useCallback(async () => {
     try {
@@ -183,7 +201,7 @@ export function useNotifications(
       const unreadOnly = current.filter((n) => !n.read);
       storeSet(unreadOnly);
     } catch {
-      setError(t('notifications.clearReadError'));
+      setError(t("notifications.clearReadError"));
     }
   }, [storeSet, t]);
 
@@ -196,12 +214,15 @@ export function useNotifications(
         if (cancelled) return;
       })();
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [autoFetch, fetchNotifications, fetchUnreadCount]);
 
   // ── Poll unread count ──
   useEffect(() => {
-    const safePollInterval = pollInterval > 0 ? Math.max(5000, pollInterval) : 0;
+    const safePollInterval =
+      pollInterval > 0 ? Math.max(5000, pollInterval) : 0;
     if (safePollInterval > 0) {
       const interval = setInterval(fetchUnreadCount, safePollInterval);
       return () => clearInterval(interval);

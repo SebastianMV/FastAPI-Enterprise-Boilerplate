@@ -521,7 +521,9 @@ class AdvancedExcelHandler:
                 ws.conditional_formatting.add(config.cell_range, rule)
 
         except Exception as e:
-            logger.warning("excel_conditional_format_failed", error_type=type(e).__name__)
+            logger.warning(
+                "excel_conditional_format_failed", error_type=type(e).__name__
+            )
 
     def _add_data_validation(self, ws: Any, config: DataValidationConfig) -> None:
         """Add data validation to cells."""

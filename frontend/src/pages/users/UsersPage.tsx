@@ -1,26 +1,26 @@
-import { AlertModal, ConfirmModal, Modal } from '@/components/common/Modal';
-import { rolesService, usersService, type User } from '@/services/api';
-import { sanitizeText } from '@/utils/security';
-import { EMAIL_PATTERN, PASSWORD_PATTERN } from '@/utils/validation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertModal, ConfirmModal, Modal } from "@/components/common/Modal";
+import { rolesService, usersService, type User } from "@/services/api";
+import { sanitizeText } from "@/utils/security";
+import { EMAIL_PATTERN, PASSWORD_PATTERN } from "@/utils/validation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-    CheckCircle,
-    Edit,
-    Loader2,
-    Lock,
-    Mail,
-    Plus,
-    RefreshCw,
-    Search,
-    Shield,
-    Trash2,
-    User as UserIcon,
-    UserPlus,
-    XCircle,
-} from 'lucide-react';
-import { useCallback, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
+  CheckCircle,
+  Edit,
+  Loader2,
+  Lock,
+  Mail,
+  Plus,
+  RefreshCw,
+  Search,
+  Shield,
+  Trash2,
+  User as UserIcon,
+  UserPlus,
+  XCircle,
+} from "lucide-react";
+import { useCallback, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 interface CreateUserFormData {
   email: string;
@@ -29,7 +29,7 @@ interface CreateUserFormData {
   last_name: string;
   is_active: boolean;
   is_superuser: boolean;
-  roles: string[];  // Role IDs
+  roles: string[]; // Role IDs
 }
 
 interface EditUserFormData {
@@ -37,7 +37,7 @@ interface EditUserFormData {
   first_name: string;
   last_name: string;
   is_active: boolean;
-  roles: string[];  // Role IDs
+  roles: string[]; // Role IDs
 }
 
 /**
@@ -45,7 +45,7 @@ interface EditUserFormData {
  */
 export default function UsersPage() {
   const { t } = useTranslation();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -54,8 +54,8 @@ export default function UsersPage() {
     isOpen: boolean;
     title: string;
     message: string;
-    variant: 'success' | 'error';
-  }>({ isOpen: false, title: '', message: '', variant: 'success' });
+    variant: "success" | "error";
+  }>({ isOpen: false, title: "", message: "", variant: "success" });
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -63,13 +63,14 @@ export default function UsersPage() {
 
   // Fetch users
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['users', page],
-    queryFn: () => usersService.list({ skip: (page - 1) * pageSize, limit: pageSize }),
+    queryKey: ["users", page],
+    queryFn: () =>
+      usersService.list({ skip: (page - 1) * pageSize, limit: pageSize }),
   });
 
   // Fetch available roles for assignment
   const { data: rolesData } = useQuery({
-    queryKey: ['roles'],
+    queryKey: ["roles"],
     queryFn: () => rolesService.list({ limit: 100 }),
   });
   const availableRoles = rolesData?.items || [];
@@ -78,22 +79,22 @@ export default function UsersPage() {
   const createMutation = useMutation({
     mutationFn: (data: CreateUserFormData) => usersService.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       setShowCreateModal(false);
       resetCreateForm();
       setAlertModal({
         isOpen: true,
-        title: t('users.userCreated'),
-        message: t('users.createSuccess'),
-        variant: 'success',
+        title: t("users.userCreated"),
+        message: t("users.createSuccess"),
+        variant: "success",
       });
     },
     onError: () => {
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('users.createError'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("users.createError"),
+        variant: "error",
       });
     },
   });
@@ -103,22 +104,22 @@ export default function UsersPage() {
     mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
       usersService.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       setShowEditModal(false);
       setSelectedUser(null);
       setAlertModal({
         isOpen: true,
-        title: t('users.userUpdated'),
-        message: t('users.updateSuccess'),
-        variant: 'success',
+        title: t("users.userUpdated"),
+        message: t("users.updateSuccess"),
+        variant: "success",
       });
     },
     onError: () => {
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('users.updateError'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("users.updateError"),
+        variant: "error",
       });
     },
   });
@@ -127,22 +128,22 @@ export default function UsersPage() {
   const deleteMutation = useMutation({
     mutationFn: usersService.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       setShowDeleteModal(false);
       setSelectedUser(null);
       setAlertModal({
         isOpen: true,
-        title: t('users.userDeleted'),
-        message: t('users.deleteSuccess'),
-        variant: 'success',
+        title: t("users.userDeleted"),
+        message: t("users.deleteSuccess"),
+        variant: "success",
       });
     },
     onError: () => {
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('users.deleteError'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("users.deleteError"),
+        variant: "error",
       });
     },
   });
@@ -162,7 +163,7 @@ export default function UsersPage() {
       roles: [],
     },
   });
-  const selectedCreateRoles = watchCreate('roles') || [];
+  const selectedCreateRoles = watchCreate("roles") || [];
 
   // Edit form
   const {
@@ -173,9 +174,9 @@ export default function UsersPage() {
     setValue: setEditValue,
     formState: { errors: editErrors },
   } = useForm<EditUserFormData>();
-  const selectedEditRoles = watchEdit('roles') || [];
+  const selectedEditRoles = watchEdit("roles") || [];
 
-  const handleEditClick = (user: User) => {
+  const handleEditClick = useCallback((user: User) => {
     setSelectedUser(user);
     resetEditForm({
       email: user.email,
@@ -185,21 +186,21 @@ export default function UsersPage() {
       roles: user.roles || [],
     });
     setShowEditModal(true);
-  };
+  }, [resetEditForm]);
 
-  const handleDeleteClick = (user: User) => {
+  const handleDeleteClick = useCallback((user: User) => {
     setSelectedUser(user);
     setShowDeleteModal(true);
-  };
+  }, []);
 
-  const onCreateSubmit = (data: CreateUserFormData) => {
+  const onCreateSubmit = useCallback((data: CreateUserFormData) => {
     createMutation.mutate(data);
-  };
+  }, [createMutation]);
 
-  const onEditSubmit = (data: EditUserFormData) => {
+  const onEditSubmit = useCallback((data: EditUserFormData) => {
     if (!selectedUser) return;
     updateMutation.mutate({ id: selectedUser.id, data });
-  };
+  }, [selectedUser, updateMutation]);
 
   const onDeleteConfirm = useCallback(() => {
     if (!selectedUser) return;
@@ -210,8 +211,8 @@ export default function UsersPage() {
   const filteredUsers = users.filter(
     (user) =>
       user.email.toLowerCase().includes(search.toLowerCase()) ||
-      (user.first_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (user.last_name ?? '').toLowerCase().includes(search.toLowerCase()),
+      (user.first_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (user.last_name ?? "").toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -220,18 +221,18 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {t('users.title')}
+            {t("users.title")}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {t('users.subtitle')}
+            {t("users.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => refetch()}
             className="btn-secondary"
-            title={t('users.refreshUsers')}
-            aria-label={t('users.refreshUsers')}
+            title={t("users.refreshUsers")}
+            aria-label={t("users.refreshUsers")}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -240,7 +241,7 @@ export default function UsersPage() {
             className="btn-primary"
           >
             <Plus className="w-4 h-4 mr-2" />
-            {t('users.addUser')}
+            {t("users.addUser")}
           </button>
         </div>
       </div>
@@ -250,7 +251,7 @@ export default function UsersPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
           type="text"
-          placeholder={t('users.searchPlaceholder')}
+          placeholder={t("users.searchPlaceholder")}
           className="input pl-10"
           value={search}
           maxLength={200}
@@ -267,10 +268,10 @@ export default function UsersPage() {
         ) : error ? (
           <div className="p-12 text-center">
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 mb-4">{t('users.loadError')}</p>
+            <p className="text-red-600 mb-4">{t("users.loadError")}</p>
             <button onClick={() => refetch()} className="btn-primary">
               <RefreshCw className="w-4 h-4 mr-2" />
-              {t('common.retry')}
+              {t("common.retry")}
             </button>
           </div>
         ) : (
@@ -279,19 +280,19 @@ export default function UsersPage() {
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/50">
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    {t('users.email')}
+                    {t("users.email")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    {t('users.status')}
+                    {t("users.status")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    {t('users.role')}
+                    {t("users.role")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    {t('users.createdAt')}
+                    {t("users.createdAt")}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    {t('common.actions')}
+                    {t("common.actions")}
                   </th>
                 </tr>
               </thead>
@@ -302,7 +303,7 @@ export default function UsersPage() {
                       colSpan={5}
                       className="px-6 py-12 text-center text-slate-500"
                     >
-                      {t('users.noUsersFound')}
+                      {t("users.noUsersFound")}
                     </td>
                   </tr>
                 ) : (
@@ -315,12 +316,13 @@ export default function UsersPage() {
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-medium">
-                              {(user.first_name ?? '').charAt(0)}
+                              {(user.first_name ?? "").charAt(0)}
                             </span>
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-slate-900 dark:text-white">
-                              {sanitizeText(user.first_name ?? '')} {sanitizeText(user.last_name ?? '')}
+                              {sanitizeText(user.first_name ?? "")}{" "}
+                              {sanitizeText(user.last_name ?? "")}
                             </div>
                             <div className="text-sm text-slate-500">
                               {sanitizeText(user.email)}
@@ -332,19 +334,19 @@ export default function UsersPage() {
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             user.is_active
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                              : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
                           }`}
                         >
                           {user.is_active ? (
                             <>
                               <CheckCircle className="w-3 h-3 mr-1" />
-                              {t('users.active')}
+                              {t("users.active")}
                             </>
                           ) : (
                             <>
                               <XCircle className="w-3 h-3 mr-1" />
-                              {t('users.inactive')}
+                              {t("users.inactive")}
                             </>
                           )}
                         </span>
@@ -354,28 +356,28 @@ export default function UsersPage() {
                           {user.is_superuser && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
                               <Shield className="w-3 h-3 mr-1" />
-                              {t('settings.administrator')}
+                              {t("settings.administrator")}
                             </span>
                           )}
-                          {user.roles && user.roles.length > 0 ? (
-                            user.roles.map((roleId) => {
-                              const role = availableRoles.find((r) => r.id === roleId);
-                              return role ? (
-                                <span
-                                  key={roleId}
-                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-                                >
-                                  {role.name}
+                          {user.roles && user.roles.length > 0
+                            ? user.roles.map((roleId) => {
+                                const role = availableRoles.find(
+                                  (r) => r.id === roleId,
+                                );
+                                return role ? (
+                                  <span
+                                    key={roleId}
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                                  >
+                                    {role.name}
+                                  </span>
+                                ) : null;
+                              })
+                            : !user.is_superuser && (
+                                <span className="text-slate-400 dark:text-slate-500">
+                                  {t("settings.user")}
                                 </span>
-                              ) : null;
-                            })
-                          ) : (
-                            !user.is_superuser && (
-                              <span className="text-slate-400 dark:text-slate-500">
-                                {t('settings.user')}
-                              </span>
-                            )
-                          )}
+                              )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
@@ -385,16 +387,16 @@ export default function UsersPage() {
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             className="p-2 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                            title={t('common.edit')}
-                            aria-label={t('common.edit')}
+                            title={t("common.edit")}
+                            aria-label={t("common.edit")}
                             onClick={() => handleEditClick(user)}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            title={t('common.delete')}
-                            aria-label={t('common.delete')}
+                            title={t("common.delete")}
+                            aria-label={t("common.delete")}
                             onClick={() => handleDeleteClick(user)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -411,37 +413,41 @@ export default function UsersPage() {
       </div>
 
       {/* Pagination */}
-      {data && (() => {
-        const totalPages = Math.ceil((data.total || 0) / pageSize);
-        return (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {t('users.showingCount', { showing: filteredUsers.length, total: data.total })}
-            </p>
-            {totalPages > 1 && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 1}
-                  className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  {t('common.previous')}
-                </button>
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  {page} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(page + 1)}
-                  disabled={page === totalPages}
-                  className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  {t('common.next')}
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      {data &&
+        (() => {
+          const totalPages = Math.ceil((data.total || 0) / pageSize);
+          return (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {t("users.showingCount", {
+                  showing: filteredUsers.length,
+                  total: data.total,
+                })}
+              </p>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1}
+                    className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    {t("common.previous")}
+                  </button>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(page + 1)}
+                    disabled={page === totalPages}
+                    className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    {t("common.next")}
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       {/* Create User Modal */}
       <Modal
@@ -450,88 +456,101 @@ export default function UsersPage() {
           setShowCreateModal(false);
           resetCreateForm();
         }}
-        title={t('users.createUser')}
+        title={t("users.createUser")}
         size="lg"
       >
-        <form onSubmit={handleCreateSubmit(onCreateSubmit)} className="space-y-4">
+        <form
+          onSubmit={handleCreateSubmit(onCreateSubmit)}
+          className="space-y-4"
+        >
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t('users.firstName')}
+                {t("users.firstName")}
               </label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
-                  {...registerCreate('first_name', { required: t('validation.required') })}
+                  {...registerCreate("first_name", {
+                    required: t("validation.required"),
+                  })}
                   className="input pl-10"
-                  placeholder={t('common.placeholderFirstName')}
+                  placeholder={t("common.placeholderFirstName")}
                   maxLength={100}
                 />
               </div>
               {createErrors.first_name && (
-                <p className="text-xs text-red-500 mt-1">{createErrors.first_name.message}</p>
+                <p className="text-xs text-red-500 mt-1">
+                  {createErrors.first_name.message}
+                </p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t('users.lastName')}
+                {t("users.lastName")}
               </label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
-                  {...registerCreate('last_name', { required: t('validation.required') })}
+                  {...registerCreate("last_name", {
+                    required: t("validation.required"),
+                  })}
                   className="input pl-10"
-                  placeholder={t('common.placeholderLastName')}
+                  placeholder={t("common.placeholderLastName")}
                   maxLength={100}
                 />
               </div>
               {createErrors.last_name && (
-                <p className="text-xs text-red-500 mt-1">{createErrors.last_name.message}</p>
+                <p className="text-xs text-red-500 mt-1">
+                  {createErrors.last_name.message}
+                </p>
               )}
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              {t('users.email')}
+              {t("users.email")}
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
-                {...registerCreate('email', {
-                  required: t('validation.required'),
+                {...registerCreate("email", {
+                  required: t("validation.required"),
                   pattern: {
                     value: EMAIL_PATTERN,
-                    message: t('validation.emailInvalid'),
+                    message: t("validation.emailInvalid"),
                   },
                 })}
                 type="email"
                 className="input pl-10"
-                placeholder={t('common.placeholderEmail')}
+                placeholder={t("common.placeholderEmail")}
                 maxLength={254}
               />
             </div>
             {createErrors.email && (
-              <p className="text-xs text-red-500 mt-1">{createErrors.email.message}</p>
+              <p className="text-xs text-red-500 mt-1">
+                {createErrors.email.message}
+              </p>
             )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              {t('users.password')}
+              {t("users.password")}
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
-                {...registerCreate('password', {
-                  required: t('validation.required'),
+                {...registerCreate("password", {
+                  required: t("validation.required"),
                   minLength: {
                     value: 8,
-                    message: t('validation.passwordMin', { min: 8 }),
+                    message: t("validation.passwordMin", { min: 8 }),
                   },
                   pattern: {
                     value: PASSWORD_PATTERN,
-                    message: t('validation.passwordComplexity'),
+                    message: t("validation.passwordComplexity"),
                   },
                 })}
                 type="password"
@@ -543,26 +562,32 @@ export default function UsersPage() {
               />
             </div>
             {createErrors.password && (
-              <p className="text-xs text-red-500 mt-1">{createErrors.password.message}</p>
+              <p className="text-xs text-red-500 mt-1">
+                {createErrors.password.message}
+              </p>
             )}
           </div>
 
           <div className="flex items-center space-x-6">
             <label className="flex items-center">
               <input
-                {...registerCreate('is_active')}
+                {...registerCreate("is_active")}
                 type="checkbox"
                 className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
               />
-              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">{t('users.active')}</span>
+              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">
+                {t("users.active")}
+              </span>
             </label>
             <label className="flex items-center">
               <input
-                {...registerCreate('is_superuser')}
+                {...registerCreate("is_superuser")}
                 type="checkbox"
                 className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
               />
-              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">{t('settings.administrator')}</span>
+              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">
+                {t("settings.administrator")}
+              </span>
             </label>
           </div>
 
@@ -571,7 +596,7 @@ export default function UsersPage() {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 <Shield className="inline w-4 h-4 mr-1" />
-                {t('users.role')}
+                {t("users.role")}
               </label>
               <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-lg">
                 {availableRoles.map((role) => (
@@ -583,11 +608,13 @@ export default function UsersPage() {
                         const newRoles = e.target.checked
                           ? [...selectedCreateRoles, role.id]
                           : selectedCreateRoles.filter((id) => id !== role.id);
-                        setCreateValue('roles', newRoles);
+                        setCreateValue("roles", newRoles);
                       }}
                       className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
                     />
-                    <span className="ml-2 text-slate-700 dark:text-slate-300">{role.name}</span>
+                    <span className="ml-2 text-slate-700 dark:text-slate-300">
+                      {role.name}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -603,7 +630,7 @@ export default function UsersPage() {
               }}
               className="btn-secondary"
             >
-              {t('common.cancel')}
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
@@ -613,12 +640,12 @@ export default function UsersPage() {
               {createMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('common.loading')}
+                  {t("common.loading")}
                 </>
               ) : (
                 <>
                   <UserPlus className="w-4 h-4 mr-2" />
-                  {t('users.createUser')}
+                  {t("users.createUser")}
                 </>
               )}
             </button>
@@ -633,49 +660,57 @@ export default function UsersPage() {
           setShowEditModal(false);
           setSelectedUser(null);
         }}
-        title={t('users.editUser')}
+        title={t("users.editUser")}
         size="lg"
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t('users.firstName')}
+                {t("users.firstName")}
               </label>
               <input
-                {...registerEdit('first_name', { required: t('validation.required') })}
+                {...registerEdit("first_name", {
+                  required: t("validation.required"),
+                })}
                 className="input"
                 maxLength={100}
               />
               {editErrors.first_name && (
-                <p className="text-xs text-red-500 mt-1">{editErrors.first_name.message}</p>
+                <p className="text-xs text-red-500 mt-1">
+                  {editErrors.first_name.message}
+                </p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t('users.lastName')}
+                {t("users.lastName")}
               </label>
               <input
-                {...registerEdit('last_name', { required: t('validation.required') })}
+                {...registerEdit("last_name", {
+                  required: t("validation.required"),
+                })}
                 className="input"
                 maxLength={100}
               />
               {editErrors.last_name && (
-                <p className="text-xs text-red-500 mt-1">{editErrors.last_name.message}</p>
+                <p className="text-xs text-red-500 mt-1">
+                  {editErrors.last_name.message}
+                </p>
               )}
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              {t('users.email')}
+              {t("users.email")}
             </label>
             <input
-              {...registerEdit('email', {
-                required: t('validation.required'),
+              {...registerEdit("email", {
+                required: t("validation.required"),
                 pattern: {
                   value: EMAIL_PATTERN,
-                  message: t('validation.emailInvalid'),
+                  message: t("validation.emailInvalid"),
                 },
               })}
               type="email"
@@ -683,18 +718,22 @@ export default function UsersPage() {
               maxLength={254}
             />
             {editErrors.email && (
-              <p className="text-xs text-red-500 mt-1">{editErrors.email.message}</p>
+              <p className="text-xs text-red-500 mt-1">
+                {editErrors.email.message}
+              </p>
             )}
           </div>
 
           <div className="flex items-center">
             <label className="flex items-center">
               <input
-                {...registerEdit('is_active')}
+                {...registerEdit("is_active")}
                 type="checkbox"
                 className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
               />
-              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">{t('users.active')}</span>
+              <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">
+                {t("users.active")}
+              </span>
             </label>
           </div>
 
@@ -703,7 +742,7 @@ export default function UsersPage() {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 <Shield className="inline w-4 h-4 mr-1" />
-                {t('users.role')}
+                {t("users.role")}
               </label>
               <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-lg">
                 {availableRoles.map((role) => (
@@ -715,11 +754,13 @@ export default function UsersPage() {
                         const newRoles = e.target.checked
                           ? [...selectedEditRoles, role.id]
                           : selectedEditRoles.filter((id) => id !== role.id);
-                        setEditValue('roles', newRoles);
+                        setEditValue("roles", newRoles);
                       }}
                       className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
                     />
-                    <span className="ml-2 text-slate-700 dark:text-slate-300">{role.name}</span>
+                    <span className="ml-2 text-slate-700 dark:text-slate-300">
+                      {role.name}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -735,7 +776,7 @@ export default function UsersPage() {
               }}
               className="btn-secondary"
             >
-              {t('common.cancel')}
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
@@ -745,12 +786,12 @@ export default function UsersPage() {
               {updateMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('common.loading')}
+                  {t("common.loading")}
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  {t('common.save')}
+                  {t("common.save")}
                 </>
               )}
             </button>
@@ -766,10 +807,10 @@ export default function UsersPage() {
           setSelectedUser(null);
         }}
         onConfirm={onDeleteConfirm}
-        title={t('users.deleteUser')}
-        message={t('users.deleteConfirm')}
-        confirmText={t('common.delete')}
-        cancelText={t('common.cancel')}
+        title={t("users.deleteUser")}
+        message={t("users.deleteConfirm")}
+        confirmText={t("common.delete")}
+        cancelText={t("common.cancel")}
         variant="danger"
         isLoading={deleteMutation.isPending}
       />

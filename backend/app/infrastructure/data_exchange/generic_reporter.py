@@ -67,9 +67,7 @@ class GenericReporter(ReportPort):
         if tenant_id and hasattr(config.model, "tenant_id"):
             return query.where(config.model.tenant_id == tenant_id)
         if not tenant_id and hasattr(config.model, "tenant_id"):
-            raise ValueError(
-                "tenant_id is required for tenant-aware model reports"
-            )
+            raise ValueError("tenant_id is required for tenant-aware model reports")
         return query
 
     async def generate(self, request: ReportRequest) -> ReportResult:
@@ -279,6 +277,10 @@ class GenericReporter(ReportPort):
     ) -> list[Any]:
         """Query data from the database."""
         query = select(config.model)
+
+        # Exclude soft-deleted records
+        if hasattr(config.model, "is_deleted"):
+            query = query.where(config.model.is_deleted.is_(False))
 
         # Apply tenant filter
         query = self._apply_tenant_filter(query, config, request.tenant_id)

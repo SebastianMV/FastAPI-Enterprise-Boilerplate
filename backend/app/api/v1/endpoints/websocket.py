@@ -104,14 +104,10 @@ async def authenticate_websocket(
         from app.config import settings
 
         if settings.ENVIRONMENT == "production":
-            logger.warning(
-                "websocket_query_param_auth_rejected"
-            )
+            logger.warning("websocket_query_param_auth_rejected")
             return None
 
-        logger.warning(
-            "websocket_query_param_auth_deprecated"
-        )
+        logger.warning("websocket_query_param_auth_deprecated")
     auth_token = cookie_token or token
 
     if not auth_token:

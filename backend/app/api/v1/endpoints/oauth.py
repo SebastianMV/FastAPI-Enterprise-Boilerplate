@@ -83,11 +83,15 @@ class SSOConfigRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     client_id: str = Field(..., min_length=1, max_length=256)
     client_secret: str = Field(..., min_length=1, max_length=512)
-    scopes: list[Annotated[str, Field(max_length=100)]] = Field(default_factory=list, max_length=20)
+    scopes: list[Annotated[str, Field(max_length=100)]] = Field(
+        default_factory=list, max_length=20
+    )
     auto_create_users: bool = True
     auto_update_users: bool = True
     default_role_id: UUID | None = None
-    allowed_domains: list[Annotated[str, Field(max_length=253)]] = Field(default_factory=list, max_length=50)
+    allowed_domains: list[Annotated[str, Field(max_length=253)]] = Field(
+        default_factory=list, max_length=50
+    )
     is_required: bool = False
 
 
@@ -103,7 +107,9 @@ class SSOConfigResponse(BaseModel):
     auto_create_users: bool
     auto_update_users: bool
     default_role_id: UUID | None = None
-    allowed_domains: list[Annotated[str, Field(max_length=253)]] = Field(default_factory=list)
+    allowed_domains: list[Annotated[str, Field(max_length=253)]] = Field(
+        default_factory=list
+    )
     is_required: bool
     created_at: datetime | None = None
 
@@ -216,10 +222,16 @@ async def callback(
     *,
     session: DbSession,
     response: Response,
-    code: str = Query(..., max_length=2048, description="Authorization code from provider"),
-    state: str = Query(..., max_length=2048, description="State parameter for CSRF protection"),
+    code: str = Query(
+        ..., max_length=2048, description="Authorization code from provider"
+    ),
+    state: str = Query(
+        ..., max_length=2048, description="State parameter for CSRF protection"
+    ),
     error: str | None = Query(None, max_length=200, description="Error from provider"),
-    error_description: str | None = Query(None, max_length=2000, description="Error description"),
+    error_description: str | None = Query(
+        None, max_length=2000, description="Error description"
+    ),
 ) -> OAuthTokenResponse:
     """
     Handle OAuth callback from provider.
@@ -478,6 +490,7 @@ async def callback_redirect(
 async def list_connections(
     session: DbSession,
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
 ) -> list[OAuthConnectionResponse]:
     """
     List all OAuth connections for the current user.
@@ -486,6 +499,7 @@ async def list_connections(
 
     connections = await service.get_user_connections(
         user_id=current_user.id,
+        tenant_id=tenant_id,
     )
 
     return [
@@ -565,6 +579,7 @@ async def unlink_account(
     connection_id: UUID,
     session: DbSession,
     current_user: CurrentUser,
+    tenant_id: CurrentTenantId = None,
 ) -> None:
     """
     Unlink OAuth account from current user.
@@ -575,6 +590,7 @@ async def unlink_account(
         success = await service.unlink_oauth_account(
             user_id=current_user.id,
             connection_id=connection_id,
+            tenant_id=tenant_id,
         )
     except DomainException:
         raise HTTPException(

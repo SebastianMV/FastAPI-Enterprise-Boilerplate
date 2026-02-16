@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { auditLogsService, type AuditLog, type AuditLogFilters } from '@/services/api';
@@ -53,6 +53,46 @@ const actionColors: Record<string, string> = {
   LOGIN_FAILED: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
 };
 
+const defaultColor = 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
+
+/** Redact known-sensitive keys from audit log JSON values before display. */
+function redactSensitiveFields(obj: Record<string, unknown>): Record<string, unknown> {
+  const SENSITIVE_KEYS = new Set(['password', 'password_hash', 'hashed_password', 'token', 'secret', 'api_key', 'access_token', 'refresh_token', 'totp_secret', 'backup_codes', 'current_password', 'new_password', 'old_password', 'confirm_password', 'mfa_secret', 'mfa_code']);
+  const redacted: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (SENSITIVE_KEYS.has(key.toLowerCase()) || SENSITIVE_KEYS.has(key.replace(/[-_]?password$/i, 'password').toLowerCase())) {
+      redacted[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      redacted[key] = redactSensitiveFields(value as Record<string, unknown>);
+    } else {
+      redacted[key] = value;
+    }
+  }
+  return redacted;
+}
+
+/** Truncate user-agent to just browser name + version */
+function truncateUserAgent(ua: string): string {
+  const match = ua.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)[/\s]([\d.]+)/);
+  if (match) return `${match[1]} ${match[2]}`;
+  return ua.length > 60 ? ua.slice(0, 60) + '\u2026' : ua;
+}
+
+/** Format timestamp for display */
+function formatTimestamp(timestamp: string): string {
+  return new Date(timestamp).toLocaleString();
+}
+
+/** Get icon component for action type */
+function getActionIcon(action: string) {
+  return actionIcons[action] || FileText;
+}
+
+/** Get color classes for action type */
+function getActionColor(action: string): string {
+  return actionColors[action] || defaultColor;
+}
+
 /**
  * Audit Log viewer page for security and compliance.
  */
@@ -85,63 +125,24 @@ export default function AuditLogPage() {
   });
 
   // Handle page change
-  const handlePageChange = (direction: 'prev' | 'next') => {
-    const newSkip = direction === 'next' 
-      ? (filters.skip || 0) + (filters.limit || 25)
-      : Math.max(0, (filters.skip || 0) - (filters.limit || 25));
-    setFilters({ ...filters, skip: newSkip });
-  };
+  const handlePageChange = useCallback((direction: 'prev' | 'next') => {
+    setFilters(prev => {
+      const newSkip = direction === 'next' 
+        ? (prev.skip || 0) + (prev.limit || 25)
+        : Math.max(0, (prev.skip || 0) - (prev.limit || 25));
+      return { ...prev, skip: newSkip };
+    });
+  }, []);
 
   // Calculate pagination info
   const currentPage = Math.floor((filters.skip || 0) / (filters.limit || 25)) + 1;
   const totalPages = data ? Math.ceil(data.total / (filters.limit || 25)) : 0;
 
-  /** Redact known-sensitive keys from audit log JSON values before display. */
-  const redactSensitiveFields = (obj: Record<string, unknown>): Record<string, unknown> => {
-    const SENSITIVE_KEYS = new Set(['password', 'password_hash', 'hashed_password', 'token', 'secret', 'api_key', 'access_token', 'refresh_token', 'totp_secret', 'backup_codes', 'current_password', 'new_password', 'old_password', 'confirm_password', 'mfa_secret', 'mfa_code']);
-    const redacted: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj)) {
-      if (SENSITIVE_KEYS.has(key.toLowerCase()) || SENSITIVE_KEYS.has(key.replace(/[-_]?password$/i, 'password').toLowerCase())) {
-        redacted[key] = '[REDACTED]';
-      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        redacted[key] = redactSensitiveFields(value as Record<string, unknown>);
-      } else {
-        redacted[key] = value;
-      }
-    }
-    return redacted;
-  };
-
-  /** Truncate user-agent to just browser name + version */
-  const truncateUserAgent = (ua: string): string => {
-    // Try to extract browser name from UA string
-    const match = ua.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)[/\s]([\d.]+)/);
-    if (match) return `${match[1]} ${match[2]}`;
-    // Fallback: first 60 chars
-    return ua.length > 60 ? ua.slice(0, 60) + '…' : ua;
-  };
-
   // View log details
-  const viewLogDetails = (log: AuditLog) => {
+  const viewLogDetails = useCallback((log: AuditLog) => {
     setSelectedLog(log);
     setShowDetailModal(true);
-  };
-
-  // Format timestamp
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
-  };
-
-  // Get action icon
-  const getActionIcon = (action: string) => {
-    const IconComponent = actionIcons[action] || FileText;
-    return IconComponent;
-  };
-
-  // Get action color
-  const getActionColor = (action: string) => {
-    return actionColors[action] || 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
-  };
+  }, []);
 
   if (error) {
     return (

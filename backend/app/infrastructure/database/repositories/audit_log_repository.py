@@ -94,7 +94,9 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         await self._session.flush()
         return [self._to_entity(model) for model in models]
 
-    async def get_by_id(self, audit_id: UUID, tenant_id: UUID | None = None) -> AuditLog | None:
+    async def get_by_id(
+        self, audit_id: UUID, tenant_id: UUID | None = None
+    ) -> AuditLog | None:
         """Retrieve an audit log entry by ID, optionally scoped to tenant."""
         stmt = select(AuditLogModel).where(AuditLogModel.id == audit_id)
         if tenant_id is not None:

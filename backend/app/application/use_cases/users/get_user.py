@@ -20,6 +20,7 @@ class GetUserRequest:
     """Get user request data."""
 
     user_id: UUID
+    tenant_id: UUID | None = None
 
 
 @dataclass
@@ -62,6 +63,17 @@ class GetUserUseCase:
         user = await self._user_repository.get_by_id(request.user_id)
 
         if not user:
+            raise EntityNotFoundError(
+                entity_type="User",
+                entity_id=str(request.user_id),
+            )
+
+        # Defense-in-depth: verify tenant isolation
+        if (
+            request.tenant_id
+            and user.tenant_id
+            and user.tenant_id != request.tenant_id
+        ):
             raise EntityNotFoundError(
                 entity_type="User",
                 entity_id=str(request.user_id),

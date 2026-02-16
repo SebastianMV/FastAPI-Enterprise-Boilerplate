@@ -12,7 +12,12 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import DataError, ProgrammingError
 
-from app.api.deps import CurrentTenantId, CurrentUser, DbSession, SuperuserId, require_permission
+from app.api.deps import (
+    CurrentTenantId,
+    DbSession,
+    SuperuserId,
+    require_permission,
+)
 from app.domain.ports.search import (
     SearchFilter,
     SearchHighlight,
@@ -112,7 +117,9 @@ class SearchRequest(BaseModel):
 
     query: str = Field(..., min_length=1, max_length=500, description="Search query")
     index: str = Field(
-        ..., max_length=50, description="Search index: users, posts, messages, documents, audit_logs"
+        ...,
+        max_length=50,
+        description="Search index: users, posts, messages, documents, audit_logs",
     )
     filters: list[SearchFilterRequest] = Field(default_factory=list, max_length=20)
     sort: list[SearchSortRequest] = Field(default_factory=list, max_length=5)
@@ -129,7 +136,9 @@ class SearchHitResponse(BaseModel):
     score: float
     source: dict[str, Any]
     highlights: dict[str, list[str]] = Field(default_factory=dict)
-    matched_fields: list[Annotated[str, Field(max_length=100)]] = Field(default_factory=list)
+    matched_fields: list[Annotated[str, Field(max_length=100)]] = Field(
+        default_factory=list
+    )
 
 
 class SearchResponse(BaseModel):
@@ -144,7 +153,9 @@ class SearchResponse(BaseModel):
     has_previous: bool
     took_ms: float
     max_score: float | None = None
-    suggestions: list[Annotated[str, Field(max_length=500)]] = Field(default_factory=list)
+    suggestions: list[Annotated[str, Field(max_length=500)]] = Field(
+        default_factory=list
+    )
 
 
 class SuggestResponse(BaseModel):
@@ -342,7 +353,9 @@ async def suggest(
     tenant_id: CurrentTenantId = None,
     q: str = Query(..., min_length=1, max_length=100, description="Partial query"),
     index: str = Query("posts", max_length=50, description="Search index"),
-    field: str = Query("title", max_length=100, description="Field to get suggestions from"),
+    field: str = Query(
+        "title", max_length=100, description="Field to get suggestions from"
+    ),
     size: int = Query(5, ge=1, le=20, description="Number of suggestions"),
 ) -> SuggestResponse:
     """
