@@ -204,22 +204,22 @@ async def init_database() -> None:
         except TimeoutError:
             process.kill()
             await process.wait()
-            logger.error("Alembic migration timed out")
+            logger.error("alembic_migration_timeout")
             raise
 
         if process.returncode != 0:
-            logger.error("alembic_migration_failed", stderr=stderr.decode())
+            logger.error("alembic_migration_failed")
             if settings.ENVIRONMENT in ("production", "staging"):
                 raise RuntimeError(
                     f"Alembic migration failed in {settings.ENVIRONMENT} — refusing to fall back "
                     "to create_all() (no RLS/triggers)"
                 )
             # Development/testing: fallback to create_all for convenience
-            logger.warning("Falling back to Base.metadata.create_all() (dev only)")
+            logger.warning("alembic_fallback_create_all")
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
         else:
-            logger.info("Alembic migrations applied successfully")
+            logger.info("alembic_migrations_applied")
             if stdout:
                 for line in stdout.decode().strip().split("\n"):
                     logger.info("alembic_migration_output", line=line)
@@ -229,7 +229,7 @@ async def init_database() -> None:
                 f"Alembic not found in {settings.ENVIRONMENT} — refusing to fall back "
                 "to create_all() (no RLS/triggers)"
             ) from None
-        logger.warning("Alembic not found, using Base.metadata.create_all() (dev only)")
+        logger.warning("alembic_not_found_fallback")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 

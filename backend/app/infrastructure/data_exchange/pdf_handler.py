@@ -40,7 +40,7 @@ try:
 
     _weasyprint_available = True
 except ImportError:
-    logger.warning("WeasyPrint not installed. PDF generation will fallback to HTML.")
+    logger.warning("weasyprint_not_installed")
 
 
 def is_pdf_available() -> bool:
@@ -254,7 +254,7 @@ class PDFHandler:
         <h1 class="report-title">{html.escape(title)}</h1>
         {toc_html}
         {charts_html}
-        {content_html}
+        {content_html}  <!-- pre-sanitized HTML content from report generator -->
     </main>
 
     <footer class="page-footer">

@@ -38,7 +38,7 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
         """Get role by ID."""
         stmt = select(RoleModel).where(
             RoleModel.id == role_id,
-            RoleModel.is_deleted == False,
+            RoleModel.is_deleted.is_(False),
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()

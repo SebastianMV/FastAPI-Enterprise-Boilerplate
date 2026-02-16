@@ -727,14 +727,14 @@ class GenericReporter(ReportPort):
 
             return HTML(string=html_content.decode("utf-8")).write_pdf()
         except ImportError:
-            logger.debug("weasyprint not installed, falling back to HTML output")
+            logger.debug("weasyprint_not_installed_fallback")
 
         # Fallback: return HTML with PDF-like message
         # In production, you'd want to install weasyprint
         fallback_html = html_content.decode("utf-8")
         fallback_html = fallback_html.replace(
             "</body>",
-            '<p style="color:red;margin-top:40px;">Nota: Para generar PDF real, instale weasyprint</p></body>',
+            '<p style="color:red;margin-top:40px;">Note: Install weasyprint for PDF generation</p></body>',
         )
         return fallback_html.encode("utf-8")
 

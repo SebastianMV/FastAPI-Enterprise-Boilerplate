@@ -89,7 +89,7 @@ class SearchFilterRequest(BaseModel):
     """Search filter."""
 
     field: str = Field(..., max_length=100, description="Field to filter on")
-    value: Any = Field(..., description="Filter value")
+    value: str | int | float | bool | list[str] = Field(..., description="Filter value")
     operator: str = Field(
         "eq",
         max_length=20,

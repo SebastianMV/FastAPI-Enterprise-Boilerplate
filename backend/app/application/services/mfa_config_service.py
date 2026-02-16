@@ -13,6 +13,7 @@ hexagonal architecture boundaries.
 from __future__ import annotations
 
 import json
+from datetime import UTC
 from typing import Any
 
 from app.domain.entities.mfa import MFAConfig
@@ -25,7 +26,7 @@ logger = get_logger(__name__)
 #  Redis helpers
 # ---------------------------------------------------------------------------
 
-async def _get_redis():  # type: ignore[no-untyped-def]
+async def _get_redis() -> Any:
     """Get async Redis connection for MFA storage via infrastructure cache."""
     from app.infrastructure.cache import get_cache
 
@@ -68,9 +69,11 @@ def _dict_to_mfa_config(data: dict[str, Any]) -> MFAConfig:
         backup_codes=data["backup_codes"],
     )
     if data.get("enabled_at"):
-        config.enabled_at = datetime.fromisoformat(data["enabled_at"])
+        dt = datetime.fromisoformat(data["enabled_at"])
+        config.enabled_at = dt if dt.tzinfo else dt.replace(tzinfo=UTC)
     if data.get("last_used_at"):
-        config.last_used_at = datetime.fromisoformat(data["last_used_at"])
+        dt = datetime.fromisoformat(data["last_used_at"])
+        config.last_used_at = dt if dt.tzinfo else dt.replace(tzinfo=UTC)
     return config
 
 

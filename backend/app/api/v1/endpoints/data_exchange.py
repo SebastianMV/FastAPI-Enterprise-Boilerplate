@@ -11,7 +11,7 @@ import io
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -97,8 +97,8 @@ class ExportPreviewResponse(BaseModel):
 class ReportFilterRequest(BaseModel):
     """Filter for report generation."""
 
-    field: str
-    operator: str = "eq"
+    field: str = Field(..., max_length=100)
+    operator: str = Field(default="eq", max_length=20)
     value: Any
 
 
@@ -180,8 +180,8 @@ async def list_entities(
     description="Get detailed information about a specific entity.",
 )
 async def get_entity(
-    entity: str,
-    current_user_id: DataReader,
+    entity: str = Path(..., max_length=50),
+    current_user_id: DataReader = ...,
 ) -> EntityResponse:
     """Get detailed information about a specific entity."""
     config = EntityRegistry.get(entity)
@@ -223,9 +223,9 @@ async def get_entity(
     description="Export data from an entity to CSV, Excel, or JSON.",
 )
 async def export_data(
-    entity: str,
-    session: DbSession,
-    current_user_id: DataReader,
+    entity: str = Path(..., max_length=50),
+    session: DbSession = ...,
+    current_user_id: DataReader = ...,
     tenant_id: CurrentTenantId = None,
     format: str = Query("csv", enum=["csv", "excel", "json"]),
     columns: str | None = Query(
@@ -283,9 +283,9 @@ async def export_data(
     description="Get a preview of data to be exported.",
 )
 async def preview_export(
-    entity: str,
-    session: DbSession,
-    current_user_id: DataReader,
+    entity: str = Path(..., max_length=50),
+    session: DbSession = ...,
+    current_user_id: DataReader = ...,
     tenant_id: CurrentTenantId = None,
     limit: int = Query(10, ge=1, le=100),
 ) -> ExportPreviewResponse:
@@ -321,9 +321,9 @@ async def preview_export(
     description="Download an empty template file for importing data.",
 )
 async def download_template(
-    entity: str,
-    current_user_id: DataReader,
-    session: DbSession,
+    entity: str = Path(..., max_length=50),
+    current_user_id: DataReader = ...,
+    session: DbSession = ...,
     format: str = Query("csv", enum=["csv", "excel"]),
 ) -> StreamingResponse:
     """
@@ -373,9 +373,9 @@ async def download_template(
     description="Import data from a CSV or Excel file.",
 )
 async def import_data(
-    entity: str,
-    session: DbSession,
-    current_user_id: DataWriter,
+    entity: str = Path(..., max_length=50),
+    session: DbSession = ...,
+    current_user_id: DataWriter = ...,
     tenant_id: CurrentTenantId = None,
     file: UploadFile = File(...),
     mode: str = Query("insert", enum=["insert", "upsert", "update_only"]),
@@ -474,10 +474,10 @@ async def import_data(
     description="Generate a report for an entity.",
 )
 async def generate_report(
-    entity: str,
-    request: ReportRequest,
-    session: DbSession,
-    current_user_id: DataReader,
+    entity: str = Path(..., max_length=50),
+    request: ReportRequest = ...,
+    session: DbSession = ...,
+    current_user_id: DataReader = ...,
     tenant_id: CurrentTenantId = None,
 ) -> StreamingResponse:
     """
@@ -564,9 +564,9 @@ async def generate_report(
     description="Get a preview of data for a report.",
 )
 async def preview_report(
-    entity: str,
-    session: DbSession,
-    current_user_id: DataReader,
+    entity: str = Path(..., max_length=50),
+    session: DbSession = ...,
+    current_user_id: DataReader = ...,
     tenant_id: CurrentTenantId = None,
     limit: int = Query(10, ge=1, le=100),
 ) -> list[dict[str, Any]]:
@@ -595,9 +595,9 @@ async def preview_report(
     description="Get summary statistics for a report without generating it.",
 )
 async def get_report_summary(
-    entity: str,
-    session: DbSession,
-    current_user_id: DataReader,
+    entity: str = Path(..., max_length=50),
+    session: DbSession = ...,
+    current_user_id: DataReader = ...,
     tenant_id: CurrentTenantId = None,
     group_by: str | None = Query(
         None, description="Comma-separated fields to group by", max_length=500

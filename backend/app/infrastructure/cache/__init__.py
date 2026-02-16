@@ -131,7 +131,7 @@ async def close_cache() -> None:
     if _cache_client is not None:
         try:
             await _cache_client.aclose()
-            logger.info("Redis cache connection closed")
+            logger.info("redis_cache_closed")
         except Exception as e:
             logger.warning("redis_cache_close_error", error_type=type(e).__name__)
         finally:

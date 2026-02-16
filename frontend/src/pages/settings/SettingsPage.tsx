@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -75,9 +75,9 @@ export default function SettingsPage() {
     },
   });
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = useCallback(() => {
     deleteAccountMutation.mutate();
-  };
+  }, [deleteAccountMutation]);
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);

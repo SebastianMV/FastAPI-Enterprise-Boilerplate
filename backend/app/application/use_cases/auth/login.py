@@ -5,10 +5,13 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 
 from app.config import settings
 from app.domain.exceptions.base import AuthenticationError
 from app.domain.value_objects.email import Email
+from app.domain.ports.session_repository import SessionRepositoryPort
+from app.domain.ports.user_repository import UserRepositoryPort
 from app.infrastructure.auth.jwt_handler import (
     create_access_token,
     create_refresh_token,
@@ -46,7 +49,12 @@ class LoginResult:
 class LoginUseCase:
     """Authenticate user, verify MFA if enabled, issue JWT tokens."""
 
-    def __init__(self, user_repository, session_repository, db_session) -> None:
+    def __init__(
+        self,
+        user_repository: UserRepositoryPort,
+        session_repository: SessionRepositoryPort,
+        db_session: Any,
+    ) -> None:
         self._user_repo = user_repository
         self._session_repo = session_repository
         self._db_session = db_session
@@ -142,14 +150,16 @@ class LoginUseCase:
 
         from app.domain.entities.session import UserSession
 
+        ua_info = UserSession.parse_user_agent(request.user_agent or "")
+
         user_session = UserSession(
             user_id=user.id,
             tenant_id=user.tenant_id,
             refresh_token_hash=hash_jti(jti),
             device_name=(request.user_agent[:100] if request.user_agent else "Unknown"),
-            device_type="desktop",
-            browser="",
-            os="",
+            device_type=ua_info["device_type"],
+            browser=ua_info["browser"],
+            os=ua_info["os"],
             ip_address=request.ip_address,
             location="",
             last_activity=datetime.now(UTC),

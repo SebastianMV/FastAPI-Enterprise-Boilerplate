@@ -181,7 +181,7 @@ class SQLAlchemyUserRepository(UserRepositoryPort):
             stmt = stmt.where(UserModel.tenant_id == tenant_id)
 
         if is_active is not None:
-            stmt = stmt.where(UserModel.is_active == is_active)
+            stmt = stmt.where(UserModel.is_active.is_(is_active))
 
         stmt = stmt.offset(skip).limit(limit).order_by(UserModel.created_at.desc())
 
@@ -200,7 +200,7 @@ class SQLAlchemyUserRepository(UserRepositoryPort):
             stmt = stmt.where(UserModel.tenant_id == tenant_id)
 
         if is_active is not None:
-            stmt = stmt.where(UserModel.is_active == is_active)
+            stmt = stmt.where(UserModel.is_active.is_(is_active))
 
         result = await self._session.execute(stmt)
         return result.scalar_one()

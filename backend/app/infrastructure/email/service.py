@@ -99,21 +99,15 @@ class ConsoleEmailSender(EmailSenderPort):
     """
 
     async def send(self, message: EmailMessage) -> bool:
-        """Print email to console."""
-        recipients = ", ".join(r.formatted() for r in message.to)
+        """Print email to console (dev only — redacts body content)."""
+        recipient_count = len(message.to)
 
-        logger.info("email_console_separator")
-        logger.info("email_console_mode")
-        logger.info("email_console_separator")
-        logger.info("email_console_send", recipients=recipients, subject=message.subject)
-        logger.info("email_console_body_separator")
-        logger.info("email_console_text_body")
         logger.info(
-            message.text_body[:500] + "..."
-            if len(message.text_body) > 500
-            else message.text_body
+            "email_console_send",
+            recipient_count=recipient_count,
+            subject=message.subject,
+            body_length=len(message.text_body),
         )
-        logger.info("email_console_separator")
 
         return True
 
@@ -150,6 +144,13 @@ class SMTPEmailSender(EmailSenderPort):
         self.use_tls = use_tls
         self.start_tls = start_tls
 
+    @staticmethod
+    def _get_default_from_email() -> str:
+        """Get default from email for SMTP sender."""
+        from app.config import settings
+
+        return getattr(settings, "EMAIL_FROM", f"noreply@{getattr(settings, 'APP_DOMAIN', 'localhost')}")
+
     async def send(self, message: EmailMessage) -> bool:
         """Send email via SMTP."""
         try:
@@ -161,7 +162,7 @@ class SMTPEmailSender(EmailSenderPort):
             # Build MIME message
             msg = MIMEMultipart("alternative")
             msg["Subject"] = message.subject
-            from_email = message.from_email or "noreply@example.com"
+            from_email = message.from_email or self._get_default_from_email()
             msg["From"] = (
                 f"{message.from_name} <{from_email}>"
                 if message.from_name
@@ -185,6 +186,7 @@ class SMTPEmailSender(EmailSenderPort):
                 password=self.password,
                 use_tls=self.use_tls,
                 start_tls=self.start_tls,
+                timeout=30,
             )
 
             logger.info("email_sent", recipient_count=len(message.to))
@@ -260,7 +262,7 @@ class EmailService:
         """Get default from email."""
         from app.config import settings
 
-        return getattr(settings, "EMAIL_FROM", "noreply@example.com")
+        return getattr(settings, "EMAIL_FROM", f"noreply@{getattr(settings, 'APP_DOMAIN', 'localhost')}")
 
     def _get_default_from_name(self) -> str:
         """Get default from name."""

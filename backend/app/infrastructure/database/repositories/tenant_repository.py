@@ -167,7 +167,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         stmt = select(TenantModel).where(TenantModel.is_deleted.is_(False))
 
         if is_active is not None:
-            stmt = stmt.where(TenantModel.is_active == is_active)
+            stmt = stmt.where(TenantModel.is_active.is_(is_active))
 
         stmt = stmt.offset(skip).limit(limit).order_by(TenantModel.created_at.desc())
 
@@ -183,7 +183,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         )
 
         if is_active is not None:
-            stmt = stmt.where(TenantModel.is_active == is_active)
+            stmt = stmt.where(TenantModel.is_active.is_(is_active))
 
         result = await self.session.execute(stmt)
         return result.scalar() or 0

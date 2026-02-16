@@ -85,7 +85,7 @@ class UptimeTracker:
             await client.setnx(self._key("check_count"), 0)
             await client.setnx(self._key("success_count"), 0)
 
-            logger.info("Uptime tracker initialized")
+            logger.info("uptime_tracker_initialized")
 
         except Exception as e:
             logger.warning("uptime_tracker_init_failed", error=type(e).__name__)

@@ -272,8 +272,8 @@ class ScheduledReportCreate(BaseModel):
     recipients: list[str] = Field(
         default_factory=list, max_length=100
     )  # Email addresses
-    storage_path: str | None = None  # For storage delivery
-    webhook_url: str | None = None  # For webhook delivery
+    storage_path: str | None = Field(default=None, max_length=2048)  # For storage delivery
+    webhook_url: str | None = Field(default=None, max_length=2048)  # For webhook delivery
 
     # Options
     enabled: bool = True
@@ -288,10 +288,12 @@ class ScheduledReportUpdate(BaseModel):
     frequency: ScheduleFrequency | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
-    delivery_method: str | None = None
+    delivery_method: str | None = Field(
+        default=None, pattern="^(email|storage|webhook)$"
+    )
     recipients: list[str] | None = Field(default=None, max_length=100)
-    storage_path: str | None = None
-    webhook_url: str | None = None
+    storage_path: str | None = Field(default=None, max_length=2048)
+    webhook_url: str | None = Field(default=None, max_length=2048)
     enabled: bool | None = None
     notify_on_failure: bool | None = None
 
@@ -324,12 +326,12 @@ class ScheduledReportResponse(BaseModel):
 class ScheduleExecutionHistory(BaseModel):
     """History entry for scheduled report execution."""
 
-    id: str
-    schedule_id: str
+    id: str = Field(max_length=50)
+    schedule_id: str = Field(max_length=50)
     executed_at: datetime
-    status: str  # success, failed, cancelled
+    status: str = Field(max_length=20)  # success, failed, cancelled
     duration_seconds: float
-    error_message: str | None
+    error_message: str | None = Field(default=None, max_length=2000)
     file_size_bytes: int | None
     recipients_notified: int
 

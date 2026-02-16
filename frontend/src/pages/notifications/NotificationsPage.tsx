@@ -135,7 +135,7 @@ export default function NotificationsPage() {
     setShowDeleteModal(true);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!notificationToDelete) return;
     try {
       await notificationsService.delete(notificationToDelete);
@@ -146,7 +146,7 @@ export default function NotificationsPage() {
       setShowDeleteModal(false);
       setNotificationToDelete(null);
     }
-  };
+  }, [notificationToDelete, removeNotification]);
 
   const handleMarkAllRead = async () => {
     try {

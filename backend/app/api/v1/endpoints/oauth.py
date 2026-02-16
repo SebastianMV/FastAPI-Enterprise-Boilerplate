@@ -212,8 +212,8 @@ async def callback(
     provider: str,
     session: DbSession,
     response: Response,
-    code: str = Query(..., description="Authorization code from provider"),
-    state: str = Query(..., description="State parameter for CSRF protection"),
+    code: str = Query(..., max_length=2048, description="Authorization code from provider"),
+    state: str = Query(..., max_length=2048, description="State parameter for CSRF protection"),
     error: str | None = Query(None, description="Error from provider"),
     error_description: str | None = Query(None, description="Error description"),
 ) -> OAuthTokenResponse:
@@ -340,8 +340,8 @@ async def callback(
 async def callback_redirect(
     provider: str,
     session: DbSession,
-    code: str = Query(...),
-    state: str = Query(...),
+    code: str = Query(..., max_length=2048),
+    state: str = Query(..., max_length=2048),
     error: str | None = Query(None),
     error_description: str | None = Query(None),
     frontend_url: str = Query(

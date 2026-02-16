@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 CSRF_COOKIE_NAME = "csrf_token"
 CSRF_HEADER_NAME = b"x-csrf-token"
 CSRF_TOKEN_BYTES = 32
-CSRF_COOKIE_MAX_AGE = 86400  # 24 hours
+CSRF_COOKIE_MAX_AGE: int = getattr(settings, "CSRF_COOKIE_MAX_AGE", 86400)
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 # Paths that are exempt from CSRF (e.g. login itself sets the cookie)
 EXEMPT_PATHS: set[str] = {
@@ -87,7 +87,7 @@ class CSRFMiddleware:
                 or not hmac.compare_digest(csrf_cookie, csrf_header)
             ):
                 logger.warning(
-                    "CSRF validation failed",
+                    "csrf_validation_failed",
                     path=path,
                     method=method,
                     has_cookie=bool(csrf_cookie),

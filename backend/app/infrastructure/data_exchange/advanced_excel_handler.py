@@ -81,7 +81,7 @@ try:
 
     OPENPYXL_AVAILABLE = True
 except ImportError:
-    logger.warning("openpyxl not installed. Advanced Excel features unavailable.")
+    logger.warning("openpyxl_not_installed")
 
 
 def is_advanced_excel_available() -> bool:

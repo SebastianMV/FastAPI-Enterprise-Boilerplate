@@ -19,7 +19,7 @@ import {
     Trash2,
     User as UserIcon
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -113,7 +113,7 @@ export default function ProfilePage() {
   };
 
   // Actually save the profile after confirmation
-  const handleConfirmSave = async () => {
+  const handleConfirmSave = useCallback(async () => {
     if (!pendingProfileData) return;
 
     setShowConfirmModal(false);
@@ -145,7 +145,7 @@ export default function ProfilePage() {
       setIsLoading(false);
       setPendingProfileData(null);
     }
-  };
+  }, [pendingProfileData, fetchUser, t]);
 
   // Handle avatar click
   const handleAvatarClick = () => {
@@ -207,7 +207,7 @@ export default function ProfilePage() {
   };
 
   // Handle delete avatar confirmation
-  const handleDeleteAvatar = async () => {
+  const handleDeleteAvatar = useCallback(async () => {
     setShowDeleteAvatarModal(false);
     setIsAvatarLoading(true);
     try {
@@ -229,7 +229,7 @@ export default function ProfilePage() {
     } finally {
       setIsAvatarLoading(false);
     }
-  };
+  }, [fetchUser, t]);
 
   const onPasswordSubmit = async (data: PasswordFormData) => {
     if (isPasswordLoading) return;
@@ -667,7 +667,7 @@ export default function ProfilePage() {
                 {t('profile.activeSessionsDescription')}
               </p>
               <Link
-                to="/sessions"
+                to="/security/sessions"
                 className="btn-secondary w-full inline-flex items-center justify-center"
               >
                 {t('profile.viewAllSessions')}

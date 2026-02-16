@@ -5,10 +5,13 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from app.config import settings
 from app.domain.exceptions.base import AuthenticationError
+from app.domain.ports.session_repository import SessionRepositoryPort
+from app.domain.ports.user_repository import UserRepositoryPort
 from app.infrastructure.auth.jwt_handler import (
     create_access_token,
     create_refresh_token,
@@ -41,7 +44,12 @@ class RefreshResult:
 class RefreshTokenUseCase:
     """Validate refresh token and issue a new token pair."""
 
-    def __init__(self, user_repository, session_repository, db_session) -> None:
+    def __init__(
+        self,
+        user_repository: UserRepositoryPort,
+        session_repository: SessionRepositoryPort,
+        db_session: Any,
+    ) -> None:
         self._user_repo = user_repository
         self._session_repo = session_repository
         self._db_session = db_session
@@ -80,7 +88,7 @@ class RefreshTokenUseCase:
                 # Fail-closed in production/staging
                 if settings.ENVIRONMENT in ("production", "staging"):
                     logger.warning(
-                        "Redis unavailable for token validation — fail-closed",
+                        "redis_unavailable_fail_closed",
                         exc_info=True,
                     )
                     raise AuthenticationError(
@@ -130,7 +138,7 @@ class RefreshTokenUseCase:
                 )
             except Exception:
                 logger.warning(
-                    "Failed to blacklist old refresh token JTI on rotation — session already revoked in DB",
+                    "old_refresh_token_blacklist_failed",
                     exc_info=True,
                 )
 

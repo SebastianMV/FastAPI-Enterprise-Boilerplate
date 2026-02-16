@@ -146,8 +146,11 @@ class Tenant(AuditableEntity):
         """Check if tenant can add more users based on plan limits."""
         return current_user_count < self.settings.max_users
 
-    def update_settings(self, **kwargs) -> None:
-        """Update tenant settings."""
+    def update_settings(self, **kwargs: object) -> None:
+        """Update tenant settings (only known fields, ignoring unknown keys)."""
+        from dataclasses import fields as dc_fields
+
+        valid_keys = {f.name for f in dc_fields(self.settings)}
         for key, value in kwargs.items():
-            if hasattr(self.settings, key):
+            if key in valid_keys:
                 setattr(self.settings, key, value)

@@ -1460,4 +1460,68 @@
 
 ---
 
-*Última actualización: 2026-02-14 por GitHub Copilot (Claude Opus 4.6) — Auditoría 29: 55 production fixes (27 backend + 1 production bugfix + 7 frontend), 20 test files updated, 0 regresiones*
+### Auditoría N°30 — 2026-02-15 — Exhaustive Multi-Area Scan
+
+**Alcance:** 4 sub-agent scans cubriendo application/domain (32 issues), infrastructure (27), endpoints/schemas (105), frontend (18). Total: 182 issues identificados (sev 3-6). Se corrigieron los mecánicamente aplicables sin riesgo de regresión.
+
+**Backend — Logger Format Fixes (14 archivos):**
+911. ✅ main.py: 5 logger events emoji/natural-language → snake_case (`starting_application`, `application_started`, etc.)
+912. ✅ websocket.py: 2 natural-language → snake_case (`websocket_connected`, `websocket_disconnected`)
+913. ✅ logout.py: natural-language + `%s` format → snake_case structured logging
+914. ✅ refresh.py: 2 natural-language → snake_case
+915. ✅ csrf.py: "CSRF validation failed" → `csrf_validation_failed`
+916. ✅ connection.py: 5 logger fixes + removed stderr credential leak in subprocess
+917. ✅ cache/__init__.py: 1 logger fix
+918. ✅ cache_service.py: 2 logger fixes
+919. ✅ uptime_tracker.py: 1 logger fix
+920. ✅ memory_manager.py: 1 logger fix
+921. ✅ advanced_excel_handler.py: 1 logger fix
+922. ✅ pdf_handler.py: logger fix + XSS comment marker on content_html
+923. ✅ generic_reporter.py: logger fix + Spanish string → English
+
+**Backend — SQLAlchemy Boolean Comparisons (4 archivos):**
+924. ✅ api_key_handler.py: `== True` → `.is_(True)`, `== False` → `.is_(False)`
+925. ✅ role_repository.py: `== False` → `.is_(False)`
+926. ✅ user_repository.py: 2× `== is_active` → `.is_(is_active)`
+927. ✅ tenant_repository.py: 2× `== is_active` → `.is_(is_active)`
+
+**Backend — Schema Constrained Types (3 archivos):**
+928. ✅ data_exchange.py: `ReportFilterRequest` fields + entity `Path(..., max_length=50)` on 8 endpoints + `= ...` on all dependency params
+929. ✅ dashboard.py: `StatItem`, `ActivityItem`, `SystemHealthResponse` fields got `max_length`
+930. ✅ report_templates.py: `ScheduledReportUpdate.delivery_method` pattern validation + `max_length` constraints
+
+**Backend — Path/Query Param Constraints (3 archivos):**
+931. ✅ audit_logs.py: `Path(max_length)` + `Query(max_length)` on action/resource params + `require_permission` on `list_actions`/`list_resource_types`
+932. ✅ oauth.py: `max_length=2048` on code/state params in both callbacks
+933. ✅ search.py: `value: Any` → `value: str | int | float | bool | list[str]`
+
+**Backend — Type Annotations + Port Contracts (4 archivos):**
+934. ✅ login.py: Type annotations on `__init__`, imported port types, `UserSession.parse_user_agent()` for device detection
+935. ✅ refresh.py: Type annotations, imported port types
+936. ✅ register.py: Type annotations, imported port types, name length validation (max 200 chars)
+937. ✅ tenant_repository.py (port): Added `get_default_tenant()` abstract method
+
+**Backend — Infrastructure + Service Fixes (8 archivos):**
+938. ✅ email/service.py: SMTP `timeout=30` on `aiosmtplib.send()`
+939. ✅ email/service.py: `noreply@example.com` fallback → `settings.EMAIL_FROM` / `APP_DOMAIN`-based
+940. ✅ email/service.py: `ConsoleEmailSender` PII redaction — replaced recipient/body logging with `recipient_count` + `body_length`
+941. ✅ email/service.py: `SMTPEmailSender._get_default_from_email()` static method for SMTP from-address fallback
+942. ✅ csrf.py: `CSRF_COOKIE_MAX_AGE = 86400` → `getattr(settings, "CSRF_COOKIE_MAX_AGE", 86400)` (configurable)
+943. ✅ mfa.py (entity): `BACKUP_CODE_LENGTH=8`, `BACKUP_CODE_COUNT=10` constants, `generate_backup_codes()` uses constants
+944. ✅ mfa_service.py: Import `BACKUP_CODE_LENGTH`, `len(code) == 8` → `len(code) == BACKUP_CODE_LENGTH`
+945. ✅ mfa_config_service.py: `_get_redis()` return type annotation (`-> Any`), `fromisoformat()` timezone-aware fallback, `UTC` import
+946. ✅ tenant.py (entity): `update_settings()` validates keys against `dataclass fields` (safe setattr)
+947. ✅ update_user.py: First/last name length validation (1-200 chars) with `ValidationError`
+
+**Frontend Fixes (4 archivos):**
+948. ✅ ProfilePage.tsx: `handleConfirmSave` + `handleDeleteAvatar` wrapped in `useCallback`, added `useCallback` import
+949. ✅ SettingsPage.tsx: `handleDeleteAccount` wrapped in `useCallback`, added `useCallback` import
+950. ✅ NotificationsPage.tsx: `handleDeleteConfirm` wrapped in `useCallback`
+951. ✅ useNotifications.ts: 5 raw i18n key `setError('key')` → `setError(t('key'))` + `useTranslation` import
+952. ✅ ProfilePage.tsx (prior batch): broken link `/sessions` → `/security/sessions`
+
+**Validación:** Backend 4,290/4,396 passed (1 pre-existing failure: `test_generate_api_key_prefix_extraction`). Frontend 567/568 passed (1 pre-existing OAuthCallbackPage). 0 regresiones de N°30. ✅
+
+---
+
+*Última actualización: 2026-02-15 por GitHub Copilot (Claude Opus 4.6) — Auditoría 30: 42 production fixes (37 backend + 1 frontend link + 4 frontend hooks/i18n), 0 regresiones*

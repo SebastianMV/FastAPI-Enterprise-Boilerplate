@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { notificationsService } from '../services/notificationsService';
 import type { Notification } from '../stores/notificationsStore';
 import { useNotificationsStore } from '../stores/notificationsStore';
@@ -61,6 +62,7 @@ export function useNotifications(
   options: UseNotificationsOptions = {}
 ): UseNotificationsReturn {
   const { autoFetch = true, limit = 50, pollInterval = 0 } = options;
+  const { t } = useTranslation();
 
   // ── Zustand store (single source of truth) ──
   const notifications = useNotificationsStore((s) => s.notifications);
@@ -131,11 +133,11 @@ export function useNotifications(
         storeSet(sanitized);
       }
     } catch {
-      setError('notifications.fetchError');
+      setError(t('notifications.fetchError'));
     } finally {
       setIsLoading(false);
     }
-  }, [limit, storeSet]);
+  }, [limit, storeSet, t]);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -151,27 +153,27 @@ export function useNotifications(
       await notificationsService.markAsRead(notificationId);
       storeMarkRead(notificationId);
     } catch {
-      setError('notifications.markAsReadError');
+      setError(t('notifications.markAsReadError'));
     }
-  }, [storeMarkRead]);
+  }, [storeMarkRead, t]);
 
   const markAllAsRead = useCallback(async () => {
     try {
       await notificationsService.markAllAsRead();
       storeMarkAllRead();
     } catch {
-      setError('notifications.markAllAsReadError');
+      setError(t('notifications.markAllAsReadError'));
     }
-  }, [storeMarkAllRead]);
+  }, [storeMarkAllRead, t]);
 
   const deleteNotification = useCallback(async (notificationId: string) => {
     try {
       await notificationsService.delete(notificationId);
       storeRemove(notificationId);
     } catch {
-      setError('notifications.deleteError');
+      setError(t('notifications.deleteError'));
     }
-  }, [storeRemove]);
+  }, [storeRemove, t]);
 
   const clearRead = useCallback(async () => {
     try {
@@ -181,9 +183,9 @@ export function useNotifications(
       const unreadOnly = current.filter((n) => !n.read);
       storeSet(unreadOnly);
     } catch {
-      setError('notifications.clearReadError');
+      setError(t('notifications.clearReadError'));
     }
-  }, [storeSet]);
+  }, [storeSet, t]);
 
   // ── Auto-fetch ──
   useEffect(() => {

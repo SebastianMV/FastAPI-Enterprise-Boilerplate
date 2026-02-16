@@ -163,8 +163,8 @@ async def authenticate_api_key(
     # Find keys with matching prefix
     stmt = select(APIKeyModel).where(
         APIKeyModel.prefix == prefix,
-        APIKeyModel.is_active == True,
-        APIKeyModel.is_deleted == False,
+        APIKeyModel.is_active.is_(True),
+        APIKeyModel.is_deleted.is_(False),
     )
     result = await session.execute(stmt)
     key_models = result.scalars().all()

@@ -100,11 +100,23 @@ class UpdateUserUseCase:
                     )
                 user.email = email
 
-        # 3. Update name fields (if provided)
+        # 3. Update name fields (if provided) with length validation
         if request.first_name is not None:
+            if not (1 <= len(request.first_name) <= 200):
+                raise ValidationError(
+                    message="First name must be between 1 and 200 characters",
+                    field="first_name",
+                    code="INVALID_LENGTH",
+                )
             user.first_name = request.first_name
 
         if request.last_name is not None:
+            if not (1 <= len(request.last_name) <= 200):
+                raise ValidationError(
+                    message="Last name must be between 1 and 200 characters",
+                    field="last_name",
+                    code="INVALID_LENGTH",
+                )
             user.last_name = request.last_name
 
         # 4. Update active status (if provided)

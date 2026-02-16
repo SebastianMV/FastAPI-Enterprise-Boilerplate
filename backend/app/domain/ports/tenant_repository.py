@@ -161,3 +161,13 @@ class TenantRepositoryPort(ABC):
             True if domain exists
         """
         ...
+
+    @abstractmethod
+    async def get_default_tenant(self) -> Tenant | None:
+        """
+        Get the default tenant for new user registration.
+
+        Returns:
+            Default tenant if found, None otherwise
+        """
+        ...

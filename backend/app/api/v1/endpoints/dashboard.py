@@ -37,21 +37,21 @@ router = APIRouter(tags=["Dashboard"])
 class StatItem(BaseModel):
     """Individual statistic item."""
 
-    name: str
+    name: str = Field(max_length=100)
     value: int | str
-    change: str
-    change_type: str = Field(description="positive, negative, or neutral")
+    change: str = Field(max_length=50)
+    change_type: str = Field(max_length=20, description="positive, negative, or neutral")
 
 
 class ActivityItem(BaseModel):
     """Recent activity item."""
 
-    id: str
-    action: str
-    description: str
+    id: str = Field(max_length=50)
+    action: str = Field(max_length=100)
+    description: str = Field(max_length=500)
     timestamp: datetime
-    user_name: str | None = None
-    user_email: str | None = None
+    user_name: str | None = Field(default=None, max_length=200)
+    user_email: str | None = Field(default=None, max_length=320)
 
 
 class DashboardStatsResponse(BaseModel):
@@ -78,8 +78,8 @@ class RecentActivityResponse(BaseModel):
 class SystemHealthResponse(BaseModel):
     """System health metrics."""
 
-    database_status: str
-    cache_status: str
+    database_status: str = Field(max_length=20)
+    cache_status: str = Field(max_length=20)
     avg_response_time_ms: float
     uptime_percentage: float
     active_sessions: int

@@ -9,7 +9,7 @@ Handles MFA setup, verification, and management.
 
 from uuid import UUID
 
-from app.domain.entities.mfa import MFAConfig
+from app.domain.entities.mfa import BACKUP_CODE_LENGTH, MFAConfig
 from app.infrastructure.auth.totp_handler import TOTPHandler, get_totp_handler
 
 
@@ -107,7 +107,7 @@ class MFAService:
             return True, False
 
         # Try backup code if allowed
-        if allow_backup and len(code) == 8:  # Backup codes are 8 chars
+        if allow_backup and len(code) == BACKUP_CODE_LENGTH:
             if config.use_backup_code(code):
                 return True, True
 

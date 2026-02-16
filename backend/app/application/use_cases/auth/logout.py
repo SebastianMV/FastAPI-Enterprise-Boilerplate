@@ -26,7 +26,7 @@ class LogoutUseCase:
 
     async def execute(self, request: LogoutRequest) -> None:
         if not request.token:
-            logger.warning("Logout called without token — clearing cookies only")
+            logger.warning("logout_without_token")
             return
 
         try:
@@ -74,7 +74,8 @@ class LogoutUseCase:
                             )
                 except Exception:
                     logger.warning(
-                        "Failed to blacklist refresh token for user %s", request.user_id
+                        "refresh_token_blacklist_failed",
+                        user_id=str(request.user_id),
                     )
 
         except Exception as exc:

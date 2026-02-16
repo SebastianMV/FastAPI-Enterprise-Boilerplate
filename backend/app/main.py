@@ -46,19 +46,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     from app.infrastructure.observability.logging import setup_logging
 
     setup_logging()
-    logger.info("✅ Logging configured")
+    logger.info("logging_configured")
 
     # Setup telemetry (if enabled)
     if settings.OTEL_ENABLED:
         from app.infrastructure.observability.telemetry import setup_telemetry
 
         setup_telemetry()
-        logger.info("✅ OpenTelemetry initialized")
+        logger.info("opentelemetry_initialized")
 
     # Initialize database (runs Alembic migrations automatically)
     try:
         await init_database()
-        logger.info("✅ Database initialized")
+        logger.info("database_initialized")
     except Exception as e:
         logger.error("database_init_failed", error_type=type(e).__name__)
         raise  # Fatal: do not start app without database
@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
         uptime_tracker = get_uptime_tracker()
         await uptime_tracker.initialize()
-        logger.info("✅ Uptime tracker initialized")
+        logger.info("uptime_tracker_initialized")
     except Exception as e:
         logger.warning("uptime_tracker_init_failed", error_type=type(e).__name__)
 
@@ -81,7 +81,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     await close_cache()
     await close_database()
-    logger.info("✅ All connections closed")
+    logger.info("all_connections_closed")
 
 
 app = FastAPI(

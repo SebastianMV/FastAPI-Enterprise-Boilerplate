@@ -105,12 +105,12 @@ async def authenticate_websocket(
 
         if settings.ENVIRONMENT == "production":
             logger.warning(
-                "WebSocket query-param auth REJECTED in production — use HttpOnly cookies"
+                "websocket_query_param_auth_rejected"
             )
             return None
 
         logger.warning(
-            "WebSocket auth via query param is deprecated; use HttpOnly cookies"
+            "websocket_query_param_auth_deprecated"
         )
     auth_token = cookie_token or token
 

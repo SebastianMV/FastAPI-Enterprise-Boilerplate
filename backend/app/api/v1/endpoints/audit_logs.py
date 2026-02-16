@@ -10,7 +10,7 @@ Provides read-only access to audit log entries for compliance and security monit
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status  # noqa: F811
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status  # noqa: F811
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentTenantId, CurrentUserId, require_permission
@@ -68,9 +68,9 @@ async def list_audit_logs(
     tenant_id: CurrentTenantId = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
-    action: str | None = Query(default=None, description="Filter by action type"),
+    action: str | None = Query(default=None, max_length=50, description="Filter by action type"),
     resource_type: str | None = Query(
-        default=None, description="Filter by resource type"
+        default=None, max_length=50, description="Filter by resource type"
     ),
     start_date: datetime | None = Query(
         default=None, description="Filter from this date"
@@ -215,8 +215,8 @@ async def get_recent_logins(
     description="Get audit log history for a specific resource.",
 )
 async def get_resource_history(
-    resource_type: str,
-    resource_id: str,
+    resource_type: str = Path(..., max_length=50),
+    resource_id: str = Path(..., max_length=100),
     current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
     tenant_id: CurrentTenantId = None,
     skip: int = Query(default=0, ge=0),
@@ -297,7 +297,7 @@ async def get_audit_log(
     description="Get list of all available audit action types.",
 )
 async def list_actions(
-    current_user_id: CurrentUserId,
+    current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
 ) -> list[str]:
     """Get list of available audit actions."""
     return [action.value for action in AuditAction]
@@ -310,7 +310,7 @@ async def list_actions(
     description="Get list of all available resource types.",
 )
 async def list_resource_types(
-    current_user_id: CurrentUserId,
+    current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
 ) -> list[str]:
     """Get list of available resource types."""
     return [rt.value for rt in AuditResourceType]

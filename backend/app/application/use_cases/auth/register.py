@@ -5,6 +5,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 from app.config import settings
@@ -12,6 +13,8 @@ from app.domain.entities.user import User
 from app.domain.exceptions.base import ConflictError, ValidationError
 from app.domain.value_objects.email import Email
 from app.domain.value_objects.password import Password
+from app.domain.ports.tenant_repository import TenantRepositoryPort
+from app.domain.ports.user_repository import UserRepositoryPort
 from app.infrastructure.auth.jwt_handler import (
     create_access_token,
     create_refresh_token,
@@ -47,7 +50,12 @@ class RegisterResult:
 class RegisterUseCase:
     """Create a new user, optionally send verification email, issue tokens."""
 
-    def __init__(self, user_repository, tenant_repository, db_session) -> None:
+    def __init__(
+        self,
+        user_repository: UserRepositoryPort,
+        tenant_repository: TenantRepositoryPort,
+        db_session: Any,
+    ) -> None:
         self._user_repo = user_repository
         self._tenant_repo = tenant_repository
         self._db_session = db_session
@@ -72,6 +80,20 @@ class RegisterUseCase:
                 code="WEAK_PASSWORD",
                 field="password",
             ) from None
+
+        # Name length validation
+        if request.first_name and len(request.first_name) > 200:
+            raise ValidationError(
+                message="First name must not exceed 200 characters",
+                code="INVALID_LENGTH",
+                field="first_name",
+            )
+        if request.last_name and len(request.last_name) > 200:
+            raise ValidationError(
+                message="Last name must not exceed 200 characters",
+                code="INVALID_LENGTH",
+                field="last_name",
+            )
 
         # Uniqueness check
         existing = await self._user_repo.get_by_email(request.email)

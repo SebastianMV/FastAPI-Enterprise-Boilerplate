@@ -118,7 +118,7 @@ class MemoryWebSocketManager(WebSocketPort):
             # Enforce per-user connection limit
             user_conns = self._user_connections.get(user_id, set())
             if len(user_conns) >= self.MAX_CONNECTIONS_PER_USER:
-                logger.warning("WebSocket per-user connection limit reached for user")
+                logger.warning("websocket_per_user_limit_reached")
                 await websocket.close(code=1008)  # Policy Violation
                 return None
 

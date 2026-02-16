@@ -13,6 +13,10 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 
+BACKUP_CODE_LENGTH = 8  # Length of each backup code (hex chars)
+BACKUP_CODE_COUNT = 10  # Default number of backup codes generated
+
+
 @dataclass
 class MFAConfig:
     """
@@ -42,13 +46,14 @@ class MFAConfig:
     last_used_at: datetime | None = None
 
     @staticmethod
-    def generate_backup_codes(count: int = 10) -> list[str]:
+    def generate_backup_codes(count: int = BACKUP_CODE_COUNT) -> list[str]:
         """
         Generate a list of backup codes.
 
-        Each backup code is a random 8-character alphanumeric string.
-        These can be used as one-time passwords if the user loses
-        access to their authenticator app.
+        Each backup code is a random alphanumeric string of
+        ``BACKUP_CODE_LENGTH`` characters.  These can be used as
+        one-time passwords if the user loses access to their
+        authenticator app.
 
         Args:
             count: Number of backup codes to generate
@@ -58,8 +63,7 @@ class MFAConfig:
         """
         codes = []
         for _ in range(count):
-            # Generate 8 random characters (letters and digits)
-            code = secrets.token_hex(4).upper()  # 8 hex characters
+            code = secrets.token_hex(BACKUP_CODE_LENGTH // 2).upper()
             codes.append(code)
         return codes
 
