@@ -316,13 +316,17 @@ class TestAuthVerifyEmailIntegration:
         self, db_session: AsyncSession, test_user
     ):
         """Test verify_email with expired token in real database (line 936)."""
+        import hashlib
+
         from fastapi import HTTPException
 
         from app.api.v1.endpoints.auth import verify_email
+        from app.api.v1.schemas.auth import VerifyEmailTokenRequest
 
         # Set an expired verification token on the user
         expired_time = datetime.now(UTC) - timedelta(hours=48)
-        test_user.email_verification_token = "expired_test_token"
+        raw_token = "expired_test_token"
+        test_user.email_verification_token = hashlib.sha256(raw_token.encode()).hexdigest()
         test_user.email_verification_sent_at = expired_time
         await db_session.flush()
 
@@ -330,7 +334,7 @@ class TestAuthVerifyEmailIntegration:
         # Note: The verify_email function finds the user by token first
         with pytest.raises(HTTPException) as exc:
             await verify_email(
-                token="expired_test_token",
+                request=VerifyEmailTokenRequest(token=raw_token),
                 session=db_session,
             )
 
@@ -344,11 +348,12 @@ class TestAuthVerifyEmailIntegration:
         from fastapi import HTTPException
 
         from app.api.v1.endpoints.auth import verify_email
+        from app.api.v1.schemas.auth import VerifyEmailTokenRequest
 
         # Try to verify with a token that doesn't exist
         with pytest.raises(HTTPException) as exc:
             await verify_email(
-                token="nonexistent_token_12345",
+                request=VerifyEmailTokenRequest(token="nonexistent_token_12345"),
                 session=db_session,
             )
 

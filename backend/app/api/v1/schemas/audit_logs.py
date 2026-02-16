@@ -9,15 +9,24 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.api.v1.schemas.common import NameStr, ShortStr, TextStr
+from app.api.v1.schemas.common import ShortStr
 
 # Keys that must never appear in audit log value diffs
-_SENSITIVE_KEYS = frozenset({
-    "password", "password_hash", "hashed_password",
-    "secret", "access_token", "refresh_token",
-    "token", "key_hash", "client_secret",
-    "backup_codes", "code_verifier",
-})
+_SENSITIVE_KEYS = frozenset(
+    {
+        "password",
+        "password_hash",
+        "hashed_password",
+        "secret",
+        "access_token",
+        "refresh_token",
+        "token",
+        "key_hash",
+        "client_secret",
+        "backup_codes",
+        "code_verifier",
+    }
+)
 
 
 def _strip_sensitive(data: dict[str, Any] | None) -> dict[str, Any] | None:

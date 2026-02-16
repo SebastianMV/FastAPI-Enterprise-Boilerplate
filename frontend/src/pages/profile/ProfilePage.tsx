@@ -325,7 +325,7 @@ export default function ProfilePage() {
               {user?.avatar_url && isSafeImageUrl(user.avatar_url) ? (
                 <img
                   src={user.avatar_url}
-                  alt={t('profile.avatarAlt')}
+                  alt={t("profile.avatarAlt")}
                   className="w-20 h-20 rounded-full object-cover"
                 />
               ) : (

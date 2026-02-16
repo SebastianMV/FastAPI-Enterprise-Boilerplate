@@ -703,9 +703,10 @@ class TestVerifyEmailEndpoint:
         """Test successful email verification."""
         verification_token = user_with_verification_token._verification_token
 
-        # Verify email (POST with query param)
+        # Verify email (POST with request body)
         response = await auth_client.post(
-            f"/api/v1/auth/verify-email?token={verification_token}",
+            "/api/v1/auth/verify-email",
+            json={"token": verification_token},
         )
 
         # Endpoint should return success
@@ -718,7 +719,8 @@ class TestVerifyEmailEndpoint:
     async def test_verify_email_invalid_token(self, auth_client):
         """Test email verification with invalid token."""
         response = await auth_client.post(
-            "/api/v1/auth/verify-email?token=invalid_token_here",
+            "/api/v1/auth/verify-email",
+            json={"token": "invalid_token_here"},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
