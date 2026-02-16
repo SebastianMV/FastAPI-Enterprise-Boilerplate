@@ -79,7 +79,7 @@ export default function SettingsPage() {
     deleteAccountMutation.mutate();
   }, [deleteAccountMutation]);
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+  const handleThemeChange = useCallback((newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
     setAlertModal({
       isOpen: true,
@@ -87,9 +87,9 @@ export default function SettingsPage() {
       message: t('settings.themeChangedTo', { theme: newTheme }),
       variant: 'success',
     });
-  };
+  }, [setTheme, t]);
 
-  const handleNotificationToggle = () => {
+  const handleNotificationToggle = useCallback(() => {
     const newValue = !notificationsEnabled;
     setNotificationsEnabled(newValue);
     localStorage.setItem('notificationsEnabled', String(newValue));
@@ -99,9 +99,9 @@ export default function SettingsPage() {
       message: t('settings.notificationsToggled', { status: newValue ? t('settings.enabled').toLowerCase() : t('settings.disabled').toLowerCase() }),
       variant: 'success',
     });
-  };
+  }, [notificationsEnabled, t]);
 
-  const handleLanguageChange = (newLanguage: string) => {
+  const handleLanguageChange = useCallback((newLanguage: string) => {
     i18n.changeLanguage(newLanguage);
     localStorage.setItem('i18nextLng', newLanguage);
     const langName = SUPPORTED_LANGUAGES.find(l => l.code === newLanguage)?.name || newLanguage;
@@ -115,9 +115,9 @@ export default function SettingsPage() {
         variant: 'success',
       });
     }, 100);
-  };
+  }, [i18n, t]);
 
-  const handleTimezoneChange = (newTimezone: string) => {
+  const handleTimezoneChange = useCallback((newTimezone: string) => {
     setTimezone(newTimezone);
     localStorage.setItem('timezone', newTimezone);
     setAlertModal({
@@ -126,7 +126,7 @@ export default function SettingsPage() {
       message: t('settings.timezoneChangedTo', { timezone: newTimezone }),
       variant: 'success',
     });
-  };
+  }, [t]);
 
   return (
     <div className="space-y-6">

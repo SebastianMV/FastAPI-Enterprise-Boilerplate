@@ -11,6 +11,9 @@ from uuid import UUID
 
 from app.domain.entities.mfa import BACKUP_CODE_LENGTH, MFAConfig
 from app.infrastructure.auth.totp_handler import TOTPHandler, get_totp_handler
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class MFAService:

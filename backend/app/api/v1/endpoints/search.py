@@ -5,10 +5,10 @@
 Full-Text Search API endpoints.
 """
 
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import DataError, ProgrammingError
 
@@ -112,7 +112,7 @@ class SearchRequest(BaseModel):
 
     query: str = Field(..., min_length=1, max_length=500, description="Search query")
     index: str = Field(
-        ..., description="Search index: users, posts, messages, documents, audit_logs"
+        ..., max_length=50, description="Search index: users, posts, messages, documents, audit_logs"
     )
     filters: list[SearchFilterRequest] = Field(default_factory=list, max_length=20)
     sort: list[SearchSortRequest] = Field(default_factory=list, max_length=5)
@@ -125,11 +125,11 @@ class SearchRequest(BaseModel):
 class SearchHitResponse(BaseModel):
     """Individual search result."""
 
-    id: str
+    id: str = Field(max_length=50)
     score: float
     source: dict[str, Any]
     highlights: dict[str, list[str]] = Field(default_factory=dict)
-    matched_fields: list[str] = Field(default_factory=list)
+    matched_fields: list[Annotated[str, Field(max_length=100)]] = Field(default_factory=list)
 
 
 class SearchResponse(BaseModel):
@@ -144,20 +144,20 @@ class SearchResponse(BaseModel):
     has_previous: bool
     took_ms: float
     max_score: float | None = None
-    suggestions: list[str] = Field(default_factory=list)
+    suggestions: list[Annotated[str, Field(max_length=500)]] = Field(default_factory=list)
 
 
 class SuggestResponse(BaseModel):
     """Search suggestions response."""
 
-    suggestions: list[str]
+    suggestions: list[Annotated[str, Field(max_length=500)]]
 
 
 class HealthResponse(BaseModel):
     """Search health status."""
 
-    status: str
-    backend: str
+    status: str = Field(max_length=20)
+    backend: str = Field(max_length=50)
     details: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -437,7 +437,8 @@ async def list_indices(
     description="Create a search index (admin only).",
 )
 async def create_index(
-    index: str,
+    index: str = Path(..., max_length=50),
+    *,
     session: DbSession,
     superuser_id: SuperuserId,
 ) -> dict[str, Any]:
@@ -480,7 +481,8 @@ async def create_index(
     description="Reindex all documents in an index (admin only).",
 )
 async def reindex(
-    index: str,
+    index: str = Path(..., max_length=50),
+    *,
     session: DbSession,
     superuser_id: SuperuserId,
     tenant_id: CurrentTenantId = None,
@@ -524,7 +526,8 @@ async def reindex(
     description="Delete a search index (admin only).",
 )
 async def delete_index(
-    index: str,
+    index: str = Path(..., max_length=50),
+    *,
     session: DbSession,
     superuser_id: SuperuserId,
 ) -> None:

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -160,10 +160,10 @@ export default function SearchPage() {
     setSearchParams(params, { replace: true });
   }, [query, filters.index, page, setSearchParams]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-  };
+  }, []);
 
   const getResultIcon = (source: Record<string, unknown>) => {
     if ('email' in source) return <User className="w-5 h-5" />;
@@ -203,7 +203,7 @@ export default function SearchPage() {
     return '';
   };
 
-  const handleResultClick = (hit: { id: string; source: Record<string, unknown> }) => {
+  const handleResultClick = useCallback((hit: { id: string; source: Record<string, unknown> }) => {
     if ('email' in hit.source) {
       navigate(`/users/${encodeURIComponent(hit.id)}`);
     } else if ('action' in hit.source && 'actor_id' in hit.source) {
@@ -212,7 +212,7 @@ export default function SearchPage() {
     } else {
       navigate(`/documents/${encodeURIComponent(hit.id)}`);
     }
-  };
+  }, [navigate]);
 
   const indexTabs: { id: SearchIndex; label: string; icon: React.ReactNode }[] = [
     { id: 'all', label: t('search.indexes.all'), icon: <Search className="w-4 h-4" /> },

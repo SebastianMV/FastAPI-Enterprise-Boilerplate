@@ -54,9 +54,9 @@ DataWriter = Annotated[UUID, Depends(require_permission("data", "write"))]
 class EntityFieldResponse(BaseModel):
     """Field information for an entity."""
 
-    name: str
-    display_name: str
-    field_type: str
+    name: str = Field(max_length=100)
+    display_name: str = Field(max_length=200)
+    field_type: str = Field(max_length=50)
     required: bool
     exportable: bool
     importable: bool
@@ -65,8 +65,8 @@ class EntityFieldResponse(BaseModel):
 class EntityResponse(BaseModel):
     """Entity information for data exchange."""
 
-    name: str
-    display_name: str
+    name: str = Field(max_length=100)
+    display_name: str = Field(max_length=200)
     exportable: bool
     importable: bool
     fields: list[EntityFieldResponse]

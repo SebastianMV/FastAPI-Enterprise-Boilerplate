@@ -48,12 +48,13 @@ class AuditLogRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_id(self, audit_id: UUID) -> AuditLog | None:
+    async def get_by_id(self, audit_id: UUID, tenant_id: UUID | None = None) -> AuditLog | None:
         """
-        Retrieve an audit log entry by ID.
+        Retrieve an audit log entry by ID, optionally scoped to tenant.
 
         Args:
             audit_id: The unique identifier of the audit log
+            tenant_id: Optional tenant ID for access control
 
         Returns:
             The audit log entry or None if not found

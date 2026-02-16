@@ -165,13 +165,17 @@ class CachedTenantRepository:
         """Count tenants (not cached - admin operation)."""
         return await self._repo.count(is_active=is_active)
 
-    async def slug_exists(self, slug: str) -> bool:
+    async def slug_exists(self, slug: str, exclude_id: UUID | None = None) -> bool:
         """Check if slug exists (not cached)."""
-        return await self._repo.slug_exists(slug)
+        return await self._repo.slug_exists(slug, exclude_id=exclude_id)
 
-    async def domain_exists(self, domain: str) -> bool:
+    async def domain_exists(self, domain: str, exclude_id: UUID | None = None) -> bool:
         """Check if domain exists (not cached)."""
-        return await self._repo.domain_exists(domain)
+        return await self._repo.domain_exists(domain, exclude_id=exclude_id)
+
+    async def get_default_tenant(self) -> Tenant | None:
+        """Get the default tenant (delegates to base repo)."""
+        return await self._repo.get_default_tenant()
 
     async def _invalidate_tenant_cache(self, tenant: Tenant) -> None:
         """Invalidate all cache entries for a tenant."""

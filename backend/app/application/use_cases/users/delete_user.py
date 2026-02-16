@@ -1,4 +1,4 @@
-# Copyright (c) 2025-2026 Sebastián Muñoz
+# Copyright (c) 2025-2026 Sebastian Munoz
 # Licensed under the MIT License
 
 """

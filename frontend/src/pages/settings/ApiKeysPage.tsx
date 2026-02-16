@@ -136,7 +136,7 @@ export default function ApiKeysPage() {
     }
   };
 
-  const handleRevokeKey = async (keyId: string) => {
+  const handleRevokeKey = useCallback(async (keyId: string) => {
     setDeletingKeyId(keyId);
     try {
       await apiKeysService.revoke(keyId);
@@ -160,7 +160,13 @@ export default function ApiKeysPage() {
     } finally {
       setDeletingKeyId(null);
     }
-  };
+  }, [t, fetchApiKeys]);
+
+  const handleRevokeConfirm = useCallback(() => {
+    if (keyToRevoke) {
+      handleRevokeKey(keyToRevoke.id);
+    }
+  }, [keyToRevoke, handleRevokeKey]);
 
   const handleRevokeClick = (key: ApiKey) => {
     setKeyToRevoke(key);
@@ -617,7 +623,7 @@ export default function ApiKeysPage() {
           setShowRevokeModal(false);
           setKeyToRevoke(null);
         }}
-        onConfirm={() => keyToRevoke && handleRevokeKey(keyToRevoke.id)}
+        onConfirm={handleRevokeConfirm}
         title={t('apiKeys.revokeTitle')}
         message={t('apiKeys.revokeMessage', { name: keyToRevoke?.name })}
         confirmText={t('apiKeys.revokeConfirm')}

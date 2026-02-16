@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import CurrentTenantId, CurrentUser, require_permission
@@ -163,16 +163,16 @@ class ReportTemplateCreate(BaseModel):
     # Report configuration
     title: str = Field(..., min_length=1, max_length=200)
     format: str = Field(default="pdf", pattern="^(pdf|excel|csv|html)$")
-    columns: list[str] | None = None
+    columns: list[Annotated[str, Field(max_length=100)]] | None = None
     filters: list[ReportFilterSchema] = Field(
         default_factory=lambda: list[ReportFilterSchema]()
     )
-    group_by: list[str] | None = None
-    sort_by: str | None = None
+    group_by: list[Annotated[str, Field(max_length=100)]] | None = None
+    sort_by: str | None = Field(default=None, max_length=100)
     include_summary: bool = True
 
     # Date range configuration
-    date_range_field: str | None = None
+    date_range_field: str | None = Field(default=None, max_length=100)
     date_range_type: str | None = Field(
         default=None,
         pattern="^(today|yesterday|this_week|last_week|this_month|last_month|this_quarter|this_year|custom)$",
@@ -186,7 +186,7 @@ class ReportTemplateCreate(BaseModel):
 
     # Metadata
     is_public: bool = False
-    tags: list[str] = Field(default_factory=list, max_length=50)
+    tags: list[Annotated[str, Field(max_length=100)]] = Field(default_factory=list, max_length=50)
 
 
 class ReportTemplateUpdate(BaseModel):
@@ -196,9 +196,9 @@ class ReportTemplateUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     title: str | None = Field(None, min_length=1, max_length=200)
     format: str | None = Field(None, pattern="^(pdf|excel|csv|html)$")
-    columns: list[str] | None = None
+    columns: list[Annotated[str, Field(max_length=100)]] | None = None
     filters: list[ReportFilterSchema] | None = None
-    group_by: list[str] | None = None
+    group_by: list[Annotated[str, Field(max_length=100)]] | None = None
     sort_by: str | None = Field(default=None, max_length=100)
     include_summary: bool | None = None
     date_range_field: str | None = Field(default=None, max_length=100)
@@ -211,35 +211,35 @@ class ReportTemplateUpdate(BaseModel):
     include_charts: bool | None = None
     watermark: str | None = Field(default=None, max_length=200)
     is_public: bool | None = None
-    tags: list[str] | None = Field(default=None, max_length=50)
+    tags: list[Annotated[str, Field(max_length=100)]] | None = Field(default=None, max_length=50)
 
 
 class ReportTemplateResponse(BaseModel):
     """Response for a report template."""
 
-    id: str
-    name: str
-    description: str | None
-    entity: str
-    title: str
-    format: str
-    columns: list[str] | None
+    id: str = Field(max_length=50)
+    name: str = Field(max_length=100)
+    description: str | None = Field(default=None, max_length=2000)
+    entity: str = Field(max_length=50)
+    title: str = Field(max_length=200)
+    format: str = Field(max_length=10)
+    columns: list[Annotated[str, Field(max_length=100)]] | None = None
     filters: list[ReportFilterSchema]
-    group_by: list[str] | None
-    sort_by: str | None
+    group_by: list[Annotated[str, Field(max_length=100)]] | None = None
+    sort_by: str | None = Field(default=None, max_length=100)
     include_summary: bool
-    date_range_field: str | None
-    date_range_type: str | None
-    page_orientation: str | None
-    page_size: str | None
+    date_range_field: str | None = Field(default=None, max_length=100)
+    date_range_type: str | None = Field(default=None, max_length=20)
+    page_orientation: str | None = Field(default=None, max_length=10)
+    page_size: str | None = Field(default=None, max_length=10)
     include_charts: bool
-    watermark: str | None
+    watermark: str | None = Field(default=None, max_length=200)
     is_public: bool
-    tags: list[str]
-    created_by: str
+    tags: list[Annotated[str, Field(max_length=100)]]
+    created_by: str = Field(max_length=50)
     created_at: datetime
     updated_at: datetime
-    tenant_id: str | None
+    tenant_id: str | None = Field(default=None, max_length=50)
 
 
 class ScheduleFrequency(BaseModel):
@@ -269,7 +269,7 @@ class ScheduledReportCreate(BaseModel):
 
     # Delivery options
     delivery_method: str = Field(default="email", pattern="^(email|storage|webhook)$")
-    recipients: list[str] = Field(
+    recipients: list[Annotated[str, Field(max_length=320)]] = Field(
         default_factory=list, max_length=100
     )  # Email addresses
     storage_path: str | None = Field(default=None, max_length=2048)  # For storage delivery
@@ -291,7 +291,7 @@ class ScheduledReportUpdate(BaseModel):
     delivery_method: str | None = Field(
         default=None, pattern="^(email|storage|webhook)$"
     )
-    recipients: list[str] | None = Field(default=None, max_length=100)
+    recipients: list[Annotated[str, Field(max_length=320)]] | None = Field(default=None, max_length=100)
     storage_path: str | None = Field(default=None, max_length=2048)
     webhook_url: str | None = Field(default=None, max_length=2048)
     enabled: bool | None = None
@@ -301,25 +301,25 @@ class ScheduledReportUpdate(BaseModel):
 class ScheduledReportResponse(BaseModel):
     """Response for a scheduled report."""
 
-    id: str
-    template_id: str
-    template_name: str
-    name: str
-    description: str | None
+    id: str = Field(max_length=50)
+    template_id: str = Field(max_length=50)
+    template_name: str = Field(max_length=100)
+    name: str = Field(max_length=100)
+    description: str | None = Field(default=None, max_length=2000)
     frequency: ScheduleFrequency
     start_date: datetime | None
     end_date: datetime | None
-    delivery_method: str
-    recipients: list[str]
-    storage_path: str | None
-    webhook_url: str | None
+    delivery_method: str = Field(max_length=20)
+    recipients: list[Annotated[str, Field(max_length=320)]]
+    storage_path: str | None = Field(default=None, max_length=2048)
+    webhook_url: str | None = Field(default=None, max_length=2048)
     enabled: bool
     notify_on_failure: bool
     last_run: datetime | None
     next_run: datetime | None
     run_count: int
     error_count: int
-    created_by: str
+    created_by: str = Field(max_length=50)
     created_at: datetime
 
 
@@ -471,7 +471,8 @@ async def list_templates(
     description="Get a specific report template by ID.",
 )
 async def get_template(
-    template_id: str,
+    template_id: str = Path(..., max_length=50),
+    *,
     current_user: CurrentUser,
     current_user_id: ReportsReader,
     tenant_id: CurrentTenantId = None,
@@ -519,7 +520,8 @@ async def get_template(
     description="Update an existing report template.",
 )
 async def update_template(
-    template_id: str,
+    template_id: str = Path(..., max_length=50),
+    *,
     request: ReportTemplateUpdate,
     current_user: CurrentUser,
     current_user_id: ReportsWriter,
@@ -597,7 +599,8 @@ async def update_template(
     description="Delete a report template.",
 )
 async def delete_template(
-    template_id: str,
+    template_id: str = Path(..., max_length=50),
+    *,
     current_user: CurrentUser,
     current_user_id: ReportsWriter,
     tenant_id: CurrentTenantId = None,
@@ -666,7 +669,8 @@ async def delete_template(
     description="Create a copy of an existing report template.",
 )
 async def duplicate_template(
-    template_id: str,
+    template_id: str = Path(..., max_length=50),
+    *,
     current_user: CurrentUser,
     current_user_id: ReportsWriter,
     tenant_id: CurrentTenantId = None,
@@ -741,7 +745,8 @@ async def duplicate_template(
     description="Create a scheduled report from a template.",
 )
 async def create_schedule(
-    template_id: str,
+    template_id: str = Path(..., max_length=50),
+    *,
     request: ScheduledReportCreate,
     current_user: CurrentUser,
     current_user_id: ReportsWriter,

@@ -18,7 +18,7 @@ import {
     UserPlus,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -201,10 +201,10 @@ export default function UsersPage() {
     updateMutation.mutate({ id: selectedUser.id, data });
   };
 
-  const onDeleteConfirm = () => {
+  const onDeleteConfirm = useCallback(() => {
     if (!selectedUser) return;
     deleteMutation.mutate(selectedUser.id);
-  };
+  }, [selectedUser, deleteMutation]);
 
   const users = data?.items || [];
   const filteredUsers = users.filter(

@@ -96,7 +96,7 @@ export default function ConnectedAccounts() {
     return () => { cancelled = true; };
   }, [fetchConnections]);
 
-  const handleConnect = async (provider: string) => {
+  const handleConnect = useCallback(async (provider: string) => {
     try {
       setActionLoading(provider);
       setError(null);
@@ -106,14 +106,14 @@ export default function ConnectedAccounts() {
       setError(t('profile.connectError'));
       setActionLoading(null);
     }
-  };
+  }, [t]);
 
-  const handleDisconnect = async (provider: string) => {
+  const handleDisconnect = useCallback(async (provider: string) => {
     try {
       setActionLoading(provider);
       setError(null);
       await oauthService.disconnect(provider);
-      setConnections(connections.filter(c => c.provider !== provider));
+      setConnections(prev => prev.filter(c => c.provider !== provider));
       setSuccess(t('profile.disconnectSuccess', { provider: provider.charAt(0).toUpperCase() + provider.slice(1) }));
       setTimeout(() => setSuccess(null), 3000);
     } catch {
@@ -123,7 +123,13 @@ export default function ConnectedAccounts() {
       setShowDisconnectModal(false);
       setProviderToDisconnect(null);
     }
-  };
+  }, [t]);
+
+  const handleDisconnectConfirm = useCallback(() => {
+    if (providerToDisconnect) {
+      handleDisconnect(providerToDisconnect);
+    }
+  }, [providerToDisconnect, handleDisconnect]);
 
   const isConnected = (providerId: string) => {
     return connections.some(c => c.provider === providerId);
@@ -259,11 +265,7 @@ export default function ConnectedAccounts() {
           setShowDisconnectModal(false);
           setProviderToDisconnect(null);
         }}
-        onConfirm={() => {
-          if (providerToDisconnect) {
-            handleDisconnect(providerToDisconnect);
-          }
-        }}
+        onConfirm={handleDisconnectConfirm}
         title={t('profile.disconnect')}
         message={t('profile.confirmDisconnect', {
           provider: providerToDisconnect

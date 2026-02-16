@@ -1524,4 +1524,68 @@
 
 ---
 
-*Última actualización: 2026-02-15 por GitHub Copilot (Claude Opus 4.6) — Auditoría 30: 42 production fixes (37 backend + 1 frontend link + 4 frontend hooks/i18n), 0 regresiones*
+### Auditoría N°31 — 2026-02-16: Exhaustive Sev 3-10 Scan & Fix (75+ fixes across 21 files)
+
+**Alcance:** Comprehensive scan of entire project (4 parallel subagents) followed by systematic fix of all identified issues sev 3-10.
+
+#### Backend — SEV 7: Tenant Repository Hardening
+953. ✅ tenant_repository.py: `update()` now filters `TenantModel.is_deleted.is_(False)` — prevents updating soft-deleted tenants
+954. ✅ tenant_repository.py: `delete()` converted from hard-delete to soft-delete (sets `is_deleted=True`, `deleted_at`, `is_active=False`)
+955. ✅ tenant_repository.py: `ValueError` → `EntityNotFoundError` for not-found cases (proper domain exception)
+956. ✅ tenant_repository.py: All `self.session` → `self._session` (15+ occurrences) — encapsulation
+957. ✅ cached_tenant_repository.py: `slug_exists`/`domain_exists` now pass `exclude_id` parameter through to inner repo
+958. ✅ cached_tenant_repository.py: Added `get_default_tenant()` delegation method
+
+#### Backend — SEV 7: Path/Query Parameter max_length Constraints
+959. ✅ oauth.py: `provider` param on 5 endpoints → `Path(..., max_length=50)` with `*,` separator
+960. ✅ oauth.py: `error` Query → `max_length=200`, `error_description` → `max_length=2000`, `scope` → `max_length=1000`
+961. ✅ oauth.py: `SSOConfigRequest.scopes` inner items → `Annotated[str, Field(max_length=100)]`, `allowed_domains` → `max_length=253`
+962. ✅ oauth.py: `SSOConfigResponse.allowed_domains` inner items constrained to `max_length=253`
+963. ✅ search.py: `index` param on 3 admin endpoints → `Path(..., max_length=50)` with `*,`
+964. ✅ search.py: `SearchRequest.index` → `max_length=50`
+965. ✅ report_templates.py: `template_id` on 5 endpoints → `Path(..., max_length=50)` with `*,`
+
+#### Backend — SEV 5-6: Response Model Bare `str` Constraints
+966. ✅ search.py: `SearchHitResponse.id`(50), `matched_fields` inner(100), `HealthResponse.status`(20)/`backend`(50), `SuggestResponse.suggestions` inner(500), `SearchResponse.suggestions` inner(500)
+967. ✅ report_templates.py: `ReportTemplateResponse` — 15+ bare str fields constrained (id=50, name=100, description=2000, entity/format/page_size/page_orientation=50, sort_by/date_range_field=100, watermark=200, created_by/tenant_id=50)
+968. ✅ report_templates.py: `ScheduledReportResponse` — 8+ fields constrained (id=50, template_id=50, report_name=200, frequency=20, output_format=10, delivery_method=20, created_by=50, tenant_id=50)
+969. ✅ report_templates.py: Inner list items constrained — columns/group_by/tags/recipients `max_length=100`
+970. ✅ report_templates.py: Create/Update schemas — `sort_by`/`date_range_field` → `max_length=100`
+971. ✅ data_exchange.py: `EntityFieldResponse`(name=50, display_name=100, field_type=30), `EntityResponse`(name=50, display_name=100)
+972. ✅ bulk.py: `BulkOperationSummary.operation`(50), `message`(500)
+
+#### Backend — SEV 5-6: SQLAlchemy Boolean Comparisons
+973. ✅ notification_service.py: 11× `== False`/`== True` → `.is_(False)`/`.is_(True)` across 7 methods
+974. ✅ oauth_service.py: 4× boolean fixes across `get_user_connections`, `get_sso_config`, `_check_allowed_domains`, `_get_oauth_connection`
+
+#### Backend — SEV 5: Misc Security & Correctness
+975. ✅ audit_log_repository.py + port: `get_by_id` now accepts optional `tenant_id: UUID | None = None` for tenant-scoped access
+976. ✅ session_repository.py: `update_activity` now filters `is_revoked.is_(False)` — prevents updating revoked sessions
+977. ✅ tenant.py (domain entity): `TenantSettings.from_dict()` — hex color validation for `primary_color` (regex + fallback), `password_min_length` capped at 128
+
+#### Backend — SEV 4: Config & Logging
+978. ✅ websocket.py: `token` Query param → `max_length=2048`
+
+#### Frontend — useCallback Wrapping (15 handlers across 8 files)
+979. ✅ TenantsPage.tsx: `handleDelete` → `useCallback`, added `useCallback` import
+980. ✅ TenantsPage.tsx: `toggleTenantStatus` → `useCallback`
+981. ✅ RolesPage.tsx: `handleDelete` → `useCallback`, added `useCallback` import
+982. ✅ UsersPage.tsx: `onDeleteConfirm` → `useCallback`, added `useCallback` import
+983. ✅ ApiKeysPage.tsx: `handleRevokeKey` → `useCallback`, extracted `handleRevokeConfirm` for ConfirmModal
+984. ✅ ConnectedAccounts.tsx: `handleConnect` → `useCallback`
+985. ✅ ConnectedAccounts.tsx: `handleDisconnect` → `useCallback`, extracted `handleDisconnectConfirm` for ConfirmModal
+986. ✅ ConnectedAccounts.tsx: `setConnections(connections.filter(...))` → `setConnections(prev => prev.filter(...))` (functional updater)
+987. ✅ SearchPage.tsx: `handleSearch` + `handleResultClick` → `useCallback`, added `useCallback` import
+988. ✅ SettingsPage.tsx: `handleThemeChange`, `handleNotificationToggle`, `handleLanguageChange`, `handleTimezoneChange` → `useCallback`
+989. ✅ NotificationsPage.tsx: `handleDeleteClick` + `handleMarkAllRead` → `useCallback`
+
+#### Test Fixes (aligned with code changes)
+990. ✅ test_tenant_repository.py: `repo.session` → `repo._session` assertion (matches encapsulation rename)
+991. ✅ test_tenant_repository.py: `pytest.raises(ValueError)` → `pytest.raises(EntityNotFoundError)` + import
+992. ✅ test_tenant_repository.py: `test_delete_success` updated from hard-delete assertions to soft-delete (is_deleted, is_active, deleted_at)
+
+**Validación:** Backend 4,291 passed / 105 skipped / 0 failed. Frontend 567/568 passed (1 pre-existing OAuthCallbackPage). 0 regresiones de N°31. ✅
+
+---
+
+*Última actualización: 2026-02-16 por GitHub Copilot (Claude Opus 4.6) — Auditoría 31: 40 production fixes across 21 files (13 backend + 8 frontend), 0 regresiones*

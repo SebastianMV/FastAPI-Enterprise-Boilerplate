@@ -22,7 +22,7 @@ import {
     Users,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -264,11 +264,11 @@ export default function TenantsPage() {
   };
 
   // Handle delete
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (selectedTenant) {
       deleteMutation.mutate(selectedTenant.id);
     }
-  };
+  }, [selectedTenant, deleteMutation]);
 
   // Open edit modal
   const openEditModal = (tenant: Tenant) => {
@@ -287,13 +287,13 @@ export default function TenantsPage() {
   };
 
   // Toggle tenant status
-  const toggleTenantStatus = (tenant: Tenant) => {
+  const toggleTenantStatus = useCallback((tenant: Tenant) => {
     if (tenant.is_active) {
       deactivateMutation.mutate(tenant.id);
     } else {
       activateMutation.mutate(tenant.id);
     }
-  };
+  }, [activateMutation, deactivateMutation]);
 
   // Check if user is superuser (after all hooks)
   if (!user?.is_superuser) {

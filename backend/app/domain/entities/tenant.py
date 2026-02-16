@@ -54,6 +54,19 @@ class TenantSettings:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "TenantSettings":
         """Create from dictionary with validated ranges."""
+        import re
+
+        raw_color = data.get("primary_color", "#3B82F6")
+        # Validate hex color format
+        if not isinstance(raw_color, str) or not re.match(
+            r"^#[0-9A-Fa-f]{6}$", raw_color
+        ):
+            raw_color = "#3B82F6"
+
+        raw_pw_min = max(int(data.get("password_min_length", 8)), 1)
+        # Cap password_min_length to a sane upper bound
+        password_min_length = min(raw_pw_min, 128)
+
         return cls(
             enable_2fa=data.get("enable_2fa", False),
             enable_api_keys=data.get("enable_api_keys", True),
@@ -61,9 +74,9 @@ class TenantSettings:
             max_users=max(int(data.get("max_users", 100)), 1),
             max_api_keys_per_user=max(int(data.get("max_api_keys_per_user", 5)), 1),
             max_storage_mb=max(int(data.get("max_storage_mb", 1024)), 1),
-            primary_color=data.get("primary_color", "#3B82F6"),
+            primary_color=raw_color,
             logo_url=data.get("logo_url"),
-            password_min_length=max(int(data.get("password_min_length", 8)), 1),
+            password_min_length=password_min_length,
             session_timeout_minutes=max(
                 int(data.get("session_timeout_minutes", 60)), 1
             ),

@@ -6,9 +6,10 @@ OAuth2/SSO authentication endpoints.
 """
 
 from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, HTTPException, Path, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -82,11 +83,11 @@ class SSOConfigRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     client_id: str = Field(..., min_length=1, max_length=256)
     client_secret: str = Field(..., min_length=1, max_length=512)
-    scopes: list[str] = Field(default_factory=list, max_length=20)
+    scopes: list[Annotated[str, Field(max_length=100)]] = Field(default_factory=list, max_length=20)
     auto_create_users: bool = True
     auto_update_users: bool = True
     default_role_id: UUID | None = None
-    allowed_domains: list[str] = Field(default_factory=list, max_length=50)
+    allowed_domains: list[Annotated[str, Field(max_length=253)]] = Field(default_factory=list, max_length=50)
     is_required: bool = False
 
 
@@ -102,7 +103,7 @@ class SSOConfigResponse(BaseModel):
     auto_create_users: bool
     auto_update_users: bool
     default_role_id: UUID | None = None
-    allowed_domains: list[str] = Field(default_factory=list)
+    allowed_domains: list[Annotated[str, Field(max_length=253)]] = Field(default_factory=list)
     is_required: bool
     created_at: datetime | None = None
 
@@ -119,7 +120,8 @@ class SSOConfigResponse(BaseModel):
     description="Initiate OAuth flow for the specified provider.",
 )
 async def authorize(
-    provider: str,
+    provider: str = Path(..., max_length=50),
+    *,
     request: Request,
     session: DbSession,
     tenant_id: CurrentTenantId = None,
@@ -168,7 +170,8 @@ async def authorize(
     },
 )
 async def authorize_redirect(
-    provider: str,
+    provider: str = Path(..., max_length=50),
+    *,
     request: Request,
     session: DbSession,
     tenant_id: CurrentTenantId = None,
@@ -209,13 +212,14 @@ async def authorize_redirect(
     description="Handle OAuth provider callback with authorization code.",
 )
 async def callback(
-    provider: str,
+    provider: str = Path(..., max_length=50),
+    *,
     session: DbSession,
     response: Response,
     code: str = Query(..., max_length=2048, description="Authorization code from provider"),
     state: str = Query(..., max_length=2048, description="State parameter for CSRF protection"),
-    error: str | None = Query(None, description="Error from provider"),
-    error_description: str | None = Query(None, description="Error description"),
+    error: str | None = Query(None, max_length=200, description="Error from provider"),
+    error_description: str | None = Query(None, max_length=2000, description="Error description"),
 ) -> OAuthTokenResponse:
     """
     Handle OAuth callback from provider.
@@ -338,12 +342,13 @@ async def callback(
     },
 )
 async def callback_redirect(
-    provider: str,
+    provider: str = Path(..., max_length=50),
+    *,
     session: DbSession,
     code: str = Query(..., max_length=2048),
     state: str = Query(..., max_length=2048),
-    error: str | None = Query(None),
-    error_description: str | None = Query(None),
+    error: str | None = Query(None, max_length=200),
+    error_description: str | None = Query(None, max_length=2000),
     frontend_url: str = Query(
         None, max_length=2048, description="Frontend URL to redirect to"
     ),
@@ -506,11 +511,12 @@ async def list_connections(
     description="Link an OAuth provider to the current user account.",
 )
 async def link_account(
-    provider: str,
+    provider: str = Path(..., max_length=50),
+    *,
     session: DbSession,
     current_user: CurrentUser,
     tenant_id: CurrentTenantId = None,
-    scope: str | None = None,
+    scope: str | None = Query(default=None, max_length=1000),
 ) -> OAuthAuthorizeResponse:
     """
     Start OAuth flow to link account to current user.

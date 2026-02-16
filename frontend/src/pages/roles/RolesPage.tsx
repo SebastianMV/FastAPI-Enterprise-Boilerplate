@@ -14,7 +14,7 @@ import {
     Trash2,
     Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Control, Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -185,11 +185,11 @@ export default function RolesPage() {
   };
 
   // Handle delete
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (selectedRole) {
       deleteMutation.mutate(selectedRole.id);
     }
-  };
+  }, [selectedRole, deleteMutation]);
 
   // Open edit modal
   const openEditModal = (role: Role) => {

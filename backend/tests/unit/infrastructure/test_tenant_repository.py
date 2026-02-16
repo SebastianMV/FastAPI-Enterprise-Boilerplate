@@ -10,6 +10,7 @@ from uuid import uuid4
 import pytest
 
 from app.domain.entities.tenant import Tenant, TenantSettings
+from app.domain.exceptions.base import EntityNotFoundError
 from app.infrastructure.database.repositories.tenant_repository import (
     SQLAlchemyTenantRepository,
 )
@@ -82,7 +83,7 @@ class TestSQLAlchemyTenantRepositoryInit:
         session = AsyncMock()
         repo = SQLAlchemyTenantRepository(session=session)
 
-        assert repo.session is session
+        assert repo._session is session
 
 
 class TestSQLAlchemyTenantRepositoryGetById:
@@ -247,7 +248,7 @@ class TestSQLAlchemyTenantRepositoryUpdate:
 
         repo = SQLAlchemyTenantRepository(session=session)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(EntityNotFoundError):
             await repo.update(tenant)
 
 
@@ -256,7 +257,7 @@ class TestSQLAlchemyTenantRepositoryDelete:
 
     @pytest.mark.asyncio
     async def test_delete_success(self):
-        """Test successful tenant deletion."""
+        """Test successful tenant soft-deletion."""
         session = AsyncMock()
         tenant_id = uuid4()
         mock_model = create_mock_tenant_model(tenant_id=tenant_id)
@@ -264,7 +265,6 @@ class TestSQLAlchemyTenantRepositoryDelete:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_model
         session.execute = AsyncMock(return_value=mock_result)
-        session.delete = AsyncMock()
         session.flush = AsyncMock()
 
         repo = SQLAlchemyTenantRepository(session=session)
@@ -272,7 +272,9 @@ class TestSQLAlchemyTenantRepositoryDelete:
         result = await repo.delete(tenant_id)
 
         assert result is True
-        session.delete.assert_called_once_with(mock_model)
+        assert mock_model.is_deleted is True
+        assert mock_model.is_active is False
+        assert mock_model.deleted_at is not None
         session.flush.assert_called_once()
 
     @pytest.mark.asyncio

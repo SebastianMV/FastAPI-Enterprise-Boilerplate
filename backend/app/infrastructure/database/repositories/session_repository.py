@@ -142,14 +142,17 @@ class SQLAlchemySessionRepository:
     async def update_activity(
         self, session_id: UUID, ip_address: str | None = None
     ) -> None:
-        """Update last activity for a session."""
+        """Update last activity for an active (non-revoked) session."""
         values: dict[str, Any] = {"last_activity": datetime.now(UTC)}
         if ip_address:
             values["ip_address"] = ip_address
 
         stmt = (
             update(UserSessionModel)
-            .where(UserSessionModel.id == session_id)
+            .where(
+                UserSessionModel.id == session_id,
+                UserSessionModel.is_revoked.is_(False),
+            )
             .values(**values)
         )
         await self._session.execute(stmt)

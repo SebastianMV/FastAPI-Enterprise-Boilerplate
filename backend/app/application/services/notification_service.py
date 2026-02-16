@@ -184,7 +184,7 @@ class NotificationService:
         conditions = [
             NotificationModel.id == notification_id,
             NotificationModel.user_id == user_id,
-            NotificationModel.is_deleted == False,
+            NotificationModel.is_deleted.is_(False),
         ]
         if tenant_id is not None:
             conditions.append(NotificationModel.tenant_id == tenant_id)
@@ -221,14 +221,14 @@ class NotificationService:
         """
         conditions = [
             NotificationModel.user_id == user_id,
-            NotificationModel.is_deleted == False,
+            NotificationModel.is_deleted.is_(False),
         ]
         if tenant_id is not None:
             conditions.append(NotificationModel.tenant_id == tenant_id)
         stmt = select(NotificationModel).where(*conditions)
 
         if unread_only:
-            stmt = stmt.where(NotificationModel.is_read == False)
+            stmt = stmt.where(NotificationModel.is_read.is_(False))
 
         if category:
             stmt = stmt.where(NotificationModel.category == category)
@@ -262,8 +262,8 @@ class NotificationService:
 
         conditions = [
             NotificationModel.user_id == user_id,
-            NotificationModel.is_read == False,
-            NotificationModel.is_deleted == False,
+            NotificationModel.is_read.is_(False),
+            NotificationModel.is_deleted.is_(False),
         ]
         if tenant_id is not None:
             conditions.append(NotificationModel.tenant_id == tenant_id)
@@ -297,7 +297,7 @@ class NotificationService:
             .where(
                 NotificationModel.id == notification_id,
                 NotificationModel.user_id == user_id,
-                NotificationModel.is_read == False,
+                NotificationModel.is_read.is_(False),
             )
             .values(is_read=True, read_at=now, updated_at=now)
         )
@@ -325,8 +325,8 @@ class NotificationService:
             update(NotificationModel)
             .where(
                 NotificationModel.user_id == user_id,
-                NotificationModel.is_read == False,
-                NotificationModel.is_deleted == False,
+                NotificationModel.is_read.is_(False),
+                NotificationModel.is_deleted.is_(False),
             )
             .values(is_read=True, read_at=now, updated_at=now)
         )
@@ -359,7 +359,7 @@ class NotificationService:
             .where(
                 NotificationModel.id == notification_id,
                 NotificationModel.user_id == user_id,
-                NotificationModel.is_deleted == False,
+                NotificationModel.is_deleted.is_(False),
             )
             .values(is_deleted=True, deleted_at=now, updated_at=now)
         )
@@ -385,8 +385,8 @@ class NotificationService:
             update(NotificationModel)
             .where(
                 NotificationModel.user_id == user_id,
-                NotificationModel.is_read == True,
-                NotificationModel.is_deleted == False,
+                NotificationModel.is_read.is_(True),
+                NotificationModel.is_deleted.is_(False),
             )
             .values(is_deleted=True, deleted_at=now, updated_at=now)
         )

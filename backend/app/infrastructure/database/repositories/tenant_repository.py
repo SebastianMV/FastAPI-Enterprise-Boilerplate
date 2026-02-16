@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.tenant import Tenant, TenantSettings
+from app.domain.exceptions.base import EntityNotFoundError
 from app.domain.ports.tenant_repository import TenantRepositoryPort
 from app.infrastructure.database.models.tenant import TenantModel
 
@@ -22,7 +23,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
     """
 
     def __init__(self, session: AsyncSession):
-        self.session = session
+        self._session = session
 
     def _to_entity(self, model: TenantModel) -> Tenant:
         """Convert SQLAlchemy model to domain entity."""
@@ -80,7 +81,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
             TenantModel.id == tenant_id,
             TenantModel.is_deleted.is_(False),
         )
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         return self._to_entity(model) if model else None
@@ -91,7 +92,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
             TenantModel.slug == slug,
             TenantModel.is_deleted.is_(False),
         )
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         return self._to_entity(model) if model else None
@@ -102,7 +103,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
             TenantModel.domain == domain,
             TenantModel.is_deleted.is_(False),
         )
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         return self._to_entity(model) if model else None
@@ -110,19 +111,25 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
     async def create(self, tenant: Tenant) -> Tenant:
         """Create a new tenant."""
         model = self._to_model(tenant)
-        self.session.add(model)
-        await self.session.flush()
-        await self.session.refresh(model)
+        self._session.add(model)
+        await self._session.flush()
+        await self._session.refresh(model)
         return self._to_entity(model)
 
     async def update(self, tenant: Tenant) -> Tenant:
         """Update an existing tenant."""
-        stmt = select(TenantModel).where(TenantModel.id == tenant.id)
-        result = await self.session.execute(stmt)
+        stmt = select(TenantModel).where(
+            TenantModel.id == tenant.id,
+            TenantModel.is_deleted.is_(False),
+        )
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if not model:
-            raise ValueError("Tenant not found")
+            raise EntityNotFoundError(
+                entity_type="Tenant",
+                message="Tenant not found",
+            )
 
         # Update fields
         model.name = tenant.name
@@ -139,21 +146,28 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         model.locale = tenant.locale
         model.updated_by = tenant.updated_by
 
-        await self.session.flush()
-        await self.session.refresh(model)
+        await self._session.flush()
+        await self._session.refresh(model)
         return self._to_entity(model)
 
     async def delete(self, tenant_id: UUID) -> bool:
-        """Hard delete a tenant."""
-        stmt = select(TenantModel).where(TenantModel.id == tenant_id)
-        result = await self.session.execute(stmt)
+        """Soft-delete a tenant."""
+        from datetime import UTC, datetime
+
+        stmt = select(TenantModel).where(
+            TenantModel.id == tenant_id,
+            TenantModel.is_deleted.is_(False),
+        )
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if not model:
             return False
 
-        await self.session.delete(model)
-        await self.session.flush()
+        model.is_deleted = True
+        model.deleted_at = datetime.now(UTC)
+        model.is_active = False
+        await self._session.flush()
         return True
 
     async def list_all(
@@ -171,7 +185,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
 
         stmt = stmt.offset(skip).limit(limit).order_by(TenantModel.created_at.desc())
 
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         models = result.scalars().all()
 
         return [self._to_entity(m) for m in models]
@@ -185,7 +199,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         if is_active is not None:
             stmt = stmt.where(TenantModel.is_active.is_(is_active))
 
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         return result.scalar() or 0
 
     async def slug_exists(self, slug: str, exclude_id: UUID | None = None) -> bool:
@@ -198,7 +212,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         if exclude_id:
             stmt = stmt.where(TenantModel.id != exclude_id)
 
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         count = result.scalar() or 0
         return count > 0
 
@@ -212,7 +226,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
         if exclude_id:
             stmt = stmt.where(TenantModel.id != exclude_id)
 
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         count = result.scalar() or 0
         return count > 0
 
@@ -228,7 +242,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
             TenantModel.is_deleted.is_(False),
             TenantModel.is_active.is_(True),
         )
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if model:
@@ -245,7 +259,7 @@ class SQLAlchemyTenantRepository(TenantRepositoryPort):
             .limit(1)
         )
 
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         return self._to_entity(model) if model else None

@@ -129,11 +129,11 @@ export default function NotificationsPage() {
     }
   }, [markAsRead, navigate]);
 
-  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setNotificationToDelete(id);
     setShowDeleteModal(true);
-  };
+  }, []);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!notificationToDelete) return;
@@ -148,7 +148,7 @@ export default function NotificationsPage() {
     }
   }, [notificationToDelete, removeNotification]);
 
-  const handleMarkAllRead = async () => {
+  const handleMarkAllRead = useCallback(async () => {
     try {
       await notificationsService.markAllAsRead();
       markAllAsRead();
@@ -156,7 +156,7 @@ export default function NotificationsPage() {
       // API call failed but still mark locally
       markAllAsRead();
     }
-  };
+  }, [markAllAsRead]);
 
   return (
     <div className="space-y-6">

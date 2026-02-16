@@ -202,11 +202,11 @@ class BulkOperationResult(BaseModel):
 class BulkOperationSummary(BaseModel):
     """Summary for quick bulk operations."""
 
-    operation: str
+    operation: str = Field(max_length=50)
     total: int
     successful: int
     failed: int
-    message: str
+    message: str = Field(max_length=500)
 
 
 # ====================

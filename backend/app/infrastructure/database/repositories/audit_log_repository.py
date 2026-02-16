@@ -94,11 +94,12 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         await self._session.flush()
         return [self._to_entity(model) for model in models]
 
-    async def get_by_id(self, audit_id: UUID) -> AuditLog | None:
-        """Retrieve an audit log entry by ID."""
-        result = await self._session.execute(
-            select(AuditLogModel).where(AuditLogModel.id == audit_id)
-        )
+    async def get_by_id(self, audit_id: UUID, tenant_id: UUID | None = None) -> AuditLog | None:
+        """Retrieve an audit log entry by ID, optionally scoped to tenant."""
+        stmt = select(AuditLogModel).where(AuditLogModel.id == audit_id)
+        if tenant_id is not None:
+            stmt = stmt.where(AuditLogModel.tenant_id == tenant_id)
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 

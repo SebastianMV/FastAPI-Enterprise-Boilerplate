@@ -331,7 +331,7 @@ class OAuthService:
         """Get all OAuth connections for a user."""
         stmt = select(OAuthConnectionModel).where(
             OAuthConnectionModel.user_id == user_id,
-            OAuthConnectionModel.is_active == True,
+            OAuthConnectionModel.is_active.is_(True),
         )
 
         result = await self._session.execute(stmt)
@@ -395,7 +395,7 @@ class OAuthService:
         """
         stmt = select(SSOConfigurationModel).where(
             SSOConfigurationModel.tenant_id == tenant_id,
-            SSOConfigurationModel.is_enabled == True,
+            SSOConfigurationModel.is_enabled.is_(True),
         )
 
         if provider:
@@ -579,7 +579,7 @@ class OAuthService:
 
         conditions = [
             SSOConfigurationModel.provider == provider.value,
-            SSOConfigurationModel.is_enabled == True,
+            SSOConfigurationModel.is_enabled.is_(True),
         ]
         if tenant_id:
             conditions.append(SSOConfigurationModel.tenant_id == tenant_id)
@@ -622,7 +622,7 @@ class OAuthService:
         stmt = select(OAuthConnectionModel).where(
             OAuthConnectionModel.provider == provider.value,
             OAuthConnectionModel.provider_user_id == provider_user_id,
-            OAuthConnectionModel.is_active == True,
+            OAuthConnectionModel.is_active.is_(True),
         )
 
         result = await self._session.execute(stmt)
