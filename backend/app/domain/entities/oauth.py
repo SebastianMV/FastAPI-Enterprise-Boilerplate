@@ -58,6 +58,9 @@ class OAuthConnection:
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
+    def __repr__(self) -> str:
+        return f"<OAuthConnection(id={self.id}, provider={self.provider})>"
+
 
 @dataclass
 class SSOConfiguration:
@@ -109,6 +112,9 @@ class SSOConfiguration:
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
+    def __repr__(self) -> str:
+        return f"<SSOConfiguration(id={self.id}, provider={self.provider})>"
+
 
 @dataclass
 class OAuthState:
@@ -130,6 +136,9 @@ class OAuthState:
     # Additional context
     is_linking: bool = False  # Linking to existing account
     existing_user_id: UUID | None = None
+
+    def __repr__(self) -> str:
+        return f"<OAuthState(provider={self.provider})>"
 
 
 @dataclass

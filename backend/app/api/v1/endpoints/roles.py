@@ -44,6 +44,9 @@ from app.infrastructure.database.repositories.role_repository import (
 from app.infrastructure.database.repositories.user_repository import (
     SQLAlchemyUserRepository,
 )
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 

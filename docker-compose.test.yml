@@ -21,7 +21,7 @@ services:
     container_name: fastapi-boilerplate-test-db
     restart: "no"
     ports:
-      - "127.0.0.1:5433:5432"  # Different port to avoid conflict with dev DB
+      - "127.0.0.1:5433:5432" # Different port to avoid conflict with dev DB
     environment:
       - POSTGRES_USER=test_user
       - POSTGRES_PASSWORD=test_password
@@ -40,17 +40,16 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
     pids_limit: 200
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "2"
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 512M
     networks:
       - test-backend
 
@@ -63,9 +62,10 @@ services:
     restart: "no"
     command: redis-server --requirepass devpassword
     ports:
-      - "127.0.0.1:6380:6379"  # Different port to avoid conflict with dev Redis
+      - "127.0.0.1:6380:6379" # Different port to avoid conflict with dev Redis
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "devpassword", "--no-auth-warning", "ping"]
+      test:
+        ["CMD", "redis-cli", "-a", "devpassword", "--no-auth-warning", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -73,17 +73,15 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - SETUID
+      - SETGID
     pids_limit: 100
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "2"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
     networks:
       - test-backend
 

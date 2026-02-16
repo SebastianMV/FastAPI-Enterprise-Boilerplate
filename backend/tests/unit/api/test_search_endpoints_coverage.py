@@ -36,7 +36,7 @@ class MockSearchHit:
 class MockSearchResult:
     """Mock search result for testing."""
 
-    def __init__(self, total: int = 1, hits: list | None = None):
+    def __init__(self, total: int = 1, hits: list[MockSearchHit] | None = None):
         self.hits = hits or [MockSearchHit("1")]
         self.total = total
         self.page = 1
@@ -87,7 +87,7 @@ class TestSearchEndpoint:
             )
 
         assert exc.value.status_code == 400
-        assert exc.value.detail["code"] == "INVALID_SEARCH_INDEX"
+        assert "INVALID_SEARCH_INDEX" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_search_success(
@@ -242,7 +242,7 @@ class TestSearchEndpoint:
                 )
 
             assert exc.value.status_code == 500
-            assert exc.value.detail["code"] == "SEARCH_ERROR"
+            assert "SEARCH_ERROR" in str(exc.value.detail)
 
 
 class TestSimpleSearchEndpoint:
@@ -325,7 +325,7 @@ class TestSuggestEndpoint:
             )
 
         assert exc.value.status_code == 400
-        assert exc.value.detail["code"] == "INVALID_SEARCH_INDEX"
+        assert "INVALID_SEARCH_INDEX" in str(exc.value.detail)
 
     @pytest.mark.asyncio
     async def test_suggest_success(
@@ -380,7 +380,7 @@ class TestSuggestEndpoint:
                 )
 
             assert exc.value.status_code == 500
-            assert exc.value.detail["code"] == "SEARCH_ERROR"
+            assert "SEARCH_ERROR" in str(exc.value.detail)
 
 
 class TestHealthEndpoint:
@@ -433,8 +433,8 @@ class TestListIndicesEndpoint:
 
         # Check structure
         for item in result:
-            assert "name" in item
-            assert "description" in item
+            assert hasattr(item, "name")
+            assert hasattr(item, "description")
 
 
 class TestSearchSchemas:

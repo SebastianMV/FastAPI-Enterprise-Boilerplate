@@ -6,7 +6,7 @@ Critical modules coverage tests.
 Targets: auth.py, users.py, roles.py, tenants.py, mfa.py - 100% coverage.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -754,7 +754,9 @@ class TestUsersAdditionalCoverage:
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch("app.application.use_cases.users.create_user.hash_password") as mock_hash,
+            patch(
+                "app.application.use_cases.users.create_user.hash_password"
+            ) as mock_hash,
         ):
             mock_repo = AsyncMock()
             mock_repo.get_by_email.return_value = None
@@ -980,15 +982,21 @@ class TestAuthTokenRotation:
         mock_http_request.cookies = {}  # No cookie fallback
 
         with (
-            patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate,
+            patch(
+                "app.application.use_cases.auth.refresh.validate_refresh_token"
+            ) as mock_validate,
             patch(
                 "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
             ) as mock_user_repo,
             patch(
                 "app.infrastructure.database.repositories.session_repository.SQLAlchemySessionRepository"
             ) as mock_session_repo,
-            patch("app.application.use_cases.auth.refresh.create_access_token") as mock_access,
-            patch("app.application.use_cases.auth.refresh.create_refresh_token") as mock_refresh,
+            patch(
+                "app.application.use_cases.auth.refresh.create_access_token"
+            ) as mock_access,
+            patch(
+                "app.application.use_cases.auth.refresh.create_refresh_token"
+            ) as mock_refresh,
             patch("app.application.use_cases.auth.refresh.hash_jti") as mock_hash,
             patch("app.application.use_cases.auth.refresh.decode_token") as mock_decode,
             patch("app.application.use_cases.auth.refresh.settings") as mock_settings,
@@ -1551,7 +1559,9 @@ class TestUsersCreateSuccess:
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch("app.application.use_cases.users.create_user.hash_password") as mock_hash,
+            patch(
+                "app.application.use_cases.users.create_user.hash_password"
+            ) as mock_hash,
             patch("app.application.use_cases.users.create_user.Email") as mock_email,
         ):
             mock_repo = AsyncMock()
@@ -2047,7 +2057,6 @@ class TestAuthEmailExceptionPaths:
         SKIPPED: Token storage moved from in-memory dict to Redis with TTL.
         Redis handles expiry automatically.
         """
-        pass
 
     @pytest.mark.asyncio
     async def test_reset_password_email_exception_silent(self, mock_db_session):
@@ -2074,9 +2083,7 @@ class TestAuthEmailExceptionPaths:
 
         # Mock cache to return valid token data
         mock_cache = AsyncMock()
-        mock_cache.get_and_delete = AsyncMock(
-            return_value={"user_id": str(user_id)}
-        )
+        mock_cache.get_and_delete = AsyncMock(return_value={"user_id": str(user_id)})
         mock_cache.delete = AsyncMock()
 
         # Mock session repo for session revocation
@@ -2218,9 +2225,9 @@ class TestAuthEmailExceptionPaths:
 
             result = await get_verification_status(user=mock_user)
 
-            assert result["email"] == "test@example.com"
-            assert result["email_verified"] is True
-            assert result["verification_required"] is True
+            assert result.email == "test@example.com"
+            assert result.email_verified is True
+            assert result.verification_required is True
 
     @pytest.mark.asyncio
     async def test_get_verification_status_unverified_user(self):
@@ -2239,9 +2246,9 @@ class TestAuthEmailExceptionPaths:
 
             result = await get_verification_status(user=mock_user)
 
-            assert result["email"] == "unverified@example.com"
-            assert result["email_verified"] is False
-            assert result["verification_required"] is False
+            assert result.email == "unverified@example.com"
+            assert result.email_verified is False
+            assert result.verification_required is False
 
 
 # =============================================================================

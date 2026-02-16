@@ -8,7 +8,6 @@ anti-pattern category.
 """
 
 import ast
-import os
 import re
 from pathlib import Path
 
@@ -60,10 +59,10 @@ class TestNoStrExceptionInResponses:
     """Verify no HTTP response contains str(e) — prevents info leaks."""
 
     PATTERNS = [
-        re.compile(r'str\(\s*e\s*\)'),
-        re.compile(r'str\(\s*err\s*\)'),
-        re.compile(r'str\(\s*exc\s*\)'),
-        re.compile(r'str\(\s*exception\s*\)'),
+        re.compile(r"str\(\s*e\s*\)"),
+        re.compile(r"str\(\s*err\s*\)"),
+        re.compile(r"str\(\s*exc\s*\)"),
+        re.compile(r"str\(\s*exception\s*\)"),
     ]
 
     def test_no_str_exception_in_api(self) -> None:
@@ -104,14 +103,12 @@ class TestDatetimeUtcnow:
 
     def test_no_utcnow(self) -> None:
         violations: list[str] = []
-        pattern = re.compile(r'\.utcnow\(\)')
+        pattern = re.compile(r"\.utcnow\(\)")
         for filepath in _get_python_files(BACKEND_APP):
             content = filepath.read_text(encoding="utf-8")
             for i, line in enumerate(content.splitlines(), 1):
                 if pattern.search(line) and not line.strip().startswith("#"):
-                    violations.append(
-                        f"{filepath.relative_to(BACKEND_APP)}:{i}"
-                    )
+                    violations.append(f"{filepath.relative_to(BACKEND_APP)}:{i}")
 
         assert not violations, (
             f"datetime.utcnow() found in {len(violations)} locations "
@@ -133,12 +130,20 @@ class TestTimingSafeComparisons:
         "api_key",
     }
 
+    # Variable names that contain sensitive words but are safe
+    SAFE_VARIABLE_NAMES = {
+        "returncode",
+        "status_code",
+        "error_code",
+        "exit_code",
+        "keycode",
+        "charcode",
+    }
+
     def test_no_direct_token_comparison(self) -> None:
         violations: list[str] = []
         # Match patterns like: if token == something or if something == token
-        pattern = re.compile(
-            r'if\s+(\w+)\s*==\s*(\w+)|(\w+)\s*!=\s*(\w+)'
-        )
+        pattern = re.compile(r"if\s+(\w+)\s*==\s*(\w+)|(\w+)\s*!=\s*(\w+)")
         for filepath in _get_python_files(BACKEND_APP):
             content = filepath.read_text(encoding="utf-8")
             for i, line in enumerate(content.splitlines(), 1):
@@ -148,10 +153,10 @@ class TestTimingSafeComparisons:
                 match = pattern.search(stripped)
                 if match:
                     # Check if any variable name contains a sensitive word
-                    all_vars = [
-                        g for g in match.groups() if g is not None
-                    ]
+                    all_vars = [g for g in match.groups() if g is not None]
                     for var in all_vars:
+                        if var.lower() in self.SAFE_VARIABLE_NAMES:
+                            continue
                         if any(s in var.lower() for s in self.SENSITIVE_NAMES):
                             # Exclude hmac.compare_digest lines
                             if "compare_digest" not in stripped:
@@ -160,7 +165,7 @@ class TestTimingSafeComparisons:
                                 )
 
         if violations:
-            pytest.skip(
+            assert not violations, (
                 f"Found {len(violations)} potential timing-unsafe comparisons "
                 f"(review manually):\n" + "\n".join(violations[:10])
             )
@@ -169,9 +174,7 @@ class TestTimingSafeComparisons:
 class TestNoFStringInLogger:
     """Verify logger calls use lazy formatting, not f-strings."""
 
-    PATTERN = re.compile(
-        r'logger\.(info|debug|warning|error|critical)\(f["\']'
-    )
+    PATTERN = re.compile(r'logger\.(info|debug|warning|error|critical)\(f["\']')
 
     def test_no_fstring_logging(self) -> None:
         violations: list[str] = []
@@ -179,9 +182,7 @@ class TestNoFStringInLogger:
             content = filepath.read_text(encoding="utf-8")
             for i, line in enumerate(content.splitlines(), 1):
                 if self.PATTERN.search(line.strip()):
-                    violations.append(
-                        f"{filepath.relative_to(BACKEND_APP)}:{i}"
-                    )
+                    violations.append(f"{filepath.relative_to(BACKEND_APP)}:{i}")
 
         assert not violations, (
             f"f-string in logger calls found in {len(violations)} locations "
@@ -242,8 +243,7 @@ class TestEndpointPermissions:
                     func_text = ast.get_source_segment(content, node) or ""
                     has_permission = "require_permission" in func_text
                     has_router_decorator = any(
-                        "router." in ast.dump(d)
-                        for d in node.decorator_list
+                        "router." in ast.dump(d) for d in node.decorator_list
                     )
 
                     if has_router_decorator and not has_permission:
@@ -257,7 +257,7 @@ class TestEndpointPermissions:
 
         if warnings:
             # This is advisory, not a hard failure
-            pytest.skip(
+            assert not warnings, (
                 f"{len(warnings)} endpoints use CurrentUser without "
                 f"require_permission (review if ACL is needed):\n"
                 + "\n".join(warnings[:15])
@@ -277,7 +277,7 @@ class TestDockerImagePins:
         ]
     ]
 
-    BAD_TAGS = re.compile(r'image:\s+\S+:(latest|[a-z]+)$', re.MULTILINE)
+    BAD_TAGS = re.compile(r"image:\s+\S+:(latest|[a-z]+)$", re.MULTILINE)
 
     def test_no_latest_tags(self) -> None:
         violations: list[str] = []
@@ -291,13 +291,9 @@ class TestDockerImagePins:
                     # Check for :latest or major-only tags like :17-alpine
                     tag = stripped.split(":")[-1].strip() if ":" in stripped else ""
                     if tag == "latest" or tag == "alpine":
-                        violations.append(
-                            f"{compose_file.name}:{i}: {stripped}"
-                        )
+                        violations.append(f"{compose_file.name}:{i}: {stripped}")
 
-        assert not violations, (
-            f"Unpinned Docker images found:\n" + "\n".join(violations)
-        )
+        assert not violations, "Unpinned Docker images found:\n" + "\n".join(violations)
 
 
 class TestSecretsFallbacks:
@@ -307,8 +303,7 @@ class TestSecretsFallbacks:
         violations: list[str] = []
         for env in ["staging", "prod"]:
             compose = (
-                Path(__file__).parent.parent.parent.parent
-                / f"docker-compose.{env}.yml"
+                Path(__file__).parent.parent.parent.parent / f"docker-compose.{env}.yml"
             )
             if not compose.exists():
                 continue
@@ -331,11 +326,9 @@ class TestSecretsFallbacks:
                     # These are safe because the actual secret is fail-fast
                     if ":?" in stripped:
                         continue
-                    violations.append(
-                        f"docker-compose.{env}.yml:{i}: {stripped[:80]}"
-                    )
+                    violations.append(f"docker-compose.{env}.yml:{i}: {stripped[:80]}")
 
         assert not violations, (
-            f"Fail-open secret defaults (${{VAR:-default}}) found in "
-            f"staging/prod:\n" + "\n".join(violations)
+            "Fail-open secret defaults (${VAR:-default}) found in "
+            "staging/prod:\n" + "\n".join(violations)
         )

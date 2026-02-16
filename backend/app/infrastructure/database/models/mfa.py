@@ -82,7 +82,4 @@ class MFAConfigModel(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<MFAConfig(id={self.id}, user_id={self.user_id}, "
-            f"enabled={self.is_enabled})>"
-        )
+        return f"<MFAConfig(id={self.id})>"

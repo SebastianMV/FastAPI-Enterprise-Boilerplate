@@ -1,20 +1,20 @@
-import api from './api';
-import { validateImportFile } from '@/utils/security';
+import { validateImportFile } from "@/utils/security";
+import api from "./api";
 
 /** Allowed Content-Types for blob responses from data exchange endpoints */
 const ALLOWED_BLOB_TYPES = new Set([
-  'text/csv',
-  'application/json',
-  'application/pdf',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/octet-stream',
+  "text/csv",
+  "application/json",
+  "application/pdf",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/octet-stream",
 ]);
 
 /** Validates that a blob response has an expected Content-Type */
 function validateBlobResponse(blob: Blob): Blob {
   if (blob.type && !ALLOWED_BLOB_TYPES.has(blob.type)) {
-    throw new Error(`Unexpected response content type: ${blob.type}`);
+    throw new Error("data.unexpectedResponseType");
   }
   return blob;
 }
@@ -67,7 +67,7 @@ export interface ReportRequest {
   columns?: string[];
   group_by?: string[];
   sort_by?: string;
-  format?: 'pdf' | 'excel' | 'csv';
+  format?: "pdf" | "excel" | "csv";
   include_summary?: boolean;
   date_range_field?: string;
   date_from?: string;
@@ -76,61 +76,75 @@ export interface ReportRequest {
 
 export const dataExchangeService = {
   listEntities: async (): Promise<Entity[]> => {
-    const response = await api.get<Entity[]>('/data/entities');
+    const response = await api.get<Entity[]>("/data/entities");
     return response.data;
   },
 
   getEntity: async (entity: string): Promise<Entity> => {
-    const response = await api.get<Entity>(`/data/entities/${encodeURIComponent(entity)}`);
+    const response = await api.get<Entity>(
+      `/data/entities/${encodeURIComponent(entity)}`,
+    );
     return response.data;
   },
 
   previewExport: async (entity: string, limit = 10): Promise<ExportPreview> => {
     // Clamp limit to prevent excessive server-side serialization (DoS)
     const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
-    const response = await api.get<ExportPreview>(`/data/export/${encodeURIComponent(entity)}/preview`, {
-      params: { limit: safeLimit },
-    });
+    const response = await api.get<ExportPreview>(
+      `/data/export/${encodeURIComponent(entity)}/preview`,
+      {
+        params: { limit: safeLimit },
+      },
+    );
     return response.data;
   },
 
   exportData: async (
     entity: string,
-    format: 'csv' | 'excel' | 'json' = 'csv',
-    columns?: string[]
+    format: "csv" | "excel" | "json" = "csv",
+    columns?: string[],
   ): Promise<Blob> => {
-    const response = await api.get(`/data/export/${encodeURIComponent(entity)}`, {
-      params: {
-        format,
-        columns: columns?.join(','),
+    const response = await api.get(
+      `/data/export/${encodeURIComponent(entity)}`,
+      {
+        params: {
+          format,
+          columns: columns?.join(","),
+        },
+        responseType: "blob",
       },
-      responseType: 'blob',
-    });
+    );
     return validateBlobResponse(response.data);
   },
 
-  downloadTemplate: async (entity: string, format: 'csv' | 'excel' = 'csv'): Promise<Blob> => {
-    const response = await api.get(`/data/import/${encodeURIComponent(entity)}/template`, {
-      params: { format },
-      responseType: 'blob',
-    });
+  downloadTemplate: async (
+    entity: string,
+    format: "csv" | "excel" = "csv",
+  ): Promise<Blob> => {
+    const response = await api.get(
+      `/data/import/${encodeURIComponent(entity)}/template`,
+      {
+        params: { format },
+        responseType: "blob",
+      },
+    );
     return validateBlobResponse(response.data);
   },
 
   validateImport: async (entity: string, file: File): Promise<ImportResult> => {
     const validation = validateImportFile(file);
     if (!validation.valid) {
-      throw new Error(validation.error || 'Invalid file');
+      throw new Error(validation.error || "common.invalidFile");
     }
     const formData = new FormData();
-    formData.append('file', file);
-    
+    formData.append("file", file);
+
     const response = await api.post<ImportResult>(
       `/data/import/${encodeURIComponent(entity)}?dry_run=true`,
       formData,
       {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }
+        headers: { "Content-Type": "multipart/form-data" },
+      },
     );
     return response.data;
   },
@@ -138,37 +152,50 @@ export const dataExchangeService = {
   importData: async (
     entity: string,
     file: File,
-    mode: 'insert' | 'update' | 'upsert' = 'upsert'
+    mode: "insert" | "update" | "upsert" = "upsert",
   ): Promise<ImportResult> => {
     const validation = validateImportFile(file);
     if (!validation.valid) {
-      throw new Error(validation.error || 'Invalid file');
+      throw new Error(validation.error || "common.invalidFile");
     }
     const formData = new FormData();
-    formData.append('file', file);
-    
+    formData.append("file", file);
+
     const response = await api.post<ImportResult>(
       `/data/import/${encodeURIComponent(entity)}?mode=${encodeURIComponent(mode)}&dry_run=false`,
       formData,
       {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }
+        headers: { "Content-Type": "multipart/form-data" },
+      },
     );
     return response.data;
   },
 
-  generateReport: async (entity: string, options: ReportRequest = {}): Promise<Blob> => {
-    const response = await api.post(`/data/reports/${encodeURIComponent(entity)}`, options, {
-      responseType: 'blob',
-    });
+  generateReport: async (
+    entity: string,
+    options: ReportRequest = {},
+  ): Promise<Blob> => {
+    const response = await api.post(
+      `/data/reports/${encodeURIComponent(entity)}`,
+      options,
+      {
+        responseType: "blob",
+      },
+    );
     return validateBlobResponse(response.data);
   },
 
   getReportSummary: async (
     entity: string,
-    filters?: ReportFilter[]
-  ): Promise<{ total_records: number; grouped_counts: Record<string, number> }> => {
-    const response = await api.post(`/data/reports/${encodeURIComponent(entity)}/summary`, { filters });
+    filters?: ReportFilter[],
+  ): Promise<{
+    total_records: number;
+    grouped_counts: Record<string, number>;
+  }> => {
+    const response = await api.post(
+      `/data/reports/${encodeURIComponent(entity)}/summary`,
+      { filters },
+    );
     return response.data;
   },
 };

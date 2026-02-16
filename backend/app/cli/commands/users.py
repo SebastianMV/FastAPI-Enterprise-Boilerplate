@@ -12,12 +12,16 @@ Commands:
 """
 
 import asyncio
+from uuid import UUID
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
 from app.cli.utils import format_uuid
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 app = typer.Typer(help="User management commands")
 console = Console()
@@ -63,6 +67,9 @@ def create_superuser(
     asyncio.run(_create_superuser(email, password, first_name, last_name))
 
 
+MAX_NAME_LENGTH = 200
+
+
 async def _create_superuser(
     email: str,
     password: str,
@@ -80,6 +87,14 @@ async def _create_superuser(
     from app.infrastructure.database.repositories.user_repository import (
         SQLAlchemyUserRepository,
     )
+
+    # Validate name lengths (Rule 6)
+    if len(first_name) > MAX_NAME_LENGTH:
+        console.print(f"[red]First name too long (max {MAX_NAME_LENGTH})[/red]")
+        raise typer.Exit(1)
+    if len(last_name) > MAX_NAME_LENGTH:
+        console.print(f"[red]Last name too long (max {MAX_NAME_LENGTH})[/red]")
+        raise typer.Exit(1)
 
     try:
         # Validate email
@@ -122,6 +137,12 @@ async def _create_superuser(
         created_user = await repo.create(user)
         await session.commit()
 
+        logger.info(
+            "superuser_created",
+            email=email,
+            user_id=str(created_user.id),
+            tenant_id=str(tenant_id),
+        )
         console.print("\n[green]✓ Superuser created successfully![/green]")
         console.print(f"  ID: {created_user.id}")
         console.print(f"  Email: {email}")
@@ -130,7 +151,9 @@ async def _create_superuser(
 
 @app.command("list")
 def list_users(
-    limit: int = typer.Option(50, "--limit", "-n", help="Maximum users to display"),
+    limit: int = typer.Option(
+        50, "--limit", "-n", help="Maximum users to display", min=1, max=1000
+    ),
     active_only: bool = typer.Option(
         False, "--active", "-a", help="Show only active users"
     ),
@@ -221,7 +244,7 @@ def deactivate_user(
     asyncio.run(_set_user_active(uuid, False))
 
 
-async def _set_user_active(user_id, active: bool) -> None:
+async def _set_user_active(user_id: UUID, active: bool) -> None:
     """Async implementation of activate/deactivate commands."""
     from app.infrastructure.database.connection import async_session_maker
     from app.infrastructure.database.repositories.user_repository import (

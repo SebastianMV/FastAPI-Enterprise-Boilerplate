@@ -17,6 +17,9 @@ import typer
 from rich.console import Console
 
 from app.cli.utils import confirm_action
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 app = typer.Typer(help="Database management commands")
 console = Console()
@@ -105,7 +108,12 @@ async def _seed_database(
                         console.print(f"  ✓ Created tenant: {tenant.name}")
                     else:
                         console.print(f"  - Skipped (exists): {tenant.name}")
-                except Exception:
+                except Exception as exc:
+                    logger.error(
+                        "seed_tenant_failed",
+                        tenant=tenant.name,
+                        error=type(exc).__name__,
+                    )
                     console.print(
                         f"  [red]✗ Failed to create tenant: {tenant.name}[/red]"
                     )
@@ -182,7 +190,12 @@ async def _seed_database(
                         console.print(f"  ✓ Created role: {role.name}")
                     else:
                         console.print(f"  - Skipped (exists): {role_data['name']}")
-                except Exception:
+                except Exception as exc:
+                    logger.error(
+                        "seed_role_failed",
+                        role=role_data["name"],
+                        error=type(exc).__name__,
+                    )
                     console.print(
                         f"  [red]✗ Failed to create role: {role_data['name']}[/red]"
                     )
@@ -236,7 +249,12 @@ async def _seed_database(
                         console.print("  ✓ Created a sample user")
                     else:
                         console.print(f"  - Skipped (exists): {user_data['email']}")
-                except Exception:
+                except Exception as exc:
+                    logger.error(
+                        "seed_user_failed",
+                        email=user_data["email"],
+                        error=type(exc).__name__,
+                    )
                     console.print(
                         f"  [red]✗ Failed to create user: {user_data['email']}[/red]"
                     )
@@ -272,7 +290,16 @@ async def _database_info() -> None:
 
     # Connection info (masked)
     db_url = str(settings.DATABASE_URL)
-    masked_url = db_url.replace(db_url.split("@")[0].split("://")[1], "***:***")
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(db_url)
+        masked_url = db_url.replace(
+            f"{parsed.username or ''}:{parsed.password or ''}@",
+            "***:***@",
+        )
+    except Exception:
+        masked_url = "<unable to parse>"
     console.print(f"Connection: {masked_url}")
     console.print(f"Pool Size: {settings.DB_POOL_SIZE}")
     console.print(f"Max Overflow: {settings.DB_MAX_OVERFLOW}")
@@ -294,7 +321,7 @@ async def _database_info() -> None:
             # Table count
             result = await session.execute(
                 text("""
-                    SELECT COUNT(*) FROM information_schema.tables 
+                    SELECT COUNT(*) FROM information_schema.tables
                     WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
                 """)
             )
@@ -338,8 +365,8 @@ def run_migrations(
         console.print(result.stdout)
         console.print("[green]✓ Migrations complete[/green]")
     except subprocess.CalledProcessError as e:
-        console.print("[red]Migration failed:[/red]")
-        console.print(e.stderr)
+        console.print("[red]Migration failed (check alembic logs)[/red]")
+        logger.error("migration_failed", stderr=e.stderr)
         raise typer.Exit(1) from None
 
 
@@ -369,12 +396,17 @@ def reset_database(
 
 async def _reset_database() -> None:
     """Async implementation of reset command."""
-    import subprocess
-
     from sqlalchemy import text
 
+    from app.config import settings as app_settings
     from app.infrastructure.database.connection import engine
 
+    # Defense-in-depth: independent environment guard
+    if app_settings.ENVIRONMENT in ("production", "staging"):
+        console.print("[red]Cannot reset database in production or staging![/red]")
+        raise typer.Exit(1)
+
+    logger.warning("database_reset_initiated", environment=app_settings.ENVIRONMENT)
     console.print("[yellow]Resetting database...[/yellow]")
 
     try:
@@ -385,12 +417,29 @@ async def _reset_database() -> None:
             await conn.execute(text("CREATE SCHEMA public"))
             await conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
 
-        # Run migrations
+        # Run migrations (async subprocess to avoid blocking event loop)
         console.print("  Running migrations...")
-        subprocess.run(["alembic", "upgrade", "head"], check=True)
+        process = await asyncio.create_subprocess_exec(
+            "alembic",
+            "upgrade",
+            "head",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, stderr = await process.communicate()
+        if process.returncode != 0:
+            logger.error(
+                "migration_failed_during_reset",
+                stderr=stderr.decode() if stderr else "",
+            )
+            console.print("[red]Migration failed (check logs)[/red]")
+            raise typer.Exit(1)
 
         console.print("[green]✓ Database reset complete[/green]")
 
+    except typer.Exit:
+        raise
     except Exception:
         console.print("[red]Reset failed (check logs)[/red]")
+        logger.error("database_reset_failed", exc_info=True)
         raise typer.Exit(1) from None

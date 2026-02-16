@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.api.v1.schemas.common import TokenStr
+from app.api.v1.schemas.common import NameStr, TokenStr
 
 # ===========================================
 # Request Schemas
@@ -54,17 +54,15 @@ class RegisterRequest(BaseModel):
         description="Password (min 8 chars, uppercase, lowercase, digit, special)",
         examples=["SecureP@ss123"],
     )
-    first_name: str = Field(
+    first_name: NameStr = Field(
         ...,
         min_length=1,
-        max_length=100,
         description="User's first name",
         examples=["John"],
     )
-    last_name: str = Field(
+    last_name: NameStr = Field(
         ...,
         min_length=1,
-        max_length=100,
         description="User's last name",
         examples=["Doe"],
     )
@@ -178,8 +176,8 @@ class UserResponse(BaseModel):
 
     id: UUID
     email: str = Field(max_length=320)
-    first_name: str = Field(max_length=100)
-    last_name: str = Field(max_length=100)
+    first_name: str = Field(max_length=200)
+    last_name: str = Field(max_length=200)
     is_active: bool
     is_superuser: bool
     email_verified: bool = False
@@ -197,6 +195,14 @@ class AuthResponse(BaseModel):
 
     tokens: TokenResponse | None = None
     user: UserResponse
+
+
+class VerificationStatusResponse(BaseModel):
+    """Email verification status response."""
+
+    email: str = Field(max_length=320)
+    email_verified: bool
+    verification_required: bool
 
 
 # Note: MessageResponse moved to common.py - import from there instead

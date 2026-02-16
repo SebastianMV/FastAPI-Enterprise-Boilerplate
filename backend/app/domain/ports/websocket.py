@@ -140,7 +140,7 @@ class WebSocketPort(ABC):
         user_id: UUID,
         tenant_id: UUID | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> str:
+    ) -> str | None:
         """
         Register a new WebSocket connection.
 

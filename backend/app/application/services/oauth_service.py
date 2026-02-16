@@ -432,6 +432,10 @@ class OAuthService:
         **kwargs: Any,
     ) -> SSOConfiguration:
         """Create SSO configuration for a tenant."""
+        # Defense-in-depth: truncate bare str params
+        name = name[:255]
+        client_id = client_id[:500]
+        client_secret = client_secret[:2048]
         config_id = uuid4()
         now = datetime.now(UTC)
 
@@ -522,7 +526,12 @@ class OAuthService:
             "production",
             "staging",
         ) and not base_url.startswith("https://"):
-            logger.warning("app_base_url_not_https", environment=settings.ENVIRONMENT)
+            from app.domain.exceptions.base import BusinessRuleViolationError
+
+            raise BusinessRuleViolationError(
+                message="APP_BASE_URL must use HTTPS in production/staging",
+                rule="oauth_https_required",
+            )
         return f"{base_url}/api/v1/auth/oauth/{provider.value}/callback"
 
     async def _store_oauth_state(self, state: str, data: OAuthState) -> None:
@@ -631,13 +640,19 @@ class OAuthService:
         self,
         provider: OAuthProvider,
         provider_user_id: str,
+        tenant_id: UUID | None = None,
     ) -> OAuthConnection | None:
         """Get OAuth connection by provider and provider user ID."""
-        stmt = select(OAuthConnectionModel).where(
+        conditions = [
             OAuthConnectionModel.provider == provider.value,
             OAuthConnectionModel.provider_user_id == provider_user_id,
             OAuthConnectionModel.is_active.is_(True),
-        )
+        ]
+
+        if tenant_id is not None:
+            conditions.append(OAuthConnectionModel.tenant_id == tenant_id)
+
+        stmt = select(OAuthConnectionModel).where(*conditions)
 
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -781,18 +796,20 @@ class OAuthService:
         now = datetime.now(UTC)
 
         # Build name parts
-        first_name = user_info.given_name or ""
-        last_name = user_info.family_name or ""
+        first_name = (user_info.given_name or "")[:200]
+        last_name = (user_info.family_name or "")[:200]
 
         # Fallback: try to split full name
         if not first_name and not last_name and user_info.name:
             parts = user_info.name.split(" ", 1)
-            first_name = parts[0]
-            last_name = parts[1] if len(parts) > 1 else ""
+            first_name = parts[0][:200]
+            last_name = parts[1][:200] if len(parts) > 1 else ""
 
         # Default first_name if still empty
         if not first_name:
-            first_name = user_info.email.split("@")[0] if user_info.email else "User"
+            first_name = (
+                user_info.email.split("@")[0][:200] if user_info.email else "User"
+            )
 
         from app.domain.value_objects.email import Email
 

@@ -6,18 +6,16 @@
 from datetime import datetime
 from uuid import UUID
 
-from typing import Annotated
-
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.v1.schemas.common import ScopeStr
+from app.api.v1.schemas.common import LongNameStr, ScopeStr, TokenStr
 
 
 class APIKeyCreate(BaseModel):
     """Schema for creating an API key."""
 
-    name: str = Field(..., min_length=1, max_length=255)
-    scopes: list[Annotated[str, Field(max_length=100)]] = Field(
+    name: LongNameStr = Field(..., min_length=1)
+    scopes: list[ScopeStr] = Field(
         default_factory=list,
         max_length=20,
         description="Permission scopes (e.g., 'users:read', 'roles:*')",
@@ -36,7 +34,7 @@ class APIKeyResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    name: str = Field(max_length=255)
+    name: LongNameStr
     prefix: str = Field(max_length=20)
     scopes: list[ScopeStr]
     is_active: bool
@@ -54,11 +52,10 @@ class APIKeyCreatedResponse(BaseModel):
     """
 
     id: UUID
-    name: str = Field(max_length=255)
+    name: LongNameStr
     prefix: str = Field(max_length=20)
-    key: str = Field(
+    key: TokenStr = Field(
         ...,
-        max_length=2048,
         description="The API key. Store this securely - it cannot be retrieved again.",
     )
     scopes: list[ScopeStr]

@@ -63,6 +63,17 @@ class OAuthAuthorizeResponse(BaseModel):
     state: str = Field(max_length=256)
 
 
+class OAuthProviderResponse(BaseModel):
+    """OAuth provider availability response."""
+
+    provider: str = Field(max_length=50)
+    name: str = Field(max_length=100)
+    icon: str = Field(max_length=50)
+    available: bool
+    is_sso: bool = False
+    is_required: bool = False
+
+
 class OAuthTokenResponse(BaseModel):
     """OAuth token response after successful authentication."""
 
@@ -747,6 +758,7 @@ async def create_sso_config(
 
 @router.get(
     "/providers",
+    response_model=list[OAuthProviderResponse],
     summary="List available OAuth providers",
     description="Get list of available OAuth providers and their status.",
 )
@@ -754,7 +766,7 @@ async def list_providers(
     session: DbSession,
     current_user: CurrentUser,
     tenant_id: CurrentTenantId = None,
-) -> list[dict]:
+) -> list[OAuthProviderResponse]:
     """
     List available OAuth providers.
 
@@ -762,28 +774,28 @@ async def list_providers(
     """
     from app.config import settings
 
-    providers = []
+    providers: list[OAuthProviderResponse] = []
 
     # Check built-in providers
     provider_configs = [
-        {
-            "provider": "google",
-            "name": "Google",
-            "icon": "google",
-            "available": bool(getattr(settings, "OAUTH_GOOGLE_CLIENT_ID", "")),
-        },
-        {
-            "provider": "github",
-            "name": "GitHub",
-            "icon": "github",
-            "available": bool(getattr(settings, "OAUTH_GITHUB_CLIENT_ID", "")),
-        },
-        {
-            "provider": "microsoft",
-            "name": "Microsoft",
-            "icon": "microsoft",
-            "available": bool(getattr(settings, "OAUTH_MICROSOFT_CLIENT_ID", "")),
-        },
+        OAuthProviderResponse(
+            provider="google",
+            name="Google",
+            icon="google",
+            available=bool(getattr(settings, "OAUTH_GOOGLE_CLIENT_ID", "")),
+        ),
+        OAuthProviderResponse(
+            provider="github",
+            name="GitHub",
+            icon="github",
+            available=bool(getattr(settings, "OAUTH_GITHUB_CLIENT_ID", "")),
+        ),
+        OAuthProviderResponse(
+            provider="microsoft",
+            name="Microsoft",
+            icon="microsoft",
+            available=bool(getattr(settings, "OAUTH_MICROSOFT_CLIENT_ID", "")),
+        ),
     ]
 
     # Add tenant SSO configs if available
@@ -793,20 +805,20 @@ async def list_providers(
 
         for config in sso_configs:
             providers.append(
-                {
-                    "provider": config.provider.value,
-                    "name": config.name,
-                    "icon": config.provider.value,
-                    "available": config.is_enabled,
-                    "is_sso": True,
-                    "is_required": config.is_required,
-                }
+                OAuthProviderResponse(
+                    provider=config.provider.value,
+                    name=config.name,
+                    icon=config.provider.value,
+                    available=config.is_enabled,
+                    is_sso=True,
+                    is_required=config.is_required,
+                )
             )
 
     # Add built-in providers
     for config in provider_configs:
         # Skip if there's an SSO config that overrides it
-        if not any(p.get("provider") == config["provider"] for p in providers):
+        if not any(p.provider == config.provider for p in providers):
             providers.append(config)
 
     return providers

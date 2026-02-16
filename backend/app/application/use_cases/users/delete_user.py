@@ -13,6 +13,9 @@ from uuid import UUID
 from app.domain.exceptions.base import EntityNotFoundError
 from app.domain.ports.session_repository import SessionRepositoryPort
 from app.domain.ports.user_repository import UserRepositoryPort
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -65,11 +68,7 @@ class DeleteUserUseCase:
             )
 
         # 1b. Defense-in-depth: verify tenant isolation
-        if (
-            request.tenant_id
-            and user.tenant_id
-            and user.tenant_id != request.tenant_id
-        ):
+        if request.tenant_id and user.tenant_id and user.tenant_id != request.tenant_id:
             raise EntityNotFoundError(
                 entity_type="User",
                 entity_id=str(request.user_id),
@@ -81,3 +80,9 @@ class DeleteUserUseCase:
 
         # 3. Soft delete
         await self._user_repository.delete(request.user_id)
+
+        logger.info(
+            "user_deleted",
+            user_id=str(request.user_id),
+            tenant_id=str(request.tenant_id) if request.tenant_id else None,
+        )

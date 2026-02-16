@@ -44,6 +44,9 @@ from app.domain.ports.storage import (
     StorageFile,
     StoragePort,
 )
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class S3StorageAdapter(StoragePort):
@@ -149,7 +152,7 @@ class S3StorageAdapter(StoragePort):
         self,
         content_type: str | None,
         metadata: dict[str, str] | None,
-    ) -> dict:
+    ) -> dict[str, str]:
         """Build extra arguments for upload operations."""
         args = {}
 
@@ -232,6 +235,9 @@ class S3StorageAdapter(StoragePort):
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchKey":
                 raise FileNotFoundError("File not found") from None
+            logger.error(
+                "s3_download_failed", path=path, error_code=e.response["Error"]["Code"]
+            )
             raise
 
     async def download_stream(self, path: str) -> AsyncIterator[bytes]:
@@ -262,8 +268,10 @@ class S3StorageAdapter(StoragePort):
                 None,
                 partial(self._client.delete_object, Bucket=self._bucket, Key=path),
             )
+            logger.info("s3_file_deleted", path=path, bucket=self._bucket)
             return True
         except ClientError:
+            logger.warning("s3_delete_failed", path=path, bucket=self._bucket)
             return False
 
     async def exists(self, path: str) -> bool:

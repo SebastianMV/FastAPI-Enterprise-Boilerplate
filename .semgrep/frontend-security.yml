@@ -8,7 +8,6 @@
 # =============================================================================
 
 rules:
-
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # SEVERITY 9: Error Message Information Leaking
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -86,10 +85,10 @@ rules:
   - id: no-ungated-console-log
     patterns:
       - pattern: console.log(...)
-    pattern-not-inside: |
-      if ($DEBUG) { ... }
-    pattern-not-inside: |
-      if (import.meta.env.DEV) { ... }
+      - pattern-not-inside: |
+          if ($DEBUG) { ... }
+      - pattern-not-inside: |
+          if (import.meta.env.DEV) { ... }
     message: >
       console.log() must be gated behind a DEBUG flag or import.meta.env.DEV.
       Production builds should not emit console output.
@@ -341,7 +340,7 @@ rules:
 
   - id: no-unencoded-url-params
     patterns:
-      - pattern-regex: "\$\{(?!encodeURIComponent)[a-zA-Z_]+\}"
+      - pattern-regex: '\$\{(?!encodeURIComponent)[a-zA-Z_]+\}'
     pattern-inside: |
       `/api/...`
     message: >

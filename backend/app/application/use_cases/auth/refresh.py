@@ -99,10 +99,12 @@ class RefreshTokenUseCase:
         user = await self._user_repo.get_by_id(user_id)
 
         if not user:
-            raise AuthenticationError(message="User not found", code="USER_NOT_FOUND")
+            raise AuthenticationError(
+                message="Invalid or expired token", code="INVALID_TOKEN"
+            )
         if not user.is_active:
             raise AuthenticationError(
-                message="User account is disabled", code="USER_INACTIVE"
+                message="Invalid or expired token", code="INVALID_TOKEN"
             )
 
         # Issue new tokens
@@ -141,6 +143,13 @@ class RefreshTokenUseCase:
                     "old_refresh_token_blacklist_failed",
                     exc_info=True,
                 )
+                # Fail-closed: if we cannot blacklist the old token,
+                # abort the rotation to prevent token reuse.
+                if settings.ENVIRONMENT in ("production", "staging"):
+                    raise AuthenticationError(
+                        message="Unable to complete token rotation",
+                        code="TOKEN_ROTATION_FAILED",
+                    ) from None
 
             new_payload = decode_token(new_refresh_token)
             new_jti = new_payload.get("jti", "")

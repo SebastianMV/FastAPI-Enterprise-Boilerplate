@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         await init_database()
         logger.info("database_initialized")
     except Exception as e:
-        logger.error("database_init_failed", error_type=type(e).__name__)
+        logger.error("database_init_failed", error_type=type(e).__name__, exc_info=True)
         raise  # Fatal: do not start app without database
 
     # Initialize uptime tracker
@@ -73,7 +73,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         await uptime_tracker.initialize()
         logger.info("uptime_tracker_initialized")
     except Exception as e:
-        logger.warning("uptime_tracker_init_failed", error_type=type(e).__name__)
+        logger.warning(
+            "uptime_tracker_init_failed", error_type=type(e).__name__, exc_info=True
+        )
 
     yield
 

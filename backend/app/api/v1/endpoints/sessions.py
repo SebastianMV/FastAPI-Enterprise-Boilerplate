@@ -15,6 +15,9 @@ from app.infrastructure.auth.jwt_handler import validate_access_token
 from app.infrastructure.database.repositories.session_repository import (
     SQLAlchemySessionRepository,
 )
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -214,7 +217,9 @@ async def revoke_all_sessions(
         # Try to parse as UUID, otherwise use as string
         try:
             current_uuid = UUID(current_token_jti)
-            count = await repo.revoke_all_except(user_id, current_uuid, tenant_id=tenant_id)
+            count = await repo.revoke_all_except(
+                user_id, current_uuid, tenant_id=tenant_id
+            )
         except ValueError:
             # If jti is not a valid UUID, only skip it (don't revoke all blindly)
             count = await repo.revoke_all(user_id, tenant_id=tenant_id)

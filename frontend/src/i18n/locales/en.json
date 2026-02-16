@@ -28,13 +28,15 @@
     "accessDenied": "You don't have permission to access this page",
     "fetchError": "Failed to fetch data",
     "na": "N/A",
+    "ms": "ms",
     "never": "Never",
     "retry": "Retry",
     "brandName": "FastAPI Enterprise",
     "brandLogoAlt": "Application logo",
     "placeholderFirstName": "e.g. John",
     "placeholderLastName": "e.g. Doe",
-    "placeholderEmail": "e.g. user@example.com"
+    "placeholderEmail": "e.g. user@example.com",
+    "invalidFile": "Invalid file"
   },
   "auth": {
     "login": "Login",
@@ -50,6 +52,7 @@
     "loginError": "Invalid email or password",
     "logoutSuccess": "You have been logged out",
     "sessionExpired": "Your session has expired. Please login again",
+    "invalidTokenFormat": "Invalid verification token",
     "loginFailed": "Login failed. Please try again.",
     "welcomeBack": "Welcome back",
     "signInAccount": "Sign in to your account",
@@ -309,6 +312,7 @@
   "profile": {
     "title": "My Profile",
     "subtitle": "Manage your personal information and security settings",
+    "avatarAlt": "User avatar",
     "editProfile": "Edit Profile",
     "updatePersonalInfo": "Update your personal information",
     "profileInfo": "Profile Information",
@@ -720,7 +724,8 @@
     "lostDeviceQuestion": "Lost your device?",
     "lostDeviceAnswer": "Use one of your backup codes to sign in, then reconfigure 2FA with a new device.",
     "fetchError": "Failed to fetch MFA status",
-    "setupError": "Failed to setup MFA. Please try again."
+    "setupError": "Failed to setup MFA. Please try again.",
+    "invalidCode": "MFA code must be exactly 6 digits"
   },
   "tenants": {
     "title": "Tenant Management",
@@ -809,6 +814,7 @@
   },
   "data": {
     "title": "Data Exchange",
+    "unexpectedResponseType": "Unexpected response from server",
     "description": "Import, export, and generate reports for your data",
     "selectEntity": "Select Entity",
     "fields": "fields",
@@ -935,7 +941,9 @@
     "connectionFailed": "Failed to connect to provider",
     "signUpWith": "Sign up with",
     "connect": "Connect",
-    "continueWith": "Continue with"
+    "continueWith": "Continue with",
+    "genericError": "Authentication failed. Please try again.",
+    "invalidAuthorizationUrl": "Invalid authorization URL"
   },
   "validation": {
     "required": "This field is required",

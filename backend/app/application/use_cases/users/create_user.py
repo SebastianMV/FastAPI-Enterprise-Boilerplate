@@ -16,6 +16,9 @@ from app.domain.ports.user_repository import UserRepositoryPort
 from app.domain.value_objects.email import Email
 from app.domain.value_objects.password import Password
 from app.infrastructure.auth.jwt_handler import hash_password
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -140,5 +143,11 @@ class CreateUserUseCase:
 
         # 10. Persist
         created_user = await self._user_repository.create(user)
+
+        logger.info(
+            "user_created",
+            user_id=str(created_user.id),
+            created_by=str(request.created_by) if request.created_by else None,
+        )
 
         return CreateUserResponse(user=created_user)

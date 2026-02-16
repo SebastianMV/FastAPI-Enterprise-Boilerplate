@@ -14,10 +14,14 @@ from __future__ import annotations
 
 import json
 from datetime import UTC
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
+from uuid import UUID
 
 from app.domain.entities.mfa import MFAConfig
 from app.infrastructure.observability.logging import get_logger
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -85,7 +89,7 @@ def _dict_to_mfa_config(data: dict[str, Any]) -> MFAConfig:
 
 async def get_mfa_config(
     user_id: str,
-    session: Any | None = None,
+    session: AsyncSession | None = None,
 ) -> MFAConfig | None:
     """Get MFA config for user.
 
@@ -130,8 +134,8 @@ async def get_mfa_config(
             from app.infrastructure.auth.encryption import decrypt_value
 
             config = MFAConfig(
-                id=model.id,
-                user_id=model.user_id,
+                id=cast("UUID", model.id),
+                user_id=cast("UUID", model.user_id),
                 secret=decrypt_value(model.secret),
                 is_enabled=model.is_enabled,
                 backup_codes=model.backup_codes or [],
@@ -161,12 +165,12 @@ async def get_mfa_config(
         raise ServiceUnavailableError(
             service="mfa_config",
             message="Unable to verify MFA status",
-        )
+        ) from None
 
 
 async def save_mfa_config(
     config: MFAConfig,
-    session: Any | None = None,
+    session: AsyncSession | None = None,
 ) -> None:
     """Persist MFA config to the database and update the Redis cache.
 

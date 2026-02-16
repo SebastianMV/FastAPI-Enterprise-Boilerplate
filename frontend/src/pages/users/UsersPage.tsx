@@ -18,7 +18,7 @@ import {
   UserPlus,
   XCircle,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -176,31 +176,40 @@ export default function UsersPage() {
   } = useForm<EditUserFormData>();
   const selectedEditRoles = watchEdit("roles") || [];
 
-  const handleEditClick = useCallback((user: User) => {
-    setSelectedUser(user);
-    resetEditForm({
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      is_active: user.is_active,
-      roles: user.roles || [],
-    });
-    setShowEditModal(true);
-  }, [resetEditForm]);
+  const handleEditClick = useCallback(
+    (user: User) => {
+      setSelectedUser(user);
+      resetEditForm({
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        is_active: user.is_active,
+        roles: user.roles || [],
+      });
+      setShowEditModal(true);
+    },
+    [resetEditForm],
+  );
 
   const handleDeleteClick = useCallback((user: User) => {
     setSelectedUser(user);
     setShowDeleteModal(true);
   }, []);
 
-  const onCreateSubmit = useCallback((data: CreateUserFormData) => {
-    createMutation.mutate(data);
-  }, [createMutation]);
+  const onCreateSubmit = useCallback(
+    (data: CreateUserFormData) => {
+      createMutation.mutate(data);
+    },
+    [createMutation],
+  );
 
-  const onEditSubmit = useCallback((data: EditUserFormData) => {
-    if (!selectedUser) return;
-    updateMutation.mutate({ id: selectedUser.id, data });
-  }, [selectedUser, updateMutation]);
+  const onEditSubmit = useCallback(
+    (data: EditUserFormData) => {
+      if (!selectedUser) return;
+      updateMutation.mutate({ id: selectedUser.id, data });
+    },
+    [selectedUser, updateMutation],
+  );
 
   const onDeleteConfirm = useCallback(() => {
     if (!selectedUser) return;
@@ -208,11 +217,17 @@ export default function UsersPage() {
   }, [selectedUser, deleteMutation]);
 
   const users = data?.items || [];
-  const filteredUsers = users.filter(
-    (user) =>
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
-      (user.first_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (user.last_name ?? "").toLowerCase().includes(search.toLowerCase()),
+  const filteredUsers = useMemo(
+    () =>
+      users.filter(
+        (user) =>
+          user.email.toLowerCase().includes(search.toLowerCase()) ||
+          (user.first_name ?? "")
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          (user.last_name ?? "").toLowerCase().includes(search.toLowerCase()),
+      ),
+    [users, search],
   );
 
   return (
@@ -369,7 +384,7 @@ export default function UsersPage() {
                                     key={roleId}
                                     className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
                                   >
-                                    {role.name}
+                                    {sanitizeText(role.name)}
                                   </span>
                                 ) : null;
                               })
@@ -613,7 +628,7 @@ export default function UsersPage() {
                       className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
                     />
                     <span className="ml-2 text-slate-700 dark:text-slate-300">
-                      {role.name}
+                      {sanitizeText(role.name)}
                     </span>
                   </label>
                 ))}
@@ -759,7 +774,7 @@ export default function UsersPage() {
                       className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
                     />
                     <span className="ml-2 text-slate-700 dark:text-slate-300">
-                      {role.name}
+                      {sanitizeText(role.name)}
                     </span>
                   </label>
                 ))}

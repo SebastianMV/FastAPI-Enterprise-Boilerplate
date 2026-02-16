@@ -23,6 +23,9 @@ from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.database.repositories.audit_log_repository import (
     SQLAlchemyAuditLogRepository,
 )
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/audit-logs", tags=["audit-logs"])
 
@@ -282,12 +285,12 @@ async def get_audit_log(
 
     # Tenant isolation: ensure log belongs to the current tenant.
     # When tenant_id is set: reject entries from other tenants or entries with no tenant.
-    if tenant_id:
-        if log.tenant_id != tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": "NOT_FOUND", "message": "Audit log not found"},
-            )
+    # When tenant_id is None: caller is superuser without tenant context — allow access.
+    if tenant_id and log.tenant_id != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOT_FOUND", "message": "Audit log not found"},
+        )
 
     return _to_response(log)
 

@@ -14,7 +14,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Control, Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -42,6 +42,77 @@ interface RoleFormData {
 
 type CreateRoleFormData = RoleFormData;
 type EditRoleFormData = RoleFormData;
+
+/**
+ * Permission checkbox group for role forms.
+ * Extracted as module-level component to avoid re-creation on parent renders.
+ */
+function PermissionCheckboxGroup({
+  control,
+  name,
+  disabled = false,
+  t,
+}: {
+  control: Control<RoleFormData>;
+  name: "permissions";
+  disabled?: boolean;
+  t: (key: string) => string;
+}) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+          {AVAILABLE_PERMISSIONS.map(({ resource, actions }) => (
+            <div
+              key={resource}
+              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+            >
+              <div className="font-medium text-gray-900 dark:text-white capitalize mb-2">
+                {t(`roles.resources.${resource}`)}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {actions.map((action) => {
+                  const permission = `${resource}:${action}`;
+                  const isChecked = field.value?.includes(permission);
+                  return (
+                    <label
+                      key={permission}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-md border cursor-pointer transition-colors ${
+                        isChecked
+                          ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-300"
+                          : "bg-gray-50 border-gray-300 text-gray-600 hover:border-gray-400 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
+                      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        disabled={disabled}
+                        checked={isChecked}
+                        onChange={(e) => {
+                          const newValue = e.target.checked
+                            ? [...(field.value || []), permission]
+                            : (field.value || []).filter(
+                                (p: string) => p !== permission,
+                              );
+                          field.onChange(newValue);
+                        }}
+                        className="sr-only"
+                      />
+                      <span className="capitalize text-sm">
+                        {t(`roles.actions.${action}`)}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    />
+  );
+}
 
 /**
  * Roles management page with CRUD operations.
@@ -167,27 +238,36 @@ export default function RolesPage() {
   } = useForm<EditRoleFormData>();
 
   // Filter roles by search
-  const filteredRoles =
-    data?.items?.filter(
-      (role) =>
-        role.name.toLowerCase().includes(search.toLowerCase()) ||
-        role.description.toLowerCase().includes(search.toLowerCase()),
-    ) || [];
+  const filteredRoles = useMemo(
+    () =>
+      data?.items?.filter(
+        (role) =>
+          role.name.toLowerCase().includes(search.toLowerCase()) ||
+          role.description.toLowerCase().includes(search.toLowerCase()),
+      ) || [],
+    [data?.items, search],
+  );
 
   // Handle create
-  const onCreateSubmit = useCallback((formData: CreateRoleFormData) => {
-    createMutation.mutate(formData);
-  }, [createMutation]);
+  const onCreateSubmit = useCallback(
+    (formData: CreateRoleFormData) => {
+      createMutation.mutate(formData);
+    },
+    [createMutation],
+  );
 
   // Handle edit
-  const onEditSubmit = useCallback((formData: EditRoleFormData) => {
-    if (selectedRole) {
-      updateMutation.mutate({
-        id: selectedRole.id,
-        data: formData,
-      });
-    }
-  }, [selectedRole, updateMutation]);
+  const onEditSubmit = useCallback(
+    (formData: EditRoleFormData) => {
+      if (selectedRole) {
+        updateMutation.mutate({
+          id: selectedRole.id,
+          data: formData,
+        });
+      }
+    },
+    [selectedRole, updateMutation],
+  );
 
   // Handle delete
   const handleDelete = useCallback(() => {
@@ -197,85 +277,24 @@ export default function RolesPage() {
   }, [selectedRole, deleteMutation]);
 
   // Open edit modal
-  const openEditModal = useCallback((role: Role) => {
-    setSelectedRole(role);
-    resetEditForm({
-      name: role.name,
-      description: role.description,
-      permissions: role.permissions,
-    });
-    setShowEditModal(true);
-  }, [resetEditForm]);
+  const openEditModal = useCallback(
+    (role: Role) => {
+      setSelectedRole(role);
+      resetEditForm({
+        name: role.name,
+        description: role.description,
+        permissions: role.permissions,
+      });
+      setShowEditModal(true);
+    },
+    [resetEditForm],
+  );
 
   // Open delete modal
   const openDeleteModal = useCallback((role: Role) => {
     setSelectedRole(role);
     setShowDeleteModal(true);
   }, []);
-
-  // Permission Checkbox Component
-  const PermissionCheckboxGroup = ({
-    control,
-    name,
-    disabled = false,
-  }: {
-    control: Control<RoleFormData>;
-    name: "permissions";
-    disabled?: boolean;
-  }) => (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-          {AVAILABLE_PERMISSIONS.map(({ resource, actions }) => (
-            <div
-              key={resource}
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-3"
-            >
-              <div className="font-medium text-gray-900 dark:text-white capitalize mb-2">
-                {t(`roles.resources.${resource}`)}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {actions.map((action) => {
-                  const permission = `${resource}:${action}`;
-                  const isChecked = field.value?.includes(permission);
-                  return (
-                    <label
-                      key={permission}
-                      className={`inline-flex items-center px-3 py-1.5 rounded-md border cursor-pointer transition-colors ${
-                        isChecked
-                          ? "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-300"
-                          : "bg-gray-50 border-gray-300 text-gray-600 hover:border-gray-400 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"
-                      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        disabled={disabled}
-                        checked={isChecked}
-                        onChange={(e) => {
-                          const newValue = e.target.checked
-                            ? [...(field.value || []), permission]
-                            : (field.value || []).filter(
-                                (p: string) => p !== permission,
-                              );
-                          field.onChange(newValue);
-                        }}
-                        className="sr-only"
-                      />
-                      <span className="capitalize text-sm">
-                        {t(`roles.actions.${action}`)}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    />
-  );
 
   if (error) {
     return (
@@ -505,6 +524,7 @@ export default function RolesPage() {
             <PermissionCheckboxGroup
               control={controlCreate}
               name="permissions"
+              t={t}
             />
           </div>
 
@@ -585,7 +605,11 @@ export default function RolesPage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t("roles.permissions")}
             </label>
-            <PermissionCheckboxGroup control={controlEdit} name="permissions" />
+            <PermissionCheckboxGroup
+              control={controlEdit}
+              name="permissions"
+              t={t}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

@@ -26,6 +26,15 @@ logger = get_logger(__name__)
 _CLEANUP_INTERVAL_SECONDS = 300  # run cleanup every 5 minutes
 _CLEANUP_MAX_AGE_SECONDS = 3600  # discard entries older than 1 hour
 
+# Trusted proxy networks — module-level constant to avoid re-creation per request
+_TRUSTED_NETWORKS = (
+    ipaddress.ip_network("127.0.0.0/8"),  # localhost
+    ipaddress.ip_network("::1/128"),  # localhost IPv6
+    ipaddress.ip_network("10.0.0.0/8"),  # Docker default
+    ipaddress.ip_network("172.16.0.0/12"),  # Docker bridge
+    ipaddress.ip_network("192.168.0.0/16"),  # Docker host
+)
+
 
 class RateLimitExceeded(HTTPException):
     """Exception raised when rate limit is exceeded."""
@@ -225,7 +234,7 @@ def get_rate_limiter() -> InMemoryRateLimiter | RedisRateLimiter:
             import time
 
             logger.warning(
-                "Redis unavailable for rate limiting, falling back to in-memory",
+                "redis_rate_limit_fallback",
                 exc_info=True,
             )
             _rate_limiter = InMemoryRateLimiter()
@@ -402,13 +411,6 @@ class RateLimitMiddleware:
     @staticmethod
     def _is_trusted_proxy(ip: str) -> bool:
         """Check if IP belongs to a trusted proxy (Docker networks, localhost)."""
-        _TRUSTED_NETWORKS = (
-            ipaddress.ip_network("127.0.0.0/8"),  # localhost
-            ipaddress.ip_network("::1/128"),  # localhost IPv6
-            ipaddress.ip_network("10.0.0.0/8"),  # Docker default
-            ipaddress.ip_network("172.16.0.0/12"),  # Docker bridge
-            ipaddress.ip_network("192.168.0.0/16"),  # Docker host
-        )
         try:
             addr = ipaddress.ip_address(ip)
             return any(addr in net for net in _TRUSTED_NETWORKS)

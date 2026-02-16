@@ -58,7 +58,7 @@ class RequestIDMiddleware:
             if message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
                 headers.append((b"x-request-id", request_id.encode("latin-1")))  # type: ignore[union-attr]
-                message["headers"] = headers
+                message = {**message, "headers": headers}
             await send(message)
 
         await self.app(scope, receive, send_with_request_id)

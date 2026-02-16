@@ -273,6 +273,15 @@ async def bulk_create_users(
     started_at = datetime.now(UTC)
     user_repo = SQLAlchemyUserRepository(session)
 
+    if tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "TENANT_REQUIRED",
+                "message": "Tenant context is required for bulk user creation",
+            },
+        )
+
     results: list[BulkOperationItemResult] = []
     successful = 0
     failed = 0

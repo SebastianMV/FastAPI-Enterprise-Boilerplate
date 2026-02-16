@@ -26,7 +26,10 @@ from app.infrastructure.auth.api_key_handler import (
     revoke_api_key,
 )
 from app.infrastructure.database.connection import get_db_session
+from app.infrastructure.observability.logging import get_logger
 from app.middleware.tenant import require_tenant_context
+
+logger = get_logger(__name__)
 
 router = APIRouter(tags=["api-keys"])
 

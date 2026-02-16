@@ -69,11 +69,7 @@ class GetUserUseCase:
             )
 
         # Defense-in-depth: verify tenant isolation
-        if (
-            request.tenant_id
-            and user.tenant_id
-            and user.tenant_id != request.tenant_id
-        ):
+        if request.tenant_id and user.tenant_id and user.tenant_id != request.tenant_id:
             raise EntityNotFoundError(
                 entity_type="User",
                 entity_id=str(request.user_id),

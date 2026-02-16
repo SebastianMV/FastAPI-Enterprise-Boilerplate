@@ -295,7 +295,7 @@ class TestEmailTemplateEngineInternals:
         """Test Jinja environment has required globals."""
         engine = EmailTemplateEngine()
 
-        assert "t" in engine._env.globals
+        # "t" is now passed per-render via context (thread-safe), not as a global
         assert "app_name" in engine._env.globals
 
     def test_custom_templates_dir(self, tmp_path: Path) -> None:
@@ -369,10 +369,9 @@ class TestEmailTemplateEngineRender:
             mock_path.return_value.exists.return_value = True
             engine = EmailTemplateEngine()
 
-            engine._current_locale = "es"
-
             with patch.object(engine._i18n, "t", return_value="Traducido") as mock_t:
-                result = engine._translate("test.key", name="Test")
+                # locale is now a keyword arg (thread-safe), not self._current_locale
+                result = engine._translate("test.key", locale="es", name="Test")
 
                 assert result == "Traducido"
                 mock_t.assert_called_once_with("test.key", locale="es", name="Test")

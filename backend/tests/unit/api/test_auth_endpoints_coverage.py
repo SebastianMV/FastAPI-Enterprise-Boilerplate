@@ -46,6 +46,7 @@ class TestLoginEndpoint:
         request = LoginRequest(
             email="notfound@example.com",
             password="Password123!",
+            mfa_code=None,
         )
         mock_http_request = MagicMock()
 
@@ -74,6 +75,7 @@ class TestLoginEndpoint:
         request = LoginRequest(
             email="test@example.com",
             password="WrongPassword123!",
+            mfa_code=None,
         )
         mock_http_request = MagicMock()
 
@@ -113,6 +115,7 @@ class TestLoginEndpoint:
         request = LoginRequest(
             email="inactive@example.com",
             password="Password123!",
+            mfa_code=None,
         )
         mock_http_request = MagicMock()
 
@@ -129,7 +132,9 @@ class TestLoginEndpoint:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_cls.return_value = mock_repo
 
-            with patch("app.application.use_cases.auth.login.verify_password") as mock_verify:
+            with patch(
+                "app.application.use_cases.auth.login.verify_password"
+            ) as mock_verify:
                 mock_verify.return_value = True
 
                 from fastapi import HTTPException
@@ -150,6 +155,7 @@ class TestLoginEndpoint:
         request = LoginRequest(
             email="test@example.com",
             password="Password123!",
+            mfa_code=None,
         )
         mock_http_request = MagicMock()
 
@@ -175,7 +181,9 @@ class TestLoginEndpoint:
             mock_repo.update.return_value = mock_user
             mock_repo_cls.return_value = mock_repo
 
-            with patch("app.application.use_cases.auth.login.verify_password") as mock_verify:
+            with patch(
+                "app.application.use_cases.auth.login.verify_password"
+            ) as mock_verify:
                 mock_verify.return_value = True
 
                 with (
@@ -309,7 +317,9 @@ class TestRegisterEndpoint:
                         "app.application.use_cases.auth.register.create_refresh_token",
                         return_value="refresh_token",
                     ),
-                    patch("app.application.use_cases.auth.register.settings") as mock_settings,
+                    patch(
+                        "app.application.use_cases.auth.register.settings"
+                    ) as mock_settings,
                 ):
                     mock_settings.EMAIL_VERIFICATION_REQUIRED = False
 
@@ -410,7 +420,9 @@ class TestRefreshTokenEndpoint:
         mock_request = MagicMock()
         mock_request.cookies = {}
 
-        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
+        with patch(
+            "app.application.use_cases.auth.refresh.validate_refresh_token"
+        ) as mock_validate:
             from app.infrastructure.auth.jwt_handler import AuthenticationError
 
             mock_validate.side_effect = AuthenticationError(
@@ -420,7 +432,9 @@ class TestRefreshTokenEndpoint:
             from fastapi import HTTPException
 
             with pytest.raises(HTTPException) as exc:
-                await refresh_token(request=request, session=mock_session, http_request=mock_request)
+                await refresh_token(
+                    request=request, session=mock_session, http_request=mock_request
+                )
 
             assert exc.value.status_code == 401
 
@@ -433,7 +447,9 @@ class TestRefreshTokenEndpoint:
 
         user_id = uuid4()
 
-        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
+        with patch(
+            "app.application.use_cases.auth.refresh.validate_refresh_token"
+        ) as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(uuid4()),
@@ -449,7 +465,9 @@ class TestRefreshTokenEndpoint:
                 from fastapi import HTTPException
 
                 with pytest.raises(HTTPException) as exc:
-                    await refresh_token(request=request, session=mock_session, http_request=mock_request)
+                    await refresh_token(
+                        request=request, session=mock_session, http_request=mock_request
+                    )
 
                 assert exc.value.status_code == 401
 
@@ -468,7 +486,9 @@ class TestRefreshTokenEndpoint:
         mock_user.tenant_id = tenant_id
         mock_user.is_active = True
 
-        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
+        with patch(
+            "app.application.use_cases.auth.refresh.validate_refresh_token"
+        ) as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(tenant_id),
@@ -492,7 +512,9 @@ class TestRefreshTokenEndpoint:
                     mock_access.return_value = "new_access_token"
                     mock_refresh.return_value = "new_refresh_token"
 
-                    result = await refresh_token(request=request, session=mock_session, http_request=mock_request)
+                    result = await refresh_token(
+                        request=request, session=mock_session, http_request=mock_request
+                    )
 
                     assert result.access_token == "new_access_token"
                     assert result.refresh_token == "new_refresh_token"
@@ -587,6 +609,7 @@ class TestAuthSchemas:
         request = LoginRequest(
             email="test@example.com",
             password="Password123!",
+            mfa_code=None,
         )
 
         assert request.email == "test@example.com"
@@ -653,7 +676,10 @@ class TestLoginMFAFlow:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_cls.return_value = mock_repo
 
-            with patch("app.application.use_cases.auth.login.verify_password", return_value=True):
+            with patch(
+                "app.application.use_cases.auth.login.verify_password",
+                return_value=True,
+            ):
                 with patch(
                     "app.application.services.mfa_config_service.get_mfa_config",
                     new_callable=AsyncMock,
@@ -701,7 +727,10 @@ class TestLoginMFAFlow:
             mock_repo.get_by_email.return_value = mock_user
             mock_repo_cls.return_value = mock_repo
 
-            with patch("app.application.use_cases.auth.login.verify_password", return_value=True):
+            with patch(
+                "app.application.use_cases.auth.login.verify_password",
+                return_value=True,
+            ):
                 with patch(
                     "app.application.services.mfa_config_service.get_mfa_config",
                     new_callable=AsyncMock,
@@ -767,7 +796,10 @@ class TestLoginMFAFlow:
             mock_repo.update = AsyncMock(return_value=mock_user)
             mock_repo_cls.return_value = mock_repo
 
-            with patch("app.application.use_cases.auth.login.verify_password", return_value=True):
+            with patch(
+                "app.application.use_cases.auth.login.verify_password",
+                return_value=True,
+            ):
                 with patch(
                     "app.application.services.mfa_config_service.get_mfa_config",
                     new_callable=AsyncMock,
@@ -814,13 +846,15 @@ class TestLoginMFAFlow:
                                                     http_request=mock_http_request,
                                                 )
 
-                                                # Result is AuthResponse which has tokens attribute
-                                                assert hasattr(
-                                                    result, "tokens"
-                                                ) or hasattr(result, "access_token")
-                                                if hasattr(result, "tokens"):
+                                                # Compatible with both AuthResponse(tokens) and TokenResponse
+                                                tokens = getattr(result, "tokens", None)
+                                                if tokens is not None:
                                                     assert (
-                                                        result.tokens.access_token
+                                                        getattr(
+                                                            tokens,
+                                                            "access_token",
+                                                            None,
+                                                        )
                                                         == "access_token"
                                                     )
                                                 else:
@@ -857,7 +891,9 @@ class TestEmailVerificationEndpoints:
                 from fastapi import HTTPException
 
                 with pytest.raises(HTTPException) as exc:
-                    await send_verification_email(current_user=mock_current_user, session=mock_session)
+                    await send_verification_email(
+                        current_user=mock_current_user, session=mock_session
+                    )
 
                 assert exc.value.status_code == 404
                 assert "USER_NOT_FOUND" in str(exc.value.detail)
@@ -958,7 +994,9 @@ class TestEmailVerificationEndpoints:
         from fastapi import HTTPException
 
         with pytest.raises(HTTPException) as exc:
-            await verify_email(request=VerifyEmailTokenRequest(token=token), session=mock_session)
+            await verify_email(
+                request=VerifyEmailTokenRequest(token=token), session=mock_session
+            )
 
         assert exc.value.status_code == 400
         assert "INVALID_TOKEN" in str(exc.value.detail)
@@ -995,7 +1033,9 @@ class TestEmailVerificationEndpoints:
             with patch("app.api.v1.endpoints.auth.settings") as mock_settings:
                 mock_settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS = 24
 
-                result = await verify_email(request=VerifyEmailTokenRequest(token=token), session=mock_session)
+                result = await verify_email(
+                    request=VerifyEmailTokenRequest(token=token), session=mock_session
+                )
 
                 assert result.success is True
                 mock_user.verify_email.assert_called_once()
@@ -1034,7 +1074,10 @@ class TestEmailVerificationEndpoints:
                 from fastapi import HTTPException
 
                 with pytest.raises(HTTPException) as exc:
-                    await verify_email(request=VerifyEmailTokenRequest(token=token), session=mock_session)
+                    await verify_email(
+                        request=VerifyEmailTokenRequest(token=token),
+                        session=mock_session,
+                    )
 
                 assert exc.value.status_code == 400
                 assert "TOKEN_EXPIRED" in str(exc.value.detail)
@@ -1052,6 +1095,7 @@ class TestAuthAdditionalCoverage:
         request = LoginRequest(
             email="test@example.com",  # Valid for pydantic but we mock Email to fail
             password="Password123!",
+            mfa_code=None,
         )
         mock_http_request = MagicMock()
 
@@ -1081,6 +1125,7 @@ class TestAuthAdditionalCoverage:
         request = LoginRequest(
             email="locked@example.com",
             password="Password123!",
+            mfa_code=None,
         )
         mock_http_request = MagicMock()
 
@@ -1125,6 +1170,7 @@ class TestAuthAdditionalCoverage:
         request = LoginRequest(
             email="test@example.com",
             password="WrongPassword123!",
+            mfa_code=None,
         )
         mock_http_request = MagicMock()
 
@@ -1141,7 +1187,9 @@ class TestAuthAdditionalCoverage:
             patch(
                 "app.api.v1.endpoints.auth.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch("app.application.use_cases.auth.login.verify_password") as mock_verify,
+            patch(
+                "app.application.use_cases.auth.login.verify_password"
+            ) as mock_verify,
             patch("app.application.use_cases.auth.login.settings") as mock_settings,
         ):
             mock_email.return_value = MagicMock()

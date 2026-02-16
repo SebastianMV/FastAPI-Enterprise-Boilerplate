@@ -195,8 +195,7 @@ export function useNotifications(
 
   const clearRead = useCallback(async () => {
     try {
-      await notificationsService.list({ unread_only: true });
-      // Remove read notifications from store
+      // Local-only filter: remove read notifications from store
       const current = useNotificationsStore.getState().notifications;
       const unreadOnly = current.filter((n) => !n.read);
       storeSet(unreadOnly);

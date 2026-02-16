@@ -36,7 +36,8 @@
     "placeholderFirstName": "e.g. John",
     "placeholderLastName": "e.g. Doe",
     "placeholderEmail": "e.g. user@example.com",
-    "menu": "Open menu"
+    "menu": "Open menu",
+    "invalidFile": "Invalid file"
   },
   "auth": {
     "login": "Login",
@@ -86,6 +87,7 @@
     "verifyEmail": "Verify your email",
     "verifyEmailDescription": "Click the link in the email we sent to verify your account",
     "resendVerification": "Resend verification email",
+    "invalidTokenFormat": "Invalid verification token",
     "mfa": {
       "title": "Two-Factor Authentication",
       "description": "Enter the 6-digit code from your authenticator app",
@@ -282,6 +284,7 @@
   "profile": {
     "title": "My Profile",
     "subtitle": "Manage your personal information and security settings",
+    "avatarAlt": "User avatar",
     "editProfile": "Edit Profile",
     "updatePersonalInfo": "Update your personal information",
     "profileInfo": "Profile Information",
@@ -725,7 +728,8 @@
     "qrCodeAlt": "MFA QR Code",
     "copyCode": "Copy backup code",
     "lostDeviceQuestion": "Lost your device?",
-    "lostDeviceAnswer": "Use one of your backup codes to sign in, then reconfigure 2FA with a new device."
+    "lostDeviceAnswer": "Use one of your backup codes to sign in, then reconfigure 2FA with a new device.",
+    "invalidCode": "MFA code must be exactly 6 digits"
   },
   "tenants": {
     "title": "Tenant Management",
@@ -866,7 +870,8 @@
     "reportPlaceholder": "{{entity}} Report",
     "fileTooLarge": "File is too large. Maximum size is {{maxSize}}MB.",
     "maxFileSize": "Max {{maxSize}}MB",
-    "invalidFileType": "Invalid file type. Only CSV, XLSX and XLS files are accepted."
+    "invalidFileType": "Invalid file type. Only CSV, XLSX and XLS files are accepted.",
+    "unexpectedResponseType": "Unexpected response from server"
   },
   "search": {
     "title": "Search",
@@ -941,7 +946,9 @@
     "connectionFailed": "Failed to connect to provider",
     "signUpWith": "Sign up with",
     "connect": "Connect",
-    "continueWith": "Continue with"
+    "continueWith": "Continue with",
+    "genericError": "Authentication failed. Please try again.",
+    "invalidAuthorizationUrl": "Invalid authorization URL"
   },
   "userMenu": {
     "title": "User menu",

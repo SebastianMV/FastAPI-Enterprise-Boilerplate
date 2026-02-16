@@ -101,6 +101,7 @@ class UserRepositoryPort(ABC):
         skip: int = 0,
         limit: int = 100,
         is_active: bool | None = None,
+        tenant_id: UUID | None = None,
     ) -> list[User]:
         """
         List users with pagination.
@@ -109,6 +110,7 @@ class UserRepositoryPort(ABC):
             skip: Number of records to skip
             limit: Maximum number of records to return
             is_active: Filter by active status
+            tenant_id: Filter by tenant for isolation
 
         Returns:
             List of users matching criteria
@@ -116,12 +118,15 @@ class UserRepositoryPort(ABC):
         ...
 
     @abstractmethod
-    async def count(self, *, is_active: bool | None = None) -> int:
+    async def count(
+        self, *, is_active: bool | None = None, tenant_id: UUID | None = None
+    ) -> int:
         """
         Count users matching criteria.
 
         Args:
             is_active: Filter by active status
+            tenant_id: Filter by tenant for isolation
 
         Returns:
             Number of users matching criteria

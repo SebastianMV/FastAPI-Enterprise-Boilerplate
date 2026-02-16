@@ -42,7 +42,11 @@ def health() -> None:
     """Check application health status."""
     import asyncio
 
+    from rich.console import Console
+
     from app.cli.utils import check_database, check_redis
+
+    console = Console()
 
     typer.echo("Checking application health...\n")
 
@@ -56,9 +60,9 @@ def health() -> None:
 
     # Overall status
     if db_ok and redis_ok:
-        typer.echo("\n[green]All systems operational[/green]")
+        console.print("\n[green]All systems operational[/green]")
         raise typer.Exit(0)
-    typer.echo("\n[red]Some systems are not operational[/red]")
+    console.print("\n[red]Some systems are not operational[/red]")
     raise typer.Exit(1)
 
 

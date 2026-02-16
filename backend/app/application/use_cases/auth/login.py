@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.config import settings
+from app.domain.entities.user import User as UserEntity
 from app.domain.exceptions.base import AuthenticationError
 from app.domain.ports.session_repository import SessionRepositoryPort
 from app.domain.ports.user_repository import UserRepositoryPort
@@ -20,8 +21,6 @@ from app.infrastructure.auth.jwt_handler import (
     verify_password,
 )
 from app.infrastructure.observability.logging import get_logger
-
-from app.domain.entities.user import User as UserEntity
 
 logger = get_logger(__name__)
 
@@ -177,13 +176,15 @@ class LoginUseCase:
         )
 
     # ------------------------------------------------------------------
-    async def _verify_mfa_if_enabled(self, user: UserEntity, mfa_code: str | None) -> None:
+    async def _verify_mfa_if_enabled(
+        self, user: UserEntity, mfa_code: str | None
+    ) -> None:
         from app.application.services.mfa_config_service import (
             get_mfa_config,
             save_mfa_config,
         )
 
-        mfa_config = await get_mfa_config(str(user.id))
+        mfa_config = await get_mfa_config(str(user.id), session=self._db_session)
 
         if not mfa_config:
             # No MFA configured for this user — DB is authoritative
@@ -209,4 +210,4 @@ class LoginUseCase:
                 message="Invalid MFA code",
                 code="INVALID_MFA_CODE",
             )
-        await save_mfa_config(mfa_config)
+        await save_mfa_config(mfa_config, session=self._db_session)

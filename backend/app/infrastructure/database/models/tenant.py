@@ -117,4 +117,4 @@ class TenantModel(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Tenant(id={self.id}, slug='{self.slug}', name='{self.name}')>"
+        return f"<Tenant(id={self.id})>"

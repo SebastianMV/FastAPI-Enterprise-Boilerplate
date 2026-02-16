@@ -12,6 +12,7 @@ Commands:
 """
 
 import asyncio
+import re
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -21,9 +22,15 @@ from rich.panel import Panel
 from rich.table import Table
 
 from app.cli.utils import confirm_action, format_uuid
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 app = typer.Typer(help="API key management commands")
 console = Console()
+
+MAX_NAME_LENGTH = 200
+SCOPE_PATTERN = re.compile(r"^[a-z_]+:[a-z_]+$|^\*:\*$")
 
 
 def generate_api_key() -> tuple[str, str]:
@@ -78,7 +85,26 @@ def create_api_key(
         cli apikeys generate -n "Temp Key" -u admin@example.com -e 30
     """
     scope_list = scopes.split(",") if scopes else []
-    asyncio.run(_create_api_key(name, user_email, scope_list, expires_days))
+
+    # Validate name length (Rule 6)
+    if len(name) > MAX_NAME_LENGTH:
+        console.print(f"[red]Name too long (max {MAX_NAME_LENGTH})[/red]")
+        raise typer.Exit(1)
+
+    # Validate scope format
+    for scope in scope_list:
+        scope = scope.strip()
+        if not SCOPE_PATTERN.match(scope):
+            from rich.markup import escape
+
+            console.print(
+                f"[red]Invalid scope format: {escape(scope)}. Expected 'resource:action' or '*:*'[/red]"
+            )
+            raise typer.Exit(1)
+
+    asyncio.run(
+        _create_api_key(name, user_email, [s.strip() for s in scope_list], expires_days)
+    )
 
 
 async def _create_api_key(
@@ -131,6 +157,13 @@ async def _create_api_key(
         await session.flush()
         await session.refresh(api_key_model)
         await session.commit()
+
+        logger.info(
+            "api_key_generated",
+            name=name,
+            user_email=user_email,
+            prefix=prefix,
+        )
 
         # Display the key (only shown once!)
         console.print()
@@ -297,6 +330,11 @@ async def _revoke_api_key(key_id: str, force: bool) -> None:
         api_key.is_active = False
         await session.commit()
 
+        logger.info(
+            "api_key_revoked",
+            name=api_key.name,
+            prefix=api_key.prefix,
+        )
         console.print(f"[green]✓ API key revoked: {api_key.name}[/green]")
 
 

@@ -45,6 +45,9 @@ class APIKey(TenantEntity, AuditableEntity):
     is_deleted: bool = False
     deleted_at: datetime | None = None
 
+    def __repr__(self) -> str:
+        return f"<APIKey(id={self.id}, prefix={self.prefix})>"
+
     @property
     def is_expired(self) -> bool:
         """Check if the API key has expired."""

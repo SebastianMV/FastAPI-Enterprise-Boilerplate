@@ -18,10 +18,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentTenantId, CurrentUser, require_permission
+from app.api.deps import CurrentTenantId, CurrentUser
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.database.models.notification import NotificationModel
+from app.infrastructure.observability.logging import get_logger
 
+logger = get_logger(__name__)
 router = APIRouter(prefix="/notifications")
 
 

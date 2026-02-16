@@ -172,6 +172,13 @@ class HealthResponse(BaseModel):
     details: dict[str, Any] = Field(default_factory=dict)
 
 
+class SearchIndexResponse(BaseModel):
+    """Search index information."""
+
+    name: str = Field(max_length=100)
+    description: str = Field(max_length=200)
+
+
 # ==============================================================================
 # Endpoints
 # ==============================================================================
@@ -288,7 +295,7 @@ async def search(
         ) from e
     except (ProgrammingError, DataError):
         # Bad query syntax or invalid data type — return empty results
-        logger.warning("search_database_error", query=request.query)
+        logger.warning("search_database_error", query_length=len(request.query))
         return SearchResponse(
             hits=[],
             total=0,
@@ -423,17 +430,21 @@ async def health(
 
 @router.get(
     "/indices",
+    response_model=list[SearchIndexResponse],
     summary="List search indices",
     description="Get list of available search indices.",
 )
 async def list_indices(
     current_user_id: UUID = Depends(require_permission("search", "read")),
-) -> list[dict[str, str]]:
+) -> list[SearchIndexResponse]:
     """
     List available search indices.
     """
     return [
-        {"name": index.value, "description": index.name.replace("_", " ").title()}
+        SearchIndexResponse(
+            name=index.value,
+            description=index.name.replace("_", " ").title(),
+        )
         for index in SearchIndex
     ]
 

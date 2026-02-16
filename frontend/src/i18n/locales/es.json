@@ -28,13 +28,15 @@
     "accessDenied": "No tienes permiso para acceder a esta página",
     "fetchError": "Error al obtener datos",
     "na": "N/D",
+    "ms": "ms",
     "never": "Nunca",
     "retry": "Reintentar",
     "brandName": "FastAPI Enterprise",
     "brandLogoAlt": "Logo de la aplicación",
     "placeholderFirstName": "ej. Juan",
     "placeholderLastName": "ej. Pérez",
-    "placeholderEmail": "ej. usuario@example.com"
+    "placeholderEmail": "ej. usuario@example.com",
+    "invalidFile": "Archivo inválido"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -50,6 +52,7 @@
     "loginError": "Correo electrónico o contraseña inválidos",
     "logoutSuccess": "Has cerrado sesión",
     "sessionExpired": "Tu sesión ha expirado. Por favor inicia sesión nuevamente",
+    "invalidTokenFormat": "Token de verificación inválido",
     "loginFailed": "Error de inicio de sesión. Inténtalo de nuevo.",
     "welcomeBack": "Bienvenido de nuevo",
     "signInAccount": "Inicia sesión en tu cuenta",
@@ -309,6 +312,7 @@
   "profile": {
     "title": "Mi Perfil",
     "subtitle": "Gestiona tu información personal y configuración de seguridad",
+    "avatarAlt": "Avatar del usuario",
     "editProfile": "Editar Perfil",
     "updatePersonalInfo": "Actualiza tu información personal",
     "profileInfo": "Información del Perfil",
@@ -712,7 +716,8 @@
     "lostDeviceQuestion": "¿Perdiste tu dispositivo?",
     "lostDeviceAnswer": "Usa uno de tus códigos de respaldo para iniciar sesión, luego reconfigura 2FA con un nuevo dispositivo.",
     "fetchError": "Error al obtener el estado de MFA",
-    "setupError": "Error al configurar MFA. Por favor intenta de nuevo."
+    "setupError": "Error al configurar MFA. Por favor intenta de nuevo.",
+    "invalidCode": "El código MFA debe ser exactamente 6 dígitos"
   },
   "tenants": {
     "title": "Gestión de Inquilinos",
@@ -801,6 +806,7 @@
   },
   "data": {
     "title": "Intercambio de Datos",
+    "unexpectedResponseType": "Respuesta inesperada del servidor",
     "description": "Importar, exportar y generar reportes de tus datos",
     "selectEntity": "Seleccionar Entidad",
     "fields": "campos",
@@ -927,7 +933,9 @@
     "connectionFailed": "Error al conectar con el proveedor",
     "signUpWith": "Registrarse con",
     "connect": "Conectar",
-    "continueWith": "Continuar con"
+    "continueWith": "Continuar con",
+    "genericError": "La autenticación falló. Por favor intenta de nuevo.",
+    "invalidAuthorizationUrl": "URL de autorización inválida"
   },
   "validation": {
     "required": "Este campo es requerido",

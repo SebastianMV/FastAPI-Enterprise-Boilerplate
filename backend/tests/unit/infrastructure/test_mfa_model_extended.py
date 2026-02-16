@@ -31,8 +31,9 @@ class TestMFAConfigModel:
 
         assert "<MFAConfig(" in repr_str
         assert f"id={mfa_config.id}" in repr_str
-        assert f"user_id={mfa_config.user_id}" in repr_str
-        assert "enabled=True" in repr_str
+        # user_id and enabled must NOT appear in repr (security)
+        assert "user_id" not in repr_str
+        assert "enabled" not in repr_str
 
     def test_mfa_config_repr_disabled(self) -> None:
         """Test __repr__ with disabled MFA."""
@@ -51,4 +52,6 @@ class TestMFAConfigModel:
 
         repr_str = repr(mfa_config)
 
-        assert "enabled=False" in repr_str
+        # Sensitive fields must NOT appear in repr
+        assert "enabled" not in repr_str
+        assert "secret" not in repr_str

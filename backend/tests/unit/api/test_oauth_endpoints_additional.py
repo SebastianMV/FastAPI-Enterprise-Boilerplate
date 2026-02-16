@@ -461,11 +461,9 @@ class TestListProvidersEndpoint:
 
             assert isinstance(result, list)
             # Check that Google is available
-            google_provider = next(
-                (p for p in result if p["provider"] == "google"), None
-            )
+            google_provider = next((p for p in result if p.provider == "google"), None)
             assert google_provider is not None
-            assert google_provider["available"] is True
+            assert google_provider.available is True
 
     @pytest.mark.asyncio
     async def test_list_providers_with_tenant(self, mock_session):
@@ -502,6 +500,6 @@ class TestListProvidersEndpoint:
 
                 assert isinstance(result, list)
                 # Check SSO config is present
-                sso_provider = next((p for p in result if p.get("is_sso")), None)
+                sso_provider = next((p for p in result if p.is_sso), None)
                 assert sso_provider is not None
-                assert sso_provider["name"] == "Custom Google SSO"
+                assert sso_provider.name == "Custom Google SSO"

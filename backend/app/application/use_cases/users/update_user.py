@@ -18,6 +18,9 @@ from app.domain.exceptions.base import (
 )
 from app.domain.ports.user_repository import UserRepositoryPort
 from app.domain.value_objects.email import Email
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -82,11 +85,7 @@ class UpdateUserUseCase:
             )
 
         # 1b. Defense-in-depth: verify tenant isolation
-        if (
-            request.tenant_id
-            and user.tenant_id
-            and user.tenant_id != request.tenant_id
-        ):
+        if request.tenant_id and user.tenant_id and user.tenant_id != request.tenant_id:
             raise EntityNotFoundError(
                 entity_type="User",
                 entity_id=str(request.user_id),
@@ -148,5 +147,11 @@ class UpdateUserUseCase:
 
         # 7. Persist
         updated_user = await self._user_repository.update(user)
+
+        logger.info(
+            "user_updated",
+            user_id=str(request.user_id),
+            updated_by=str(request.updated_by) if request.updated_by else None,
+        )
 
         return UpdateUserResponse(user=updated_user)

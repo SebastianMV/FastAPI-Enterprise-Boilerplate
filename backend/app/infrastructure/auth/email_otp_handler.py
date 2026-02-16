@@ -55,7 +55,7 @@ class EmailOTPHandler:
     MAX_ATTEMPTS = 3
     COOLDOWN_SECONDS = 60  # Between OTP generations
 
-    async def _get_redis(self):  # type: ignore[no-untyped-def]
+    async def _get_redis(self) -> "redis.Redis":  # type: ignore[type-arg]
         """Get async Redis connection via application cache infrastructure."""
         from app.infrastructure.cache import get_cache
 

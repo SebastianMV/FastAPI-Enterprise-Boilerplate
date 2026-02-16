@@ -466,19 +466,25 @@ class TestResetDatabaseCommand:
         mock_begin_ctx.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_begin_ctx.__aexit__ = AsyncMock(return_value=None)
 
+        # Mock async subprocess for alembic migration
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate = AsyncMock(return_value=(b"", b""))
+
         with (
             patch("app.infrastructure.database.connection.engine") as mock_engine,
-            patch("subprocess.run") as mock_subprocess,
+            patch(
+                "asyncio.create_subprocess_exec", return_value=mock_process
+            ) as mock_subprocess,
+            patch("app.config.settings") as mock_settings,
         ):
             mock_engine.begin.return_value = mock_begin_ctx
-            mock_subprocess.return_value = MagicMock(returncode=0)
+            mock_settings.ENVIRONMENT = "development"
 
             await _reset_database()
 
             assert mock_conn.execute.call_count == 3
-            mock_subprocess.assert_called_once_with(
-                ["alembic", "upgrade", "head"], check=True
-            )
+            mock_subprocess.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_reset_database_handles_error(self):

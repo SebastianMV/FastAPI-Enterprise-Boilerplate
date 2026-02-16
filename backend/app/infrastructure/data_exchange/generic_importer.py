@@ -293,7 +293,9 @@ class GenericImporter(ImportPort):
                         )
 
             except Exception as e:
-                logger.warning("import_row_error", row_num=row_num, error_type=type(e).__name__)
+                logger.warning(
+                    "import_row_error", row_num=row_num, error_type=type(e).__name__
+                )
                 result["errors"].append(
                     DataImportError(
                         row=row_num,

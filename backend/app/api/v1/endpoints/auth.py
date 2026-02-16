@@ -6,7 +6,6 @@
 import hashlib
 import secrets
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 
@@ -21,6 +20,7 @@ from app.api.v1.schemas.auth import (
     ResetPasswordRequest,
     TokenResponse,
     UserResponse,
+    VerificationStatusResponse,
     VerifyEmailTokenRequest,
     VerifyResetTokenRequest,
 )
@@ -539,7 +539,9 @@ async def forgot_password(
             # Silently skip — don't reveal to client
             logger.warning(
                 "password_reset_rate_limit",
-                email_hash=hashlib.sha256(str(user.email).lower().encode()).hexdigest()[:8],
+                email_hash=hashlib.sha256(str(user.email).lower().encode()).hexdigest()[
+                    :8
+                ],
             )
         else:
             # Generate secure token
@@ -806,6 +808,9 @@ async def send_verification_email(
     await user_repository.update(user)
     await session.commit()
 
+    # Increment rate counter (1 hour TTL)
+    await cache.set(rate_key, rate_count + 1, ttl=SECONDS_PER_HOUR)
+
     # Send verification email
     try:
         from app.infrastructure.email import get_email_service
@@ -906,18 +911,18 @@ async def verify_email(
 
 @router.get(
     "/verification-status",
-    response_model=dict[str, Any],
+    response_model=VerificationStatusResponse,
     summary="Get email verification status",
     description="Check if current user's email is verified.",
 )
 async def get_verification_status(
     user: CurrentUser,
-) -> dict[str, Any]:
+) -> VerificationStatusResponse:
     """
     Get the email verification status for the current user.
     """
-    return {
-        "email": str(user.email),
-        "email_verified": user.email_verified,
-        "verification_required": settings.EMAIL_VERIFICATION_REQUIRED,
-    }
+    return VerificationStatusResponse(
+        email=str(user.email),
+        email_verified=user.email_verified,
+        verification_required=settings.EMAIL_VERIFICATION_REQUIRED,
+    )

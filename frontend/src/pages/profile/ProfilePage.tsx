@@ -161,61 +161,67 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   }, []);
 
-  const handleAvatarChange = useCallback(async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleAvatarChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      setAlertModal({
-        isOpen: true,
-        title: t("common.error"),
-        message: t("profile.invalidFileType"),
-        variant: "error",
-      });
-      return;
-    }
-
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setAlertModal({
-        isOpen: true,
-        title: t("common.error"),
-        message: t("profile.fileTooLarge"),
-        variant: "error",
-      });
-      return;
-    }
-
-    setIsAvatarLoading(true);
-    try {
-      await usersService.uploadAvatar(file);
-      await fetchUser();
-      setAlertModal({
-        isOpen: true,
-        title: t("common.success"),
-        message: t("profile.avatarUpdateSuccess"),
-        variant: "success",
-      });
-    } catch {
-      setAlertModal({
-        isOpen: true,
-        title: t("common.error"),
-        message: t("profile.avatarUploadError"),
-        variant: "error",
-      });
-    } finally {
-      setIsAvatarLoading(false);
-      // Reset the input so the same file can be selected again
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      // Validate file type
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        setAlertModal({
+          isOpen: true,
+          title: t("common.error"),
+          message: t("profile.invalidFileType"),
+          variant: "error",
+        });
+        return;
       }
-    }
-  }, [fetchUser, t]);
+
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setAlertModal({
+          isOpen: true,
+          title: t("common.error"),
+          message: t("profile.fileTooLarge"),
+          variant: "error",
+        });
+        return;
+      }
+
+      setIsAvatarLoading(true);
+      try {
+        await usersService.uploadAvatar(file);
+        await fetchUser();
+        setAlertModal({
+          isOpen: true,
+          title: t("common.success"),
+          message: t("profile.avatarUpdateSuccess"),
+          variant: "success",
+        });
+      } catch {
+        setAlertModal({
+          isOpen: true,
+          title: t("common.error"),
+          message: t("profile.avatarUploadError"),
+          variant: "error",
+        });
+      } finally {
+        setIsAvatarLoading(false);
+        // Reset the input so the same file can be selected again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }
+    },
+    [fetchUser, t],
+  );
 
   // Handle delete avatar confirmation
   const handleDeleteAvatar = useCallback(async () => {
@@ -242,28 +248,31 @@ export default function ProfilePage() {
     }
   }, [fetchUser, t]);
 
-  const onPasswordSubmit = async (data: PasswordFormData) => {
-    if (isPasswordLoading) return;
-    setIsPasswordLoading(true);
-    setSuccessMessage(null);
-    setErrorMessage(null);
+  const onPasswordSubmit = useCallback(
+    async (data: PasswordFormData) => {
+      if (isPasswordLoading) return;
+      setIsPasswordLoading(true);
+      setSuccessMessage(null);
+      setErrorMessage(null);
 
-    try {
-      // Call password change endpoint using the configured axios instance
-      // (sends HttpOnly cookies + CSRF token automatically)
-      await api.post("/auth/change-password", {
-        current_password: data.current_password,
-        new_password: data.new_password,
-      });
+      try {
+        // Call password change endpoint using the configured axios instance
+        // (sends HttpOnly cookies + CSRF token automatically)
+        await api.post("/auth/change-password", {
+          current_password: data.current_password,
+          new_password: data.new_password,
+        });
 
-      setSuccessMessage(t("profile.passwordChangeSuccess"));
-      resetPasswordForm();
-    } catch {
-      setErrorMessage(t("profile.passwordChangeError"));
-    } finally {
-      setIsPasswordLoading(false);
-    }
-  };
+        setSuccessMessage(t("profile.passwordChangeSuccess"));
+        resetPasswordForm();
+      } catch {
+        setErrorMessage(t("profile.passwordChangeError"));
+      } finally {
+        setIsPasswordLoading(false);
+      }
+    },
+    [isPasswordLoading, t, resetPasswordForm],
+  );
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return t("common.never");
@@ -316,7 +325,7 @@ export default function ProfilePage() {
               {user?.avatar_url && isSafeImageUrl(user.avatar_url) ? (
                 <img
                   src={user.avatar_url}
-                  alt={`${user.first_name} ${user.last_name}`}
+                  alt={t('profile.avatarAlt')}
                   className="w-20 h-20 rounded-full object-cover"
                 />
               ) : (

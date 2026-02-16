@@ -42,7 +42,7 @@ class LogoutUseCase:
 
             # Blacklist the access token
             payload = decode_token(request.token)
-            token_id = payload.get("jti") or hash_jti(request.token[:32])
+            token_id = payload.get("jti") or hash_jti(request.token)
 
             exp = payload.get("exp")
             if exp:
@@ -81,7 +81,6 @@ class LogoutUseCase:
         except Exception as exc:
             from app.config import settings
 
+            logger.error("token_blacklist_failed", error=type(exc).__name__)
             if settings.ENVIRONMENT in ("production", "staging"):
-                logger.error("token_blacklist_failed", error=type(exc).__name__)
                 raise
-            logger.warning("token_blacklist_failed", error=type(exc).__name__)

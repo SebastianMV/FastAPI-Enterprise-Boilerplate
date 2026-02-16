@@ -30,14 +30,20 @@ class TestRefreshTokenEndpoint:
         mock_http_request = MagicMock()
         mock_http_request.cookies = {}
 
-        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
+        with patch(
+            "app.application.use_cases.auth.refresh.validate_refresh_token"
+        ) as mock_validate:
             mock_validate.side_effect = AuthenticationError(
                 code="INVALID_TOKEN",
                 message="Token is invalid",
             )
 
             with pytest.raises(HTTPException) as exc_info:
-                await refresh_token(request=request, session=mock_session, http_request=mock_http_request)
+                await refresh_token(
+                    request=request,
+                    session=mock_session,
+                    http_request=mock_http_request,
+                )
 
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail["code"] == "INVALID_TOKEN"
@@ -54,7 +60,9 @@ class TestRefreshTokenEndpoint:
         mock_http_request.cookies = {}
         user_id = uuid4()
 
-        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
+        with patch(
+            "app.application.use_cases.auth.refresh.validate_refresh_token"
+        ) as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(uuid4()),
@@ -68,10 +76,14 @@ class TestRefreshTokenEndpoint:
                 mock_repo_class.return_value = mock_repo
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await refresh_token(request=request, session=mock_session, http_request=mock_http_request)
+                    await refresh_token(
+                        request=request,
+                        session=mock_session,
+                        http_request=mock_http_request,
+                    )
 
         assert exc_info.value.status_code == 401
-        assert exc_info.value.detail["code"] == "USER_NOT_FOUND"
+        assert exc_info.value.detail["code"] == "INVALID_TOKEN"
 
     @pytest.mark.asyncio
     async def test_refresh_token_user_inactive(self) -> None:
@@ -89,7 +101,9 @@ class TestRefreshTokenEndpoint:
         mock_user.id = user_id
         mock_user.is_active = False
 
-        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
+        with patch(
+            "app.application.use_cases.auth.refresh.validate_refresh_token"
+        ) as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(uuid4()),
@@ -103,10 +117,14 @@ class TestRefreshTokenEndpoint:
                 mock_repo_class.return_value = mock_repo
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await refresh_token(request=request, session=mock_session, http_request=mock_http_request)
+                    await refresh_token(
+                        request=request,
+                        session=mock_session,
+                        http_request=mock_http_request,
+                    )
 
-        assert exc_info.value.status_code == 403
-        assert exc_info.value.detail["code"] == "USER_INACTIVE"
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail["code"] == "INVALID_TOKEN"
 
     @pytest.mark.asyncio
     async def test_refresh_token_success(self) -> None:
@@ -128,7 +146,9 @@ class TestRefreshTokenEndpoint:
         mock_user.is_superuser = False
         mock_user.roles = []
 
-        with patch("app.application.use_cases.auth.refresh.validate_refresh_token") as mock_validate:
+        with patch(
+            "app.application.use_cases.auth.refresh.validate_refresh_token"
+        ) as mock_validate:
             mock_validate.return_value = {
                 "sub": str(user_id),
                 "tenant_id": str(tenant_id),
@@ -174,7 +194,9 @@ class TestLogoutEndpoint:
         mock_request.cookies = {}
         mock_response = MagicMock()
 
-        with patch("app.application.use_cases.auth.logout.LogoutUseCase") as mock_uc_cls:
+        with patch(
+            "app.application.use_cases.auth.logout.LogoutUseCase"
+        ) as mock_uc_cls:
             mock_uc = AsyncMock()
             mock_uc_cls.return_value = mock_uc
 

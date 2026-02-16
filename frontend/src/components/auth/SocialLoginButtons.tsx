@@ -1,43 +1,46 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
-import { oauthService, OAUTH_PROVIDERS } from '@/services/api';
+import { OAUTH_PROVIDERS, oauthService } from "@/services/api";
+import { Loader2 } from "lucide-react";
+import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface SocialLoginButtonsProps {
-  mode?: 'login' | 'register' | 'link';
+  mode?: "login" | "register" | "link";
   onError?: (error: string) => void;
 }
 
 /**
  * Social login buttons for OAuth2/SSO providers.
- * 
+ *
  * Supports Google, GitHub, and Microsoft.
  */
-export default function SocialLoginButtons({ 
-  mode = 'login',
-  onError 
+export default function SocialLoginButtons({
+  mode = "login",
+  onError,
 }: SocialLoginButtonsProps) {
   const { t } = useTranslation();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
-  const handleSocialLogin = async (providerId: string) => {
-    try {
-      setLoadingProvider(providerId);
-      
-      if (mode === 'link') {
-        await oauthService.linkProvider(providerId);
-      } else {
-        await oauthService.redirectToProvider(providerId);
+  const handleSocialLogin = useCallback(
+    async (providerId: string) => {
+      try {
+        setLoadingProvider(providerId);
+
+        if (mode === "link") {
+          await oauthService.linkProvider(providerId);
+        } else {
+          await oauthService.redirectToProvider(providerId);
+        }
+      } catch {
+        onError?.(t("oauth.connectionFailed"));
+        setLoadingProvider(null);
       }
-    } catch {
-      onError?.(t('oauth.connectionFailed'));
-      setLoadingProvider(null);
-    }
-  };
+    },
+    [mode, onError, t],
+  );
 
   const getProviderIcon = (providerId: string) => {
     switch (providerId) {
-      case 'google':
+      case "google":
         return (
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -58,7 +61,7 @@ export default function SocialLoginButtons({
             />
           </svg>
         );
-      case 'github':
+      case "github":
         return (
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -68,7 +71,7 @@ export default function SocialLoginButtons({
             />
           </svg>
         );
-      case 'microsoft':
+      case "microsoft":
         return (
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#F25022" d="M1 1h10v10H1z" />
@@ -84,12 +87,12 @@ export default function SocialLoginButtons({
 
   const getButtonLabel = () => {
     switch (mode) {
-      case 'register':
-        return t('oauth.signUpWith');
-      case 'link':
-        return t('oauth.connect');
+      case "register":
+        return t("oauth.signUpWith");
+      case "link":
+        return t("oauth.connect");
       default:
-        return t('oauth.continueWith');
+        return t("oauth.continueWith");
     }
   };
 

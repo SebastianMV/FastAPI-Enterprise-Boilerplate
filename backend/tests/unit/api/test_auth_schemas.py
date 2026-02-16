@@ -86,7 +86,7 @@ class TestRegisterRequest:
                 email="user@example.com",
                 password="password123",
                 first_name="John",
-                last_name="x" * 101,
+                last_name="x" * 201,
             )
 
 

@@ -17,6 +17,9 @@ from fastapi import Request
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.infrastructure.auth.jwt_handler import decode_token
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 # Context variable for current tenant (thread-safe)
 _current_tenant_id: ContextVar[UUID | None] = ContextVar(
@@ -140,6 +143,7 @@ class TenantMiddleware:
             return None
         except Exception:
             # Token invalid or expired - let auth middleware handle it
+            logger.debug("tenant_token_decode_skipped")
             return None
 
 

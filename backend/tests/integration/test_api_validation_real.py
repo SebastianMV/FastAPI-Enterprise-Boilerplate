@@ -297,7 +297,7 @@ class TestOAuthEndpointValidation:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/api/v1/auth/oauth/google/authorize")
             # May redirect or return error if not configured
-            assert response.status_code in [200, 302, 400, 401, 422, 500]
+            assert response.status_code in [200, 302, 400, 401, 422, 500, 503]
 
     @pytest.mark.asyncio
     async def test_oauth_callback_missing_code(self) -> None:

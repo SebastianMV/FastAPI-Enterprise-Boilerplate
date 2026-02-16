@@ -14,7 +14,6 @@ Provides endpoints for:
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -34,9 +33,11 @@ from app.application.services.mfa_config_service import (
     save_mfa_config,
 )
 from app.application.services.mfa_service import MFAService, get_mfa_service
-from app.domain.entities.mfa import MFAConfig
 from app.domain.entities.user import User
 from app.infrastructure.auth.jwt_handler import verify_password
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/mfa", tags=["MFA"])
 
@@ -287,6 +288,7 @@ async def validate_mfa_code(
     return MFAVerifyResponse(
         success=True,
         message="Code verified successfully.",
+        backup_codes_remaining=None,
     )
 
 
@@ -343,7 +345,7 @@ async def request_email_otp(
         )
 
     # Send email
-    recipient_name = current_user.full_name or current_user.email.split("@")[0]
+    recipient_name = current_user.full_name or str(current_user.email).split("@")[0]
     await email_service.send_template_email(
         to_email=str(current_user.email),
         to_name=recipient_name,

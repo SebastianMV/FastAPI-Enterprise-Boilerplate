@@ -214,11 +214,12 @@ class UptimeTracker:
         Get recent downtime incidents.
 
         Args:
-            limit: Maximum number of incidents to return
+            limit: Maximum number of incidents to return (1-1000)
 
         Returns:
             List of incident dictionaries
         """
+        limit = max(1, min(limit, 1000))
         try:
             client = await self._get_redis_client()
 

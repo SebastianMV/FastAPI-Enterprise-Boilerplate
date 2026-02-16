@@ -84,7 +84,9 @@ class TestUserModelRepr:
         result = UserModel.__repr__(model)
 
         assert "<User(" in result
-        assert "email=test@example.com" in result
+        assert f"id={model.id}" in result
+        # email must NOT appear in repr (PII protection)
+        assert "email" not in result
 
 
 class TestTenantModelRepr:

@@ -1,9 +1,9 @@
-import api from './api';
+import api from "./api";
 
 /** Validates that a code is a 6-digit numeric string */
 function validateMfaCode(code: string): void {
   if (!/^\d{6}$/.test(code)) {
-    throw new Error('MFA code must be exactly 6 digits');
+    throw new Error("mfa.invalidCode");
   }
 }
 
@@ -30,41 +30,59 @@ export interface EmailOTPResponse {
 
 export const mfaService = {
   getStatus: async (): Promise<MFAStatus> => {
-    const response = await api.get<MFAStatus>('/mfa/status');
+    const response = await api.get<MFAStatus>("/mfa/status");
     return response.data;
   },
 
   setup: async (): Promise<MFASetupResponse> => {
-    const response = await api.post<MFASetupResponse>('/mfa/setup');
+    const response = await api.post<MFASetupResponse>("/mfa/setup");
     return response.data;
   },
 
   verify: async (code: string): Promise<{ message: string }> => {
     validateMfaCode(code);
-    const response = await api.post<{ message: string }>('/mfa/verify', { code });
+    const response = await api.post<{ message: string }>("/mfa/verify", {
+      code,
+    });
     return response.data;
   },
 
-  disable: async (code: string, password: string): Promise<{ message: string }> => {
+  disable: async (
+    code: string,
+    password: string,
+  ): Promise<{ message: string }> => {
     validateMfaCode(code);
-    const response = await api.post<{ message: string }>('/mfa/disable', { code, password });
+    const response = await api.post<{ message: string }>("/mfa/disable", {
+      code,
+      password,
+    });
     return response.data;
   },
 
-  regenerateBackupCodes: async (code: string): Promise<{ backup_codes: string[] }> => {
+  regenerateBackupCodes: async (
+    code: string,
+  ): Promise<{ backup_codes: string[] }> => {
     validateMfaCode(code);
-    const response = await api.post<{ backup_codes: string[] }>('/mfa/backup-codes/regenerate', { code });
+    const response = await api.post<{ backup_codes: string[] }>(
+      "/mfa/backup-codes/regenerate",
+      { code },
+    );
     return response.data;
   },
 
   requestEmailOTP: async (): Promise<EmailOTPResponse> => {
-    const response = await api.post<EmailOTPResponse>('/mfa/email-otp/request');
+    const response = await api.post<EmailOTPResponse>("/mfa/email-otp/request");
     return response.data;
   },
 
-  verifyEmailOTP: async (code: string): Promise<{ message: string; valid: boolean }> => {
+  verifyEmailOTP: async (
+    code: string,
+  ): Promise<{ message: string; valid: boolean }> => {
     validateMfaCode(code);
-    const response = await api.post<{ message: string; valid: boolean }>('/mfa/email-otp/verify', { code });
+    const response = await api.post<{ message: string; valid: boolean }>(
+      "/mfa/email-otp/verify",
+      { code },
+    );
     return response.data;
   },
 };

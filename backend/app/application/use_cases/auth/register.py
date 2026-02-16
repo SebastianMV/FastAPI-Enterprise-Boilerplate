@@ -180,9 +180,13 @@ class RegisterUseCase:
     # ------------------------------------------------------------------
     async def _send_verification_email(self, user: User, token: str) -> None:
         try:
+            from urllib.parse import quote
+
             from app.infrastructure.email import get_email_service
 
-            verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+            verification_url = (
+                f"{settings.FRONTEND_URL}/verify-email?token={quote(token, safe='')}"
+            )
             email_service = get_email_service()
             await email_service.send_verification_email(
                 to_email=str(user.email),

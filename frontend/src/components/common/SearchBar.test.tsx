@@ -56,7 +56,7 @@ describe('SearchBar', () => {
     it('should render search input', () => {
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       expect(input).toBeInTheDocument();
     });
 
@@ -78,14 +78,14 @@ describe('SearchBar', () => {
       renderWithRouter(<SearchBar className="custom-class" />);
       
       // Component should be rendered with custom class
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
     });
 
     it('should render search icon', () => {
       renderWithRouter(<SearchBar />);
       
       // Search icon should be present (SVG element)
-      const container = screen.getByRole('textbox').closest('div')?.parentElement;
+      const container = screen.getByRole('searchbox').closest('div')?.parentElement;
       expect(container?.querySelector('svg')).toBeInTheDocument();
     });
   });
@@ -95,7 +95,7 @@ describe('SearchBar', () => {
       const user = userEvent.setup();
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'test query');
       
       expect(input).toHaveValue('test query');
@@ -105,7 +105,7 @@ describe('SearchBar', () => {
       const user = userEvent.setup();
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'test');
       
       // Wait for clear button to appear (it's the X button)
@@ -126,7 +126,7 @@ describe('SearchBar', () => {
       const user = userEvent.setup();
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'a');
       
       await waitFor(() => {
@@ -138,7 +138,7 @@ describe('SearchBar', () => {
       const user = userEvent.setup();
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'te');
       
       await waitFor(() => {
@@ -168,7 +168,7 @@ describe('SearchBar', () => {
       
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'test');
       
       await waitFor(() => {
@@ -183,10 +183,10 @@ describe('SearchBar', () => {
       
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'test');
       
-      // Should not crash — error is silently handled
+      // Should not crash â€” error is silently handled
       await waitFor(() => {
         expect(mockQuickSearch).toHaveBeenCalled();
       });
@@ -200,7 +200,7 @@ describe('SearchBar', () => {
       renderWithRouter(<SearchBar />);
       
       // Component should load without errors
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
     });
 
     it('should handle invalid sessionStorage data', () => {
@@ -209,7 +209,7 @@ describe('SearchBar', () => {
       // Should not throw
       renderWithRouter(<SearchBar />);
       
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
     });
   });
 
@@ -218,7 +218,7 @@ describe('SearchBar', () => {
       const user = userEvent.setup();
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.click(input);
       
       // Dropdown should open (check input is focused)
@@ -229,7 +229,7 @@ describe('SearchBar', () => {
       const user = userEvent.setup();
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'test');
       
       fireEvent.keyDown(input, { key: 'Escape' });
@@ -242,7 +242,7 @@ describe('SearchBar', () => {
       const user = userEvent.setup();
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'test query');
       
       fireEvent.keyDown(input, { key: 'Enter' });
@@ -258,7 +258,7 @@ describe('SearchBar', () => {
       const user = userEvent.setup();
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.click(input);
       
       // Click outside
@@ -281,14 +281,14 @@ describe('SearchBar', () => {
       
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'test');
       
       // Resolve the search
       resolveSearch!({ hits: [], suggestions: [], total: 0 });
       
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toBeInTheDocument();
+        expect(screen.getByRole('searchbox')).toBeInTheDocument();
       });
     });
   });
@@ -316,7 +316,7 @@ describe('SearchBar', () => {
       
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'john');
       
       await waitFor(() => {
@@ -345,7 +345,7 @@ describe('SearchBar', () => {
       
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'document');
       
       await waitFor(() => {
@@ -366,7 +366,7 @@ describe('SearchBar', () => {
       
       renderWithRouter(<SearchBar />);
       
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('searchbox');
       await user.type(input, 'sug');
       
       await waitFor(() => {

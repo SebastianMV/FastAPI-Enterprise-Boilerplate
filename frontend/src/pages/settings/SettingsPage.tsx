@@ -161,7 +161,7 @@ export default function SettingsPage() {
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center">
               <span className="text-white text-xl font-bold">
-                {user?.first_name?.charAt(0)}
+                {sanitizeText(user?.first_name?.charAt(0) ?? "")}
               </span>
             </div>
             <div>

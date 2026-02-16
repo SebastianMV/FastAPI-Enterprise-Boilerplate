@@ -90,6 +90,7 @@ class MetricsMiddleware:
             await self.app(scope, receive, send_with_metrics)
         except Exception:
             # Record error metrics even on exception
+            status_code = 500
             elapsed_ms = (time.perf_counter() - start_time) * 1000
             metrics = get_metrics_service()
             metrics.record_response_time(elapsed_ms)

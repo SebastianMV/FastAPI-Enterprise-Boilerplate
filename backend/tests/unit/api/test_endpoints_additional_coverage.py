@@ -80,7 +80,9 @@ class TestUsersEndpointCoverage:
         # Mock Password to raise ValueError
         with (
             patch("app.application.use_cases.users.create_user.Email") as mock_email,
-            patch("app.application.use_cases.users.create_user.Password") as mock_password,
+            patch(
+                "app.application.use_cases.users.create_user.Password"
+            ) as mock_password,
         ):
             mock_email.return_value = MagicMock()  # Email validates OK
             mock_password.side_effect = ValueError("Password too weak")
@@ -119,7 +121,9 @@ class TestUsersEndpointCoverage:
 
         with (
             patch("app.application.use_cases.users.create_user.Email") as mock_email,
-            patch("app.application.use_cases.users.create_user.Password") as mock_password,
+            patch(
+                "app.application.use_cases.users.create_user.Password"
+            ) as mock_password,
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
@@ -168,11 +172,16 @@ class TestUsersEndpointCoverage:
 
         with (
             patch("app.application.use_cases.users.create_user.Email") as mock_email,
-            patch("app.application.use_cases.users.create_user.Password") as mock_password,
+            patch(
+                "app.application.use_cases.users.create_user.Password"
+            ) as mock_password,
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch("app.application.use_cases.users.create_user.hash_password", return_value="hashed"),
+            patch(
+                "app.application.use_cases.users.create_user.hash_password",
+                return_value="hashed",
+            ),
         ):
             mock_email_obj = MagicMock()
             mock_email_obj.value = "new@example.com"
@@ -624,9 +633,9 @@ class TestEmailTemplatesAdditionalCoverage:
         mock_i18n = MagicMock()
         mock_i18n.t.return_value = "Translated Text"
         engine._i18n = mock_i18n
-        engine._current_locale = "es"
 
-        result = engine._translate("test.key", name="value")
+        # locale is now a keyword arg (thread-safe), not self._current_locale
+        result = engine._translate("test.key", locale="es", name="value")
 
         mock_i18n.t.assert_called_once_with("test.key", locale="es", name="value")
         assert result == "Translated Text"

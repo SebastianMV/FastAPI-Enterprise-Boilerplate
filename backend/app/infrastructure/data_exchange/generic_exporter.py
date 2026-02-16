@@ -60,9 +60,7 @@ class GenericExporter(ExportPort):
         if tenant_id and hasattr(config.model, "tenant_id"):
             return query.where(config.model.tenant_id == tenant_id)
         if not tenant_id and hasattr(config.model, "tenant_id"):
-            raise ValueError(
-                "tenant_id is required for tenant-aware model exports"
-            )
+            raise ValueError("tenant_id is required for tenant-aware model exports")
         return query
 
     async def export(self, request: ExportRequest) -> ExportResult:

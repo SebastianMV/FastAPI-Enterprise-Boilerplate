@@ -27,7 +27,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -238,13 +238,16 @@ export default function TenantsPage() {
   } = useForm<EditTenantFormData>();
 
   // Filter tenants by search
-  const filteredTenants =
-    data?.items?.filter(
-      (tenant) =>
-        tenant.name.toLowerCase().includes(search.toLowerCase()) ||
-        tenant.slug.toLowerCase().includes(search.toLowerCase()) ||
-        tenant.email?.toLowerCase().includes(search.toLowerCase()),
-    ) || [];
+  const filteredTenants = useMemo(
+    () =>
+      data?.items?.filter(
+        (tenant) =>
+          tenant.name.toLowerCase().includes(search.toLowerCase()) ||
+          tenant.slug.toLowerCase().includes(search.toLowerCase()) ||
+          tenant.email?.toLowerCase().includes(search.toLowerCase()),
+      ) || [],
+    [data?.items, search],
+  );
 
   // Helper to clean empty strings from form data
   const cleanFormData = <T extends object>(data: T): Partial<T> => {
@@ -258,23 +261,29 @@ export default function TenantsPage() {
   };
 
   // Handle create
-  const onCreateSubmit = useCallback((formData: CreateTenantFormData) => {
-    const cleaned = cleanFormData(formData);
-    // Ensure required fields are present
-    if (cleaned.name && cleaned.slug) {
-      createMutation.mutate(cleaned as CreateTenantFormData);
-    }
-  }, [createMutation]);
+  const onCreateSubmit = useCallback(
+    (formData: CreateTenantFormData) => {
+      const cleaned = cleanFormData(formData);
+      // Ensure required fields are present
+      if (cleaned.name && cleaned.slug) {
+        createMutation.mutate(cleaned as CreateTenantFormData);
+      }
+    },
+    [createMutation],
+  );
 
   // Handle edit
-  const onEditSubmit = useCallback((formData: EditTenantFormData) => {
-    if (selectedTenant) {
-      updateMutation.mutate({
-        id: selectedTenant.id,
-        data: cleanFormData(formData) as UpdateTenantData,
-      });
-    }
-  }, [selectedTenant, updateMutation]);
+  const onEditSubmit = useCallback(
+    (formData: EditTenantFormData) => {
+      if (selectedTenant) {
+        updateMutation.mutate({
+          id: selectedTenant.id,
+          data: cleanFormData(formData) as UpdateTenantData,
+        });
+      }
+    },
+    [selectedTenant, updateMutation],
+  );
 
   // Handle delete
   const handleDelete = useCallback(() => {
@@ -284,20 +293,23 @@ export default function TenantsPage() {
   }, [selectedTenant, deleteMutation]);
 
   // Open edit modal
-  const openEditModal = useCallback((tenant: Tenant) => {
-    setSelectedTenant(tenant);
-    resetEditForm({
-      name: tenant.name,
-      slug: tenant.slug,
-      email: tenant.email || "",
-      phone: tenant.phone || "",
-      domain: tenant.domain || "",
-      timezone: tenant.timezone,
-      locale: tenant.locale,
-      plan: tenant.plan,
-    });
-    setShowEditModal(true);
-  }, [resetEditForm]);
+  const openEditModal = useCallback(
+    (tenant: Tenant) => {
+      setSelectedTenant(tenant);
+      resetEditForm({
+        name: tenant.name,
+        slug: tenant.slug,
+        email: tenant.email || "",
+        phone: tenant.phone || "",
+        domain: tenant.domain || "",
+        timezone: tenant.timezone,
+        locale: tenant.locale,
+        plan: tenant.plan,
+      });
+      setShowEditModal(true);
+    },
+    [resetEditForm],
+  );
 
   // Toggle tenant status
   const toggleTenantStatus = useCallback(

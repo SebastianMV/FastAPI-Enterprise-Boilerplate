@@ -144,7 +144,7 @@ describe('ProfilePage', () => {
   it('shows avatar image when avatar_url is present', () => {
     mockUser = { ...mockUser, avatar_url: 'https://example.com/avatar.jpg' };
     renderPage();
-    const img = screen.getByAltText('John Doe');
+    const img = screen.getByAltText('profile.avatarAlt');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', 'https://example.com/avatar.jpg');
   });

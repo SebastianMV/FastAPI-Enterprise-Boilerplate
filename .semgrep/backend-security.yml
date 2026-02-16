@@ -8,7 +8,6 @@
 # =============================================================================
 
 rules:
-
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # SEVERITY 10: Remote Code Execution
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -51,8 +50,10 @@ rules:
               raise HTTPException(..., detail=f"...${{$E}}...", ...)
           - pattern: |
               raise HTTPException(..., detail=f"...${{str($E)}}...", ...)
-          - pattern: JSONResponse(..., content={..., "detail": str($E), ...}, ...)
-          - pattern: JSONResponse(..., content={..., "detail": f"...${{$E}}...", ...}, ...)
+          - pattern: |
+              JSONResponse(..., content={..., "detail": str($E), ...}, ...)
+          - pattern: |
+              JSONResponse(..., content={..., "detail": f"...${{$E}}...", ...}, ...)
     message: >
       Do not expose raw exception messages (str(e)) in HTTP responses. This leaks
       internal details (DB schema, library versions, stack traces). Use a generic
@@ -70,7 +71,8 @@ rules:
     patterns:
       - pattern-either:
           - pattern: raise HTTPException(..., detail=f"...{$E}...")
-          - pattern: JSONResponse(..., content={..., "detail": f"...{$E}..."}, ...)
+          - pattern: |
+              JSONResponse(..., content={..., "detail": f"...{$E}..."}, ...)
     message: >
       f-string in HTTP error detail may interpolate sensitive data. Use a static
       generic message instead.
@@ -93,7 +95,8 @@ rules:
               return {..., "access_token": $TOKEN, ...}
           - pattern: |
               return {..., "refresh_token": $TOKEN, ...}
-          - pattern: JSONResponse(..., content={..., "access_token": $TOKEN, ...}, ...)
+          - pattern: |
+              JSONResponse(..., content={..., "access_token": $TOKEN, ...}, ...)
     message: >
       Never return JWT tokens in JSON response bodies. Tokens must be set as
       HttpOnly cookies to prevent XSS token theft. Use response.set_cookie()

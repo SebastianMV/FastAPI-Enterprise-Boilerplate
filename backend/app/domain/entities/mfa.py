@@ -44,6 +44,9 @@ class MFAConfig:
     enabled_at: datetime | None = None
     last_used_at: datetime | None = None
 
+    def __repr__(self) -> str:
+        return f"<MFAConfig(id={self.id}, is_enabled={self.is_enabled})>"
+
     @staticmethod
     def generate_backup_codes(count: int = BACKUP_CODE_COUNT) -> list[str]:
         """

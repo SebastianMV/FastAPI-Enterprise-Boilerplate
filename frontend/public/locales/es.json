@@ -36,7 +36,8 @@
     "placeholderFirstName": "ej. Juan",
     "placeholderLastName": "ej. Pérez",
     "placeholderEmail": "ej. usuario@example.com",
-    "menu": "Abrir menú"
+    "menu": "Abrir menú",
+    "invalidFile": "Archivo inválido"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -86,6 +87,7 @@
     "verifyEmail": "Verifica tu correo electrónico",
     "verifyEmailDescription": "Haz clic en el enlace del correo electrónico que te enviamos para verificar tu cuenta",
     "resendVerification": "Reenviar correo de verificación",
+    "invalidTokenFormat": "Token de verificación inválido",
     "mfa": {
       "title": "Autenticación de Dos Factores",
       "description": "Ingresa el código de 6 dígitos de tu aplicación de autenticación",
@@ -282,6 +284,7 @@
   "profile": {
     "title": "Mi Perfil",
     "subtitle": "Gestiona tu información personal y configuración de seguridad",
+    "avatarAlt": "Avatar del usuario",
     "editProfile": "Editar Perfil",
     "updatePersonalInfo": "Actualiza tu información personal",
     "profileInfo": "Información del Perfil",
@@ -687,7 +690,8 @@
     "qrCodeAlt": "Código QR para MFA",
     "copyCode": "Copiar código de respaldo",
     "lostDeviceQuestion": "¿Perdiste tu dispositivo?",
-    "lostDeviceAnswer": "Usa uno de tus códigos de respaldo para iniciar sesión, luego reconfigura 2FA con un nuevo dispositivo."
+    "lostDeviceAnswer": "Usa uno de tus códigos de respaldo para iniciar sesión, luego reconfigura 2FA con un nuevo dispositivo.",
+    "invalidCode": "El código MFA debe tener exactamente 6 dígitos"
   },
   "tenants": {
     "title": "Gestión de Inquilinos",
@@ -828,7 +832,8 @@
     "reportPlaceholder": "Reporte de {{entity}}",
     "fileTooLarge": "El archivo es demasiado grande. El tamaño máximo es {{maxSize}}MB.",
     "maxFileSize": "Máx {{maxSize}}MB",
-    "invalidFileType": "Tipo de archivo inválido. Solo se aceptan archivos CSV, XLSX y XLS."
+    "invalidFileType": "Tipo de archivo inválido. Solo se aceptan archivos CSV, XLSX y XLS.",
+    "unexpectedResponseType": "Respuesta inesperada del servidor"
   },
   "search": {
     "title": "Buscar",
@@ -903,7 +908,9 @@
     "connectionFailed": "Error al conectar con el proveedor",
     "signUpWith": "Registrarse con",
     "connect": "Conectar",
-    "continueWith": "Continuar con"
+    "continueWith": "Continuar con",
+    "genericError": "La autenticación falló. Por favor, inténtalo de nuevo.",
+    "invalidAuthorizationUrl": "URL de autorización inválida"
   },
   "validation": {
     "required": "Este campo es requerido",

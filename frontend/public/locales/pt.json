@@ -36,7 +36,8 @@
     "placeholderFirstName": "ex. João",
     "placeholderLastName": "ex. Silva",
     "placeholderEmail": "ex. usuario@example.com",
-    "menu": "Abrir menu"
+    "menu": "Abrir menu",
+    "invalidFile": "Arquivo inválido"
   },
   "auth": {
     "login": "Entrar",
@@ -86,6 +87,7 @@
     "verifyEmail": "Verifique seu e-mail",
     "verifyEmailDescription": "Clique no link do e-mail que enviamos para verificar sua conta",
     "resendVerification": "Reenviar e-mail de verificação",
+    "invalidTokenFormat": "Token de verificação inválido",
     "mfa": {
       "title": "Autenticação de Dois Fatores",
       "description": "Digite o código de 6 dígitos do seu aplicativo autenticador",
@@ -282,6 +284,7 @@
   "profile": {
     "title": "Meu Perfil",
     "subtitle": "Gerencie suas informações pessoais e configurações de segurança",
+    "avatarAlt": "Avatar do usuário",
     "editProfile": "Editar Perfil",
     "updatePersonalInfo": "Atualize suas informações pessoais",
     "profileInfo": "Informações do Perfil",
@@ -725,7 +728,8 @@
     "qrCodeAlt": "Código QR para MFA",
     "copyCode": "Copiar código de backup",
     "lostDeviceQuestion": "Perdeu seu dispositivo?",
-    "lostDeviceAnswer": "Use um dos seus códigos de backup para entrar e depois reconfigure o 2FA com um novo dispositivo."
+    "lostDeviceAnswer": "Use um dos seus códigos de backup para entrar e depois reconfigure o 2FA com um novo dispositivo.",
+    "invalidCode": "O código MFA deve ter exatamente 6 dígitos"
   },
   "tenants": {
     "title": "Gerenciamento de Locatários",
@@ -866,7 +870,8 @@
     "reportPlaceholder": "Relatório de {{entity}}",
     "fileTooLarge": "O arquivo é muito grande. O tamanho máximo é {{maxSize}}MB.",
     "maxFileSize": "Máx {{maxSize}}MB",
-    "invalidFileType": "Tipo de arquivo inválido. Somente arquivos CSV, XLSX e XLS são aceitos."
+    "invalidFileType": "Tipo de arquivo inválido. Somente arquivos CSV, XLSX e XLS são aceitos.",
+    "unexpectedResponseType": "Resposta inesperada do servidor"
   },
   "search": {
     "title": "Busca",
@@ -941,7 +946,9 @@
     "connectionFailed": "Falha ao conectar com o provedor",
     "signUpWith": "Cadastrar com",
     "connect": "Conectar",
-    "continueWith": "Continuar com"
+    "continueWith": "Continuar com",
+    "genericError": "A autenticação falhou. Por favor, tente novamente.",
+    "invalidAuthorizationUrl": "URL de autorização inválida"
   },
   "userMenu": {
     "title": "Menu do usuário",

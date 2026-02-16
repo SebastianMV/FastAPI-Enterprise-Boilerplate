@@ -9,6 +9,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.api.v1.schemas.common import NameStr
+
 # ===========================================
 # Request Schemas
 # ===========================================
@@ -27,15 +29,13 @@ class UserCreate(BaseModel):
         max_length=128,
         description="Initial password",
     )
-    first_name: str = Field(
+    first_name: NameStr = Field(
         ...,
         min_length=1,
-        max_length=100,
     )
-    last_name: str = Field(
+    last_name: NameStr = Field(
         ...,
         min_length=1,
-        max_length=100,
     )
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
@@ -46,15 +46,13 @@ class UserUpdate(BaseModel):
     """Update user request."""
 
     email: EmailStr | None = None
-    first_name: str | None = Field(
+    first_name: NameStr | None = Field(
         default=None,
         min_length=1,
-        max_length=100,
     )
-    last_name: str | None = Field(
+    last_name: NameStr | None = Field(
         default=None,
         min_length=1,
-        max_length=100,
     )
     is_active: bool | None = None
     roles: list[UUID] | None = Field(default=None, max_length=50)
@@ -63,15 +61,13 @@ class UserUpdate(BaseModel):
 class UserUpdateSelf(BaseModel):
     """Update self request (limited fields)."""
 
-    first_name: str | None = Field(
+    first_name: NameStr | None = Field(
         default=None,
         min_length=1,
-        max_length=100,
     )
-    last_name: str | None = Field(
+    last_name: NameStr | None = Field(
         default=None,
         min_length=1,
-        max_length=100,
     )
 
 
@@ -87,8 +83,8 @@ class UserResponse(BaseModel):
 
     id: UUID
     email: str = Field(max_length=320)
-    first_name: str = Field(max_length=100)
-    last_name: str = Field(max_length=100)
+    first_name: str = Field(max_length=200)
+    last_name: str = Field(max_length=200)
     avatar_url: str | None = Field(default=None, max_length=2048)
     is_active: bool
     is_superuser: bool

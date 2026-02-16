@@ -76,9 +76,19 @@ class CSRFMiddleware:
         headers = dict(scope.get("headers", []))
         cookie_header = headers.get(b"cookie", b"").decode()
         csrf_cookie = self._parse_cookie(cookie_header, CSRF_COOKIE_NAME)
+        access_token_cookie = self._parse_cookie(cookie_header, "access_token")
+        auth_header = headers.get(b"authorization", b"").decode()
+        has_bearer_auth = auth_header.startswith("Bearer ")
 
         # --- Validate on state-changing methods ---
-        if method not in SAFE_METHODS and not self._is_exempt(path):
+        should_validate_csrf = (
+            method not in SAFE_METHODS
+            and not self._is_exempt(path)
+            and bool(access_token_cookie)
+            and not has_bearer_auth
+        )
+
+        if should_validate_csrf:
             csrf_header = headers.get(CSRF_HEADER_NAME, b"").decode()
 
             if (

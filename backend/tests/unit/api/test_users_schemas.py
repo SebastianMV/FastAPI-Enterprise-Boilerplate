@@ -99,7 +99,7 @@ class TestUserCreate:
             UserCreate(
                 email="test@example.com",
                 password="password123",
-                first_name="x" * 101,
+                first_name="x" * 201,
                 last_name="Doe",
             )
 
@@ -142,7 +142,7 @@ class TestUserUpdate:
         with pytest.raises(ValidationError):
             UserUpdate(first_name="")
         with pytest.raises(ValidationError):
-            UserUpdate(last_name="x" * 101)
+            UserUpdate(last_name="x" * 201)
 
 
 class TestUserUpdateSelf:

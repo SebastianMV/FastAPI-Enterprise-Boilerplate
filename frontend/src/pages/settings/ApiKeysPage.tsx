@@ -210,12 +210,12 @@ export default function ApiKeysPage() {
     }
   }, [keyToRevoke, handleRevokeKey]);
 
-  const handleRevokeClick = (key: ApiKey) => {
+  const handleRevokeClick = useCallback((key: ApiKey) => {
     setKeyToRevoke(key);
     setShowRevokeModal(true);
-  };
+  }, []);
 
-  const copyToClipboard = async (text: string, keyId: string) => {
+  const copyToClipboard = useCallback(async (text: string, keyId: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKeyId(keyId);
@@ -236,13 +236,13 @@ export default function ApiKeysPage() {
     } catch {
       // Clipboard write failed — silently ignore
     }
-  };
+  }, []);
 
-  const toggleScope = (scope: string) => {
+  const toggleScope = useCallback((scope: string) => {
     setSelectedScopes((prev) =>
       prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
     );
-  };
+  }, []);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t("apiKeys.never");

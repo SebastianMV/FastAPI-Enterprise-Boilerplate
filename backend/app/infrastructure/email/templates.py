@@ -125,7 +125,6 @@ class EmailTemplateEngine:
         )
 
         # Add translation function to templates
-        self._env.globals["t"] = self._translate
         self._env.globals["app_name"] = self._get_app_name
 
     def _get_app_name(self) -> str:
@@ -134,13 +133,15 @@ class EmailTemplateEngine:
 
         return settings.APP_NAME
 
-    def _translate(self, key: str, **kwargs: Any) -> str:
+    def _translate(self, key: str, *, locale: str = "en", **kwargs: Any) -> str:
         """
         Translation function available in templates.
 
-        The locale is set per-render via thread-local or context.
+        Args:
+            key: Translation key
+            locale: Locale passed per-render via template context (thread-safe)
         """
-        return self._i18n.t(key, locale=self._current_locale, **kwargs)
+        return self._i18n.t(key, locale=locale, **kwargs)
 
     def render(
         self,
@@ -167,11 +168,15 @@ class EmailTemplateEngine:
             locale = self.DEFAULT_LOCALE
 
         context = context or {}
-        self._current_locale = locale
+
+        # Create locale-bound translation function (thread-safe: no shared state)
+        def _translate_for_locale(key: str, **kwargs: Any) -> str:
+            return self._translate(key, locale=locale, **kwargs)
 
         # Add common context
         context.update(
             {
+                "t": _translate_for_locale,
                 "locale": locale,
                 "year": self._get_current_year(),
                 "app_name": self._get_app_name(),

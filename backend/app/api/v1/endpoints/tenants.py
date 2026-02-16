@@ -33,6 +33,9 @@ from app.infrastructure.database.repositories.cached_tenant_repository import (
 from app.infrastructure.database.repositories.tenant_repository import (
     SQLAlchemyTenantRepository,
 )
+from app.infrastructure.observability.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 

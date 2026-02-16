@@ -138,7 +138,14 @@ class NotificationService:
 
         # Deliver via WebSocket if available
         if NotificationChannel.IN_APP in channels and self._ws_manager:
-            await self._deliver_via_websocket(notification)
+            try:
+                await self._deliver_via_websocket(notification)
+            except Exception:
+                logger.warning(
+                    "websocket_delivery_failed",
+                    notification_id=str(notification.id),
+                    user_id=str(user_id),
+                )
 
         return notification
 
@@ -279,6 +286,7 @@ class NotificationService:
         self,
         notification_id: UUID,
         user_id: UUID,
+        tenant_id: UUID | None = None,
     ) -> bool:
         """
         Mark a notification as read.
@@ -286,19 +294,24 @@ class NotificationService:
         Args:
             notification_id: Notification ID
             user_id: User ID
+            tenant_id: Optional tenant ID for defense-in-depth isolation
 
         Returns:
             True if updated
         """
         now = datetime.now(UTC)
 
+        conditions = [
+            NotificationModel.id == notification_id,
+            NotificationModel.user_id == user_id,
+            NotificationModel.is_read.is_(False),
+        ]
+        if tenant_id is not None:
+            conditions.append(NotificationModel.tenant_id == tenant_id)
+
         result = await self._session.execute(
             update(NotificationModel)
-            .where(
-                NotificationModel.id == notification_id,
-                NotificationModel.user_id == user_id,
-                NotificationModel.is_read.is_(False),
-            )
+            .where(*conditions)
             .values(is_read=True, read_at=now, updated_at=now)
         )
 
@@ -308,6 +321,7 @@ class NotificationService:
         self,
         user_id: UUID,
         category: str | None = None,
+        tenant_id: UUID | None = None,
     ) -> int:
         """
         Mark all notifications as read for a user.
@@ -315,19 +329,24 @@ class NotificationService:
         Args:
             user_id: User ID
             category: Optional category filter
+            tenant_id: Optional tenant ID for defense-in-depth isolation
 
         Returns:
             Number of notifications marked
         """
         now = datetime.now(UTC)
 
+        conditions = [
+            NotificationModel.user_id == user_id,
+            NotificationModel.is_read.is_(False),
+            NotificationModel.is_deleted.is_(False),
+        ]
+        if tenant_id is not None:
+            conditions.append(NotificationModel.tenant_id == tenant_id)
+
         stmt = (
             update(NotificationModel)
-            .where(
-                NotificationModel.user_id == user_id,
-                NotificationModel.is_read.is_(False),
-                NotificationModel.is_deleted.is_(False),
-            )
+            .where(*conditions)
             .values(is_read=True, read_at=now, updated_at=now)
         )
 
@@ -341,6 +360,7 @@ class NotificationService:
         self,
         notification_id: UUID,
         user_id: UUID,
+        tenant_id: UUID | None = None,
     ) -> bool:
         """
         Soft delete a notification.
@@ -348,19 +368,24 @@ class NotificationService:
         Args:
             notification_id: Notification ID
             user_id: User ID
+            tenant_id: Optional tenant ID for defense-in-depth isolation
 
         Returns:
             True if deleted
         """
         now = datetime.now(UTC)
 
+        conditions = [
+            NotificationModel.id == notification_id,
+            NotificationModel.user_id == user_id,
+            NotificationModel.is_deleted.is_(False),
+        ]
+        if tenant_id is not None:
+            conditions.append(NotificationModel.tenant_id == tenant_id)
+
         result = await self._session.execute(
             update(NotificationModel)
-            .where(
-                NotificationModel.id == notification_id,
-                NotificationModel.user_id == user_id,
-                NotificationModel.is_deleted.is_(False),
-            )
+            .where(*conditions)
             .values(is_deleted=True, deleted_at=now, updated_at=now)
         )
 
@@ -369,25 +394,31 @@ class NotificationService:
     async def delete_all_read(
         self,
         user_id: UUID,
+        tenant_id: UUID | None = None,
     ) -> int:
         """
         Soft delete all read notifications.
 
         Args:
             user_id: User ID
+            tenant_id: Optional tenant ID for defense-in-depth isolation
 
         Returns:
             Number deleted
         """
         now = datetime.now(UTC)
 
+        conditions = [
+            NotificationModel.user_id == user_id,
+            NotificationModel.is_read.is_(True),
+            NotificationModel.is_deleted.is_(False),
+        ]
+        if tenant_id is not None:
+            conditions.append(NotificationModel.tenant_id == tenant_id)
+
         result = await self._session.execute(
             update(NotificationModel)
-            .where(
-                NotificationModel.user_id == user_id,
-                NotificationModel.is_read.is_(True),
-                NotificationModel.is_deleted.is_(False),
-            )
+            .where(*conditions)
             .values(is_deleted=True, deleted_at=now, updated_at=now)
         )
 
@@ -437,6 +468,8 @@ class NotificationService:
         tenant_id: UUID | None = None,
     ) -> Notification:
         """Send login alert notification."""
+        safe_ip = html_mod.escape(ip_address)
+        safe_location = html_mod.escape(location) if location else None
         return await self.create_notification(
             user_id=user_id,
             tenant_id=tenant_id,
@@ -445,7 +478,7 @@ class NotificationService:
             message="notification.loginAlert.message",
             priority=NotificationPriority.HIGH,
             category="security",
-            metadata={"ip_address": ip_address, "location": location},
+            metadata={"ip_address": safe_ip, "location": safe_location},
         )
 
     async def notify_mention(

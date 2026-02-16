@@ -28,13 +28,15 @@
     "accessDenied": "Você não tem permissão para acessar esta página",
     "fetchError": "Falha ao buscar dados",
     "na": "N/D",
+    "ms": "ms",
     "never": "Nunca",
     "retry": "Tentar novamente",
     "brandName": "FastAPI Enterprise",
     "brandLogoAlt": "Logo da aplicação",
     "placeholderFirstName": "ex. João",
     "placeholderLastName": "ex. Silva",
-    "placeholderEmail": "ex. usuario@example.com"
+    "placeholderEmail": "ex. usuario@example.com",
+    "invalidFile": "Arquivo inválido"
   },
   "auth": {
     "login": "Entrar",
@@ -50,6 +52,7 @@
     "loginError": "E-mail ou senha inválidos",
     "logoutSuccess": "Você foi desconectado",
     "sessionExpired": "Sua sessão expirou. Por favor, faça login novamente",
+    "invalidTokenFormat": "Token de verificação inválido",
     "loginFailed": "Falha no login. Tente novamente.",
     "welcomeBack": "Bem-vindo de volta",
     "signInAccount": "Entre na sua conta",
@@ -309,6 +312,7 @@
   "profile": {
     "title": "Meu Perfil",
     "subtitle": "Gerencie suas informações pessoais e configurações de segurança",
+    "avatarAlt": "Avatar do usuário",
     "editProfile": "Editar Perfil",
     "updatePersonalInfo": "Atualize suas informações pessoais",
     "profileInfo": "Informações do Perfil",
@@ -736,7 +740,8 @@
     "lostDeviceQuestion": "Perdeu seu dispositivo?",
     "lostDeviceAnswer": "Use um dos seus códigos de backup para entrar e depois reconfigure o 2FA com um novo dispositivo.",
     "fetchError": "Falha ao buscar status do MFA",
-    "setupError": "Falha ao configurar MFA. Por favor, tente novamente."
+    "setupError": "Falha ao configurar MFA. Por favor, tente novamente.",
+    "invalidCode": "O código MFA deve ter exatamente 6 dígitos"
   },
   "tenants": {
     "title": "Gerenciamento de Locatários",
@@ -825,6 +830,7 @@
   },
   "data": {
     "title": "Troca de Dados",
+    "unexpectedResponseType": "Resposta inesperada do servidor",
     "description": "Importe, exporte e gere relatórios dos seus dados",
     "selectEntity": "Selecionar Entidade",
     "fields": "campos",
@@ -951,7 +957,9 @@
     "connectionFailed": "Falha ao conectar com o provedor",
     "signUpWith": "Cadastrar com",
     "connect": "Conectar",
-    "continueWith": "Continuar com"
+    "continueWith": "Continuar com",
+    "genericError": "A autenticação falhou. Por favor, tente novamente.",
+    "invalidAuthorizationUrl": "URL de autorização inválida"
   },
   "errorBoundary": {
     "title": "Algo deu errado",

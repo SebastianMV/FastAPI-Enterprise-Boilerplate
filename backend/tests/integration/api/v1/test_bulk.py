@@ -392,7 +392,12 @@ class TestBulkRoleAssignment:
         )
 
         assert response.status_code == 400
-        assert "No valid roles found" in response.json()["detail"]
+        detail = response.json()["detail"]
+        if isinstance(detail, dict):
+            assert detail.get("code") == "NO_VALID_ROLES"
+            assert detail.get("message") == "No valid roles found"
+        else:
+            assert "No valid roles found" in str(detail)
 
 
 class TestBulkValidation:
@@ -401,7 +406,7 @@ class TestBulkValidation:
     async def test_validate_user_creation_data(
         self,
         client,
-        auth_headers,
+        superuser_auth_headers,
     ):
         """Test validation of user creation data."""
         response = await client.post(
@@ -424,7 +429,7 @@ class TestBulkValidation:
                     },
                 ],
             },
-            headers=auth_headers,
+            headers=superuser_auth_headers,
         )
 
         assert response.status_code == 200
@@ -438,7 +443,7 @@ class TestBulkValidation:
     async def test_validate_missing_required_fields(
         self,
         client,
-        auth_headers,
+        superuser_auth_headers,
     ):
         """Test validation catches missing fields."""
         response = await client.post(
@@ -450,7 +455,7 @@ class TestBulkValidation:
                     {"email": "test@example.com"},  # Missing password, names
                 ],
             },
-            headers=auth_headers,
+            headers=superuser_auth_headers,
         )
 
         assert response.status_code == 200

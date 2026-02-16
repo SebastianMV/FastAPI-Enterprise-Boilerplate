@@ -8,6 +8,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.api.v1.schemas.common import LongNameStr, ShortStr, UrlStr
+
 
 class TenantSettingsSchema(BaseModel):
     """Schema for tenant settings."""
@@ -19,7 +21,7 @@ class TenantSettingsSchema(BaseModel):
     max_api_keys_per_user: int = Field(default=5, ge=1, le=100)
     max_storage_mb: int = Field(default=1024, ge=100, le=1000000)
     primary_color: str = Field(default="#3B82F6", pattern=r"^#[0-9A-Fa-f]{6}$")
-    logo_url: str | None = Field(default=None, max_length=2048)
+    logo_url: UrlStr | None = None
     password_min_length: int = Field(default=8, ge=6, le=128)
     session_timeout_minutes: int = Field(default=60, ge=5, le=10080)
     require_email_verification: bool = True
@@ -37,9 +39,9 @@ class TenantCreate(BaseModel):
         description="URL-friendly identifier (lowercase, hyphens allowed)",
     )
     email: EmailStr | None = None
-    phone: str | None = Field(default=None, max_length=50)
-    domain: str | None = Field(default=None, max_length=255)
-    timezone: str = Field(default="UTC", max_length=50)
+    phone: ShortStr | None = None
+    domain: LongNameStr | None = None
+    timezone: ShortStr = Field(default="UTC")
     locale: str = Field(default="en", max_length=10)
     plan: str = Field(
         default="free", pattern=r"^(free|starter|professional|enterprise)$"
@@ -58,9 +60,9 @@ class TenantUpdate(BaseModel):
         pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
     )
     email: EmailStr | None = None
-    phone: str | None = Field(default=None, max_length=50)
-    domain: str | None = Field(default=None, max_length=255)
-    timezone: str | None = Field(default=None, max_length=50)
+    phone: ShortStr | None = None
+    domain: LongNameStr | None = None
+    timezone: ShortStr | None = None
     locale: str | None = Field(default=None, max_length=10)
     plan: str | None = Field(
         default=None,
@@ -75,17 +77,17 @@ class TenantResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    name: str = Field(max_length=255)
+    name: LongNameStr
     slug: str = Field(max_length=100)
     email: str | None = Field(default=None, max_length=320)
-    phone: str | None = Field(default=None, max_length=50)
+    phone: ShortStr | None = None
     is_active: bool
     is_verified: bool
-    plan: str = Field(max_length=50)
+    plan: ShortStr
     plan_expires_at: datetime | None = None
     settings: TenantSettingsSchema
-    domain: str | None = Field(default=None, max_length=255)
-    timezone: str = Field(max_length=50)
+    domain: LongNameStr | None = None
+    timezone: ShortStr
     locale: str = Field(max_length=10)
     created_at: datetime
     updated_at: datetime

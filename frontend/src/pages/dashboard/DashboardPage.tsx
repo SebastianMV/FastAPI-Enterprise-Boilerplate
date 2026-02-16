@@ -1,40 +1,37 @@
-import { useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
+import { dashboardService, type StatItem } from "@/services/api";
+import { useAuthStore } from "@/stores/authStore";
+import { formatRelativeTime } from "@/utils/formatRelativeTime";
+import { maskEmail, sanitizeText } from "@/utils/security";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  dashboardService,
-  type StatItem,
-} from '@/services/api';
-import { formatRelativeTime } from '@/utils/formatRelativeTime';
-import { maskEmail, sanitizeText } from '@/utils/security';
-import {
-  Users,
   Activity,
-  Shield,
-  Clock,
-  Key,
-  Settings,
-  UserPlus,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Database,
-  Zap,
-  Loader2,
   AlertCircle,
-} from 'lucide-react';
+  CheckCircle,
+  Clock,
+  Database,
+  Key,
+  Loader2,
+  Minus,
+  RefreshCw,
+  Settings,
+  Shield,
+  TrendingDown,
+  TrendingUp,
+  UserPlus,
+  Users,
+  XCircle,
+  Zap,
+} from "lucide-react";
+import { useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 /** Map API stat names to i18n keys for localized display. */
 const STAT_NAME_I18N: Record<string, string> = {
-  'Total Users': 'dashboard.statTotalUsers',
-  'Active Users': 'dashboard.statActiveUsers',
-  'API Keys': 'dashboard.statApiKeys',
-  'Roles': 'dashboard.statRoles',
+  "Total Users": "dashboard.statTotalUsers",
+  "Active Users": "dashboard.statActiveUsers",
+  "API Keys": "dashboard.statApiKeys",
+  Roles: "dashboard.statRoles",
 };
 
 /**
@@ -53,21 +50,21 @@ export default function DashboardPage() {
     error: statsError,
     isFetching: statsRefreshing,
   } = useQuery({
-    queryKey: ['dashboard', 'stats'],
+    queryKey: ["dashboard", "stats"],
     queryFn: () => dashboardService.getStats(),
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
 
   const { data: activity } = useQuery({
-    queryKey: ['dashboard', 'activity'],
+    queryKey: ["dashboard", "activity"],
     queryFn: () => dashboardService.getActivity(10),
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
 
   const { data: health } = useQuery({
-    queryKey: ['dashboard', 'health'],
+    queryKey: ["dashboard", "health"],
     queryFn: () => dashboardService.getHealth(),
     refetchInterval: 60_000,
     staleTime: 30_000,
@@ -75,21 +72,21 @@ export default function DashboardPage() {
 
   const isLoading = statsLoading;
   const isRefreshing = statsRefreshing && !statsLoading;
-  const error = statsError ? t('dashboard.failedToLoad') : null;
+  const error = statsError ? t("dashboard.failedToLoad") : null;
 
   const handleRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }, [queryClient]);
 
   const getStatIcon = (name: string) => {
     switch (name.toLowerCase()) {
-      case 'total users':
+      case "total users":
         return Users;
-      case 'active users':
+      case "active users":
         return Activity;
-      case 'api keys':
+      case "api keys":
         return Key;
-      case 'roles':
+      case "roles":
         return Shield;
       default:
         return Activity;
@@ -98,9 +95,9 @@ export default function DashboardPage() {
 
   const getChangeIcon = (changeType: string) => {
     switch (changeType) {
-      case 'positive':
+      case "positive":
         return TrendingUp;
-      case 'negative':
+      case "negative":
         return TrendingDown;
       default:
         return Minus;
@@ -109,62 +106,67 @@ export default function DashboardPage() {
 
   const formatTime = (timestamp: string) =>
     formatRelativeTime(timestamp, {
-      justNow: t('dashboard.justNow'),
-      minutesAgo: (count) => t('dashboard.minAgo', { count }),
-      hoursAgo: (count) => t('dashboard.hAgo', { count }),
-      daysAgo: (count) => t('dashboard.dAgo', { count }),
+      justNow: t("dashboard.justNow"),
+      minutesAgo: (count) => t("dashboard.minAgo", { count }),
+      hoursAgo: (count) => t("dashboard.hAgo", { count }),
+      daysAgo: (count) => t("dashboard.dAgo", { count }),
     });
 
   const getActivityIcon = (action: string) => {
     switch (action) {
-      case 'user_registered':
+      case "user_registered":
         return UserPlus;
-      case 'api_key_created':
+      case "api_key_created":
         return Key;
-      case 'settings_updated':
+      case "settings_updated":
         return Settings;
       default:
         return Activity;
     }
   };
 
-  const quickActions = [
-    {
-      label: t('dashboard.addUser'),
-      icon: UserPlus,
-      onClick: () => navigate('/users'),
-      color: 'text-blue-600 dark:text-blue-400',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-    },
-    {
-      label: t('dashboard.apiKeys'),
-      icon: Key,
-      onClick: () => navigate('/settings/api-keys'),
-      color: 'text-purple-600 dark:text-purple-400',
-      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-    },
-    {
-      label: t('dashboard.settings'),
-      icon: Settings,
-      onClick: () => navigate('/settings'),
-      color: 'text-slate-600 dark:text-slate-400',
-      bgColor: 'bg-slate-50 dark:bg-slate-800',
-    },
-    {
-      label: t('dashboard.security'),
-      icon: Shield,
-      onClick: () => navigate('/security/mfa'),
-      color: 'text-green-600 dark:text-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-900/20',
-    },
-  ];
+  const quickActions = useMemo(
+    () => [
+      {
+        label: t("dashboard.addUser"),
+        icon: UserPlus,
+        onClick: () => navigate("/users"),
+        color: "text-blue-600 dark:text-blue-400",
+        bgColor: "bg-blue-50 dark:bg-blue-900/20",
+      },
+      {
+        label: t("dashboard.apiKeys"),
+        icon: Key,
+        onClick: () => navigate("/settings/api-keys"),
+        color: "text-purple-600 dark:text-purple-400",
+        bgColor: "bg-purple-50 dark:bg-purple-900/20",
+      },
+      {
+        label: t("dashboard.settings"),
+        icon: Settings,
+        onClick: () => navigate("/settings"),
+        color: "text-slate-600 dark:text-slate-400",
+        bgColor: "bg-slate-50 dark:bg-slate-800",
+      },
+      {
+        label: t("dashboard.security"),
+        icon: Shield,
+        onClick: () => navigate("/security/mfa"),
+        color: "text-green-600 dark:text-green-400",
+        bgColor: "bg-green-50 dark:bg-green-900/20",
+      },
+    ],
+    [t, navigate],
+  );
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-4" />
-          <p className="text-slate-500 dark:text-slate-400">{t('dashboard.loadingDashboard')}</p>
+          <p className="text-slate-500 dark:text-slate-400">
+            {t("dashboard.loadingDashboard")}
+          </p>
         </div>
       </div>
     );
@@ -176,12 +178,9 @@ export default function DashboardPage() {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-slate-700 dark:text-slate-300 mb-4">{error}</p>
-          <button
-            onClick={handleRefresh}
-            className="btn-primary"
-          >
+          <button onClick={handleRefresh} className="btn-primary">
             <RefreshCw className="w-4 h-4 mr-2" />
-            {t('dashboard.refreshData')}
+            {t("dashboard.refreshData")}
           </button>
         </div>
       </div>
@@ -194,10 +193,10 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {t('dashboard.welcome', { name: user?.first_name })}
+            {t("dashboard.welcome", { name: sanitizeText(user?.first_name ?? "") })}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {t('dashboard.overview')}
+            {t("dashboard.overview")}
           </p>
         </div>
         <button
@@ -205,8 +204,10 @@ export default function DashboardPage() {
           disabled={isRefreshing}
           className="btn-secondary"
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? `${t('common.loading')}` : t('dashboard.refreshData')}
+          <RefreshCw
+            className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+          {isRefreshing ? `${t("common.loading")}` : t("dashboard.refreshData")}
         </button>
       </div>
 
@@ -216,11 +217,16 @@ export default function DashboardPage() {
           const IconComponent = getStatIcon(stat.name);
           const ChangeIcon = getChangeIcon(stat.change_type);
           return (
-            <div key={stat.name} className="card p-6 hover:shadow-lg transition-shadow">
+            <div
+              key={stat.name}
+              className="card p-6 hover:shadow-lg transition-shadow"
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {STAT_NAME_I18N[stat.name] ? t(STAT_NAME_I18N[stat.name]) : sanitizeText(stat.name)}
+                    {STAT_NAME_I18N[stat.name]
+                      ? t(STAT_NAME_I18N[stat.name])
+                      : sanitizeText(stat.name)}
                   </p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
                     {sanitizeText(String(stat.value))}
@@ -233,26 +239,26 @@ export default function DashboardPage() {
               <div className="mt-4 flex items-center">
                 <ChangeIcon
                   className={`w-4 h-4 mr-1 ${
-                    stat.change_type === 'positive'
-                      ? 'text-green-600 dark:text-green-400'
-                      : stat.change_type === 'negative'
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-slate-500'
+                    stat.change_type === "positive"
+                      ? "text-green-600 dark:text-green-400"
+                      : stat.change_type === "negative"
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-slate-500"
                   }`}
                 />
                 <span
                   className={`text-sm font-medium ${
-                    stat.change_type === 'positive'
-                      ? 'text-green-600 dark:text-green-400'
-                      : stat.change_type === 'negative'
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-slate-500'
+                    stat.change_type === "positive"
+                      ? "text-green-600 dark:text-green-400"
+                      : stat.change_type === "negative"
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-slate-500"
                   }`}
                 >
                   {sanitizeText(String(stat.change))}
                 </span>
                 <span className="text-sm text-slate-500 dark:text-slate-400 ml-2">
-                  {t('dashboard.vsLastMonth')}
+                  {t("dashboard.vsLastMonth")}
                 </span>
               </div>
             </div>
@@ -267,52 +273,63 @@ export default function DashboardPage() {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Database className="w-5 h-5 text-slate-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.database')}:</span>
-                {health.database_status === 'healthy' ? (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {t("dashboard.database")}:
+                </span>
+                {health.database_status === "healthy" ? (
                   <span className="flex items-center text-green-600 dark:text-green-400 text-sm font-medium">
                     <CheckCircle className="w-4 h-4 mr-1" />
-                    {t('dashboard.healthy')}
+                    {t("dashboard.healthy")}
                   </span>
                 ) : (
                   <span className="flex items-center text-red-600 dark:text-red-400 text-sm font-medium">
                     <XCircle className="w-4 h-4 mr-1" />
-                    {t('dashboard.unhealthy')}
+                    {t("dashboard.unhealthy")}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-slate-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.cache')}:</span>
-                {health.cache_status === 'healthy' ? (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {t("dashboard.cache")}:
+                </span>
+                {health.cache_status === "healthy" ? (
                   <span className="flex items-center text-green-600 dark:text-green-400 text-sm font-medium">
                     <CheckCircle className="w-4 h-4 mr-1" />
-                    {t('dashboard.healthy')}
+                    {t("dashboard.healthy")}
                   </span>
                 ) : (
                   <span className="flex items-center text-yellow-600 dark:text-yellow-400 text-sm font-medium">
                     <AlertCircle className="w-4 h-4 mr-1" />
-                    {t('dashboard.degraded')}
+                    {t("dashboard.degraded")}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-slate-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.avgResponseTime')}:</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {t("dashboard.avgResponseTime")}:
+                </span>
                 <span className="text-sm font-medium text-slate-900 dark:text-white">
-                  {health.avg_response_time_ms}ms
+                  {health.avg_response_time_ms}
+                  {t("common.ms")}
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Activity className="w-5 h-5 text-slate-500" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.activeSessions')}:</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {t("dashboard.activeSessions")}:
+                </span>
                 <span className="text-sm font-medium text-slate-900 dark:text-white">
                   {health.active_sessions}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.uptime')}:</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {t("dashboard.uptime")}:
+                </span>
                 <span className="text-sm font-medium text-green-600 dark:text-green-400">
                   {health.uptime_percentage}%
                 </span>
@@ -328,10 +345,10 @@ export default function DashboardPage() {
         <div className="card">
           <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              {t('dashboard.recentActivity')}
+              {t("dashboard.recentActivity")}
             </h2>
             <span className="text-sm text-slate-500 dark:text-slate-400">
-              {activity?.total || 0} {t('dashboard.events')}
+              {activity?.total || 0} {t("dashboard.events")}
             </span>
           </div>
           <div className="p-6">
@@ -368,7 +385,7 @@ export default function DashboardPage() {
               <div className="text-center py-8">
                 <Activity className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {t('dashboard.noRecentActivity')}
+                  {t("dashboard.noRecentActivity")}
                 </p>
               </div>
             )}
@@ -379,7 +396,7 @@ export default function DashboardPage() {
         <div className="card">
           <div className="p-6 border-b border-slate-200 dark:border-slate-700">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              {t('dashboard.quickActions')}
+              {t("dashboard.quickActions")}
             </h2>
           </div>
           <div className="p-6">
@@ -404,12 +421,12 @@ export default function DashboardPage() {
             {stats && (
               <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
                 <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">
-                  {t('dashboard.userOverview')}
+                  {t("dashboard.userOverview")}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {t('dashboard.newUsersLast7Days')}
+                      {t("dashboard.newUsersLast7Days")}
                     </span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white">
                       {stats.users_created_last_7_days}
@@ -417,7 +434,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {t('dashboard.newUsersLast30Days')}
+                      {t("dashboard.newUsersLast30Days")}
                     </span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white">
                       {stats.users_created_last_30_days}
@@ -425,7 +442,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {t('dashboard.activeInactive')}
+                      {t("dashboard.activeInactive")}
                     </span>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white">
                       {stats.active_users} / {stats.inactive_users}
