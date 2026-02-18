@@ -4,7 +4,6 @@
 """Tests for domain value objects module."""
 
 import pytest
-from pydantic import ValidationError
 
 from app.domain.exceptions.base import ValidationError as DomainValidationError
 

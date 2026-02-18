@@ -21,7 +21,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentTenantId, DbSession, SuperuserId
-from app.api.v1.schemas.common import NameStr
+from app.api.v1.schemas.common import NameStr, PasswordStr
 from app.domain.entities.audit_log import AuditAction, AuditLog, AuditResourceType
 from app.domain.entities.user import User
 from app.domain.exceptions.base import ValidationError as DomainValidationError
@@ -73,7 +73,7 @@ class BulkUserCreate(BaseModel):
     """Single user for bulk creation."""
 
     email: EmailStr
-    password: str = Field(min_length=8, max_length=128)
+    password: PasswordStr
     first_name: NameStr
     last_name: NameStr
     is_active: bool = True

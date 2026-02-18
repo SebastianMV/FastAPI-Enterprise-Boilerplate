@@ -47,6 +47,14 @@ def seed_database(
         cli db seed --users --roles
         cli db seed --clear  # Clear and reseed
     """
+    from app.config import settings
+
+    if settings.ENVIRONMENT in ("production", "staging"):
+        console.print(
+            "[red]Cannot seed sample data in production or staging![/red]"
+        )
+        raise typer.Exit(1)
+
     if clear_existing:
         if not confirm_action("This will delete existing data. Continue?"):
             raise typer.Exit(0)
@@ -347,26 +355,43 @@ def run_migrations(
         cli db migrate --revision abc123
     """
     import re
-    import subprocess
 
     if not re.match(r"^[a-zA-Z0-9_]+$", revision):
         console.print("[red]Invalid revision format[/red]")
         raise typer.Exit(1)
 
+    asyncio.run(_run_migrations(revision))
+
+
+async def _run_migrations(revision: str) -> None:
+    """Async implementation of migrate command."""
     console.print(f"[cyan]Running migrations to revision: {revision}[/cyan]")
 
     try:
-        result = subprocess.run(
-            ["alembic", "upgrade", revision],
-            capture_output=True,
-            text=True,
-            check=True,
+        process = await asyncio.create_subprocess_exec(
+            "alembic",
+            "upgrade",
+            revision,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-        console.print(result.stdout)
+        stdout, stderr = await process.communicate()
+        if process.returncode != 0:
+            logger.error(
+                "migration_failed",
+                exit_code=process.returncode,
+            )
+            console.print("[red]Migration failed (check alembic logs)[/red]")
+            raise typer.Exit(1)
+
+        if stdout:
+            console.print("[dim]Migration output available in alembic logs[/dim]")
         console.print("[green]✓ Migrations complete[/green]")
-    except subprocess.CalledProcessError as e:
+    except typer.Exit:
+        raise
+    except Exception:
         console.print("[red]Migration failed (check alembic logs)[/red]")
-        logger.error("migration_failed", stderr=e.stderr)
+        logger.error("migration_failed", exc_info=True)
         raise typer.Exit(1) from None
 
 
@@ -430,7 +455,7 @@ async def _reset_database() -> None:
         if process.returncode != 0:
             logger.error(
                 "migration_failed_during_reset",
-                stderr=stderr.decode() if stderr else "",
+                exit_code=process.returncode,
             )
             console.print("[red]Migration failed (check logs)[/red]")
             raise typer.Exit(1)

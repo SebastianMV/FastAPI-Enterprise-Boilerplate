@@ -37,13 +37,13 @@ from app.domain.ports.data_exchange import (
     ReportFormat,
 )
 from app.domain.ports.reports import ReportFilter
+from app.infrastructure.data_exchange.generic_exporter import get_exporter
+from app.infrastructure.data_exchange.generic_importer import get_importer
+from app.infrastructure.data_exchange.generic_reporter import get_reporter
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.observability.logging import get_logger
 
 logger = get_logger(__name__)
-from app.infrastructure.data_exchange.generic_exporter import get_exporter
-from app.infrastructure.data_exchange.generic_importer import get_importer
-from app.infrastructure.data_exchange.generic_reporter import get_reporter
 
 router = APIRouter(prefix="/data", tags=["Data Exchange"])
 
@@ -148,6 +148,7 @@ class ReportSummaryResponse(BaseModel):
 )
 async def list_entities(
     current_user_id: DataReader,
+    tenant_id: CurrentTenantId = None,
 ) -> list[EntityResponse]:
     """
     List all registered entities with their field information.
@@ -191,6 +192,7 @@ async def list_entities(
 )
 async def get_entity(
     current_user_id: DataReader,
+    tenant_id: CurrentTenantId = None,
     entity: str = Path(..., max_length=50),
 ) -> EntityResponse:
     """Get detailed information about a specific entity."""
@@ -333,6 +335,7 @@ async def preview_export(
 async def download_template(
     current_user_id: DataReader,
     session: DbSession,
+    tenant_id: CurrentTenantId = None,
     entity: str = Path(..., max_length=50),
     format: str = Query("csv", enum=["csv", "excel"]),
 ) -> StreamingResponse:

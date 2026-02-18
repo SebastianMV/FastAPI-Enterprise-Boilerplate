@@ -51,7 +51,7 @@ class APIKeyModel(Base):
     key_hash: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        comment="Hashed API key (bcrypt)",
+        comment="Hashed API key (SHA-256)",
     )
 
     # Owner

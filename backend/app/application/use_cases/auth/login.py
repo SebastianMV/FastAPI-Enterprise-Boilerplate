@@ -3,6 +3,7 @@
 
 """Login use case — authenticates user and issues tokens."""
 
+import hmac
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -91,7 +92,7 @@ class LoginUseCase:
             )
 
         # Guard: OAuth-only accounts cannot login with password
-        if user.password_hash == "!oauth":
+            if hmac.compare_digest(user.password_hash or "", "!oauth"):
             raise AuthenticationError(
                 code="INVALID_CREDENTIALS",
                 message="Invalid email or password",

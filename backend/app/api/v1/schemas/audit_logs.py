@@ -7,9 +7,9 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.api.v1.schemas.common import ShortStr
+from app.api.v1.schemas.common import DescriptionStr, NameStr, ShortStr
 
 # Keys that must never appear in audit log value diffs
 _SENSITIVE_KEYS = frozenset(
@@ -45,17 +45,17 @@ class AuditLogResponse(BaseModel):
     timestamp: datetime
     action: ShortStr = Field(max_length=50)
     resource_type: ShortStr = Field(max_length=50)
-    resource_id: str | None = Field(default=None, max_length=200)
-    resource_name: str | None = Field(default=None, max_length=200)
+    resource_id: NameStr | None = Field(default=None, max_length=200)
+    resource_name: NameStr | None = Field(default=None, max_length=200)
     actor_id: UUID | None = None
-    actor_email: str | None = Field(default=None, max_length=320)
-    actor_ip: str | None = Field(default=None, max_length=45)
-    actor_user_agent: str | None = Field(default=None, max_length=500)
+    actor_email: EmailStr | None = None
+    actor_ip: ShortStr | None = Field(default=None, max_length=45)
+    actor_user_agent: DescriptionStr | None = Field(default=None, max_length=500)
     tenant_id: UUID | None = None
     old_value: dict[str, Any] | None = None
     new_value: dict[str, Any] | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-    reason: str | None = Field(default=None, max_length=500)
+    reason: DescriptionStr | None = Field(default=None, max_length=500)
 
     @field_validator("old_value", "new_value", mode="before")
     @classmethod

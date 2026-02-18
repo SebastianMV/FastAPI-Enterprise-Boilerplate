@@ -156,4 +156,7 @@ class TestMFAConfigEntity:
 
             assert MFAConfig is not None
         except ImportError:
-            pytest.skip("MFAConfig not in expected location")
+            pytest.fail(
+                "MFAConfig entity not found — expected in "
+                "app.infrastructure.auth.mfa_config or app.domain.entities.mfa_config"
+            )

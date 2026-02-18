@@ -1,6 +1,6 @@
 import { AlertModal, ConfirmModal, Modal } from "@/components/common/Modal";
 import { rolesService, usersService, type User } from "@/services/api";
-import { sanitizeText } from "@/utils/security";
+import { maskEmail, sanitizeText } from "@/utils/security";
 import { EMAIL_PATTERN, PASSWORD_PATTERN } from "@/utils/validation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -340,7 +340,7 @@ export default function UsersPage() {
                               {sanitizeText(user.last_name ?? "")}
                             </div>
                             <div className="text-sm text-slate-500">
-                              {sanitizeText(user.email)}
+                              {maskEmail(user.email)}
                             </div>
                           </div>
                         </div>

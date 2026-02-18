@@ -24,24 +24,32 @@ class TestApiKeySchemas:
 
     def test_api_key_response_schema(self) -> None:
         """Test API key response schema."""
-        api_key_data = {
-            "id": str(uuid4()),
-            "name": "Test API Key",
-            "prefix": "sk_test_",
-            "created_at": datetime.now(UTC),
-            "expires_at": datetime.now(UTC) + timedelta(days=365),
-            "is_active": True,
-        }
-        assert api_key_data["id"] is not None
-        assert api_key_data["name"] is not None
+        from app.api.v1.schemas.api_keys import APIKeyResponse
+
+        response = APIKeyResponse(
+            id=uuid4(),
+            name="Test API Key",
+            prefix="sk_test_",
+            scopes=["users:read"],
+            is_active=True,
+            expires_at=datetime.now(UTC) + timedelta(days=365),
+            usage_count=0,
+            created_at=datetime.now(UTC),
+        )
+        assert response.id is not None
+        assert response.name == "Test API Key"
+        assert response.is_active is True
 
     def test_api_key_create_schema(self) -> None:
         """Test API key create schema."""
-        create_data = {
-            "name": "My API Key",
-            "expires_in_days": 365,
-        }
-        assert create_data["name"] is not None
+        from app.api.v1.schemas.api_keys import APIKeyCreate
+
+        create = APIKeyCreate(
+            name="My API Key",
+            expires_in_days=365,
+        )
+        assert create.name == "My API Key"
+        assert create.expires_in_days == 365
 
 
 class TestApiKeyRoutes:
@@ -52,7 +60,7 @@ class TestApiKeyRoutes:
         from app.api.v1.endpoints.api_keys import router
 
         routes = [getattr(route, "path", None) for route in router.routes]
-        assert len(routes) >= 0
+        assert len(routes) > 0
 
 
 class TestApiKeyGeneration:

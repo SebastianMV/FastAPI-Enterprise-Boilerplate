@@ -227,12 +227,187 @@ jobs:
           bandit -c pyproject.toml -r app/ -ll -ii
 
   # ===========================================
+  # Quality Guardian — Convention Enforcement
+  # ===========================================
+  # Automated checks extracted from the quality-guardian agent.
+  # Enforces the 19 critical rules codified across 37 security audits.
+  # Agents: .github/agents/quality-guardian.agent.md
+  quality-guardian:
+    name: Quality Guardian
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+
+      # ── Rule 1: No stdlib logging (get_logger() only) ──────────────────────
+      - name: "Rule 1 · No stdlib logging"
+        run: |
+          COUNT=$(grep -rn "^import logging" backend/app/ --include="*.py" | wc -l)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ Found $COUNT file(s) using stdlib 'import logging':"
+            grep -rn "^import logging" backend/app/ --include="*.py"
+            echo "Use: from app.infrastructure.observability.logging import get_logger"
+            exit 1
+          fi
+          echo "✅ Rule 1 passed — 0 stdlib logging imports"
+
+      # ── Rule 7: No blocking subprocess.run in async code ──────────────────
+      - name: "Rule 7 · No sync subprocess.run"
+        run: |
+          COUNT=$(grep -rn "subprocess\.run(" backend/app/ --include="*.py" | wc -l)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ Found $COUNT blocking subprocess.run() call(s):"
+            grep -rn "subprocess\.run(" backend/app/ --include="*.py"
+            echo "Use: asyncio.create_subprocess_exec()"
+            exit 1
+          fi
+          echo "✅ Rule 7 passed — 0 blocking subprocess.run calls"
+
+      # ── Rule 10: No datetime.utcnow() ──────────────────────────────────────
+      - name: "Rule 10 · No datetime.utcnow()"
+        run: |
+          COUNT=$(grep -rn "datetime\.utcnow()" backend/app/ --include="*.py" | wc -l)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ Found $COUNT datetime.utcnow() call(s):"
+            grep -rn "datetime\.utcnow()" backend/app/ --include="*.py"
+            echo "Use: datetime.now(UTC)"
+            exit 1
+          fi
+          echo "✅ Rule 10 passed — 0 datetime.utcnow() calls"
+
+      # ── Rule 16: Docker images pinned to minor version ────────────────────
+      - name: "Rule 16 · Docker image pins (staging & prod)"
+        run: |
+          # In staging/prod, images must use minor pin (no bare :latest or major-only tags)
+          FAIL=0
+          for f in docker-compose.staging.yml docker-compose.prod.yml; do
+            if grep -E "(postgres|redis|nginx|python|node):[0-9]+-" "$f" | grep -qv "[0-9]+\.[0-9]+-"; then
+              echo "❌ $f has unpinned image(s):"
+              grep -E "(postgres|redis|nginx|python|node):[0-9]+-" "$f"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Rule 16 passed — all staging/prod images pinned"
+
+      # ── Rule 17: Secrets use :? (fail-safe), not :- (silent default) ──────
+      - name: "Rule 17 · Secrets failsafe (no :- for secrets)"
+        run: |
+          # Check secret vars for default fallbacks in staging/prod compose files
+          FAIL=0
+          SECRET_VARS="JWT_SECRET_KEY|ENCRYPTION_KEY|POSTGRES_PASSWORD|REDIS_PASSWORD|APP_USER_PASSWORD|DATABASE_URL"
+          for f in docker-compose.staging.yml docker-compose.prod.yml; do
+            if grep -E "($SECRET_VARS)=\$\{[^}]+:-" "$f"; then
+              echo "❌ $f has secret(s) with :- fallback (use :?must be set instead)"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Rule 17 passed — all secrets use :? failsafe"
+
+      # ── Rule 18: Container security hardening ─────────────────────────────
+      - name: "Rule 18 · Container hardening (no-new-privileges)"
+        run: |
+          # Every service in staging/prod should declare no-new-privileges
+          FAIL=0
+          for f in docker-compose.staging.yml docker-compose.prod.yml; do
+            if ! grep -q "no-new-privileges" "$f"; then
+              echo "❌ $f is missing 'no-new-privileges' security option"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Rule 18 passed — containers have no-new-privileges"
+
+      # ── i18n Coverage: PT keys vs EN baseline ─────────────────────────────
+      - name: "i18n Coverage — PT vs EN gap"
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: "i18n Coverage — check PT completion"
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const flatten = (obj, prefix = '') =>
+            Object.entries(obj).flatMap(([k, v]) =>
+              typeof v === 'object' && v !== null
+                ? flatten(v, prefix + k + '.')
+                : [[prefix + k, v]]
+            );
+          const en = JSON.parse(fs.readFileSync('frontend/src/i18n/locales/en.json', 'utf8'));
+          const pt = JSON.parse(fs.readFileSync('frontend/src/i18n/locales/pt.json', 'utf8'));
+          const enKeys = new Set(flatten(en).map(([k]) => k));
+          const ptKeys = new Set(flatten(pt).map(([k]) => k));
+          const missing = [...enKeys].filter(k => !ptKeys.has(k));
+          const coverage = Math.round(((enKeys.size - missing.length) / enKeys.size) * 100);
+          console.log(`EN keys: ${enKeys.size} | PT keys: ${ptKeys.size} | Coverage: ${coverage}%`);
+          if (missing.length > 0) {
+            console.log(`Missing in PT (${missing.length} keys):`);
+            missing.slice(0, 30).forEach(k => console.log('  -', k));
+            if (missing.length > 30) console.log(`  ... and ${missing.length - 30} more`);
+          }
+          // Warn (don't fail) — PT is tracked at ~19%, target is 50% for v1.0.0
+          if (coverage < 20) {
+            console.error(`❌ PT coverage ${coverage}% is below minimum 20%`);
+            process.exit(1);
+          }
+          console.log(`✅ i18n PT coverage: ${coverage}% (target: ≥50% for v1.0.0)`);
+          EOF
+
+      # ── Architecture: No business logic leaked into endpoints ─────────────
+      - name: "Architecture · Hexagonal boundary check"
+        run: |
+          # Domain layer must not import infrastructure
+          DOM_INFRA=$(grep -rn "from app.infrastructure" backend/app/domain/ --include="*.py" | wc -l)
+          # Application layer must not import FastAPI/HTTP
+          APP_HTTP=$(grep -rn "from fastapi\|import fastapi\|from starlette" backend/app/application/ --include="*.py" | wc -l)
+          FAIL=0
+          if [ "$DOM_INFRA" -gt 0 ]; then
+            echo "❌ Domain layer imports from infrastructure ($DOM_INFRA occurrences):"
+            grep -rn "from app.infrastructure" backend/app/domain/ --include="*.py"
+            FAIL=1
+          fi
+          if [ "$APP_HTTP" -gt 0 ]; then
+            echo "❌ Application layer imports FastAPI/HTTP ($APP_HTTP occurrences):"
+            grep -rn "from fastapi\|import fastapi\|from starlette" backend/app/application/ --include="*.py"
+            FAIL=1
+          fi
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Architecture passed — hexagonal boundaries respected"
+
+      # ── Security meta-tests (requires Python + deps) ──────────────────────
+      - name: Set up Python for meta-tests
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend deps for meta-tests
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+
+      - name: "Security meta-tests (8 rule checkers)"
+        working-directory: backend
+        env:
+          ENVIRONMENT: testing
+          JWT_SECRET_KEY: test-secret-key-for-ci-only-min-32-chars-required
+          ENCRYPTION_KEY: test-encryption-key-for-ci-only-32ch
+        run: |
+          pytest tests/security/test_security_meta.py -v --tb=short
+
+  # ===========================================
   # Build Docker Images
   # ===========================================
   build:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test, security, sast]
+    needs: [backend-test, frontend-test, security, sast, quality-guardian]
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4

@@ -405,6 +405,7 @@ async def suggest(
 async def health(
     session: DbSession,
     current_user_id: UUID = Depends(require_permission("search", "read")),
+    tenant_id: CurrentTenantId = None,
 ) -> HealthResponse:
     """
     Check search backend health.
@@ -436,6 +437,7 @@ async def health(
 )
 async def list_indices(
     current_user_id: UUID = Depends(require_permission("search", "read")),
+    tenant_id: CurrentTenantId = None,
 ) -> list[SearchIndexResponse]:
     """
     List available search indices.
@@ -465,6 +467,7 @@ async def create_index(
     *,
     session: DbSession,
     superuser_id: SuperuserId,
+    tenant_id: CurrentTenantId = None,
 ) -> dict[str, Any]:
     """
     Create a search index.
@@ -554,6 +557,7 @@ async def delete_index(
     *,
     session: DbSession,
     superuser_id: SuperuserId,
+    tenant_id: CurrentTenantId = None,
 ) -> None:
     """
     Delete a search index.

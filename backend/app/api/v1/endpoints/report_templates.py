@@ -538,6 +538,7 @@ async def update_template(
     tenant_id: CurrentTenantId = None,
 ) -> ReportTemplateResponse:
     """Update a report template."""
+    _check_demo_mode()
 
     async with _storage_lock:
         template = _report_templates.get(template_id)
@@ -616,6 +617,7 @@ async def delete_template(
     tenant_id: CurrentTenantId = None,
 ) -> None:
     """Delete a report template."""
+    _check_demo_mode()
 
     async with _storage_lock:
         template = _report_templates.get(template_id)
@@ -689,6 +691,7 @@ async def duplicate_template(
     ),
 ) -> ReportTemplateResponse:
     """Duplicate a report template."""
+    _check_demo_mode()
 
     async with _storage_lock:
         template = _report_templates.get(template_id)
@@ -710,6 +713,20 @@ async def duplicate_template(
                 detail={
                     "code": "TEMPLATE_NOT_FOUND",
                     "message": "Report template not found",
+                },
+            )
+
+        # Check per-tenant template limit
+        current_tenant = str(tenant_id) if tenant_id else None
+        if (
+            _count_tenant_items(_report_templates, current_tenant)
+            >= _MAX_TEMPLATES_PER_TENANT
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "TEMPLATE_LIMIT_REACHED",
+                    "message": f"Maximum of {_MAX_TEMPLATES_PER_TENANT} templates per tenant reached",
                 },
             )
 
@@ -763,6 +780,7 @@ async def create_schedule(
     tenant_id: CurrentTenantId = None,
 ) -> ScheduledReportResponse:
     """Create a scheduled report."""
+    _check_demo_mode()
 
     # Verify template exists
     template = _report_templates.get(template_id)
@@ -989,39 +1007,7 @@ async def update_schedule(
     tenant_id: CurrentTenantId = None,
 ) -> ScheduledReportResponse:
     """Update a scheduled report."""
-
-    schedule = _scheduled_reports.get(schedule_id)
-    if not schedule:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SCHEDULE_NOT_FOUND",
-                "message": "Scheduled report not found",
-            },
-        )
-
-    # Tenant isolation
-    schedule_tenant = schedule.get("tenant_id")
-    current_tenant = str(tenant_id) if tenant_id else None
-    if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SCHEDULE_NOT_FOUND",
-                "message": "Scheduled report not found",
-            },
-        )
-
-    # Check ownership
-    if schedule.get("created_by") != str(current_user.id):
-        if not current_user.is_superuser:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": "FORBIDDEN",
-                    "message": "Only the owner can update this schedule",
-                },
-            )
+    _check_demo_mode()
 
     # Validate webhook URL if being updated
     if request.webhook_url:
@@ -1056,18 +1042,12 @@ async def update_schedule(
                 },
             )
 
-    # Update fields (inside lock to prevent TOCTOU race condition)
+    # All checks and updates inside lock to prevent TOCTOU race condition
     update_data = request.model_dump(exclude_unset=True)
-    if "frequency" in update_data and request.frequency:
-        update_data["frequency"] = request.frequency.model_dump()
-        # Recalculate next run
-        schedule["next_run"] = _calculate_next_run(
-            request.frequency, schedule.get("start_date")
-        )
 
     async with _storage_lock:
-        # Re-check schedule still exists after acquiring lock
-        if schedule_id not in _scheduled_reports:
+        schedule = _scheduled_reports.get(schedule_id)
+        if not schedule:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
@@ -1075,6 +1055,36 @@ async def update_schedule(
                     "message": "Scheduled report not found",
                 },
             )
+
+        # Tenant isolation
+        schedule_tenant = schedule.get("tenant_id")
+        current_tenant = str(tenant_id) if tenant_id else None
+        if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "SCHEDULE_NOT_FOUND",
+                    "message": "Scheduled report not found",
+                },
+            )
+
+        # Check ownership
+        if schedule.get("created_by") != str(current_user.id):
+            if not current_user.is_superuser:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "code": "FORBIDDEN",
+                        "message": "Only the owner can update this schedule",
+                    },
+                )
+
+        if "frequency" in update_data and request.frequency:
+            update_data["frequency"] = request.frequency.model_dump()
+            schedule["next_run"] = _calculate_next_run(
+                request.frequency, schedule.get("start_date")
+            )
+
         for key, value in update_data.items():
             schedule[key] = value
 
@@ -1100,41 +1110,42 @@ async def delete_schedule(
     tenant_id: CurrentTenantId = None,
 ) -> None:
     """Delete a scheduled report."""
+    _check_demo_mode()
 
-    schedule = _scheduled_reports.get(schedule_id)
-    if not schedule:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SCHEDULE_NOT_FOUND",
-                "message": "Scheduled report not found",
-            },
-        )
-
-    # Tenant isolation
-    schedule_tenant = schedule.get("tenant_id")
-    current_tenant = str(tenant_id) if tenant_id else None
-    if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SCHEDULE_NOT_FOUND",
-                "message": "Scheduled report not found",
-            },
-        )
-
-    # Check ownership
-    if schedule.get("created_by") != str(current_user.id):
-        if not current_user.is_superuser:
+    async with _storage_lock:
+        schedule = _scheduled_reports.get(schedule_id)
+        if not schedule:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "code": "FORBIDDEN",
-                    "message": "Only the owner can delete this schedule",
+                    "code": "SCHEDULE_NOT_FOUND",
+                    "message": "Scheduled report not found",
                 },
             )
 
-    async with _storage_lock:
+        # Tenant isolation
+        schedule_tenant = schedule.get("tenant_id")
+        current_tenant = str(tenant_id) if tenant_id else None
+        if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "SCHEDULE_NOT_FOUND",
+                    "message": "Scheduled report not found",
+                },
+            )
+
+        # Check ownership
+        if schedule.get("created_by") != str(current_user.id):
+            if not current_user.is_superuser:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "code": "FORBIDDEN",
+                        "message": "Only the owner can delete this schedule",
+                    },
+                )
+
         del _scheduled_reports[schedule_id]
 
     logger.info(
@@ -1156,40 +1167,41 @@ async def run_schedule_now(
     tenant_id: CurrentTenantId = None,
 ) -> dict[str, str]:
     """Manually run a scheduled report."""
+    _check_demo_mode()
 
-    schedule = _scheduled_reports.get(schedule_id)
-    if not schedule:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SCHEDULE_NOT_FOUND",
-                "message": "Scheduled report not found",
-            },
-        )
-
-    # Tenant isolation
-    schedule_tenant = schedule.get("tenant_id")
-    current_tenant = str(tenant_id) if tenant_id else None
-    if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SCHEDULE_NOT_FOUND",
-                "message": "Scheduled report not found",
-            },
-        )
-
-    # Check access
-    if schedule.get("created_by") != str(current_user.id):
-        if not current_user.is_superuser:
+    async with _storage_lock:
+        schedule = _scheduled_reports.get(schedule_id)
+        if not schedule:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "ACCESS_DENIED", "message": "Access denied"},
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "SCHEDULE_NOT_FOUND",
+                    "message": "Scheduled report not found",
+                },
             )
 
-    # In production, this would queue a background job
-    # For now, we just update the last_run timestamp
-    async with _storage_lock:
+        # Tenant isolation
+        schedule_tenant = schedule.get("tenant_id")
+        current_tenant = str(tenant_id) if tenant_id else None
+        if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "SCHEDULE_NOT_FOUND",
+                    "message": "Scheduled report not found",
+                },
+            )
+
+        # Check access
+        if schedule.get("created_by") != str(current_user.id):
+            if not current_user.is_superuser:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={"code": "ACCESS_DENIED", "message": "Access denied"},
+                )
+
+        # In production, this would queue a background job
+        # For now, we just update the last_run timestamp
         schedule["last_run"] = datetime.now(UTC)
         schedule["run_count"] = schedule.get("run_count", 0) + 1
 
@@ -1219,41 +1231,42 @@ async def toggle_schedule(
     tenant_id: CurrentTenantId = None,
 ) -> ScheduledReportResponse:
     """Toggle schedule enabled status."""
+    _check_demo_mode()
 
-    schedule = _scheduled_reports.get(schedule_id)
-    if not schedule:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SCHEDULE_NOT_FOUND",
-                "message": "Scheduled report not found",
-            },
-        )
-
-    # Tenant isolation
-    schedule_tenant = schedule.get("tenant_id")
-    current_tenant = str(tenant_id) if tenant_id else None
-    if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "SCHEDULE_NOT_FOUND",
-                "message": "Scheduled report not found",
-            },
-        )
-
-    # Check ownership
-    if schedule.get("created_by") != str(current_user.id):
-        if not current_user.is_superuser:
+    async with _storage_lock:
+        schedule = _scheduled_reports.get(schedule_id)
+        if not schedule:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "code": "FORBIDDEN",
-                    "message": "Only the owner can toggle this schedule",
+                    "code": "SCHEDULE_NOT_FOUND",
+                    "message": "Scheduled report not found",
                 },
             )
 
-    async with _storage_lock:
+        # Tenant isolation
+        schedule_tenant = schedule.get("tenant_id")
+        current_tenant = str(tenant_id) if tenant_id else None
+        if schedule_tenant and current_tenant and schedule_tenant != current_tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "SCHEDULE_NOT_FOUND",
+                    "message": "Scheduled report not found",
+                },
+            )
+
+        # Check ownership
+        if schedule.get("created_by") != str(current_user.id):
+            if not current_user.is_superuser:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "code": "FORBIDDEN",
+                        "message": "Only the owner can toggle this schedule",
+                    },
+                )
+
         schedule["enabled"] = not schedule.get("enabled", True)
 
     logger.info(

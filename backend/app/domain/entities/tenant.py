@@ -123,6 +123,9 @@ class Tenant(AuditableEntity):
     deleted_at: datetime | None = None
     deleted_by: UUID | None = None
 
+    def __repr__(self) -> str:
+        return f"<Tenant(id={self.id}, slug={self.slug}, plan={self.plan})>"
+
     def activate(self) -> None:
         """Activate the tenant."""
         self.is_active = True

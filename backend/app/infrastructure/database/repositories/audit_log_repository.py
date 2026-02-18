@@ -54,7 +54,7 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
             tenant_id=entity.tenant_id,
             old_value=entity.old_value,
             new_value=entity.new_value,
-            metadata=entity.metadata,
+            extra_data=entity.metadata,
             reason=entity.reason,
         )
 
@@ -76,7 +76,7 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
             tenant_id=PyUUID(str(model.tenant_id)) if model.tenant_id else None,
             old_value=model.old_value,
             new_value=model.new_value,
-            metadata=model.metadata or {},
+            metadata=model.extra_data or {},
             reason=model.reason,
         )
 

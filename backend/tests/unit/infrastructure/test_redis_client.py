@@ -3,7 +3,7 @@
 
 """Unit tests for Redis client wrapper (delegates to centralized cache)."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

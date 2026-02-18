@@ -191,6 +191,7 @@ async def update_self(
     current_user_id: CurrentUserId,
     tenant_id: CurrentTenantId,
     session: DbSession,
+    _permission_user_id: UUID = Depends(require_permission("users", "write")),
 ) -> UserResponse:
     """
     Update current user's profile.
@@ -386,6 +387,7 @@ async def upload_avatar(
     tenant_id: CurrentTenantId,
     session: DbSession,
     file: UploadFile = File(..., description="Image file (JPEG, PNG, GIF, WebP)"),
+    _permission_user_id: UUID = Depends(require_permission("users", "write")),
 ) -> UserResponse:
     """
     Upload a new avatar for the current user.
@@ -472,7 +474,9 @@ async def upload_avatar(
         )
         avatar_url = storage_file.path
     except Exception as e:
-        logger.error("avatar_upload_failed", user_id=str(current_user_id), error=type(e).__name__)
+        logger.error(
+            "avatar_upload_failed", user_id=str(current_user_id), error=type(e).__name__
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -491,7 +495,11 @@ async def upload_avatar(
             await storage.delete(old_path)
         except Exception as e:
             # Log but ignore errors when deleting old avatar
-            logger.debug("avatar_old_delete_failed", avatar_url=user.avatar_url, error=type(e).__name__)
+            logger.debug(
+                "avatar_old_delete_failed",
+                avatar_url=user.avatar_url,
+                error=type(e).__name__,
+            )
 
     # Update user with new avatar URL
     user.avatar_url = avatar_url
@@ -511,6 +519,7 @@ async def delete_avatar(
     current_user_id: CurrentUserId,
     tenant_id: CurrentTenantId,
     session: DbSession,
+    _permission_user_id: UUID = Depends(require_permission("users", "write")),
 ) -> MessageResponse:
     """Delete the current user's avatar."""
     repo = SQLAlchemyUserRepository(session)
@@ -544,7 +553,9 @@ async def delete_avatar(
         await storage.delete(old_path)
     except Exception as e:
         # Continue even if delete fails, but log it
-        logger.debug("avatar_delete_failed", avatar_url=user.avatar_url, error=type(e).__name__)
+        logger.debug(
+            "avatar_delete_failed", avatar_url=user.avatar_url, error=type(e).__name__
+        )
 
     # Update user
     user.avatar_url = None

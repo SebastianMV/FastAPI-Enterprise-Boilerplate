@@ -3,7 +3,6 @@
 
 """Tests to cover missing lines in connection.py (lines 191-199)."""
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

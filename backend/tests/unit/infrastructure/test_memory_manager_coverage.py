@@ -192,7 +192,7 @@ class TestLeaveRoomEdgeCases:
         await manager.leave_room("nonexistent-conn-id", "test-room")
 
         # Should handle gracefully
-        assert True
+        assert "nonexistent-conn-id" not in manager._connections
 
 
 class TestSendToRoomEdgeCases:

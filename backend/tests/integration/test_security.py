@@ -206,9 +206,10 @@ class TestAPIKeySecurity:
             return None
 
         data = response.json()
-        access_token = data.get("access_token") or data.get("tokens", {}).get(
-            "access_token"
-        )
+        tokens = data.get("tokens")
+        access_token = data.get("access_token")
+        if not access_token and isinstance(tokens, dict):
+            access_token = tokens.get("access_token")
 
         if not access_token:
             return None

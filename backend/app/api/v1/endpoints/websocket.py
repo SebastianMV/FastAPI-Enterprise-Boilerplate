@@ -175,10 +175,9 @@ async def websocket_endpoint(
 
     try:
         while True:
-            # Receive message
-            data = await _receive_json_safe(websocket)
-
+            # Receive and process message
             try:
+                data = await _receive_json_safe(websocket)
                 message = WebSocketMessage.from_dict(data)
                 message.sender_id = user_id  # Ensure sender is authenticated user
 

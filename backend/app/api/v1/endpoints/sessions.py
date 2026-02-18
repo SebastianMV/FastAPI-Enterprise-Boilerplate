@@ -4,13 +4,14 @@
 """Session management endpoints."""
 
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
-from app.api.deps import CurrentTenantId, CurrentUserId, DbSession
+from app.api.deps import CurrentTenantId, DbSession, require_permission
 from app.infrastructure.auth.jwt_handler import validate_access_token
 from app.infrastructure.database.repositories.session_repository import (
     SQLAlchemySessionRepository,
@@ -20,6 +21,9 @@ from app.infrastructure.observability.logging import get_logger
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+SessionsReader = Annotated[UUID, Depends(require_permission("sessions", "read"))]
+SessionsWriter = Annotated[UUID, Depends(require_permission("sessions", "write"))]
 
 # Security scheme
 security = HTTPBearer(auto_error=False)
@@ -35,6 +39,7 @@ def get_current_token_jti(
         payload = validate_access_token(credentials.credentials)
         return payload.get("jti")
     except Exception:
+        logger.debug("token_jti_extraction_failed", exc_info=True)
         return None
 
 
@@ -84,7 +89,7 @@ class RevokeSessionsResponse(BaseModel):
     description="Get all active sessions for the current user.",
 )
 async def list_sessions(
-    user_id: CurrentUserId,
+    user_id: SessionsReader,
     tenant_id: CurrentTenantId,
     session: DbSession,
     request: Request,
@@ -132,7 +137,7 @@ async def list_sessions(
 )
 async def revoke_session(
     session_id: UUID,
-    user_id: CurrentUserId,
+    user_id: SessionsWriter,
     tenant_id: CurrentTenantId,
     session: DbSession,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
@@ -197,7 +202,7 @@ async def revoke_session(
     description="Revoke all sessions except the current one.",
 )
 async def revoke_all_sessions(
-    user_id: CurrentUserId,
+    user_id: SessionsWriter,
     tenant_id: CurrentTenantId,
     session: DbSession,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),

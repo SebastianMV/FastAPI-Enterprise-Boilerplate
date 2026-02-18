@@ -52,7 +52,7 @@ class TestNotificationRoutes:
         from app.api.v1.endpoints.notifications import router
 
         routes = [getattr(route, "path", None) for route in router.routes]
-        assert len(routes) >= 0
+        assert len(routes) > 0
 
 
 class TestNotificationTypes:
@@ -60,20 +60,24 @@ class TestNotificationTypes:
 
     def test_notification_type_info(self) -> None:
         """Test info notification type."""
-        notification_type = "info"
-        assert notification_type == "info"
+        from app.domain.entities.notification import NotificationType
+
+        assert NotificationType.INFO.value == "info"
 
     def test_notification_type_warning(self) -> None:
         """Test warning notification type."""
-        notification_type = "warning"
-        assert notification_type == "warning"
+        from app.domain.entities.notification import NotificationType
+
+        assert NotificationType.WARNING.value == "warning"
 
     def test_notification_type_error(self) -> None:
         """Test error notification type."""
-        notification_type = "error"
-        assert notification_type == "error"
+        from app.domain.entities.notification import NotificationType
+
+        assert NotificationType.ERROR.value == "error"
 
     def test_notification_type_success(self) -> None:
         """Test success notification type."""
-        notification_type = "success"
-        assert notification_type == "success"
+        from app.domain.entities.notification import NotificationType
+
+        assert NotificationType.SUCCESS.value == "success"

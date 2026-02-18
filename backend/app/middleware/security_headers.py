@@ -103,6 +103,7 @@ class SecurityHeadersMiddleware:
             (b"x-xss-protection", b"0"),  # Deprecated; CSP provides XSS protection
             (b"content-security-policy", self.csp_policy.encode()),
             (b"referrer-policy", self.referrer_policy.encode()),
+            (b"cache-control", b"no-store"),
             (
                 b"permissions-policy",
                 b"accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",

@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from app.cli.commands.database import app
+from app.cli.commands.database import app, run_migrations
 
 
 @pytest.fixture
@@ -121,5 +121,5 @@ class TestDatabaseMigrate:
 
     def test_migrate_placeholder(self):
         """Placeholder - migrations use alembic directly."""
-        # Database migrations are handled by alembic, not subprocess
-        assert True
+        # Placeholder: migration tested via test_run_migrations in unit tests
+        assert callable(run_migrations)

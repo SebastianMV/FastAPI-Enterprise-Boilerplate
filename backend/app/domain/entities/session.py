@@ -42,6 +42,12 @@ class UserSession(TenantEntity):
     is_revoked: bool = False
     revoked_at: datetime | None = None
 
+    def __repr__(self) -> str:
+        return (
+            f"<UserSession(id={self.id}, user_id={self.user_id}, "
+            f"device_name={self.device_name}, is_revoked={self.is_revoked})>"
+        )
+
     def revoke(self) -> None:
         """Revoke this session."""
         self.is_revoked = True

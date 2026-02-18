@@ -44,6 +44,12 @@ class User(TenantSoftDeletableEntity):
     # Avatar
     avatar_url: str | None = None
 
+    def __repr__(self) -> str:
+        return (
+            f"<User(id={self.id}, email={self.email}, "
+            f"is_active={self.is_active})>"
+        )
+
     @classmethod
     def create(
         cls,

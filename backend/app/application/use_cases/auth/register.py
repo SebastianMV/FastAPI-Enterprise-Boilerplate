@@ -142,7 +142,15 @@ class RegisterUseCase:
             verification_token = new_user.generate_verification_token()
 
         created_user = await self._user_repo.create(new_user)
-        await self._db_session.commit()
+        try:
+            await self._db_session.commit()
+        except Exception:
+            await self._db_session.rollback()
+            # IntegrityError on commit = concurrent insert (TOCTOU race)
+            raise ConflictError(
+                message="Email already registered",
+                code="EMAIL_EXISTS",
+            ) from None
 
         # Send verification email (fire-and-forget)
         if settings.EMAIL_VERIFICATION_REQUIRED and verification_token:

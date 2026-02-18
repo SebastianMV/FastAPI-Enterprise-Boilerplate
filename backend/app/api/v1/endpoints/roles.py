@@ -14,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
     CurrentTenantId,
-    CurrentUserId,
     DbSession,
     SuperuserId,
     require_permission,
@@ -315,9 +314,9 @@ async def delete_role(
 )
 async def get_user_permissions(
     user_id: UUID,
-    current_user_id: CurrentUserId,
     tenant_id: CurrentTenantId,
     session: DbSession,
+    current_user_id: UUID = Depends(require_permission("roles", "read")),
 ) -> UserPermissionsResponse:
     """Get all permissions for a user based on their roles."""
     # Authorization: only self or superuser can view permissions

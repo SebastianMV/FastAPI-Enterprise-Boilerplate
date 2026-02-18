@@ -1,8 +1,8 @@
 ﻿# Project Status & Roadmap
 
 **Version:** v0.9.5
-**Date:** February 11, 2026
-**Status:** Beta  feature-complete, 22 security audits passed
+**Date:** February 18, 2026
+**Status:** Beta  feature-complete, 38 security audits passed
 
 ---
 
@@ -10,7 +10,7 @@
 
 **FastAPI Enterprise Boilerplate** is a full-stack enterprise boilerplate with
 JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.
-The backend has 99% test coverage and has undergone **22 security audit cycles**
+The backend has 99% test coverage and has undergone **38 security audit cycles**
 covering 700+ individual hardening items. The React frontend is fully functional
 with 568 tests passing.
 
@@ -28,7 +28,7 @@ with 568 tests passing.
 | Type Errors (TypeScript) | 0 | OK |
 | Docker Services | 4/4 healthy | OK |
 | Alembic Migrations | 12 applied | OK |
-| Security Audits Passed | 22 cycles | OK |
+| Security Audits Passed | 38 cycles | OK |
 
 ---
 
@@ -55,7 +55,7 @@ with 568 tests passing.
 | ErrorBoundary | React class component catch-all |
 | Global Exception Handlers | Domain exceptions mapped to HTTP responses |
 
-### Security Hardening (22 Audit Cycles)
+### Security Hardening (38 Audit Cycles)
 
 | Category | Items Resolved |
 | -------- | -------------- |
@@ -123,13 +123,14 @@ pids_limit, and pinned image tags.
 | v0.9.3 -- Backend Hardening | Done |
 | v0.9.4 -- DevOps & CI | Done |
 | v0.9.5 -- Security Audit Cycle (22 audits) | Done |
+| Post-v0.9.5 -- Security Audit Cycles N°36-38 | Done |
 
 ### v1.0.0 -- Production Release
 
 | Prerequisite | Status |
 | ------------ | ------ |
 | All severity >= 5 items resolved | Done |
-| 22 security audit cycles passed | Done |
+| 38 security audit cycles passed | Done |
 | Frontend tests >= 50% coverage | Pending (~32%) |
 | All i18n locales >= 95% | Done |
 | Container hardening (non-root, caps, pids) | Done |

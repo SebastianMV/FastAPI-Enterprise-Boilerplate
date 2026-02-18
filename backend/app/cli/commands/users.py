@@ -268,4 +268,10 @@ async def _set_user_active(user_id: UUID, active: bool) -> None:
         await session.commit()
 
         action = "activated" if active else "deactivated"
+        logger.info(
+            "user_status_changed",
+            user_id=str(user_id),
+            email=str(user.email),
+            action=action,
+        )
         console.print(f"[green]✓ User {user.email} {action}[/green]")

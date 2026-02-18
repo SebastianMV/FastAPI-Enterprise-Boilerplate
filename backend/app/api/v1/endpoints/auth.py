@@ -6,10 +6,11 @@
 import hashlib
 import secrets
 from datetime import UTC, datetime
+from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 
-from app.api.deps import CurrentUser, CurrentUserId, DbSession
+from app.api.deps import CurrentTenantId, CurrentUser, DbSession, require_permission
 from app.api.v1.schemas.auth import (
     AuthResponse,
     ChangePasswordRequest,
@@ -339,10 +340,11 @@ async def refresh_token(
     description="Invalidate current session (client should discard tokens).",
 )
 async def logout(
-    current_user_id: CurrentUserId,
     request: Request,
     response: Response,
     authorization: str = Header(default=""),
+    _current_user_id: UUID = Depends(require_permission("auth", "write")),
+    _tenant_id: CurrentTenantId = None,
 ) -> MessageResponse:
     """
     Logout current user.
@@ -393,6 +395,8 @@ async def logout(
 )
 async def get_current_user_info(
     current_user: CurrentUser,
+    _current_user_id: UUID = Depends(require_permission("users", "read")),
+    _tenant_id: CurrentTenantId = None,
 ) -> UserResponse:
     """
     Get current authenticated user's information.
@@ -420,6 +424,8 @@ async def change_password(
     request: ChangePasswordRequest,
     current_user: CurrentUser,
     session: DbSession,
+    _current_user_id: UUID = Depends(require_permission("users", "write")),
+    _tenant_id: CurrentTenantId = None,
 ) -> MessageResponse:
     """
     Change current user's password.
@@ -763,6 +769,8 @@ async def reset_password(
 async def send_verification_email(
     current_user: CurrentUser,
     session: DbSession,
+    _current_user_id: UUID = Depends(require_permission("users", "write")),
+    _tenant_id: CurrentTenantId = None,
 ) -> MessageResponse:
     """
     Send verification email to the current user.
@@ -917,6 +925,8 @@ async def verify_email(
 )
 async def get_verification_status(
     user: CurrentUser,
+    _current_user_id: UUID = Depends(require_permission("users", "read")),
+    _tenant_id: CurrentTenantId = None,
 ) -> VerificationStatusResponse:
     """
     Get the email verification status for the current user.

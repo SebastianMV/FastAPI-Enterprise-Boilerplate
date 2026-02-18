@@ -13,7 +13,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status  # noqa: F811
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentTenantId, CurrentUserId, require_permission
+from app.api.deps import CurrentTenantId, require_permission
 from app.api.v1.schemas.audit_logs import (
     AuditLogListResponse,
     AuditLogResponse,
@@ -150,7 +150,7 @@ async def list_audit_logs(
     description="Get audit logs for the current user's actions.",
 )
 async def get_my_activity(
-    current_user_id: CurrentUserId,
+    current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
     tenant_id: CurrentTenantId = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
@@ -303,6 +303,7 @@ async def get_audit_log(
 )
 async def list_actions(
     current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
+    tenant_id: CurrentTenantId = None,
 ) -> list[str]:
     """Get list of available audit actions."""
     return [action.value for action in AuditAction]
@@ -316,6 +317,7 @@ async def list_actions(
 )
 async def list_resource_types(
     current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
+    tenant_id: CurrentTenantId = None,
 ) -> list[str]:
     """Get list of available resource types."""
     return [rt.value for rt in AuditResourceType]

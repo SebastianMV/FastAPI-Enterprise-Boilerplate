@@ -8,7 +8,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.v1.schemas.common import LongNameStr, ScopeStr, TokenStr
+from app.api.v1.schemas.common import (
+    DescriptionStr,
+    LongNameStr,
+    ScopeStr,
+    ShortStr,
+    TokenStr,
+)
 
 
 class APIKeyCreate(BaseModel):
@@ -35,7 +41,7 @@ class APIKeyResponse(BaseModel):
 
     id: UUID
     name: LongNameStr
-    prefix: str = Field(max_length=20)
+    prefix: ShortStr = Field(max_length=20)
     scopes: list[ScopeStr]
     is_active: bool
     expires_at: datetime | None = None
@@ -53,7 +59,7 @@ class APIKeyCreatedResponse(BaseModel):
 
     id: UUID
     name: LongNameStr
-    prefix: str = Field(max_length=20)
+    prefix: ShortStr = Field(max_length=20)
     key: TokenStr = Field(
         ...,
         description="The API key. Store this securely - it cannot be retrieved again.",
@@ -63,7 +69,7 @@ class APIKeyCreatedResponse(BaseModel):
     created_at: datetime
 
     # Warning message
-    warning: str = Field(
+    warning: DescriptionStr = Field(
         default="Store this key securely. It will not be shown again.",
         max_length=200,
     )

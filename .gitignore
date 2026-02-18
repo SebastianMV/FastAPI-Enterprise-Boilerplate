@@ -148,3 +148,13 @@ alembic/versions/*.pyc
 AGENTS.md
 # Internal analysis documents (team only, not for public repo)
 docs/analisis_interno/
+
+# Local debugging artifacts (backend)
+backend/pip_*.txt
+backend/sa_test*.txt
+backend/test_*.txt
+backend/test_*.py
+backend/run_t.py
+backend/run_tests.py
+backend/sqlalchemy-*.whl
+test_output.txt

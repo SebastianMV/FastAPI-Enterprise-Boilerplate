@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- Audit cycles N°36, N°37 and N°38 completed (backend + frontend scope, excluding infrastructure)
+- Resolved tenant isolation gaps in search admin endpoints by enforcing `CurrentTenantId` in `create_index` and `delete_index`
+- Hardened OAuth callback redirect validation to require valid `http/https` scheme plus exact allowlisted origin match
+- Updated static audit scanner rules to reduce false positives (superuser dependency recognition, context-aware redirect checks, DEV-guarded console detection)
+
+### Changed
+
+- Kept reusable audit tooling and machine-readable outputs under `audit36_static/`, `audit37_static/`, and `audit38_static/`
+- Removed obsolete markdown report artifacts from Audit36 to reduce repository noise while preserving executable scanners
+
+### Maintenance
+
+- Cleaned temporary local debugging artifacts generated during Python/SQLAlchemy diagnostics
+- Added `.gitignore` rules for backend diagnostic scripts/logs to keep future commits clean
+
 ## [0.9.5] - 2026-02-11
 
 ### Security (22 Audit Cycles  700+ items resolved)

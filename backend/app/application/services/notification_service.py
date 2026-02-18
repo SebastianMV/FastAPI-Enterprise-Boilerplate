@@ -145,6 +145,7 @@ class NotificationService:
                     "websocket_delivery_failed",
                     notification_id=str(notification.id),
                     user_id=str(user_id),
+                    exc_info=True,
                 )
 
         return notification

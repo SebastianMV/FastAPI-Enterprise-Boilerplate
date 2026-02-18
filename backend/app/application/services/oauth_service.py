@@ -5,12 +5,14 @@
 OAuth2/SSO service for handling OAuth authentication flows.
 """
 
+import hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -377,7 +379,10 @@ class OAuthService:
             user_result = await self._session.execute(user_stmt)
             user = user_result.scalar_one_or_none()
 
-            if user and (not user.password_hash or user.password_hash == "!oauth"):
+            if user and (
+                not user.password_hash
+                or hmac.compare_digest(user.password_hash or "", "!oauth")
+            ):
                 raise BusinessRuleViolationError(
                     message="Cannot unlink primary OAuth account without setting a password",
                     rule="oauth_primary_unlink_requires_password",
@@ -837,7 +842,7 @@ class OAuthService:
         try:
             async with self._session.begin_nested():
                 await self._session.flush()
-        except Exception:
+        except IntegrityError:
             # Race condition: concurrent request may have created the user
             existing = await self._get_user_by_email(user_info.email, tenant_id)
             if existing:

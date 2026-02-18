@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.api.v1.schemas.common import NameStr, TokenStr
+from app.api.v1.schemas.common import NameStr, PasswordStr, ShortStr, TokenStr
 
 # ===========================================
 # Request Schemas
@@ -23,14 +23,14 @@ class LoginRequest(BaseModel):
         description="User's email address",
         examples=["user@example.com"],
     )
-    password: str = Field(
+    password: PasswordStr = Field(
         ...,
         min_length=8,
         max_length=128,
         description="User's password",
         examples=["SecureP@ss123"],
     )
-    mfa_code: str | None = Field(
+    mfa_code: ShortStr | None = Field(
         None,
         min_length=6,
         max_length=8,
@@ -47,7 +47,7 @@ class RegisterRequest(BaseModel):
         description="User's email address",
         examples=["newuser@example.com"],
     )
-    password: str = Field(
+    password: PasswordStr = Field(
         ...,
         min_length=8,
         max_length=128,
@@ -71,8 +71,8 @@ class RegisterRequest(BaseModel):
 class RefreshTokenRequest(BaseModel):
     """Request to refresh access token."""
 
-    refresh_token: str = Field(
-        default="",
+    refresh_token: TokenStr | None = Field(
+        default=None,
         max_length=2048,
         description="Valid refresh token (optional if sent via HttpOnly cookie)",
     )
@@ -81,13 +81,13 @@ class RefreshTokenRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     """Request to change user's password."""
 
-    current_password: str = Field(
+    current_password: PasswordStr = Field(
         ...,
         min_length=1,
         max_length=128,
         description="Current password for verification",
     )
-    new_password: str = Field(
+    new_password: PasswordStr = Field(
         ...,
         min_length=8,
         max_length=128,
@@ -108,12 +108,12 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     """Request to reset password with token."""
 
-    token: str = Field(
+    token: TokenStr = Field(
         ...,
         max_length=256,
         description="Password reset token from email",
     )
-    new_password: str = Field(
+    new_password: PasswordStr = Field(
         ...,
         min_length=8,
         max_length=128,
@@ -125,7 +125,7 @@ class ResetPasswordRequest(BaseModel):
 class VerifyResetTokenRequest(BaseModel):
     """Request to verify a password reset token."""
 
-    token: str = Field(
+    token: TokenStr = Field(
         ...,
         max_length=256,
         description="Password reset token to verify",
@@ -135,7 +135,7 @@ class VerifyResetTokenRequest(BaseModel):
 class VerifyEmailTokenRequest(BaseModel):
     """Request to verify an email verification token."""
 
-    token: str = Field(
+    token: TokenStr = Field(
         ...,
         max_length=256,
         description="Email verification token",
@@ -158,7 +158,7 @@ class TokenResponse(BaseModel):
         ...,
         description="JWT refresh token (long-lived)",
     )
-    token_type: str = Field(
+    token_type: ShortStr = Field(
         default="bearer",
         max_length=20,
         description="Token type (always 'bearer')",
@@ -175,9 +175,9 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    email: str = Field(max_length=320)
-    first_name: str = Field(max_length=200)
-    last_name: str = Field(max_length=200)
+    email: EmailStr
+    first_name: NameStr = Field(max_length=200)
+    last_name: NameStr = Field(max_length=200)
     is_active: bool
     is_superuser: bool
     email_verified: bool = False
@@ -200,7 +200,7 @@ class AuthResponse(BaseModel):
 class VerificationStatusResponse(BaseModel):
     """Email verification status response."""
 
-    email: str = Field(max_length=320)
+    email: EmailStr
     email_verified: bool
     verification_required: bool
 

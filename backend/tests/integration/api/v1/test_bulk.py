@@ -208,7 +208,7 @@ class TestBulkCreateUsers:
         assert data["operation"] == "create"
         assert data["entity_type"] == "users"
         assert data["total_requested"] == 3
-        assert data["successful"] >= 0
+        assert data["successful"] > 0
         assert "results" in data
 
     async def test_bulk_create_users_with_duplicates(

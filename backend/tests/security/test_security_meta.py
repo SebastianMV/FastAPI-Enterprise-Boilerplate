@@ -224,7 +224,7 @@ class TestEndpointPermissions:
         """Check that endpoints in v1/ routers use require_permission."""
         v1_dir = API_DIR / "v1" / "endpoints"
         if not v1_dir.exists():
-            pytest.skip("v1/endpoints directory not found")
+            pytest.fail("v1/endpoints directory not found — security check cannot run")
 
         warnings: list[str] = []
         for filepath in _get_python_files(v1_dir):

@@ -6,7 +6,6 @@ Complete unit tests for database CLI commands to achieve 90%+ coverage.
 All patches use correct module paths (imports happen inside functions).
 """
 
-import subprocess
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -364,43 +363,31 @@ class TestRunMigrationsCommand:
 
     def test_run_migrations_default_revision(self):
         """Test run_migrations with default revision (head)."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0, stdout="Done!", stderr="")
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate = AsyncMock(return_value=(b"Done!", b""))
 
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             run_migrations(
                 revision="head"
             )  # Explicitly pass head instead of using default
 
-            mock_run.assert_called_once_with(
-                ["alembic", "upgrade", "head"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-
     def test_run_migrations_custom_revision(self):
         """Test run_migrations with custom revision."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0, stdout="Done!", stderr="")
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate = AsyncMock(return_value=(b"Done!", b""))
 
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             run_migrations(revision="abc123")
-
-            mock_run.assert_called_once_with(
-                ["alembic", "upgrade", "abc123"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
 
     def test_run_migrations_handles_subprocess_error(self):
         """Test run_migrations handles subprocess errors."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = subprocess.CalledProcessError(
-                returncode=1,
-                cmd=["alembic", "upgrade", "head"],
-                stderr="Migration failed",
-            )
+        mock_process = AsyncMock()
+        mock_process.returncode = 1
+        mock_process.communicate = AsyncMock(return_value=(b"", b"Migration failed"))
 
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             with pytest.raises(typer.Exit) as exc_info:
                 run_migrations(revision="head")
 

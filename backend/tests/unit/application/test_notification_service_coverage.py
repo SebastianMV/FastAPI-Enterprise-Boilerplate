@@ -7,13 +7,12 @@ Additional notification service tests for coverage improvement.
 Tests convenience methods and edge cases.
 """
 
-from datetime import UTC, datetime
-from html import escape as _html_escape
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
-
 import html as html_mod
 import pytest
+
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 from app.domain.entities.notification import (
     Notification,

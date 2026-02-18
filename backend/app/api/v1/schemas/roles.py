@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.v1.schemas.common import ScopeStr, ShortStr
+from app.api.v1.schemas.common import DescriptionStr, RoleNameStr, ScopeStr, ShortStr
 
 # ===========================================
 # Request Schemas
@@ -29,15 +29,12 @@ class PermissionSchema(BaseModel):
 class RoleCreate(BaseModel):
     """Create role request."""
 
-    name: str = Field(
+    name: RoleNameStr = Field(
         ...,
-        min_length=1,
-        max_length=100,
         description="Role name",
     )
-    description: str = Field(
+    description: DescriptionStr = Field(
         default="",
-        max_length=500,
         description="Role description",
     )
     permissions: list[ScopeStr] = Field(
@@ -50,14 +47,11 @@ class RoleCreate(BaseModel):
 class RoleUpdate(BaseModel):
     """Update role request."""
 
-    name: str | None = Field(
+    name: RoleNameStr | None = Field(
         default=None,
-        min_length=1,
-        max_length=100,
     )
-    description: str | None = Field(
+    description: DescriptionStr | None = Field(
         default=None,
-        max_length=500,
     )
     permissions: list[ScopeStr] | None = Field(default=None, max_length=100)
 
@@ -87,8 +81,8 @@ class RoleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    name: str = Field(max_length=100)
-    description: str = Field(max_length=500)
+    name: RoleNameStr = Field()
+    description: DescriptionStr = Field()
     permissions: list[ScopeStr]
     is_system: bool
     created_at: datetime

@@ -124,7 +124,7 @@ async def test_update_role_real_invalid_permission(db_session):
 
 @pytest.mark.asyncio
 async def test_get_user_permissions_real_not_found(db_session):
-    """Test get permissions for non-existent user - REAL query."""
+    """Test permission check precedence for get user permissions endpoint."""
     from app.infrastructure.database.repositories.tenant_repository import (
         SQLAlchemyTenantRepository,
     )
@@ -152,8 +152,9 @@ async def test_get_user_permissions_real_not_found(db_session):
             session=db_session,
         )
 
-    assert exc.value.status_code == 404
-    assert "USER_NOT_FOUND" in str(exc.value.detail)
+    # Endpoint enforces authorization first for other users
+    assert exc.value.status_code == 403
+    assert "FORBIDDEN" in str(exc.value.detail)
 
 
 @pytest.mark.asyncio

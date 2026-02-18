@@ -114,6 +114,12 @@ class AuditLog:
     metadata: dict[str, Any] = field(default_factory=dict)
     reason: str | None = None
 
+    def __repr__(self) -> str:
+        return (
+            f"<AuditLog(id={self.id}, action={self.action.value}, "
+            f"resource={self.resource_type.value}/{self.resource_id})>"
+        )
+
     def __post_init__(self) -> None:
         """Validate audit log entry."""
         # Ensure timestamp is in UTC

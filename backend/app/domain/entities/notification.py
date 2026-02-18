@@ -110,6 +110,12 @@ class Notification(TenantEntity):
     action_clicked: bool = False
     action_clicked_at: datetime | None = None
 
+    def __repr__(self) -> str:
+        return (
+            f"<Notification(id={self.id}, type={self.type.value}, "
+            f"user_id={self.user_id}, is_read={self.is_read})>"
+        )
+
     @property
     def is_expired(self) -> bool:
         """Check if notification has expired."""

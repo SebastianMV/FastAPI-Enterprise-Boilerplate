@@ -34,6 +34,9 @@ NameStr = Annotated[str, Field(min_length=1, max_length=200)]
 TextStr = Annotated[str, Field(max_length=2000)]
 """Longer text (descriptions, notes, comments). Max 2000 chars."""
 
+LargeTextStr = Annotated[str, Field(max_length=50000)]
+"""Very long text/blob fields (e.g. base64 payloads). Max 50000 chars."""
+
 UrlStr = Annotated[str, Field(max_length=2048)]
 """URL strings (callback URLs, logo URLs, webhook URLs). Max 2048 chars."""
 
@@ -46,20 +49,35 @@ ScopeStr = Annotated[str, Field(max_length=100)]
 LongNameStr = Annotated[str, Field(min_length=1, max_length=255)]
 """Long names (tenant names, API key names, domains). Max 255 chars."""
 
+RoleNameStr = Annotated[str, Field(min_length=1, max_length=100)]
+"""Role names. Max 100 chars."""
+
+DescriptionStr = Annotated[str, Field(max_length=500)]
+"""Descriptions (role descriptions, notes). Max 500 chars."""
+
+PasswordStr = Annotated[str, Field(min_length=8, max_length=128)]
+"""Password strings. Min 8, max 128 chars."""
+
 
 class ErrorDetail(BaseModel):
     """Error detail in response."""
 
     code: ShortStr = Field(..., description="Error code")
-    message: str = Field(..., max_length=500, description="Human-readable error message")
-    field: str | None = Field(None, max_length=200, description="Field that caused the error")
+    message: str = Field(
+        ..., max_length=500, description="Human-readable error message"
+    )
+    field: str | None = Field(
+        None, max_length=200, description="Field that caused the error"
+    )
 
 
 class ErrorResponse(BaseModel):
     """Standard error response."""
 
     error: ErrorDetail
-    request_id: str | None = Field(None, max_length=100, description="Request ID for debugging")
+    request_id: str | None = Field(
+        None, max_length=100, description="Request ID for debugging"
+    )
 
 
 class ValidationErrorResponse(BaseModel):

@@ -317,7 +317,7 @@ class TestEmailOTPHandler:
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code_hash": sha256("123456".encode()).hexdigest(),
+                "code_hash": sha256(b"123456").hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 0,
             }
@@ -338,7 +338,7 @@ class TestEmailOTPHandler:
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code_hash": sha256("123456".encode()).hexdigest(),
+                "code_hash": sha256(b"123456").hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 1,
             }
@@ -362,7 +362,7 @@ class TestEmailOTPHandler:
         expires_at = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         otp_data = json.dumps(
             {
-                "code_hash": sha256("123456".encode()).hexdigest(),
+                "code_hash": sha256(b"123456").hexdigest(),
                 "expires_at": expires_at,
                 "attempts": 3,  # Max is 3
             }
@@ -484,7 +484,7 @@ class TestEmailOTPHandler:
         """Test remaining attempts when no attempts made."""
         otp_data = json.dumps(
             {
-                "code_hash": sha256("123456".encode()).hexdigest(),
+                "code_hash": sha256(b"123456").hexdigest(),
                 "expires_at": datetime.now(UTC).isoformat(),
                 "attempts": 0,
             }
@@ -502,7 +502,7 @@ class TestEmailOTPHandler:
         """Test remaining attempts when some attempts used."""
         otp_data = json.dumps(
             {
-                "code_hash": sha256("123456".encode()).hexdigest(),
+                "code_hash": sha256(b"123456").hexdigest(),
                 "expires_at": datetime.now(UTC).isoformat(),
                 "attempts": 2,
             }
@@ -520,7 +520,7 @@ class TestEmailOTPHandler:
         """Test remaining attempts when all used."""
         otp_data = json.dumps(
             {
-                "code_hash": sha256("123456".encode()).hexdigest(),
+                "code_hash": sha256(b"123456").hexdigest(),
                 "expires_at": datetime.now(UTC).isoformat(),
                 "attempts": 3,
             }
@@ -549,7 +549,7 @@ class TestEmailOTPHandler:
         """Test remaining attempts with custom purpose."""
         otp_data = json.dumps(
             {
-                "code_hash": sha256("123456".encode()).hexdigest(),
+                "code_hash": sha256(b"123456").hexdigest(),
                 "expires_at": datetime.now(UTC).isoformat(),
                 "attempts": 1,
             }

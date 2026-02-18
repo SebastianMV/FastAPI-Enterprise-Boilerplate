@@ -326,7 +326,9 @@ class TestAuthVerifyEmailIntegration:
         # Set an expired verification token on the user
         expired_time = datetime.now(UTC) - timedelta(hours=48)
         raw_token = "expired_test_token"
-        test_user.email_verification_token = hashlib.sha256(raw_token.encode()).hexdigest()
+        test_user.email_verification_token = hashlib.sha256(
+            raw_token.encode()
+        ).hexdigest()
         test_user.email_verification_sent_at = expired_time
         await db_session.flush()
 

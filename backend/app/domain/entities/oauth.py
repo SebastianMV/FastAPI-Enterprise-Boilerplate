@@ -162,3 +162,9 @@ class OAuthUserInfo:
 
     # Raw data from provider
     raw_data: dict[str, Any] = field(default_factory=dict)
+
+    def __repr__(self) -> str:
+        return (
+            f"<OAuthUserInfo(provider={self.provider}, "
+            f"provider_user_id={self.provider_user_id})>"
+        )

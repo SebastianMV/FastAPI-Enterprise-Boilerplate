@@ -7,7 +7,6 @@ Unit tests for Email OTP API endpoints.
 Tests for Email-based One-Time Password endpoints in MFA router.
 """
 
-from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 

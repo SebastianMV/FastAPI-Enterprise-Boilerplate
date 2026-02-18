@@ -9,7 +9,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.api.v1.schemas.common import NameStr
+from app.api.v1.schemas.common import NameStr, PasswordStr, UrlStr
 
 # ===========================================
 # Request Schemas
@@ -23,7 +23,7 @@ class UserCreate(BaseModel):
         ...,
         description="User's email address",
     )
-    password: str = Field(
+    password: PasswordStr = Field(
         ...,
         min_length=8,
         max_length=128,
@@ -82,10 +82,10 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    email: str = Field(max_length=320)
-    first_name: str = Field(max_length=200)
-    last_name: str = Field(max_length=200)
-    avatar_url: str | None = Field(default=None, max_length=2048)
+    email: EmailStr
+    first_name: NameStr = Field(max_length=200)
+    last_name: NameStr = Field(max_length=200)
+    avatar_url: UrlStr | None = Field(default=None, max_length=2048)
     is_active: bool
     is_superuser: bool
     created_at: datetime

@@ -339,7 +339,7 @@ export default function SearchBar({
                 >
                   <Search className="w-4 h-4 text-slate-400" />
                   <span className="text-sm text-slate-700 dark:text-slate-300">
-                    {suggestion}
+                    {sanitizeText(suggestion)}
                   </span>
                 </button>
               ))}
@@ -360,7 +360,7 @@ export default function SearchBar({
                 >
                   <Clock className="w-4 h-4 text-slate-400" />
                   <span className="text-sm text-slate-700 dark:text-slate-300">
-                    {search}
+                    {sanitizeText(search)}
                   </span>
                 </button>
               ))}

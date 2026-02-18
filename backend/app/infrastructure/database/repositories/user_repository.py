@@ -88,7 +88,9 @@ class SQLAlchemyUserRepository(UserRepositoryPort):
 
         except IntegrityError as e:
             await self._session.rollback()
-            if "email" in str(e.orig):
+            constraint = getattr(e.orig, "constraint_name", "") or ""
+            orig_str = str(e.orig) if not constraint else ""
+            if "email" in constraint or "email" in orig_str:
                 raise ConflictError(
                     message="A user with this email already exists",
                     conflicting_field="email",

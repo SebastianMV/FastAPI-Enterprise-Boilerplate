@@ -9,7 +9,16 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Path, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -18,6 +27,7 @@ from app.api.deps import (
     CurrentUser,
     DbSession,
     SuperuserId,
+    require_permission,
 )
 from app.application.services.oauth_service import OAuthService
 from app.config import settings
@@ -33,6 +43,9 @@ from app.infrastructure.observability.logging import get_logger
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth"])
+
+OAuthReader = Annotated[UUID, Depends(require_permission("oauth", "read"))]
+OAuthWriter = Annotated[UUID, Depends(require_permission("oauth", "write"))]
 
 
 # ==============================================================================
@@ -372,7 +385,7 @@ async def callback_redirect(
     state: str = Query(..., max_length=2048),
     error: str | None = Query(None, max_length=200),
     error_description: str | None = Query(None, max_length=2000),
-    frontend_url: str = Query(
+    frontend_url: str | None = Query(
         None, max_length=2048, description="Frontend URL to redirect to"
     ),
 ) -> RedirectResponse:
@@ -383,14 +396,18 @@ async def callback_redirect(
     if not frontend_url:
         frontend_url = settings.FRONTEND_URL
 
-    # Validate frontend_url against allowlist to prevent open redirect
+    # Validate frontend_url against allowlist to prevent open redirect.
+    # Check scheme + netloc (not just netloc) to block javascript: URLs and subdomain confusion.
     allowed_origins = {settings.FRONTEND_URL}
     from urllib.parse import urlparse
 
     parsed_frontend = urlparse(frontend_url)
-    if not any(
-        urlparse(origin).netloc == parsed_frontend.netloc for origin in allowed_origins
-    ):
+    is_valid_frontend = parsed_frontend.scheme in {"http", "https"} and any(
+        parsed_frontend.scheme == urlparse(origin).scheme
+        and parsed_frontend.netloc == urlparse(origin).netloc
+        for origin in allowed_origins
+    )
+    if not is_valid_frontend:
         frontend_url = settings.FRONTEND_URL
 
     if error:
@@ -500,6 +517,7 @@ async def callback_redirect(
 )
 async def list_connections(
     session: DbSession,
+    _current_user_id: OAuthReader,
     current_user: CurrentUser,
     tenant_id: CurrentTenantId = None,
 ) -> list[OAuthConnectionResponse]:
@@ -539,6 +557,7 @@ async def link_account(
     provider: str = Path(..., max_length=50),
     *,
     session: DbSession,
+    _current_user_id: OAuthWriter,
     current_user: CurrentUser,
     tenant_id: CurrentTenantId = None,
     scope: str | None = Query(default=None, max_length=1000),
@@ -589,6 +608,7 @@ async def link_account(
 async def unlink_account(
     connection_id: UUID,
     session: DbSession,
+    _current_user_id: OAuthWriter,
     current_user: CurrentUser,
     tenant_id: CurrentTenantId = None,
 ) -> None:
@@ -764,6 +784,7 @@ async def create_sso_config(
 )
 async def list_providers(
     session: DbSession,
+    _current_user_id: OAuthReader,
     current_user: CurrentUser,
     tenant_id: CurrentTenantId = None,
 ) -> list[OAuthProviderResponse]:

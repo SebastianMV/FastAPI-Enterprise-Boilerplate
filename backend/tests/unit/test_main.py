@@ -161,7 +161,7 @@ class TestCORSConfiguration:
         ]  # type: ignore[attr-defined]
 
         # Should have middleware
-        assert len(app.user_middleware) >= 0
+        assert len(app.user_middleware) > 0
 
 
 class TestAppSettings:

@@ -20,7 +20,7 @@ class TenantSettingsSchema(BaseModel):
     max_users: int = Field(default=100, ge=1, le=10000)
     max_api_keys_per_user: int = Field(default=5, ge=1, le=100)
     max_storage_mb: int = Field(default=1024, ge=100, le=1000000)
-    primary_color: str = Field(default="#3B82F6", pattern=r"^#[0-9A-Fa-f]{6}$")
+    primary_color: ShortStr = Field(default="#3B82F6", pattern=r"^#[0-9A-Fa-f]{6}$")
     logo_url: UrlStr | None = None
     password_min_length: int = Field(default=8, ge=6, le=128)
     session_timeout_minutes: int = Field(default=60, ge=5, le=10080)
@@ -30,8 +30,8 @@ class TenantSettingsSchema(BaseModel):
 class TenantCreate(BaseModel):
     """Schema for creating a new tenant."""
 
-    name: str = Field(..., min_length=2, max_length=255)
-    slug: str = Field(
+    name: LongNameStr = Field(..., min_length=2, max_length=255)
+    slug: LongNameStr = Field(
         ...,
         min_length=2,
         max_length=100,
@@ -42,8 +42,8 @@ class TenantCreate(BaseModel):
     phone: ShortStr | None = None
     domain: LongNameStr | None = None
     timezone: ShortStr = Field(default="UTC")
-    locale: str = Field(default="en", max_length=10)
-    plan: str = Field(
+    locale: ShortStr = Field(default="en", max_length=10)
+    plan: ShortStr = Field(
         default="free", pattern=r"^(free|starter|professional|enterprise)$"
     )
     settings: TenantSettingsSchema | None = None
@@ -52,8 +52,8 @@ class TenantCreate(BaseModel):
 class TenantUpdate(BaseModel):
     """Schema for updating a tenant."""
 
-    name: str | None = Field(default=None, min_length=2, max_length=255)
-    slug: str | None = Field(
+    name: LongNameStr | None = Field(default=None, min_length=2, max_length=255)
+    slug: LongNameStr | None = Field(
         default=None,
         min_length=2,
         max_length=100,
@@ -63,8 +63,8 @@ class TenantUpdate(BaseModel):
     phone: ShortStr | None = None
     domain: LongNameStr | None = None
     timezone: ShortStr | None = None
-    locale: str | None = Field(default=None, max_length=10)
-    plan: str | None = Field(
+    locale: ShortStr | None = Field(default=None, max_length=10)
+    plan: ShortStr | None = Field(
         default=None,
         pattern=r"^(free|starter|professional|enterprise)$",
     )
@@ -78,8 +78,8 @@ class TenantResponse(BaseModel):
 
     id: UUID
     name: LongNameStr
-    slug: str = Field(max_length=100)
-    email: str | None = Field(default=None, max_length=320)
+    slug: LongNameStr = Field(max_length=100)
+    email: EmailStr | None = None
     phone: ShortStr | None = None
     is_active: bool
     is_verified: bool
@@ -88,7 +88,7 @@ class TenantResponse(BaseModel):
     settings: TenantSettingsSchema
     domain: LongNameStr | None = None
     timezone: ShortStr
-    locale: str = Field(max_length=10)
+    locale: ShortStr = Field(max_length=10)
     created_at: datetime
     updated_at: datetime
 
@@ -117,5 +117,5 @@ class TenantVerifyRequest(BaseModel):
 class TenantPlanUpdate(BaseModel):
     """Schema for updating tenant plan."""
 
-    plan: str = Field(..., pattern=r"^(free|starter|professional|enterprise)$")
+    plan: ShortStr = Field(..., pattern=r"^(free|starter|professional|enterprise)$")
     expires_at: datetime | None = None
