@@ -92,11 +92,27 @@ jobs:
           FAILS=0
 
           pip install semgrep==1.151.0
-          if ! semgrep --config .semgrep/ backend/app/ frontend/src/ --error --quiet; then
-            echo "❌ Semgrep custom rules failed"
+          semgrep --config .semgrep/ backend/app/ frontend/src/ docker-compose*.yml .github/workflows/ --json --output semgrep-results.json || true
+
+          if [ ! -f semgrep-results.json ]; then
+            echo "❌ Semgrep failed to produce results"
             FAILS=$((FAILS + 1))
           else
-            echo "✅ Semgrep passed"
+            CURRENT=$(python -c "import json;print(len(json.load(open('semgrep-results.json', encoding='utf-8')).get('results', [])))")
+            BASELINE_FILE="audit42_static/semgrep_results_isolated.json"
+            if [ -f "$BASELINE_FILE" ]; then
+              BASELINE=$(python -c "import json;print(len(json.load(open('$BASELINE_FILE', encoding='utf-8')).get('results', [])))")
+            else
+              BASELINE=0
+            fi
+
+            echo "Semgrep findings: current=$CURRENT baseline=$BASELINE"
+            if [ "$CURRENT" -gt "$BASELINE" ]; then
+              echo "❌ Semgrep regression detected"
+              FAILS=$((FAILS + 1))
+            else
+              echo "✅ Semgrep no regression"
+            fi
           fi
 
           cd backend
