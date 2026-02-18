@@ -25,7 +25,9 @@ class Settings(BaseSettings):
     # ===========================================
     APP_NAME: str = "FastAPI Enterprise Boilerplate"
     APP_VERSION: str = "0.9.0"
-    ENVIRONMENT: Literal["development", "staging", "production"] = "development"
+    ENVIRONMENT: Literal["development", "staging", "production", "testing"] = (
+        "development"
+    )
     DEBUG: bool = Field(default=False)
 
     # ===========================================
