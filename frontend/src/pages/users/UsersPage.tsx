@@ -216,10 +216,9 @@ export default function UsersPage() {
     deleteMutation.mutate(selectedUser.id);
   }, [selectedUser, deleteMutation]);
 
-  const users = data?.items || [];
   const filteredUsers = useMemo(
     () =>
-      users.filter(
+      (data?.items ?? []).filter(
         (user) =>
           user.email.toLowerCase().includes(search.toLowerCase()) ||
           (user.first_name ?? "")
@@ -227,7 +226,7 @@ export default function UsersPage() {
             .includes(search.toLowerCase()) ||
           (user.last_name ?? "").toLowerCase().includes(search.toLowerCase()),
       ),
-    [users, search],
+    [data?.items, search],
   );
 
   return (

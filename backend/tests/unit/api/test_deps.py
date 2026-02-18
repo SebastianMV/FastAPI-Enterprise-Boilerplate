@@ -200,9 +200,7 @@ class TestRequireSuperuser:
             mock_validate.return_value = {"sub": str(uuid4())}
 
             with pytest.raises(HTTPException) as exc_info:
-                await require_superuser(
-                    credentials, _make_mock_request(), mock_session
-                )
+                await require_superuser(credentials, _make_mock_request(), mock_session)
 
             assert exc_info.value.status_code == 403
             assert "Superuser" in exc_info.value.detail["message"]
@@ -218,9 +216,7 @@ class TestRequireSuperuser:
             mock_validate.side_effect = AuthenticationError("Expired", "EXPIRED")
 
             with pytest.raises(HTTPException) as exc_info:
-                await require_superuser(
-                    credentials, _make_mock_request(), AsyncMock()
-                )
+                await require_superuser(credentials, _make_mock_request(), AsyncMock())
 
             assert exc_info.value.status_code == 401
 
@@ -262,9 +258,7 @@ class TestRequirePermission:
         with patch("app.api.deps.validate_access_token") as mock_validate:
             mock_validate.return_value = {"sub": str(user_id)}
 
-            result = await checker(
-                credentials, _make_mock_request(), mock_session
-            )
+            result = await checker(credentials, _make_mock_request(), mock_session)
 
             assert result == user_id
 

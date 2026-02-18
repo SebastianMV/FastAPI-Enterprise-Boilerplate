@@ -343,7 +343,9 @@ class PostgresFullTextSearch(SearchPort):
         # PostgreSQL FTS uses the actual table data, no separate indexing needed
         # If you have a dedicated tsvector column, update it here
 
-        logger.debug("document_indexed", document_id=str(document.id), index=document.index.value)
+        logger.debug(
+            "document_indexed", document_id=str(document.id), index=document.index.value
+        )
         return True
 
     async def bulk_index(
@@ -376,7 +378,9 @@ class PostgresFullTextSearch(SearchPort):
         For PostgreSQL FTS, deleting from the table removes from search.
         """
         # Actual deletion is handled by the main application
-        logger.debug("document_removed", document_id=str(document_id), index=index.value)
+        logger.debug(
+            "document_removed", document_id=str(document_id), index=index.value
+        )
         return True
 
     async def update_document(

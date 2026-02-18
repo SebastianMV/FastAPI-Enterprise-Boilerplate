@@ -50,9 +50,7 @@ def seed_database(
     from app.config import settings
 
     if settings.ENVIRONMENT in ("production", "staging"):
-        console.print(
-            "[red]Cannot seed sample data in production or staging![/red]"
-        )
+        console.print("[red]Cannot seed sample data in production or staging![/red]")
         raise typer.Exit(1)
 
     if clear_existing:

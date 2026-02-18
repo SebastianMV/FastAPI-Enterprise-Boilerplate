@@ -8,11 +8,11 @@ Tests convenience methods and edge cases.
 """
 
 import html as html_mod
-import pytest
-
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
+
+import pytest
 
 from app.domain.entities.notification import (
     Notification,
@@ -167,7 +167,9 @@ class TestNotificationServiceConvenienceMethods:
             call_kwargs = mock_create.call_args.kwargs
             assert call_kwargs["type"] == NotificationType.MENTION
             assert call_kwargs["message"] == "notification.mention.message"
-            assert call_kwargs["metadata"]["mentioned_by"] == html_mod.escape(mentioned_by)
+            assert call_kwargs["metadata"]["mentioned_by"] == html_mod.escape(
+                mentioned_by
+            )
             assert call_kwargs["metadata"]["context"] == html_mod.escape(context)
             assert call_kwargs["action_url"] == action_url
 

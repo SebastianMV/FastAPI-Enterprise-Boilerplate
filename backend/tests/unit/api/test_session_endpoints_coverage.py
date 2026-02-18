@@ -125,7 +125,11 @@ class TestListSessionsEndpoint:
             mock_repo_class.return_value = mock_repo
 
             result = await list_sessions(
-                user_id=user_id, tenant_id=tenant_id, session=mock_db, request=MagicMock(), credentials=None
+                user_id=user_id,
+                tenant_id=tenant_id,
+                session=mock_db,
+                request=MagicMock(),
+                credentials=None,
             )
 
             assert result.total == 2
@@ -329,7 +333,10 @@ class TestRevokeAllSessionsEndpoint:
                 mock_get_jti.return_value = current_jti
 
                 result = await revoke_all_sessions(
-                    user_id=user_id, tenant_id=tenant_id, session=mock_db, credentials=None
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    session=mock_db,
+                    credentials=None,
                 )
 
                 assert result.revoked_count == 3
@@ -359,11 +366,16 @@ class TestRevokeAllSessionsEndpoint:
                 mock_get_jti.return_value = None
 
                 result = await revoke_all_sessions(
-                    user_id=user_id, tenant_id=tenant_id, session=mock_db, credentials=None
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    session=mock_db,
+                    credentials=None,
                 )
 
                 assert result.revoked_count == 5
-                mock_repo.revoke_all.assert_awaited_once_with(user_id, tenant_id=tenant_id)
+                mock_repo.revoke_all.assert_awaited_once_with(
+                    user_id, tenant_id=tenant_id
+                )
 
     @pytest.mark.asyncio
     async def test_revoke_all_invalid_uuid_jti(self):
@@ -387,8 +399,13 @@ class TestRevokeAllSessionsEndpoint:
                 mock_get_jti.return_value = "not-a-uuid"
 
                 result = await revoke_all_sessions(
-                    user_id=user_id, tenant_id=tenant_id, session=mock_db, credentials=None
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    session=mock_db,
+                    credentials=None,
                 )
 
                 assert result.revoked_count == 5
-                mock_repo.revoke_all.assert_awaited_once_with(user_id, tenant_id=tenant_id)
+                mock_repo.revoke_all.assert_awaited_once_with(
+                    user_id, tenant_id=tenant_id
+                )

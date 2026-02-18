@@ -75,7 +75,9 @@ class TestNotificationSchemas:
 
     def test_mark_read_request_schema(self):
         """Test MarkReadRequest schema."""
-        request = MarkReadRequest(notification_ids=[str(uuid4()), str(uuid4()), str(uuid4())])
+        request = MarkReadRequest(
+            notification_ids=[str(uuid4()), str(uuid4()), str(uuid4())]
+        )
         assert len(request.notification_ids) == 3
 
     def test_mark_read_request_requires_ids(self):

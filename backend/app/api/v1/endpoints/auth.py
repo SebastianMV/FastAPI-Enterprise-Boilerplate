@@ -343,7 +343,7 @@ async def logout(
     request: Request,
     response: Response,
     authorization: str = Header(default=""),
-    _current_user_id: UUID = Depends(require_permission("auth", "write")),
+    current_user_id: UUID = Depends(require_permission("auth", "write")),
     _tenant_id: CurrentTenantId = None,
 ) -> MessageResponse:
     """

@@ -467,9 +467,7 @@ class TestGetCurrentUserId:
     async def test_get_current_user_id_missing_token(self) -> None:
         """Test getting current user ID without token."""
         with pytest.raises(HTTPException) as exc:
-            await get_current_user_id(
-                credentials=None, request=_make_mock_request()
-            )
+            await get_current_user_id(credentials=None, request=_make_mock_request())
 
         assert exc.value.status_code == 401
 

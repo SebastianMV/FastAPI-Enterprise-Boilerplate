@@ -75,28 +75,36 @@ class TestEmailValueObject:
         """Test email validation rejects empty string."""
         from app.domain.value_objects.email import Email
 
-        with pytest.raises((ValueError, DomainValidationError), match="Email cannot be empty"):
+        with pytest.raises(
+            (ValueError, DomainValidationError), match="Email cannot be empty"
+        ):
             Email("")
 
     def test_email_invalid_format_no_at(self) -> None:
         """Test email validation rejects no @ symbol."""
         from app.domain.value_objects.email import Email
 
-        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
+        with pytest.raises(
+            (ValueError, DomainValidationError), match="Invalid email format"
+        ):
             Email("userexample.com")
 
     def test_email_invalid_format_no_domain(self) -> None:
         """Test email validation rejects no domain."""
         from app.domain.value_objects.email import Email
 
-        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
+        with pytest.raises(
+            (ValueError, DomainValidationError), match="Invalid email format"
+        ):
             Email("user@")
 
     def test_email_invalid_format_no_tld(self) -> None:
         """Test email validation rejects no TLD."""
         from app.domain.value_objects.email import Email
 
-        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
+        with pytest.raises(
+            (ValueError, DomainValidationError), match="Invalid email format"
+        ):
             Email("user@example")
 
     def test_email_valid_with_plus(self) -> None:

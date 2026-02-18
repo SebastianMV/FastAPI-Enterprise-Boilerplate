@@ -26,12 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.5] - 2026-02-11
 
-### Security (22 Audit Cycles  700+ items resolved)
+### Security (22 Audit Cycles 700+ items resolved)
 
 This release represents a comprehensive security hardening effort across 22
 audit cycles, resolving 700+ individual issues (severity 610).
 
 **Authentication & Authorization:**
+
 - JWT audience claim validation (prevents token confusion between apps)
 - Superuser DB check on every request (not just JWT claims)
 - Inactive user rejection (is_active=False returns 403)
@@ -60,6 +61,7 @@ audit cycles, resolving 700+ individual issues (severity 610).
 - Rate limits on forgot-password (3/60) and reset-password (5/60)
 
 **Tenant Isolation:**
+
 - Cross-tenant checks in users, roles, bulk, dashboard, notifications,
   audit logs, report templates, search, OAuth identity linking
 - list_users filtered by CurrentTenantId at repository level
@@ -70,6 +72,7 @@ audit cycles, resolving 700+ individual issues (severity 610).
 - Notifications CRUD filtered by tenant_id
 
 **Input Validation & Error Messages:**
+
 - Reflected input eliminated from ~50 error messages (UUIDs, emails, roles,
   slugs, domains, action types, file paths, content types)
 - max_length constraints added to all schema string fields
@@ -80,12 +83,13 @@ audit cycles, resolving 700+ individual issues (severity 610).
 - Data exchange: server-side 50MB file size check
 - Request-ID validation (regex, invalid IDs replaced by UUID)
 - Format string injection prevention in i18n interpolation
-- CSV/Excel formula injection protection (_sanitize_formula)
+- CSV/Excel formula injection protection (\_sanitize_formula)
 - HTML escaping in PDF/report generation (prevents stored XSS)
-- CSS injection prevention in WeasyPrint (_escape_css_string)
+- CSS injection prevention in WeasyPrint (\_escape_css_string)
 - Generic error messages in all user-facing responses (no str(e) leaks)
 
 **Infrastructure Hardening:**
+
 - All Docker images pinned to specific versions (postgres:17.2-alpine,
   redis:7.4-alpine, nginx:1.27-alpine, python:3.13-slim, node:22-alpine)
 - All containers: security_opt no-new-privileges, cap_drop ALL
@@ -116,6 +120,7 @@ audit cycles, resolving 700+ individual issues (severity 610).
 - pre-commit semgrep org updated (returntocorp -> semgrep)
 
 **Frontend Hardening:**
+
 - All token read/write removed from localStorage
 - Auth state restored from cookies via fetchUser() on mount
 - isInitializing state prevents flash redirect during rehydration
@@ -136,17 +141,19 @@ audit cycles, resolving 700+ individual issues (severity 610).
 - URL.revokeObjectURL deferred with setTimeout for download completion
 
 **i18n Completeness:**
+
 - ~150 hardcoded strings migrated to t() calls across 20+ components
 - All error messages use i18n keys (no raw backend messages rendered)
 - Aria labels, placeholders, alt text fully internationalized
 - EN/ES/PT coverage: ~50 new key groups added
 
 **Logging & Observability:**
+
 - All files migrated from import logging to get_logger()
 - ~80 f-string logger calls converted to lazy %s formatting
 - PII removed from logs (emails hashed, user_ids redacted from activity)
 - hashlib.md5 calls use usedforsecurity=False
-- Exception details use type(e).__name__ instead of str(e)
+- Exception details use type(e).**name** instead of str(e)
 - Silent except blocks now log warnings
 
 ### Added
@@ -166,7 +173,7 @@ audit cycles, resolving 700+ individual issues (severity 610).
 
 - **Version:** 0.9.0 -> 0.9.5
 - **Frontend tests:** 111 -> 568 passing (54 test files)
-- **Backend __init__.py:** __version__ = "0.9.5"
+- **Backend **init**.py:** **version** = "0.9.5"
 - **deps.py:** get_current_user includes all entity fields + is_active check
 - **Nginx:** pinned to 1.27-alpine, comprehensive security headers
 - **Docker images:** all pinned to specific patch versions
@@ -202,7 +209,7 @@ audit cycles, resolving 700+ individual issues (severity 610).
 
 ## [0.9.0] - 2026-02-06
 
-### BREAKING  SemVer Reset
+### BREAKING SemVer Reset
 
 Re-versioned from inflated 1.x to honest SemVer 0.9.0 to reflect beta status.
 

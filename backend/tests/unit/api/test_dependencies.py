@@ -34,9 +34,7 @@ class TestGetCurrentUserId:
         from app.api.deps import get_current_user_id
 
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user_id(
-                credentials=None, request=_make_mock_request()
-            )
+            await get_current_user_id(credentials=None, request=_make_mock_request())
 
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail["code"] == "MISSING_TOKEN"

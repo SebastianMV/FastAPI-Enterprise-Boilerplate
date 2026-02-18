@@ -131,7 +131,9 @@ class TestGetDashboardStats:
         mock_api_key_result = MagicMock()
         mock_api_key_result.one.return_value = (50, 40)
         mock_session.execute.side_effect = [
-            mock_user_result, mock_role_result, mock_api_key_result,
+            mock_user_result,
+            mock_role_result,
+            mock_api_key_result,
         ]
 
         result = await get_dashboard_stats(
@@ -155,7 +157,9 @@ class TestGetDashboardStats:
         mock_api_key_result = MagicMock()
         mock_api_key_result.one.return_value = (0, 0)
         mock_session.execute.side_effect = [
-            mock_user_result, mock_role_result, mock_api_key_result,
+            mock_user_result,
+            mock_role_result,
+            mock_api_key_result,
         ]
 
         result = await get_dashboard_stats(

@@ -329,16 +329,20 @@ export default function SettingsPage() {
                 onChange={(e) => handleTimezoneChange(e.target.value)}
               >
                 <option value="America/Santiago">
-                  America/Santiago (GMT-4)
+                  {t("settings.timezoneOptionAmericaSantiago")}
                 </option>
                 <option value="America/New_York">
-                  America/New_York (GMT-5)
+                  {t("settings.timezoneOptionAmericaNewYork")}
                 </option>
                 <option value="America/Los_Angeles">
-                  America/Los_Angeles (GMT-8)
+                  {t("settings.timezoneOptionAmericaLosAngeles")}
                 </option>
-                <option value="Europe/London">Europe/London (GMT)</option>
-                <option value="Europe/Madrid">Europe/Madrid (GMT+1)</option>
+                <option value="Europe/London">
+                  {t("settings.timezoneOptionEuropeLondon")}
+                </option>
+                <option value="Europe/Madrid">
+                  {t("settings.timezoneOptionEuropeMadrid")}
+                </option>
               </select>
             </div>
           </div>

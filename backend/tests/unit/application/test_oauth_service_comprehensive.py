@@ -174,7 +174,9 @@ class TestHandleCallback:
     async def test_handle_callback_invalid_state(self, oauth_service):
         """Test callback with invalid state."""
         with patch.object(oauth_service, "_get_oauth_state", return_value=None):
-            with pytest.raises(AuthenticationError, match="Invalid or expired OAuth state"):
+            with pytest.raises(
+                AuthenticationError, match="Invalid or expired OAuth state"
+            ):
                 await oauth_service.handle_callback(
                     provider=OAuthProvider.GOOGLE,
                     code="auth_code",
@@ -902,7 +904,10 @@ class TestPrivateMethods:
         oauth_service._session.execute = AsyncMock(return_value=mock_result)
         oauth_service._session.flush = AsyncMock()
 
-        with patch("app.application.services.oauth_service.encrypt_value", side_effect=lambda x: x):
+        with patch(
+            "app.application.services.oauth_service.encrypt_value",
+            side_effect=lambda x: x,
+        ):
             await oauth_service._update_oauth_connection(
                 connection_id=connection_id,
                 access_token="new_access_token",
@@ -1102,7 +1107,9 @@ class TestPrivateMethods:
                 new_callable=AsyncMock,
                 return_value=None,
             ),
-            pytest.raises(EntityNotFoundError, match="User not found for OAuth connection"),
+            pytest.raises(
+                EntityNotFoundError, match="User not found for OAuth connection"
+            ),
         ):
             await oauth_service._find_or_create_user(
                 tenant_id=tenant_id,
@@ -1163,7 +1170,10 @@ class TestPrivateMethods:
             updated_at=datetime.now(UTC),
         )
 
-        with patch("app.application.services.oauth_service.decrypt_value", side_effect=lambda x: x):
+        with patch(
+            "app.application.services.oauth_service.decrypt_value",
+            side_effect=lambda x: x,
+        ):
             result = oauth_service._model_to_sso_config(mock_model)
 
         assert result is not None

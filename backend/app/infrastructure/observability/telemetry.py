@@ -89,7 +89,8 @@ def _setup_tracing(resource: Resource) -> None:
         )
         provider.add_span_processor(BatchSpanProcessor(exporter))
         logger.info(
-            "otlp_trace_exporter_configured", endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT
+            "otlp_trace_exporter_configured",
+            endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT,
         )
     else:
         # Console exporter for development

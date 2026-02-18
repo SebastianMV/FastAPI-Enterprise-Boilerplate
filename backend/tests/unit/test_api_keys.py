@@ -152,7 +152,7 @@ class TestAPIKeyHandler:
 
         # Hash should be SHA-256 format (64 hex characters)
         assert len(key_hash) == 64
-        assert all(c in '0123456789abcdef' for c in key_hash)
+        assert all(c in "0123456789abcdef" for c in key_hash)
 
     def test_generate_unique_keys(self, handler):
         """Generated keys should be unique."""

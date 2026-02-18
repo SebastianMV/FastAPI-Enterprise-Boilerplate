@@ -91,6 +91,7 @@
   "python.testing.pytestEnabled": true,
   "python.testing.pytestArgs": ["backend/tests"],
   // ── Spell Check (optional, if extension installed) ────────────────────────
+  "cSpell.enabled": false,
   "cSpell.language": "en,es,pt,pt-BR",
   "cSpell.allowCompoundWords": true,
   "cSpell.ignorePaths": [

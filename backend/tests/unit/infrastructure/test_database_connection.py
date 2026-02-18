@@ -313,7 +313,9 @@ class TestInitDatabase:
         mock_process.communicate = AsyncMock(return_value=(b"", b""))
         mock_process.returncode = 0
 
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process) as mock_exec:
+        with patch(
+            "asyncio.create_subprocess_exec", return_value=mock_process
+        ) as mock_exec:
             await init_database()
 
             mock_exec.assert_called_once()

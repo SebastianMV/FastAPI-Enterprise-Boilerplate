@@ -21,9 +21,7 @@ class TestMFAHelperFunctions:
     @pytest.mark.asyncio
     async def test_get_redis_returns_cache(self):
         """Test _get_redis returns cache from get_cache()."""
-        with patch(
-            "app.infrastructure.cache.get_cache"
-        ) as mock_get_cache:
+        with patch("app.infrastructure.cache.get_cache") as mock_get_cache:
             mock_cache = MagicMock()
             mock_get_cache.return_value = mock_cache
 
@@ -297,9 +295,7 @@ class TestMFADisableFlow:
 
         request = MFADisableRequest(password="password123", code="000000")
 
-        mock_config = MFAConfig(
-            user_id=mock_user.id, secret="SECRET", is_enabled=True
-        )
+        mock_config = MFAConfig(user_id=mock_user.id, secret="SECRET", is_enabled=True)
 
         with patch(
             "app.api.v1.endpoints.mfa.get_mfa_config",
@@ -331,9 +327,7 @@ class TestMFADisableFlow:
 
         request = MFADisableRequest(password="correct_password", code="123456")
 
-        mock_config = MFAConfig(
-            user_id=mock_user.id, secret="SECRET", is_enabled=True
-        )
+        mock_config = MFAConfig(user_id=mock_user.id, secret="SECRET", is_enabled=True)
 
         with (
             patch(

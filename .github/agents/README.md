@@ -1,141 +1,139 @@
 # 🤖 Agentes de Copilot — FastAPI-Enterprise-Boilerplate
 
-> Agentes especializados para VS Code Copilot Chat, construidos sobre 37 auditorías
-> y 992+ fixes aplicados a este proyecto.
+> Agentes especializados para VS Code Copilot Chat, alineados a 38 auditorías,
+> 992+ fixes históricos y las 19 reglas críticas del proyecto.
 
 ---
 
 ## Agentes disponibles
 
-| Agente                 | Archivo                       | Propósito                                                          |
-| ---------------------- | ----------------------------- | ------------------------------------------------------------------ |
-| **security-auditor**   | `security-auditor.agent.md`   | Detecta vulnerabilidades nuevas y regresiones de seguridad         |
-| **quality-guardian**   | `quality-guardian.agent.md`   | Verifica cumplimiento de las 19 reglas del proyecto y convenciones |
-| **dependency-auditor** | `dependency-auditor.agent.md` | Audita supply chain: CVEs, licencias, pins de Docker/Actions       |
+| Agente                 | Archivo                       | Propósito principal                                                   |
+| ---------------------- | ----------------------------- | --------------------------------------------------------------------- |
+| **SebAgent**           | `SebAgent.agent.md`           | Orquestador full-stack: implementa y coordina handoffs especializados |
+| **quality-guardian**   | `quality-guardian.agent.md`   | Gate de calidad: convenciones, arquitectura, i18n y reglas críticas   |
+| **security-auditor**   | `security-auditor.agent.md`   | AppSec profundo: vulnerabilidades nuevas y regresiones                |
+| **dependency-auditor** | `dependency-auditor.agent.md` | Supply chain: CVEs, licencias, pinning y estrategia de upgrades       |
+
+---
+
+## Estructura estándar de los agentes
+
+Todos los `.agent.md` usan una plantilla homogénea:
+
+1. **Metadata**: `name`, `description`, `model`, `tools`, `handoffs`, `user-invokable`
+2. **Prompt estructurado**:
+   - `IDENTITY`
+   - `ROLE`
+   - `SCOPE`
+   - `CAPABILITIES`
+   - `CRITICAL RULES`
+   - `CHECKLIST OPERATIVO`
+   - `OUTPUT CONTRACT`
+   - `HANDOFF POLICY`
+   - `COMMUNICATION STYLE`
+
+Objetivo: evitar agentes “genéricos” y forzar respuestas auditables, consistentes y accionables.
 
 ---
 
 ## Cómo invocar (VS Code)
 
-Abre Copilot Chat (`Ctrl+Alt+I`) y escribe el nombre del agente con `@`:
+Abre Copilot Chat (`Ctrl+Alt+I`) y usa `@`:
 
-```
-@security-auditor audita el proyecto completo
-@quality-guardian verifica el estado del proyecto
-@dependency-auditor audita las dependencias
+```text
+@SebAgent implementa endpoint de exportación y coordina validación
+@quality-guardian revisa este cambio contra las 19 reglas
+@security-auditor audita riesgo AppSec en auth y multi-tenant
+@dependency-auditor evalúa CVEs y plan de upgrade seguro
 ```
 
-O con scope reducido:
+Con scope reducido:
 
+```text
+@security-auditor revisa solo backend/app/api/v1/endpoints/
+@quality-guardian valida i18n y hooks en frontend/src/pages/
+@dependency-auditor analiza impacto de actualizar FastAPI a 0.116
 ```
-@security-auditor revisa solo los cambios en backend/app/api/v1/endpoints/
-@quality-guardian verifica que este nuevo endpoint cumple las 19 reglas
-@dependency-auditor analiza el impacto de actualizar FastAPI a 0.116
+
+---
+
+## Flujo recomendado (handoffs)
+
+```text
+Cambio de código
+      │
+      ▼
+@quality-guardian   ← Gate rápido: convenciones + 19 reglas
+      │
+      ▼ (si hay riesgo de seguridad)
+@security-auditor   ← Profundiza AppSec / OWASP / multi-tenant
+      │
+      ▼ (si hay cambios de deps/infra)
+@dependency-auditor ← CVEs + licencias + pinning + upgrades
 ```
+
+`SebAgent` puede iniciar o coordinar todo el flujo end-to-end.
+
+---
+
+## Contrato de salida por agente
+
+Cada agente responde con una estructura fija para facilitar revisión en PR:
+
+- **quality-guardian**
+  - `QUALITY STATUS: PASS | FAIL`
+  - `FINDINGS`, `REQUIRED FIXES`, `OPTIONAL IMPROVEMENTS`, `NEXT ACTION`
+
+- **security-auditor**
+  - `SECURITY STATUS: PASS | FAIL`
+  - `RISK SUMMARY`, `FINDINGS`, `REQUIRED FIXES`, `VERIFICATION STEPS`
+
+- **dependency-auditor**
+  - `SUPPLY-CHAIN STATUS: PASS | FAIL`
+  - `VULNERABILITY SUMMARY`, `AFFECTED ARTIFACTS`, `REQUIRED UPGRADES`, `SAFE UPGRADE PLAN`
+
+- **SebAgent**
+  - `EXECUTION STATUS: DONE | BLOCKED`
+  - `CHANGE SUMMARY`, `SECURITY STATUS`, `VALIDATION`, `NEXT ACTION`
 
 ---
 
 ## Cuándo usar cada agente
 
-### Flujo recomendado
-
-```
- Cambio de código
-       │
-       ▼
- @quality-guardian   ← ¿Cumple las 19 reglas y convenciones?
-  (2–5 min, local)        Semgrep + meta-tests + i18n check
-       │
-       ▼ (si hay feature nueva considerable)
- @security-auditor   ← ¿Hay vulnerabilidades nuevas?
- (10–30 min, local)       OWASP checklist + análisis profundo
-       │
-       ▼ (si cambiaron dependencias)
-@dependency-auditor  ← ¿Hay CVEs o pines desactualizados?
-  (5–10 min, local)       pip-audit + npm audit + licencias
-```
-
-### Tabla de triggers
-
-| Situación                                     | Agente recomendado                       |
-| --------------------------------------------- | ---------------------------------------- |
-| Antes de hacer push a `main`/`develop`        | `@quality-guardian`                      |
-| Terminas una feature nueva (endpoint, página) | `@security-auditor`                      |
-| Agregás o actualizás una dependencia          | `@dependency-auditor`                    |
-| Después de cada sprint                        | `@security-auditor` (auditoría completa) |
-| Recibís PR de Dependabot                      | `@dependency-auditor`                    |
-| Pre-release (antes de v1.0.0)                 | Los 3 en secuencia                       |
-| El CI falla en el job `quality-guardian`      | `@quality-guardian` para diagnóstico     |
-| Hay un CVE reportado en el ecosistema         | `@dependency-auditor` inmediatamente     |
+| Situación                                     | Agente recomendado                          |
+| --------------------------------------------- | ------------------------------------------- |
+| Antes de push a `main`/`develop`              | `@quality-guardian`                         |
+| Feature nueva con auth/datos sensibles        | `@security-auditor`                         |
+| Actualización de librerías/imágenes/workflows | `@dependency-auditor`                       |
+| Release readiness end-to-end                  | `@SebAgent`                                 |
+| CI falla en calidad                           | `@quality-guardian` para diagnóstico        |
+| CVE crítico reportado                         | `@dependency-auditor` + `@security-auditor` |
 
 ---
 
-## División de responsabilidades
+## Relación con CI
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CI / GitHub Actions                          │
-│                                                                     │
-│  ┌────────────┐  ┌─────────────┐  ┌──────────┐  ┌──────────────┐  │
-│  │  backend-  │  │  frontend-  │  │ security │  │    sast      │  │
-│  │   test     │  │    test     │  │  (trivy) │  │  (semgrep)   │  │
-│  └────────────┘  └─────────────┘  └──────────┘  └──────────────┘  │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │          quality-guardian (nuevo job automatizado)          │   │
-│  │  19 reglas grep · meta-tests · docker pins · secret check   │   │
-│  └─────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
+Los agentes **complementan** CI; no lo reemplazan:
 
-┌─────────────────────────────────────────────────────────────────────┐
-│                     Local / VS Code Copilot                         │
-│                                                                     │
-│  @quality-guardian   → análisis profundo + diagnóstico manual       │
-│  @security-auditor   → vulnerabilidades nuevas (juicio humano)      │
-│  @dependency-auditor → CVEs + licencias + upgrades seguros          │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-**Regla clave:** Los checks determinísticos (grep, Semgrep, tests) viven en CI.
-El análisis semántico (¿este código es verdaderamente inseguro?) vive en los agentes locales.
+- CI ejecuta checks determinísticos (tests, semgrep, grep de reglas, pins, secrets).
+- Agentes aportan análisis semántico y priorización contextual de riesgo.
 
 ---
 
-## Qué automatiza CI vs qué hacen los agentes
+## Contexto base compartido
 
-| Check                            | CI automático             | Agente local             |
-| -------------------------------- | ------------------------- | ------------------------ |
-| 48 reglas Semgrep custom         | ✅ job `sast`             | ✅ `@quality-guardian`   |
-| 8 security meta-tests            | ✅ job `backend-test`     | ✅ `@quality-guardian`   |
-| `import logging` grep            | ✅ job `quality-guardian` | ✅ `@quality-guardian`   |
-| Docker image pins                | ✅ job `quality-guardian` | ✅ `@quality-guardian`   |
-| Secrets failsafe (`:?`)          | ✅ job `quality-guardian` | ✅ `@quality-guardian`   |
-| i18n coverage diff               | ✅ job `quality-guardian` | ✅ `@quality-guardian`   |
-| CVEs en dependencias             | ✅ job `security`         | ✅ `@dependency-auditor` |
-| Análisis de vulnerabilidad nueva | ❌ requiere juicio        | ✅ `@security-auditor`   |
-| Fix de código seguro             | ❌ requiere contexto      | ✅ `@security-auditor`   |
-| Upgrade seguro de deps           | ❌ requiere análisis      | ✅ `@dependency-auditor` |
+Todos los agentes están pensados para operar con:
+
+- `AGENTS_HISTORY.md`
+- `.github/copilot-instructions.md`
+- `docs/analisis_interno/RECURRING_AUDIT_PATTERNS.md`
+- `docs/analisis_interno/AUDIT_RETROSPECTIVE.md`
+- `.semgrep/*.yml`
+- `docs/adr/`
 
 ---
 
-## Contexto cargado automáticamente
+## Nota de mantenimiento
 
-Todos los agentes leen estos archivos al iniciar:
-
-| Recurso                                             | Propósito                                               |
-| --------------------------------------------------- | ------------------------------------------------------- |
-| `AGENTS_HISTORY.md`                                 | 992+ fixes previos — evita reportar issues ya resueltos |
-| `.github/copilot-instructions.md`                   | Las 19 reglas críticas del proyecto                     |
-| `docs/analisis_interno/RECURRING_AUDIT_PATTERNS.md` | 18 patrones multi-stack                                 |
-| `docs/analisis_interno/AUDIT_RETROSPECTIVE.md`      | Top 10 causas raíz                                      |
-| `.semgrep/*.yml`                                    | 48 reglas Semgrep custom                                |
-| `docs/adr/`                                         | 6 ADRs — decisiones arquitectónicas que no se revierten |
-
----
-
-## Historial de auditorías
-
-Ver [AGENTS_HISTORY.md](../../AGENTS_HISTORY.md) para el historial completo de las 37
-auditorías anteriores, organizadas por sesión con todos los fixes aplicados.
-
-Ver [docs/analisis_interno/AUDIT_RETROSPECTIVE.md](../../docs/analisis_interno/AUDIT_RETROSPECTIVE.md)
-para el análisis de las 24 primeras auditorías (top 10 causas raíz, distribución por categoría).
+Si se modifica la plantilla de un agente, replicar el cambio en los demás para mantener
+simetría de comportamiento y evitar regresiones de calidad en los handoffs.

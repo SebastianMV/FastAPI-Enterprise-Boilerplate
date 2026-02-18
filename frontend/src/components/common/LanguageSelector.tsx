@@ -134,7 +134,7 @@ export function LanguageSelector({
                   <span>{lang.name}</span>
                   {i18n.language === lang.code && (
                     <span className="ml-auto text-primary-600 dark:text-primary-400">
-                      ✓
+                      {"\u2713"}
                     </span>
                   )}
                 </button>

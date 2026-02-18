@@ -22,7 +22,9 @@ class TestInitDatabaseMissingLines:
         mock_process.communicate = AsyncMock(return_value=(stdout_output, b""))
         mock_process.returncode = 0
 
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process) as mock_exec:
+        with patch(
+            "asyncio.create_subprocess_exec", return_value=mock_process
+        ) as mock_exec:
             # Should not raise
             await init_database()
 
@@ -53,7 +55,10 @@ class TestInitDatabaseMissingLines:
         mock_begin_ctx.__aexit__ = AsyncMock(return_value=None)
 
         with (
-            patch("asyncio.create_subprocess_exec", side_effect=FileNotFoundError("alembic not found")),
+            patch(
+                "asyncio.create_subprocess_exec",
+                side_effect=FileNotFoundError("alembic not found"),
+            ),
             patch("app.infrastructure.database.connection.engine") as mock_engine,
         ):
             mock_engine.begin.return_value = mock_begin_ctx

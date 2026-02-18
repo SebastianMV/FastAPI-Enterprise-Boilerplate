@@ -48,7 +48,7 @@ class TestGenerateAPIKey:
 
         # SHA-256 hashes are 64 hex characters
         assert len(key_hash) == 64
-        assert all(c in '0123456789abcdef' for c in key_hash)
+        assert all(c in "0123456789abcdef" for c in key_hash)
 
     def test_generate_api_key_returns_tuple(self):
         """Should return tuple of 3 elements."""
@@ -148,7 +148,7 @@ class TestAPIKeyHandler:
         assert hashed is not None
         # SHA-256 hashes are 64 hex characters
         assert len(hashed) == 64
-        assert all(c in '0123456789abcdef' for c in hashed)
+        assert all(c in "0123456789abcdef" for c in hashed)
 
     def test_verify_key_correct(self, handler):
         """Should verify correct key."""

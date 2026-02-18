@@ -88,20 +88,22 @@ async def set_tenant_context(session: AsyncSession, tenant_id: UUID | None) -> N
     This sets app.current_tenant_id which is used by RLS policies
     to filter queries automatically by tenant.
 
-    Note: asyncpg doesn't support bind parameters in SET commands,
-    so we use string formatting (tenant_id is already a UUID object,
-    so SQL injection is not possible).
+    Uses set_config(..., is_local=true) with bind params to avoid
+    string interpolation while keeping transaction-local scope.
 
     Args:
         session: Active database session
         tenant_id: Tenant UUID to set (None clears the context)
     """
     if tenant_id:
-        # Validate UUID before interpolation (asyncpg doesn't support params in SET)
+        # Validate UUID and set via bind params (transaction-local)
         from uuid import UUID as _UUID
 
         validated = str(_UUID(str(tenant_id)))
-        await session.execute(text(f"SET LOCAL app.current_tenant_id = '{validated}'"))
+        await session.execute(
+            text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"),
+            {"tenant_id": validated},
+        )
     else:
         await session.execute(text("RESET app.current_tenant_id"))
 

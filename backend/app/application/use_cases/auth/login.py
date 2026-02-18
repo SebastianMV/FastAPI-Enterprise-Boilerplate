@@ -92,7 +92,7 @@ class LoginUseCase:
             )
 
         # Guard: OAuth-only accounts cannot login with password
-            if hmac.compare_digest(user.password_hash or "", "!oauth"):
+        if hmac.compare_digest(user.password_hash or "", "!oauth"):
             raise AuthenticationError(
                 code="INVALID_CREDENTIALS",
                 message="Invalid email or password",

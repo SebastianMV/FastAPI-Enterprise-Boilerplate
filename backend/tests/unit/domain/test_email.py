@@ -38,22 +38,30 @@ class TestEmail:
 
     def test_invalid_email_empty(self):
         """Test that empty email raises ValueError."""
-        with pytest.raises((ValueError, DomainValidationError), match="cannot be empty"):
+        with pytest.raises(
+            (ValueError, DomainValidationError), match="cannot be empty"
+        ):
             Email("")
 
     def test_invalid_email_no_at_sign(self):
         """Test that email without @ raises ValueError."""
-        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
+        with pytest.raises(
+            (ValueError, DomainValidationError), match="Invalid email format"
+        ):
             Email("userexample.com")
 
     def test_invalid_email_no_domain(self):
         """Test that email without domain raises ValueError."""
-        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
+        with pytest.raises(
+            (ValueError, DomainValidationError), match="Invalid email format"
+        ):
             Email("user@")
 
     def test_invalid_email_no_tld(self):
         """Test that email without TLD raises ValueError."""
-        with pytest.raises((ValueError, DomainValidationError), match="Invalid email format"):
+        with pytest.raises(
+            (ValueError, DomainValidationError), match="Invalid email format"
+        ):
             Email("user@example")
 
     def test_email_domain_property(self):

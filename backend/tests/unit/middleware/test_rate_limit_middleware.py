@@ -86,7 +86,9 @@ class TestInMemoryRateLimiter:
         assert retry_after == 0
 
     @pytest.mark.asyncio
-    async def test_allows_requests_under_limit(self, limiter: InMemoryRateLimiter) -> None:
+    async def test_allows_requests_under_limit(
+        self, limiter: InMemoryRateLimiter
+    ) -> None:
         """Test that requests under limit are allowed."""
         key = "test_key"
         limit = 5
@@ -99,7 +101,9 @@ class TestInMemoryRateLimiter:
             assert remaining == limit - i - 1
 
     @pytest.mark.asyncio
-    async def test_blocks_when_limit_exceeded(self, limiter: InMemoryRateLimiter) -> None:
+    async def test_blocks_when_limit_exceeded(
+        self, limiter: InMemoryRateLimiter
+    ) -> None:
         """Test that requests are blocked when limit exceeded."""
         key = "test_key"
         limit = 3
@@ -118,7 +122,9 @@ class TestInMemoryRateLimiter:
         assert retry_after > 0
 
     @pytest.mark.asyncio
-    async def test_different_keys_independent(self, limiter: InMemoryRateLimiter) -> None:
+    async def test_different_keys_independent(
+        self, limiter: InMemoryRateLimiter
+    ) -> None:
         """Test that different keys have independent limits."""
         key1 = "user_1"
         key2 = "user_2"
@@ -165,7 +171,9 @@ class TestInMemoryRateLimiter:
         assert is_allowed is True
 
     @pytest.mark.asyncio
-    async def test_cleanup_removes_old_entries(self, limiter: InMemoryRateLimiter) -> None:
+    async def test_cleanup_removes_old_entries(
+        self, limiter: InMemoryRateLimiter
+    ) -> None:
         """Test cleanup removes old entries."""
         # Add some requests
         await limiter.is_allowed(key="key1", limit=10, window_seconds=60)

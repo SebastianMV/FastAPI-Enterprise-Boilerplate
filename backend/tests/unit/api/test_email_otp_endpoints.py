@@ -86,7 +86,9 @@ class TestRequestEmailOTPEndpoint:
 
         mock_otp_handler = MagicMock()
         mock_otp_handler.can_generate_otp = AsyncMock(return_value=(True, 0))
-        mock_otp_handler.generate_otp = AsyncMock(return_value=None)  # Generation failed
+        mock_otp_handler.generate_otp = AsyncMock(
+            return_value=None
+        )  # Generation failed
 
         with (
             patch(
@@ -202,7 +204,9 @@ class TestVerifyEmailOTPEndpoint:
         mock_user.id = uuid4()
 
         mock_otp_handler = MagicMock()
-        mock_otp_handler.get_remaining_attempts = AsyncMock(return_value=0)  # No pending OTP
+        mock_otp_handler.get_remaining_attempts = AsyncMock(
+            return_value=0
+        )  # No pending OTP
 
         request = EmailOTPVerifyRequest(code="123456")
 

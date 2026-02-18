@@ -74,7 +74,9 @@ class TestListUsersEndpoint:
 
             assert result.total == 50
             assert result.pages == 5
-            mock_repo.list.assert_called_once_with(skip=20, limit=10, is_active=True, tenant_id=None)
+            mock_repo.list.assert_called_once_with(
+                skip=20, limit=10, is_active=True, tenant_id=None
+            )
 
     @pytest.mark.asyncio
     async def test_list_users_filter_active(self) -> None:
@@ -339,12 +341,8 @@ class TestDeleteUserEndpoint:
             patch(
                 "app.api.v1.endpoints.users.SQLAlchemyUserRepository"
             ) as mock_repo_cls,
-            patch(
-                "app.api.v1.endpoints.users.SQLAlchemySessionRepository"
-            ),
-            patch(
-                "app.api.v1.endpoints.users.DeleteUserUseCase"
-            ) as mock_use_case_cls,
+            patch("app.api.v1.endpoints.users.SQLAlchemySessionRepository"),
+            patch("app.api.v1.endpoints.users.DeleteUserUseCase") as mock_use_case_cls,
         ):
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_user

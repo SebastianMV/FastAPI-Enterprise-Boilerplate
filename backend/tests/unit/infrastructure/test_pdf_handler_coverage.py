@@ -97,7 +97,9 @@ class TestBuildHtmlDocument:
         assert "0.2" in html
 
     def test_with_logo(self):
-        cfg = PDFConfig(company_logo_base64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ")
+        cfg = PDFConfig(
+            company_logo_base64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"
+        )
         handler = PDFHandler(cfg)
         html = handler._build_html_document("Report", "content")
         assert "data:image/png;base64" in html

@@ -253,11 +253,22 @@ class TestCallbackEndpoint:
 
         with (
             patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls,
-            patch("app.api.v1.endpoints.oauth.create_access_token", return_value="access_token"),
-            patch("app.api.v1.endpoints.oauth.create_refresh_token", return_value="refresh_token"),
-            patch("app.api.v1.endpoints.oauth.decode_token", return_value={"jti": "test-jti"}),
+            patch(
+                "app.api.v1.endpoints.oauth.create_access_token",
+                return_value="access_token",
+            ),
+            patch(
+                "app.api.v1.endpoints.oauth.create_refresh_token",
+                return_value="refresh_token",
+            ),
+            patch(
+                "app.api.v1.endpoints.oauth.decode_token",
+                return_value={"jti": "test-jti"},
+            ),
             patch("app.api.v1.endpoints.oauth.hash_jti", return_value="hashed-jti"),
-            patch("app.api.v1.endpoints.oauth.SQLAlchemySessionRepository") as mock_repo_cls,
+            patch(
+                "app.api.v1.endpoints.oauth.SQLAlchemySessionRepository"
+            ) as mock_repo_cls,
         ):
             mock_service = AsyncMock()
             mock_service.handle_callback.return_value = (
@@ -358,11 +369,22 @@ class TestCallbackRedirectEndpoint:
 
         with (
             patch("app.api.v1.endpoints.oauth.OAuthService") as mock_service_cls,
-            patch("app.api.v1.endpoints.oauth.create_access_token", return_value="token123"),
-            patch("app.api.v1.endpoints.oauth.create_refresh_token", return_value="refresh123"),
-            patch("app.api.v1.endpoints.oauth.decode_token", return_value={"jti": "test-jti"}),
+            patch(
+                "app.api.v1.endpoints.oauth.create_access_token",
+                return_value="token123",
+            ),
+            patch(
+                "app.api.v1.endpoints.oauth.create_refresh_token",
+                return_value="refresh123",
+            ),
+            patch(
+                "app.api.v1.endpoints.oauth.decode_token",
+                return_value={"jti": "test-jti"},
+            ),
             patch("app.api.v1.endpoints.oauth.hash_jti", return_value="hashed-jti"),
-            patch("app.api.v1.endpoints.oauth.SQLAlchemySessionRepository") as mock_repo_cls,
+            patch(
+                "app.api.v1.endpoints.oauth.SQLAlchemySessionRepository"
+            ) as mock_repo_cls,
         ):
             mock_service = AsyncMock()
             mock_service.handle_callback.return_value = (

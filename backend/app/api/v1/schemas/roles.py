@@ -18,12 +18,8 @@ from app.api.v1.schemas.common import DescriptionStr, RoleNameStr, ScopeStr, Sho
 class PermissionSchema(BaseModel):
     """Permission representation."""
 
-    resource: ShortStr = Field(
-        ..., description="Resource name (e.g., 'users')"
-    )
-    action: ShortStr = Field(
-        ..., description="Action name (e.g., 'read', 'create')"
-    )
+    resource: ShortStr = Field(..., description="Resource name (e.g., 'users')")
+    action: ShortStr = Field(..., description="Action name (e.g., 'read', 'create')")
 
 
 class RoleCreate(BaseModel):

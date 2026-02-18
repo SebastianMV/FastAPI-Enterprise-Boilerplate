@@ -43,9 +43,7 @@ class TestForgotPasswordEndpoint:
                 mock_cache.get.return_value = None  # No rate limit
                 mock_get_cache.return_value = mock_cache
 
-                with patch(
-                    "app.infrastructure.email.get_email_service"
-                ) as mock_email:
+                with patch("app.infrastructure.email.get_email_service") as mock_email:
                     mock_service = MagicMock()
                     mock_service.send_password_reset_email = AsyncMock()
                     mock_email.return_value = mock_service
@@ -211,9 +209,7 @@ class TestResetPasswordEndpoint:
                     patch(
                         "app.infrastructure.database.repositories.session_repository.SQLAlchemySessionRepository"
                     ) as mock_session_repo_cls,
-                    patch(
-                        "app.infrastructure.email.get_email_service"
-                    ) as mock_email,
+                    patch("app.infrastructure.email.get_email_service") as mock_email,
                 ):
                     mock_session_repo = AsyncMock()
                     mock_session_repo_cls.return_value = mock_session_repo

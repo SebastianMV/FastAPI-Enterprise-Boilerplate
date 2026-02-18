@@ -30,7 +30,9 @@ class TestInMemoryRateLimiter:
         window = 60
 
         for i in range(limit):
-            allowed, remaining, retry_after = await limiter.is_allowed(key, limit, window)
+            allowed, remaining, retry_after = await limiter.is_allowed(
+                key, limit, window
+            )
             assert allowed is True, f"Request {i + 1} should be allowed"
 
     @pytest.mark.asyncio

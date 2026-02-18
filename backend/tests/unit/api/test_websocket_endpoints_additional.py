@@ -165,7 +165,9 @@ class TestNotificationsWebSocketEndpoint:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                return json.dumps({"type": "ping", "payload": {"timestamp": 1234567890}})
+                return json.dumps(
+                    {"type": "ping", "payload": {"timestamp": 1234567890}}
+                )
             raise WebSocketDisconnect()
 
         mock_websocket.receive_text = receive_side_effect

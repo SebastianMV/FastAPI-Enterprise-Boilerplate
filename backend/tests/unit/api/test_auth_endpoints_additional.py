@@ -21,7 +21,9 @@ class TestLogoutEndpoint:
         mock_request.cookies = {}
         mock_response = MagicMock()
 
-        with patch("app.application.use_cases.auth.logout.LogoutUseCase") as MockUseCase:
+        with patch(
+            "app.application.use_cases.auth.logout.LogoutUseCase"
+        ) as MockUseCase:
             mock_use_case = AsyncMock()
             MockUseCase.return_value = mock_use_case
 
@@ -46,7 +48,9 @@ class TestLogoutEndpoint:
         mock_request.cookies = {}
         mock_response = MagicMock()
 
-        with patch("app.application.use_cases.auth.logout.LogoutUseCase") as MockUseCase:
+        with patch(
+            "app.application.use_cases.auth.logout.LogoutUseCase"
+        ) as MockUseCase:
             mock_use_case = AsyncMock()
             MockUseCase.return_value = mock_use_case
 
