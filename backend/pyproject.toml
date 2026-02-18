@@ -269,6 +269,14 @@ tests = [
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+markers = [
+    "unit: fast isolated tests with mocked boundaries",
+    "integration: tests with real infra/services boundaries",
+    "e2e: end-to-end scenarios across full application flow",
+    "smoke: stable high-signal blocking subset for CI",
+    "security: security-focused checks and meta-tests",
+    "flaky: unstable tests tracked for stabilization backlog",
+]
 filterwarnings = [
     "ignore:coroutine .* was never awaited:RuntimeWarning",
 ]
