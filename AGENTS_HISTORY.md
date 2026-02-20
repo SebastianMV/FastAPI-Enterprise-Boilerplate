@@ -841,7 +841,7 @@ _Última actualización: 2026-02-16 por GitHub Copilot (Claude Opus 4.6) — Aud
 
 ## Auditoría 43 — Manual Security Audit (2026-02-20)
 
-**Alcance:** 19 endpoints, 3 middlewares, 2 servicios de infra, 1 config.  
+**Alcance:** 19 endpoints, 3 middlewares, 2 servicios de infra, 1 config.
 **Nuevos hallazgos:** 2 (1 medio, 1 bajo) — ambos corregidos.
 
 993. ✅ M-01 (sev5-6, CWE-79): `report_templates.py` — `create_schedule` y `update_schedule`: se aplica `html.escape()` a `name` y `description` (XSS almacenado).

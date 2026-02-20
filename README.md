@@ -467,24 +467,15 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete deployment guide.
 
 ## 📚 Documentation
 
-| Document | Description |
-| -------- | ----------- |
-| [⭐ Getting Started](docs/GETTING_STARTED.md) | **Complete setup guide (START HERE)** |
-| [📋 Project Status](PROJECT_STATUS.md) | Project status, metrics, and roadmap to v1.0.0 |
-| [🔐 Security](docs/SECURITY.md) | Security audit, OWASP compliance, best practices |
-| [🐳 Docker Guide](docs/DOCKER.md) | Docker setup, environments, and troubleshooting |
-| [📡 API Reference](docs/API_REFERENCE.md) | Complete REST API documentation |
-| [🚀 Deployment](docs/DEPLOYMENT.md) | Production deployment guide (Docker, K8s) |
-| [🔒 RLS Setup](docs/RLS_SETUP.md) | Row-Level Security for multi-tenant isolation |
-| [🔗 OAuth2/SSO](docs/OAUTH2_SSO.md) | Social login (Google, GitHub, Microsoft, Discord) |
-| [⚡ WebSocket](docs/WEBSOCKET.md) | Real-time features and WebSocket guide |
-| [🔍 Full-Text Search](docs/FULL_TEXT_SEARCH.md) | PostgreSQL FTS implementation |
-| [🌐 i18n Guide](docs/I18N.md) | Internationalization (EN/ES/PT) |
-| [📧 Email Templates](docs/EMAIL_TEMPLATES.md) | Email system and template guide |
-| [📊 Data Exchange](docs/DATA_EXCHANGE.md) | Import/Export/Reports system |
-| [📦 Bulk Operations](docs/BULK_OPERATIONS.md) | Batch CRUD API |
-| [📄 PDF/Excel](docs/PDF_EXCEL_FEATURES.md) | Advanced PDF & Excel generation |
-| [⚙️ Commands](MAKEFILE.md) | Cross-platform Make/PowerShell reference |
+Use the centralized documentation index: [docs/README.md](docs/README.md).
+
+Quick links:
+
+- [⭐ Getting Started](docs/GETTING_STARTED.md)
+- [📋 Project Status](PROJECT_STATUS.md)
+- [🔐 Security](docs/SECURITY.md)
+- [📡 API Reference](docs/API_REFERENCE.md)
+- [⚙️ Commands](MAKEFILE.md)
 
 ## 🎯 Project Status
 
