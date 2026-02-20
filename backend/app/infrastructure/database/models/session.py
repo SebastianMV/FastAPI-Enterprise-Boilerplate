@@ -7,6 +7,7 @@ SQLAlchemy model for UserSession entity.
 Maps domain UserSession entity to database table.
 """
 
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -33,14 +34,14 @@ class UserSessionModel(Base):
     __tablename__ = "user_sessions"
 
     # Primary key
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
 
     # Tenant isolation
-    tenant_id: Mapped[UUID] = mapped_column(
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
@@ -48,7 +49,7 @@ class UserSessionModel(Base):
     )
 
     # User reference
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,

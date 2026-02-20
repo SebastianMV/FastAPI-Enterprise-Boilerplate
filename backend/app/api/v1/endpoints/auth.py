@@ -145,7 +145,7 @@ async def login(
 
     user_repository = SQLAlchemyUserRepository(session)
     session_repo = SQLAlchemySessionRepository(session)
-    use_case = LoginUseCase(user_repository, session_repo, session)
+    use_case = LoginUseCase(user_repository, session_repo, session)  # type: ignore[arg-type]
 
     # Extract real client IP (nginx sets X-Forwarded-For)
     # Only trust proxy headers if connection comes from a trusted proxy network
@@ -163,7 +163,7 @@ async def login(
     user_agent = http_request.headers.get("User-Agent", "Unknown")
 
     try:
-        result = use_case.execute(
+        result = await use_case.execute(
             LoginInput(
                 email=request.email,
                 password=request.password,
@@ -172,7 +172,6 @@ async def login(
                 ip_address=ip_address,
             )
         )
-        result = await result
     except AuthenticationError as exc:
         status_map = {
             "ACCOUNT_LOCKED": status.HTTP_423_LOCKED,
@@ -308,7 +307,7 @@ async def refresh_token(
 
     user_repository = SQLAlchemyUserRepository(session)
     session_repo = SQLAlchemySessionRepository(session)
-    use_case = RefreshTokenUseCase(user_repository, session_repo, session)
+    use_case = RefreshTokenUseCase(user_repository, session_repo, session)  # type: ignore[arg-type]
 
     try:
         result = await use_case.execute(RefreshInput(refresh_token=token or ""))

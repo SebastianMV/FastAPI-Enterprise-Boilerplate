@@ -10,6 +10,7 @@ Includes RLS (Row Level Security) support for multi-tenant isolation.
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import text
@@ -28,7 +29,7 @@ class Base(DeclarativeBase):
 
 
 # Build connect_args with optional SSL
-_connect_args: dict = {}
+_connect_args: dict[str, Any] = {}
 if settings.DB_SSL_REQUIRED:
     import ssl as _ssl
 

@@ -17,10 +17,11 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/tests-3500%2B%20passing-brightgreen.svg" alt="Tests"></a>
-  <a href="#"><img src="https://img.shields.io/badge/coverage-99%25-brightgreen.svg" alt="Coverage"></a>
+  <a href="#"><img src="https://img.shields.io/badge/backend%20tests-3500%2B%20passing-brightgreen.svg" alt="Backend Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/backend%20coverage-99%25-brightgreen.svg" alt="Backend Coverage"></a>
+  <a href="#"><img src="https://img.shields.io/badge/frontend%20tests-568%20passing-brightgreen.svg" alt="Frontend Tests"></a>
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
-  <a href="#"><img src="https://img.shields.io/badge/vulnerabilities-0-brightgreen.svg" alt="Security"></a>
+  <a href="#"><img src="https://img.shields.io/badge/security%20audits-41%20cycles-brightgreen.svg" alt="Security Audits"></a>
   <a href="PROJECT_STATUS.md"><img src="https://img.shields.io/badge/status-beta-orange.svg" alt="Beta"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.9.5-blue.svg" alt="v0.9.5"></a>
 </p>
@@ -55,10 +56,10 @@ docker compose up -d
 > ```powershell
 > # Cargar funciones
 > . .\make.ps1
-> 
+>
 > # Iniciar desarrollo
 > Start-DevEnvironment
-> 
+>
 > # Ver todos los comandos
 > Show-Help
 > ```
@@ -205,8 +206,8 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 
 > 🚨 **Production Security**: Development users with known passwords are created automatically by migrations for testing. [**Delete them before production deployment!**](docs/DEPLOYMENT.md#production-security--initial-setup)
 
-- ✅ **4000+ Tests Passing** - 99% backend coverage, 568 frontend tests
-- ✅ **E2E Validated** - Login flow + WebSocket tested
+- ✅ **4000+ Tests Passing** - 99% backend coverage (smoke gate), 568 frontend tests (~32% stmt coverage, threshold 30%)
+- ✅ **E2E Validated** - Login flow + WebSocket tested (20/84 E2E passing, 63 skipped pending full environment)
 - ✅ **Docker Compose** - One-command dev environment
 - ✅ **Auto-generated Docs** - OpenAPI with examples
 - ✅ **Windows Compatible** - PowerShell scripts included (make.ps1)
@@ -448,7 +449,7 @@ cli version
 
 # Export to:
 # - Jaeger/Tempo (traces)
-# - Prometheus (metrics)  
+# - Prometheus (metrics)
 # - Loki (logs)
 ```
 
@@ -487,18 +488,22 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete deployment guide.
 
 ## 🎯 Project Status
 
-**Version:** v0.9.5 🔶 **Beta** — feature-complete, 22 security audits passed (Feb 2026)
+**Version:** v0.9.5 🔶 **Beta** — feature-complete, 41 security audit cycles passed (Feb 2026)
+
+> 📋 See [PROJECT_STATUS.md](PROJECT_STATUS.md) for the full quality metrics and roadmap to v1.0.0.
 
 ### 📊 Metrics
 
-| Metric | Value |
-| ------ | ----- |
-| Backend Tests | 3,500+ passing |
-| Backend Coverage | 99% |
-| Frontend Tests | 568 passing |
-| Migrations | 12 applied |
-| Security Audits | 22 cycles (700+ items) |
-| Docker Build | < 2 minutes |
+| Metric | Value | Status |
+| ------ | ----- | ------ |
+| Backend Tests | 3,500+ passing | ✅ |
+| Backend Coverage | 99% | ✅ |
+| Frontend Tests | 568 passing | ✅ |
+| Frontend Coverage | ~32% statements (target: 50%) | 🔶 |
+| Backend E2E | 20/84 passing (63 skipped) | 🔶 |
+| Migrations | 12 applied | ✅ |
+| Security Audits | 41 cycles (700+ items resolved) | ✅ |
+| Docker Build | < 2 minutes | ✅ |
 
 See [PROJECT_STATUS.md](PROJECT_STATUS.md) for complete roadmap and [CHANGELOG.md](CHANGELOG.md) for release notes.
 

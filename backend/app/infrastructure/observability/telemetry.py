@@ -8,7 +8,7 @@ Provides distributed tracing, metrics collection, and context propagation.
 Exports to Jaeger, OTLP, or console based on configuration.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import wraps
 from typing import Any
@@ -136,7 +136,7 @@ def _instrument_libraries(app: FastAPI | None = None) -> None:
     SQLAlchemyInstrumentor().instrument()
 
     # Redis
-    RedisInstrumentor().instrument()  # type: ignore[no-untyped-call]
+    RedisInstrumentor().instrument()
 
     # HTTPX (for outgoing HTTP requests)
     HTTPXClientInstrumentor().instrument()
@@ -173,7 +173,7 @@ def span_context(
     name: str,
     attributes: dict[str, Any] | None = None,
     tracer_name: str = __name__,
-):
+) -> Generator[trace.Span, None, None]:
     """
     Context manager for creating spans.
 
@@ -203,7 +203,7 @@ def span_context(
 def traced(
     name: str | None = None,
     attributes: dict[str, Any] | None = None,
-):
+) -> Callable[..., Any]:
     """
     Decorator for tracing functions.
 

@@ -15,7 +15,7 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 
-pytestmark = pytest.mark.skip(reason="E2E tests require full endpoint implementation")
+pytestmark = pytest.mark.e2e
 
 
 class TestOAuthLoginE2E:

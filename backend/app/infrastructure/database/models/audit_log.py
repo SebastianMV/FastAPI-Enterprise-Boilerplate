@@ -8,7 +8,9 @@ Maps domain AuditLog entity to database table.
 This table is append-only for compliance and security.
 """
 
+import uuid
 from datetime import datetime
+from typing import Any
 from uuid import uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, Text
@@ -38,7 +40,7 @@ class AuditLogModel(Base):
     __tablename__ = "audit_logs"
 
     # Primary key
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
@@ -52,7 +54,7 @@ class AuditLogModel(Base):
     )
 
     # Actor information (who)
-    actor_id: Mapped[UUID | None] = mapped_column(
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
@@ -94,7 +96,7 @@ class AuditLogModel(Base):
     )
 
     # Tenant context
-    tenant_id: Mapped[UUID | None] = mapped_column(
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("tenants.id", ondelete="SET NULL"),
         nullable=True,
@@ -102,17 +104,17 @@ class AuditLogModel(Base):
     )
 
     # Change details (stored as JSONB for flexibility)
-    old_value: Mapped[dict | None] = mapped_column(
+    old_value: Mapped[dict[str, Any] | None] = mapped_column(
         JSONBCompat,
         nullable=True,
     )
-    new_value: Mapped[dict | None] = mapped_column(
+    new_value: Mapped[dict[str, Any] | None] = mapped_column(
         JSONBCompat,
         nullable=True,
     )
 
     # Additional context
-    extra_data: Mapped[dict | None] = mapped_column(
+    extra_data: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata",  # Column name in DB
         JSONBCompat,
         nullable=True,

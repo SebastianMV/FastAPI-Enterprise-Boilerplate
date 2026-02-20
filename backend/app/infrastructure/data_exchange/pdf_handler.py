@@ -35,8 +35,8 @@ CSS: Any = None
 FontConfiguration: Any = None
 
 try:
-    from weasyprint import CSS, HTML
-    from weasyprint.text.fonts import FontConfiguration
+    from weasyprint import CSS, HTML  # type: ignore[import-untyped, no-redef]
+    from weasyprint.text.fonts import FontConfiguration  # type: ignore[import-untyped, no-redef]
 
     _weasyprint_available = True
 except ImportError:
@@ -175,7 +175,7 @@ class PDFHandler:
                 font_config=font_config,
             )
 
-            return pdf_bytes
+            return pdf_bytes  # type: ignore[no-any-return]
         except Exception as e:
             logger.error("pdf_generation_failed", error_type=type(e).__name__)
             # Fallback to HTML
@@ -616,7 +616,7 @@ h3 {{
 
         slices_svg = []
         legend_svg = []
-        start_angle = 0
+        start_angle: float = 0
 
         for i, value in enumerate(chart.data):
             percentage = value / total

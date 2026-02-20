@@ -10,6 +10,7 @@ Handles WebSocket connections for:
 """
 
 import json
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
@@ -32,13 +33,14 @@ router = APIRouter()
 _WS_MAX_MESSAGE_SIZE = 64 * 1024
 
 
-async def _receive_json_safe(websocket: WebSocket) -> dict:
+async def _receive_json_safe(websocket: WebSocket) -> dict[str, Any]:
     """Receive JSON with message size validation."""
     raw = await websocket.receive_text()
     if len(raw) > _WS_MAX_MESSAGE_SIZE:
         await websocket.close(code=1009, reason="Message too large")
         raise WebSocketDisconnect(code=1009)
-    return json.loads(raw)
+    result: dict[str, Any] = json.loads(raw)
+    return result
 
 
 # Global WebSocket manager instance
@@ -128,7 +130,7 @@ async def authenticate_websocket(
 async def websocket_endpoint(
     websocket: WebSocket,
     token: str | None = Query(None),
-):
+) -> None:
     """
     Main WebSocket endpoint.
 
@@ -214,7 +216,7 @@ async def websocket_endpoint(
 async def notifications_endpoint(
     websocket: WebSocket,
     token: str | None = Query(None),
-):
+) -> None:
     """
     Notifications-only WebSocket endpoint.
 

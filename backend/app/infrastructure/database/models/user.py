@@ -7,6 +7,7 @@ SQLAlchemy model for User entity.
 Maps domain User entity to database table.
 """
 
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -33,14 +34,14 @@ class UserModel(Base):
     __tablename__ = "users"
 
     # Primary key
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
 
     # Tenant isolation
-    tenant_id: Mapped[UUID] = mapped_column(
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
@@ -91,7 +92,7 @@ class UserModel(Base):
     )
 
     # Authorization
-    roles: Mapped[list[UUID]] = mapped_column(
+    roles: Mapped[list[uuid.UUID]] = mapped_column(
         JSONEncodedUUIDList,
         nullable=False,
         default=list,
@@ -152,15 +153,15 @@ class UserModel(Base):
     )
 
     # Audit
-    created_by: Mapped[UUID | None] = mapped_column(
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         nullable=True,
     )
-    updated_by: Mapped[UUID | None] = mapped_column(
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         nullable=True,
     )
-    deleted_by: Mapped[UUID | None] = mapped_column(
+    deleted_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         nullable=True,
     )

@@ -7,6 +7,7 @@ SQLAlchemy model for MFA configuration.
 Stores TOTP secrets and backup codes for two-factor authentication.
 """
 
+import uuid
 from datetime import datetime
 from uuid import uuid4
 
@@ -32,14 +33,14 @@ class MFAConfigModel(Base):
     __tablename__ = "mfa_configs"
 
     # Primary key
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
 
     # User relationship (one-to-one)
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         unique=True,  # One MFA config per user

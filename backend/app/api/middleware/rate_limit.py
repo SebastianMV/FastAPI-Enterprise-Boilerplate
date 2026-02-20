@@ -26,7 +26,7 @@ class RateLimitMiddleware:
     def __init__(
         self,
         app: ASGIApp,
-        redis_client=None,
+        redis_client: object = None,
         requests_per_minute: int | None = None,
         burst_size: int | None = None,
     ) -> None:
@@ -139,7 +139,7 @@ class RateLimitMiddleware:
         now = datetime.now(UTC).timestamp()
         window_start = now - self.window_seconds
 
-        pipe = self.redis.pipeline()
+        pipe = self.redis.pipeline()  # type: ignore[attr-defined]
         pipe.zremrangebyscore(key, 0, window_start)
         pipe.zcard(key)
         pipe.zadd(key, {str(now): now})
@@ -152,7 +152,7 @@ class RateLimitMiddleware:
         remaining = max(0, max_requests - request_count - 1)
 
         if request_count >= max_requests:
-            oldest = await self.redis.zrange(key, 0, 0, withscores=True)
+            oldest = await self.redis.zrange(key, 0, 0, withscores=True)  # type: ignore[attr-defined]
             if oldest:
                 retry_after = int(oldest[0][1] + self.window_seconds - now) + 1
             else:

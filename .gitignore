@@ -159,3 +159,9 @@ backend/run_t.py
 backend/run_tests.py
 backend/sqlalchemy-*.whl
 test_output.txt
+
+# MyPy generated report (committed: mypy-baseline.json, not the report)
+backend/mypy-report.txt
+
+# Local Python virtual environment (created for tooling, not for CI)
+backend/.venv/

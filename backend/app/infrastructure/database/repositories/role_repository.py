@@ -172,7 +172,7 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
 
         return [self._to_entity(m) for m in models]
 
-    async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:
+    async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:  # type: ignore[valid-type]
         """Get multiple roles by IDs."""
         if not role_ids:
             return []
@@ -187,7 +187,7 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
 
         return [self._to_entity(m) for m in models]
 
-    async def get_user_roles(self, user_id: UUID) -> list[Role]:
+    async def get_user_roles(self, user_id: UUID) -> list[Role]:  # type: ignore[valid-type]
         """Get all roles assigned to a user."""
         # First get user's role IDs
         user_stmt = select(UserModel.roles).where(

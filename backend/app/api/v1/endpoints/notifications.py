@@ -333,7 +333,7 @@ async def delete_notification(
     cursor_result = await session.execute(stmt)
     await session.commit()
 
-    if cursor_result.rowcount == 0:  # type: ignore[union-attr]
+    if cursor_result.rowcount == 0:  # type: ignore[attr-defined]
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={

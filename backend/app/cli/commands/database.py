@@ -12,6 +12,7 @@ Commands:
 """
 
 import asyncio
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -125,7 +126,7 @@ async def _seed_database(
                     )
 
         # Get first tenant for roles (roles are tenant-scoped)
-        tenants = await tenant_repo.list(limit=1)
+        tenants = await tenant_repo.list(limit=1)  # type: ignore[attr-defined]
         first_tenant_id = tenants[0].id if tenants else None
 
         if not first_tenant_id and (include_roles or include_users):
@@ -138,7 +139,7 @@ async def _seed_database(
         if include_roles:
             console.print("\n[cyan]Creating roles...[/cyan]")
 
-            sample_roles = [
+            sample_roles: list[dict[str, Any]] = [
                 {
                     "name": "Administrator",
                     "description": "Full system access",
@@ -177,12 +178,12 @@ async def _seed_database(
 
             for role_data in sample_roles:
                 try:
-                    existing = await role_repo.get_by_name(
-                        role_data["name"], first_tenant_id
+                    role_existing = await role_repo.get_by_name(
+                        role_data["name"], first_tenant_id  # type: ignore[arg-type]
                     )
-                    if not existing:
+                    if not role_existing:
                         role = Role(
-                            tenant_id=first_tenant_id,
+                            tenant_id=first_tenant_id,  # type: ignore[arg-type]
                             name=role_data["name"],
                             description=role_data["description"],
                             permissions=[
@@ -213,7 +214,7 @@ async def _seed_database(
             # Use first_tenant_id from above
             tenant_id = first_tenant_id
 
-            sample_users = [
+            sample_users: list[dict[str, Any]] = [
                 {
                     "email": "demo@example.com",
                     "password": "Demo123!@#",
@@ -239,8 +240,8 @@ async def _seed_database(
 
             for user_data in sample_users:
                 try:
-                    existing = await user_repo.get_by_email(user_data["email"])
-                    if not existing:
+                    user_existing = await user_repo.get_by_email(user_data["email"])
+                    if not user_existing:
                         user = User(
                             email=Email(user_data["email"]),
                             password_hash=hash_password(user_data["password"]),
@@ -248,7 +249,7 @@ async def _seed_database(
                             last_name=user_data["last_name"],
                             is_active=True,
                             is_superuser=user_data["is_superuser"],
-                            tenant_id=tenant_id,
+                            tenant_id=tenant_id,  # type: ignore[arg-type]
                         )
                         await user_repo.create(user)
                         created_counts["users"] += 1

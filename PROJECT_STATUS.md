@@ -1,8 +1,8 @@
 ﻿# Project Status & Roadmap
 
 **Version:** v0.9.5
-**Date:** February 18, 2026
-**Status:** Beta feature-complete, 38 security audits passed
+**Date:** February 19, 2026
+**Status:** Beta feature-complete, 41 security audit cycles passed
 
 ---
 
@@ -10,9 +10,9 @@
 
 **FastAPI Enterprise Boilerplate** is a full-stack enterprise boilerplate with
 JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.
-The backend has 99% test coverage and has undergone **38 security audit cycles**
+The backend has 99% test coverage and has undergone **41 security audit cycles**
 covering 700+ individual hardening items. The React frontend is fully functional
-with 568 tests passing.
+with 568 tests passing (statement coverage ~32%, CI threshold 30%, v1.0.0 target 50%).
 
 ### Quality Metrics
 
@@ -22,13 +22,13 @@ with 568 tests passing.
 | Backend Integration Tests | ~247 passing                         | OK      |
 | Backend E2E Tests         | 20/84 passing (63 skipped)           | Partial |
 | Frontend Unit Tests       | 568/568 passing                      | OK      |
-| Backend Coverage          | 99%                                  | OK      |
-| Frontend Coverage         | ~32% statements                      | Partial |
-| Type Check (Python/MyPy)  | Non-blocking in CI (deuda pendiente) | Partial |
+| Backend Coverage          | 99% (smoke gate)                     | OK      |
+| Frontend Coverage         | ~32% statements (threshold 30%, target 50%) | Partial |
+| Type Check (Python/MyPy)  | 282 errores en 56 archivos (baseline en repo, gate anti-regresión activo) | Partial |
 | Type Errors (TypeScript)  | 0                                    | OK      |
 | Docker Services           | 4/4 healthy                          | OK      |
 | Alembic Migrations        | 12 applied                           | OK      |
-| Security Audits Passed    | 38 cycles                            | OK      |
+| Security Audits Passed    | 41 cycles (Audit 42 scanner configured) | OK  |
 
 ---
 
@@ -122,15 +122,17 @@ pids_limit, and pinned image tags.
 | v0.9.2 -- Frontend Quality                   | Done (568 tests, i18n ~96%) |
 | v0.9.3 -- Backend Hardening                  | Done                        |
 | v0.9.4 -- DevOps & CI                        | Done                        |
-| v0.9.5 -- Security Audit Cycle (22 audits)   | Done                        |
-| Post-v0.9.5 -- Security Audit Cycles N°36-38 | Done                        |
+| v0.9.5 -- Security Audit Cycle (22 audits)              | Done        |
+| Post-v0.9.5 -- Security Audit Cycles N°36-38            | Done        |
+| Post-v0.9.5 -- Security Audit Cycles N°39-41 (0 issues) | Done        |
+| Post-v0.9.5 -- Audit N°42 scanner configured            | In progress |
 
 ### v1.0.0 -- Production Release
 
 | Prerequisite                               | Status         |
 | ------------------------------------------ | -------------- |
 | All severity >= 5 items resolved           | Done           |
-| 38 security audit cycles passed            | Done           |
+| 41 security audit cycles passed (0 open issues since N°39) | Done |
 | Frontend tests >= 50% coverage             | Pending (~32%) |
 | All i18n locales >= 95%                    | Done           |
 | Container hardening (non-root, caps, pids) | Done           |

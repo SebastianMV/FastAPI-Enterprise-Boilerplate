@@ -334,7 +334,7 @@ async def delete_user(
         )
 
     session_repo = SQLAlchemySessionRepository(session)
-    use_case = DeleteUserUseCase(repo, session_repository=session_repo)
+    use_case = DeleteUserUseCase(repo, session_repository=session_repo)  # type: ignore[arg-type]
 
     try:
         await use_case.execute(DeleteUserRequest(user_id=user_id))

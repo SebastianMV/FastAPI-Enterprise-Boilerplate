@@ -13,7 +13,7 @@ import secrets
 import string
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from app.infrastructure.observability.logging import get_logger
 
@@ -57,7 +57,7 @@ class EmailOTPHandler:
 
     async def _get_redis(
         self,
-    ) -> object:  # redis.Redis — import avoided to keep dependency optional
+    ) -> Any:  # redis.Redis — import avoided to keep dependency optional
         """Get async Redis connection via application cache infrastructure."""
         from app.infrastructure.cache import get_cache
 
@@ -252,7 +252,7 @@ class EmailOTPHandler:
             return 0
 
         otp_data = json.loads(str(data))
-        attempts = otp_data.get("attempts", 0)
+        attempts = int(otp_data.get("attempts", 0))
         return max(0, self.MAX_ATTEMPTS - attempts)
 
 

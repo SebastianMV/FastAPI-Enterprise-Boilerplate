@@ -134,8 +134,8 @@ async def get_mfa_config(
             from app.infrastructure.auth.encryption import decrypt_value
 
             config = MFAConfig(
-                id=cast("UUID", model.id),
-                user_id=cast("UUID", model.user_id),
+                id=model.id,
+                user_id=model.user_id,
                 secret=decrypt_value(model.secret),
                 is_enabled=model.is_enabled,
                 backup_codes=model.backup_codes or [],

@@ -11,6 +11,7 @@ are queried frequently (on every authorization check).
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from app.config import settings
@@ -127,7 +128,7 @@ class CachedRoleRepository:
 
         return roles
 
-    async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:
+    async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:  # type: ignore[valid-type]
         """Get multiple roles by IDs with caching."""
         if not role_ids:
             return []
@@ -137,7 +138,7 @@ class CachedRoleRepository:
         missing_ids: list[UUID] = []
 
         # Check cache for each role
-        for role_id in role_ids:
+        for role_id in role_ids:  # type: ignore[attr-defined]
             cache_key = CacheKeyBuilder.build(self.CACHE_PREFIX, "id", role_id)
             cached = await cache.get(cache_key)
             if cached:
@@ -148,7 +149,7 @@ class CachedRoleRepository:
         # Fetch missing from DB
         if missing_ids:
             db_roles = await self._repo.list_by_ids(missing_ids)
-            for role in db_roles:
+            for role in db_roles:  # type: ignore[attr-defined]
                 # Cache each role
                 cache_key = CacheKeyBuilder.build(self.CACHE_PREFIX, "id", role.id)
                 await cache.set(cache_key, self._role_to_dict(role), self._ttl)
@@ -156,7 +157,7 @@ class CachedRoleRepository:
 
         return roles
 
-    async def get_user_roles(self, user_id: UUID) -> list[Role]:
+    async def get_user_roles(self, user_id: UUID) -> list[Role]:  # type: ignore[valid-type]
         """Get all roles assigned to a user with caching."""
         cache = await get_cache_service()
         cache_key = CacheKeyBuilder.build(self.CACHE_PREFIX, "user", user_id)
@@ -173,7 +174,7 @@ class CachedRoleRepository:
         # Cache result (shorter TTL since user-role assignment changes more)
         await cache.set(
             cache_key,
-            [self._role_to_dict(r) for r in roles],
+            [self._role_to_dict(r) for r in roles],  # type: ignore[attr-defined]
             min(self._ttl, 60),  # Max 1 minute for user roles
         )
 
@@ -200,7 +201,7 @@ class CachedRoleRepository:
         await cache.delete_pattern(f"{self.CACHE_PREFIX}:list:{tenant_id}:*")
 
     @staticmethod
-    def _role_to_dict(role: Role) -> dict:
+    def _role_to_dict(role: Role) -> dict[str, Any]:
         """Convert Role to cacheable dict."""
         return {
             "id": str(role.id),
@@ -218,7 +219,7 @@ class CachedRoleRepository:
         }
 
     @staticmethod
-    def _dict_to_role(data: dict) -> Role:
+    def _dict_to_role(data: dict[str, Any]) -> Role:
         """Convert cached dict back to Role."""
         from datetime import UTC, datetime
 

@@ -1,0 +1,2 @@
+tests/e2e/test_auth_flow.py::TestAuthenticationE2E::test_complete_registration_login_flow
+tests/e2e/test_api_keys.py::TestAPIKeyE2E::test_complete_api_key_lifecycle

@@ -12,6 +12,7 @@ Provides business logic for:
 
 import html as html_mod
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import select, update
@@ -65,7 +66,7 @@ class NotificationService:
         tenant_id: UUID | None = None,
         priority: NotificationPriority = NotificationPriority.NORMAL,
         category: str | None = None,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
         action_url: str | None = None,
         channels: list[NotificationChannel] | None = None,
         expires_at: datetime | None = None,
@@ -509,12 +510,12 @@ class NotificationService:
         """Convert NotificationModel to Notification entity."""
         return Notification(
             id=UUID(str(model.id)),
-            tenant_id=UUID(str(model.tenant_id)) if model.tenant_id else None,
+            tenant_id=UUID(str(model.tenant_id)) if model.tenant_id else None,  # type: ignore[arg-type]
             user_id=UUID(str(model.user_id)),
             type=NotificationType(model.type),
             title=model.title,
             message=model.message,
-            metadata=model.metadata,
+            metadata=model.metadata,  # type: ignore[arg-type]
             priority=NotificationPriority(model.priority),
             category=model.category,
             channels=[NotificationChannel(c) for c in model.channels],

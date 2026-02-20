@@ -332,7 +332,7 @@ async def bulk_create_users(
                 continue
 
             # Validate role tenant ownership (B11 — prevent cross-tenant role assignment)
-            validated_role_ids: list = []
+            validated_role_ids: list[UUID] = []
             if user_data.roles:
                 from app.infrastructure.database.repositories.role_repository import (
                     SQLAlchemyRoleRepository,
@@ -504,7 +504,7 @@ async def bulk_update_users(
             # Update roles if specified - validate tenant ownership (B31)
             if update_data.roles is not None:
                 role_repo = SQLAlchemyRoleRepository(session)
-                validated_role_ids: list = []
+                validated_role_ids: list[UUID] = []
                 role_validation_failed = False
                 for role_id in update_data.roles:
                     role = await role_repo.get_by_id(role_id)

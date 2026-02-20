@@ -55,28 +55,28 @@ dataframe_to_rows: Any = None
 DataValidation: Any = None
 
 try:
-    from openpyxl import Workbook  # type: ignore[import-not-found]
-    from openpyxl.chart import (  # type: ignore[import-not-found]
+    from openpyxl import Workbook
+    from openpyxl.chart import (
         BarChart,
         LineChart,
         PieChart,
         Reference,
     )
-    from openpyxl.formatting.rule import (  # type: ignore[import-not-found]
+    from openpyxl.formatting.rule import (
         ColorScaleRule,
         FormulaRule,
         IconSetRule,
     )
-    from openpyxl.styles import (  # type: ignore[import-not-found]
+    from openpyxl.styles import (
         Alignment,
         Border,
         Font,
         PatternFill,
         Side,
     )
-    from openpyxl.utils import get_column_letter  # type: ignore[import-not-found]
+    from openpyxl.utils import get_column_letter
     from openpyxl.worksheet.datavalidation import (
-        DataValidation,  # type: ignore[import-not-found]
+        DataValidation,
     )
 
     OPENPYXL_AVAILABLE = True
@@ -208,8 +208,7 @@ class AdvancedExcelHandler:
     ALTERNATE_ROW_FILL = "f9fafb"
     BORDER_COLOR = "e5e7eb"
 
-    def __init__(self):
-        """Initialize advanced Excel handler."""
+    def __init__(self) -> None:
         if not OPENPYXL_AVAILABLE:
             raise ImportError(
                 "openpyxl is required for Excel support. "
@@ -429,7 +428,7 @@ class AdvancedExcelHandler:
 
                 # Get min/max row and column
                 from openpyxl.utils import (
-                    column_index_from_string,  # type: ignore[import-not-found]
+                    column_index_from_string,
                 )
 
                 start_col = column_index_from_string(

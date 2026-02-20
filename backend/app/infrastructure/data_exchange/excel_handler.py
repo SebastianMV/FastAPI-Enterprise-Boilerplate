@@ -21,15 +21,15 @@ from app.domain.ports.data_exchange import EntityConfig, FieldConfig, FieldType
 
 # Optional dependency - runtime import with graceful fallback
 try:
-    import openpyxl  # type: ignore[import-not-found]
-    from openpyxl.styles import (  # type: ignore[import-not-found]
+    import openpyxl
+    from openpyxl.styles import (
         Alignment,
         Border,
         Font,
         PatternFill,
         Side,
     )
-    from openpyxl.utils import get_column_letter  # type: ignore[import-not-found]
+    from openpyxl.utils import get_column_letter
 
     OPENPYXL_AVAILABLE = True
 except ImportError:
@@ -40,7 +40,7 @@ except ImportError:
     Alignment = None  # type: ignore[assignment,misc]
     Border = None  # type: ignore[assignment,misc]
     Side = None  # type: ignore[assignment,misc]
-    get_column_letter = None  # type: ignore[assignment,misc]
+    get_column_letter = None  # type: ignore[assignment]
 
 
 class ExcelHandler:
@@ -53,7 +53,7 @@ class ExcelHandler:
     Requires openpyxl to be installed.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Excel handler."""
         if not OPENPYXL_AVAILABLE:
             raise ImportError(
@@ -155,6 +155,7 @@ class ExcelHandler:
         """
         workbook = openpyxl.Workbook()
         sheet = workbook.active
+        assert sheet is not None
         sheet.title = title or entity_config.display_name[:31]  # Excel limit
 
         # Get fields to export
@@ -223,6 +224,7 @@ class ExcelHandler:
         """
         workbook = openpyxl.Workbook()
         sheet = workbook.active
+        assert sheet is not None
         sheet.title = "Importar"
 
         # Get importable fields
@@ -346,7 +348,7 @@ class ExcelHandler:
 
     def _get_example_value(self, field: FieldConfig) -> str:
         """Get an example value for a field."""
-        examples = {
+        examples: dict[FieldType, Any] = {
             FieldType.STRING: "Texto ejemplo",
             FieldType.INTEGER: 123,
             FieldType.FLOAT: 123.45,
@@ -359,7 +361,7 @@ class ExcelHandler:
             FieldType.JSON: '{"key": "value"}',
         }
 
-        return examples.get(field.field_type, "valor")
+        return str(examples.get(field.field_type, "valor"))
 
 
 # Singleton instance

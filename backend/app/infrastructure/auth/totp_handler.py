@@ -13,8 +13,8 @@ from io import BytesIO
 from typing import Any
 
 import pyotp
-import qrcode
-from qrcode.constants import ERROR_CORRECT_L
+import qrcode  # type: ignore[import-untyped]
+from qrcode.constants import ERROR_CORRECT_L  # type: ignore[import-untyped]
 
 from app.config import settings
 

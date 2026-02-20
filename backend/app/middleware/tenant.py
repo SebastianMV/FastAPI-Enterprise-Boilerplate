@@ -10,7 +10,7 @@ This middleware:
 3. Provides tenant context to request state
 """
 
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from uuid import UUID
 
 from fastapi import Request
@@ -161,14 +161,14 @@ class TenantContextManager:
 
     def __init__(self, tenant_id: UUID):
         self.tenant_id = tenant_id
-        self._token = None
+        self._token: Token[UUID | None] | None = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "TenantContextManager":
         """Set tenant context on enter."""
         self._token = _current_tenant_id.set(self.tenant_id)
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> bool:
         """Reset tenant context on exit."""
         if self._token is not None:
             _current_tenant_id.reset(self._token)

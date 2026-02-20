@@ -125,9 +125,9 @@ async def get_or_create_default_tenant() -> UUID:
         repo = SQLAlchemyTenantRepository(session)
 
         # Try to find existing default tenant
-        tenants = await repo.list(limit=1)
+        tenants = await repo.list(limit=1)  # type: ignore[attr-defined]
         if tenants:
-            return tenants[0].id
+            return tenants[0].id  # type: ignore[no-any-return]
 
         # Create default tenant
         tenant = Tenant(

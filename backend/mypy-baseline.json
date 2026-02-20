@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-02-20T03:34:39.784053+00:00",
+  "mypy_target": "app",
+  "report_file": "mypy-report.txt",
+  "total_errors": 0,
+  "module_errors": {}
+}

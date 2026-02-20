@@ -3,6 +3,7 @@
 
 """SQLAlchemy model for API Key."""
 
+import uuid
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -25,14 +26,14 @@ class APIKeyModel(Base):
     __tablename__ = "api_keys"
 
     # Primary key
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
 
     # Tenant isolation
-    tenant_id: Mapped[UUID] = mapped_column(
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
@@ -55,7 +56,7 @@ class APIKeyModel(Base):
     )
 
     # Owner
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
@@ -108,7 +109,7 @@ class APIKeyModel(Base):
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
-    created_by: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

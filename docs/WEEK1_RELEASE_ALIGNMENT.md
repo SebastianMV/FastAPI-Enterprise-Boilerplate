@@ -56,8 +56,24 @@
 
 ## 4) Baseline MyPy (formalización inicial)
 
-**Estado inicial:** deuda de tipado significativa en backend (referencia operativa del último diagnóstico local).
-**Decisión de semana 1:** usar estrategia de salida controlada.
+**Estado inicial:** 282 errores totales en 56 archivos — baseline formal generado el 19 Feb 2026.
+**Decisión de semana 1:** estrategia de salida controlada implementada.
+
+### Baseline por módulo (generado 19 Feb 2026)
+
+| Módulo | Errores actuales |
+|---|---|
+| app/infrastructure | 194 |
+| app/api | 30 |
+| app/cli | 19 |
+| app/domain | 16 |
+| app/middleware | 12 |
+| app/application | 10 |
+| app/config.py | 1 |
+| **Total** | **282** |
+
+### Gate anti-regresión
+CI compara el reporte actual vs `backend/mypy-baseline.json`. Un PR que *aumenta* el total de errores rompe el CI bloqueante.
 
 ### Estrategia propuesta
 
@@ -68,8 +84,8 @@
 
 ### Criterio temporal
 
-- Semana 2: baseline consolidado + budget de reducción.
-- Semana 3: reducción priorizada en dominios críticos.
+- Semana 2: ~~baseline consolidado + budget de reducción~~ **baseline creado (282 errores, `mypy-baseline.json` en repo)**.
+- Semana 3: reducción priorizada en dominios críticos (app/infrastructure: 194 errores es el mayor foco).
 - Semana 4: retorno a modo bloqueante total o No-Go de release.
 
 ---
@@ -79,7 +95,7 @@
 | Prioridad | Trabajo                                            | Dueño      | Estado      | Fecha objetivo |
 | --------- | -------------------------------------------------- | ---------- | ----------- | -------------- |
 | P0        | Subir cobertura frontend a >=42% (hito intermedio) | Frontend   | Pending     | Semana 2       |
-| P0        | Definir y aplicar baseline MyPy por módulo         | Backend    | Pending     | Semana 2       |
+| P0        | Definir y aplicar baseline MyPy por módulo         | Backend    | **Done** (282 errores baseline, gate activo) | Semana 1 |
 | P0        | Estabilizar suite E2E crítica mínima               | Full-stack | Pending     | Semana 3       |
 | P1        | Publicar reporte semanal único de métricas         | Platform   | In Progress | Semana 1       |
 | P1        | Endurecer criterios de merge para release branch   | Platform   | Pending     | Semana 4       |
@@ -92,11 +108,13 @@
 - Creación del roadmap operativo de 30 días.
 - Ajuste del gate i18n PT en CI a umbral de calidad (>=95%).
 - Registro de decisiones y matriz de checks en este documento.
+- **Baseline MyPy formalizado:** `backend/mypy-baseline.json` generado y publicado (282 errores, 56 archivos, 7 módulos). Gate anti-regresión en CI ahora operativo.
+- **`.gitignore` actualizado:** `backend/mypy-report.txt` y `backend/.venv/` excluidos correctamente.
 
 ---
 
-## 7) Próximo paso inmediato (Semana 1 → Semana 2)
+## 7) Próximo paso inmediato (Semana 2)
 
-1. Seleccionar 6-8 áreas frontend de mayor riesgo para elevar cobertura.
-2. Producir snapshot MyPy por módulo y objetivo de reducción por semana.
+1. Seleccionar 6-8 áreas frontend de mayor riesgo para elevar cobertura (target: ~42%).
+2. Priorizar reducción de errores MyPy en `app/infrastructure` (194 errores = 69% del total).
 3. Definir lista cerrada de E2E críticos bloqueantes para release.

@@ -5,6 +5,7 @@
 SQLAlchemy model for Role entity.
 """
 
+import uuid
 from datetime import datetime
 from uuid import uuid4
 
@@ -26,14 +27,14 @@ class RoleModel(Base):
     __tablename__ = "roles"
 
     # Primary key
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
 
     # Tenant isolation
-    tenant_id: Mapped[UUID] = mapped_column(
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         nullable=False,
         index=True,
@@ -91,11 +92,11 @@ class RoleModel(Base):
     )
 
     # Audit
-    created_by: Mapped[UUID | None] = mapped_column(
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         nullable=True,
     )
-    updated_by: Mapped[UUID | None] = mapped_column(
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         nullable=True,
     )

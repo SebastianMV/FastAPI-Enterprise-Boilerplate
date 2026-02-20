@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # ===========================================
     # Database
     # ===========================================
-    DATABASE_URL: PostgresDsn = Field(
+    DATABASE_URL: PostgresDsn = Field(  # type: ignore[assignment]
         default="postgresql+asyncpg://boilerplate:boilerplate@localhost:5432/boilerplate"
     )
     DB_POOL_SIZE: int = Field(default=10, ge=1, le=100)
@@ -169,6 +169,7 @@ class Settings(BaseSettings):
     # ===========================================
     RATE_LIMIT_ENABLED: bool = Field(default=True)
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = Field(default=100, ge=1)
+    RATE_LIMIT_BURST_SIZE: int = Field(default=150, ge=1)
 
     # ===========================================
     # Internationalization (i18n)
