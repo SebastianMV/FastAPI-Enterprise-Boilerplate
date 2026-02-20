@@ -439,11 +439,39 @@ async def import_data(
             )
     await file.seek(0)
 
-    # Detect file type
+    # Detect file type — validate via magic bytes AND extension to prevent
+    # extension-spoofing attacks (CWE-434).
+    # XLSX magic: PK\x03\x04 (ZIP container)
+    # XLS magic:  \xD0\xCF\x11\xE0 (Compound Document)
+    # CSV: no magic bytes, rely on extension.
+    magic = await file.read(8)
+    await file.seek(0)
+
+    _XLSX_MAGIC = b"PK\x03\x04"
+    _XLS_MAGIC = b"\xD0\xCF\x11\xE0"
+
     filename = file.filename or ""
-    if filename.endswith(".csv"):
+    if filename.lower().endswith(".csv"):
+        # CSV has no magic bytes; accept only if not a binary format
+        if magic.startswith(_XLSX_MAGIC) or magic.startswith(_XLS_MAGIC):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "FILE_TYPE_MISMATCH",
+                    "message": "File content does not match the declared extension (.csv).",
+                },
+            )
         file_type = "csv"
-    elif filename.endswith((".xlsx", ".xls")):
+    elif filename.lower().endswith((".xlsx", ".xls")):
+        # Accept XLSX (ZIP-based) or legacy XLS (OLE2)
+        if not (magic.startswith(_XLSX_MAGIC) or magic.startswith(_XLS_MAGIC)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "FILE_TYPE_MISMATCH",
+                    "message": "File content does not match the declared extension (.xlsx/.xls).",
+                },
+            )
         file_type = "excel"
     else:
         raise HTTPException(

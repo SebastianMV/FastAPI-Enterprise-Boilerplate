@@ -587,7 +587,7 @@ async def update_template(
             if key in _escape_fields and isinstance(value, str):
                 template[key] = _html.escape(value)
             elif key == "tags" and isinstance(value, list):
-                tags_list: list[str] = value  # type: ignore[assignment]
+                tags_list: list[str] = value
                 template[key] = [_html.escape(str(t)) for t in tags_list]
             else:
                 template[key] = value
@@ -877,8 +877,8 @@ async def create_schedule(
         "id": schedule_id,
         "template_id": template_id,
         "template_name": template.get("name"),
-        "name": request.name,
-        "description": request.description,
+        "name": _html.escape(request.name),
+        "description": _html.escape(request.description) if request.description else None,
         "frequency": request.frequency.model_dump(),
         "start_date": request.start_date,
         "end_date": request.end_date,
@@ -1085,8 +1085,13 @@ async def update_schedule(
                 request.frequency, schedule.get("start_date")
             )
 
+        # Escape HTML-sensitive string fields to prevent stored XSS
+        _schedule_escape_fields = {"name", "description"}
         for key, value in update_data.items():
-            schedule[key] = value
+            if key in _schedule_escape_fields and isinstance(value, str):
+                schedule[key] = _html.escape(value)
+            else:
+                schedule[key] = value
 
     logger.info(
         "report_schedule_updated",
