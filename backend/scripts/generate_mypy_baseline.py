@@ -14,20 +14,35 @@ def normalize_path(raw_path: str) -> str:
     return raw_path.replace("\\", "/").strip()
 
 
+def read_report_content(report_path: Path) -> str:
+    raw = report_path.read_bytes()
+    for encoding in ("utf-8-sig", "utf-16", "utf-16-le", "utf-16-be"):
+        try:
+            content = raw.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        content = raw.decode("utf-8", errors="replace")
+
+    return content.replace("\x00", "")
+
+
 def module_from_path(file_path: str) -> str:
     normalized = normalize_path(file_path)
     parts = normalized.split("/")
-    if len(parts) >= 2 and parts[0] == "app":
+    if len(parts) >= 3 and parts[0] == "app":
         return f"app/{parts[1]}"
     if normalized.startswith("app"):
-        return "app"
+        return "app/root"
     return "other"
 
 
 def parse_report(report_content: str) -> Counter[str]:
     counts: Counter[str] = Counter()
     for line in report_content.splitlines():
-        match = ERROR_LINE_PATTERN.match(line)
+        cleaned_line = line.strip().lstrip("\ufeff\ufffd")
+        match = ERROR_LINE_PATTERN.match(cleaned_line)
         if match is None:
             continue
         module_name = module_from_path(match.group("path"))
@@ -62,7 +77,7 @@ def main() -> int:
     if not report_path.exists():
         raise FileNotFoundError(f"MyPy report not found: {report_path}")
 
-    report_content = report_path.read_text(encoding="utf-8", errors="replace")
+    report_content = read_report_content(report_path)
     module_counts = parse_report(report_content)
     module_counts_sorted = dict(sorted(module_counts.items(), key=lambda item: item[0]))
 

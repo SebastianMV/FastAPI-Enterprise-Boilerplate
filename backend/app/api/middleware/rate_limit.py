@@ -8,6 +8,7 @@ Implements token bucket algorithm for API rate limiting.
 """
 
 from datetime import UTC, datetime
+from typing import Any
 
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -26,7 +27,7 @@ class RateLimitMiddleware:
     def __init__(
         self,
         app: ASGIApp,
-        redis_client=None,
+        redis_client: Any = None,
         requests_per_minute: int | None = None,
         burst_size: int | None = None,
     ) -> None:

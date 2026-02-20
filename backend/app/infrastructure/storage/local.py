@@ -20,8 +20,8 @@ from pathlib import Path
 from typing import BinaryIO
 from urllib.parse import quote
 
-import aiofiles
-import aiofiles.os
+import aiofiles  # type: ignore[import-untyped]
+import aiofiles.os  # type: ignore[import-untyped]
 
 from app.config import settings
 from app.domain.ports.storage import (
@@ -161,7 +161,8 @@ class LocalStorageAdapter(StoragePort):
             raise FileNotFoundError("File not found")
 
         async with aiofiles.open(full_path, "rb") as f:
-            return await f.read()
+            data = await f.read()
+            return bytes(data)
 
     async def download_stream(self, path: str) -> AsyncIterator[bytes]:
         """Download a file as a stream."""

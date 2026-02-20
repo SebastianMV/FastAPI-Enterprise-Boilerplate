@@ -11,6 +11,7 @@ are queried frequently (on every authorization check).
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from app.config import settings
@@ -92,7 +93,7 @@ class CachedRoleRepository:
         """Count roles for tenant (not cached — cheap DB query)."""
         return await self._repo.count(tenant_id=tenant_id)
 
-    async def list(
+    async def list_roles(
         self,
         *,
         tenant_id: UUID,
@@ -116,7 +117,7 @@ class CachedRoleRepository:
             return [self._dict_to_role(r) for r in cached]
 
         # Fetch from DB
-        roles = await self._repo.list(tenant_id=tenant_id, skip=skip, limit=limit)
+        roles = await self._repo.list_roles(tenant_id=tenant_id, skip=skip, limit=limit)
 
         # Cache result
         await cache.set(
@@ -200,7 +201,7 @@ class CachedRoleRepository:
         await cache.delete_pattern(f"{self.CACHE_PREFIX}:list:{tenant_id}:*")
 
     @staticmethod
-    def _role_to_dict(role: Role) -> dict:
+    def _role_to_dict(role: Role) -> dict[str, Any]:
         """Convert Role to cacheable dict."""
         return {
             "id": str(role.id),
@@ -218,7 +219,7 @@ class CachedRoleRepository:
         }
 
     @staticmethod
-    def _dict_to_role(data: dict) -> Role:
+    def _dict_to_role(data: dict[str, Any]) -> Role:
         """Convert cached dict back to Role."""
         from datetime import UTC, datetime
 

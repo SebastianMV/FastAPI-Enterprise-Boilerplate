@@ -8,6 +8,7 @@ Defines the contract for notification persistence and retrieval.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 
@@ -21,12 +22,12 @@ class NotificationRepositoryPort(ABC):
     """
 
     @abstractmethod
-    async def create(self, notification: dict) -> dict:
+    async def create(self, notification: dict[str, Any]) -> dict[str, Any]:
         """Create a new notification."""
         ...
 
     @abstractmethod
-    async def get_by_id(self, notification_id: UUID) -> dict | None:
+    async def get_by_id(self, notification_id: UUID) -> dict[str, Any] | None:
         """Get notification by ID."""
         ...
 
@@ -38,7 +39,7 @@ class NotificationRepositoryPort(ABC):
         unread_only: bool = False,
         skip: int = 0,
         limit: int = 50,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """List notifications for a user."""
         ...
 

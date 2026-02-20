@@ -93,7 +93,7 @@ class Notification(TenantEntity):
 
     # Delivery status per channel
     # {"in_app": {"sent_at": "...", "delivered_at": "..."}, ...}
-    delivery_status: dict[str, dict] = field(default_factory=dict)
+    delivery_status: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # Read status
     is_read: bool = False

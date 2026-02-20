@@ -474,11 +474,11 @@ class GenericReporter(ReportPort):
                 summary_sheet.cell(
                     row=5, column=1, value="Conteos por grupo:"
                 ).font = Font(bold=True)
-                row = 6
+                summary_row = 6
                 for key, count in summary.grouped_counts.items():
-                    summary_sheet.cell(row=row, column=1, value=key)
-                    summary_sheet.cell(row=row, column=2, value=count)
-                    row += 1
+                    summary_sheet.cell(row=summary_row, column=1, value=key)
+                    summary_sheet.cell(row=summary_row, column=2, value=count)
+                    summary_row += 1
 
         # Freeze header
         sheet.freeze_panes = f"A{header_row + 1}"
@@ -727,7 +727,7 @@ class GenericReporter(ReportPort):
         try:
             from weasyprint import HTML  # pyright: ignore[reportMissingImports]
 
-            return HTML(string=html_content.decode("utf-8")).write_pdf()
+            return HTML(string=html_content.decode("utf-8")).write_pdf()  # type: ignore[no-any-return]
         except ImportError:
             logger.debug("weasyprint_not_installed_fallback")
 

@@ -4,11 +4,11 @@
 """SQLAlchemy model for Tenant."""
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any
+from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, Index, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.connection import Base
@@ -30,7 +30,7 @@ class TenantModel(Base):
 
     # Primary key
     id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
@@ -60,7 +60,7 @@ class TenantModel(Base):
     )
 
     # Settings (JSONB for flexibility)
-    settings: Mapped[dict] = mapped_column(
+    settings: Mapped[dict[str, Any]] = mapped_column(
         JSONBCompat,
         default=dict,
         nullable=False,
@@ -88,8 +88,8 @@ class TenantModel(Base):
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
-    created_by: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    updated_by: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_by: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+    updated_by: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
 
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -97,7 +97,7 @@ class TenantModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    deleted_by: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    deleted_by: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
 
     # Relationships
     users: Mapped[list["UserModel"]] = relationship(

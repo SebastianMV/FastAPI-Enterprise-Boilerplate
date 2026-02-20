@@ -57,6 +57,10 @@
 | [PROJECT_STATUS.md](../PROJECT_STATUS.md)                            | Current status, metrics, and roadmap to v1.0.0                      |
 | [ROADMAP_1_0_OPERATIONAL_PLAN.md](./ROADMAP_1_0_OPERATIONAL_PLAN.md) | Plan operativo de 30 días para salida a producción v1.0.0           |
 | [WEEK1_RELEASE_ALIGNMENT.md](./WEEK1_RELEASE_ALIGNMENT.md)           | Acta operativa de Semana 1: criterios, matriz CI y baseline técnico |
+| [WEEKLY_RELEASE_METRICS.md](./WEEKLY_RELEASE_METRICS.md)             | Reporte semanal único de métricas de release v1.0.0                 |
+| [WEEK2_FRONTEND_COVERAGE_PLAN.md](./WEEK2_FRONTEND_COVERAGE_PLAN.md) | Plan de ejecución de cobertura frontend para Semana 2               |
+| [WEEK3_MYPY_E2E_EXECUTION.md](./WEEK3_MYPY_E2E_EXECUTION.md)         | Evidencia de ejecución de Semana 3 (MyPy + subset E2E crítico)      |
+| [WEEK4_RELEASE_HARDENING.md](./WEEK4_RELEASE_HARDENING.md)           | Acta de Semana 4: hardening de release y semáforo Go/No-Go          |
 | [MAKEFILE.md](../MAKEFILE.md)                                        | Cross-platform Make/PowerShell command reference                    |
 
 ---

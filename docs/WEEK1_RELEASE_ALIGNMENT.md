@@ -47,6 +47,26 @@
 - **Cobertura frontend** por debajo del objetivo >=50%.
 - **E2E críticos** aún parciales para escenarios de release.
 
+### Definición de suite E2E crítica (implementado)
+
+Se definió una lista cerrada de nodeids en:
+
+- `backend/tests/e2e/release_critical_nodeids.txt`
+
+Cobertura funcional incluida:
+
+- Registro de usuario (happy path + validación de input)
+- Recuperación de contraseña con token inválido
+- API keys sin autenticación (rechazo)
+- Health básico y disponibilidad de OpenAPI
+
+Ejecución:
+
+- Se agrega paso en CI Linux para correr este subset crítico.
+- En entorno Windows local puede fallar la carga de dependencias nativas de
+  WeasyPrint (`libgobject-2.0-0`), por lo que la fuente de verdad de este
+  subset es la ejecución en CI.
+
 ### P1 (alta prioridad)
 
 - Consolidar reporte semanal único de métricas (coverage, mypy, e2e, tiempo CI).
@@ -58,6 +78,23 @@
 
 **Estado inicial:** deuda de tipado significativa en backend (referencia operativa del último diagnóstico local).
 **Decisión de semana 1:** usar estrategia de salida controlada.
+
+### Snapshot actual (implementado)
+
+- Baseline versionado: `backend/mypy-baseline.json`
+- Total actual: **282** errores
+- Distribución principal:
+  - `app/infrastructure`: 194
+  - `app/api`: 30
+  - `app/cli`: 19
+  - `app/domain`: 15
+  - `app/middleware`: 12
+  - `app/application`: 10
+
+Se implementaron scripts para automatizar el flujo:
+
+- `python -m scripts.generate_mypy_baseline`
+- `python -m scripts.check_mypy_baseline`
 
 ### Estrategia propuesta
 
@@ -76,13 +113,14 @@
 
 ## 5) Tablero operativo semanal (P0/P1)
 
-| Prioridad | Trabajo                                            | Dueño      | Estado      | Fecha objetivo |
-| --------- | -------------------------------------------------- | ---------- | ----------- | -------------- |
-| P0        | Subir cobertura frontend a >=42% (hito intermedio) | Frontend   | Pending     | Semana 2       |
-| P0        | Definir y aplicar baseline MyPy por módulo         | Backend    | Pending     | Semana 2       |
-| P0        | Estabilizar suite E2E crítica mínima               | Full-stack | Pending     | Semana 3       |
-| P1        | Publicar reporte semanal único de métricas         | Platform   | In Progress | Semana 1       |
-| P1        | Endurecer criterios de merge para release branch   | Platform   | Pending     | Semana 4       |
+| Prioridad | Trabajo                                            | Dueño      | Estado  | Fecha objetivo |
+| --------- | -------------------------------------------------- | ---------- | ------- | -------------- |
+| P0        | Subir cobertura frontend a >=42% (hito intermedio) | Frontend   | Done    | Semana 2       |
+| P0        | Definir y aplicar baseline MyPy por módulo         | Backend    | Done    | Semana 1       |
+| P0        | Definir suite E2E crítica mínima bloqueante        | Full-stack | Done    | Semana 1       |
+| P0        | Estabilizar/expandir suite E2E crítica             | Full-stack | Pending | Semana 3       |
+| P1        | Publicar reporte semanal único de métricas         | Platform   | Done    | Semana 1       |
+| P1        | Endurecer criterios de merge para release branch   | Platform   | Pending | Semana 4       |
 
 ---
 
@@ -92,6 +130,11 @@
 - Creación del roadmap operativo de 30 días.
 - Ajuste del gate i18n PT en CI a umbral de calidad (>=95%).
 - Registro de decisiones y matriz de checks en este documento.
+- Baseline MyPy versionado generado (`backend/mypy-baseline.json`).
+- Guardrail CI agregado para no permitir aumento de deuda MyPy por PR.
+- Lista cerrada de E2E críticos creada (`backend/tests/e2e/release_critical_nodeids.txt`).
+- Paso CI agregado para ejecutar subset E2E crítico en Linux.
+- Reporte semanal único creado (`docs/WEEKLY_RELEASE_METRICS.md`).
 
 ---
 
@@ -100,3 +143,8 @@
 1. Seleccionar 6-8 áreas frontend de mayor riesgo para elevar cobertura.
 2. Producir snapshot MyPy por módulo y objetivo de reducción por semana.
 3. Definir lista cerrada de E2E críticos bloqueantes para release.
+
+Estado de transición a Semana 2:
+
+- Cobertura frontend medida en 61.99% statements (baseline Semana 2).
+- Plan de ejecución detallado en `docs/WEEK2_FRONTEND_COVERAGE_PLAN.md`.

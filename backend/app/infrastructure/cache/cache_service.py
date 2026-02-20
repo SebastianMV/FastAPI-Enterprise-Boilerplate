@@ -344,7 +344,7 @@ async def get_cache_service() -> CacheService:
                 cache = get_cache()
                 client = cache.get_redis_client()
                 # Test connection
-                await client.ping()  # type: ignore[union-attr]
+                await client.ping()
                 logger.info("cache_service_connected")
 
             except Exception:

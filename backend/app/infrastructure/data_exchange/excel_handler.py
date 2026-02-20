@@ -20,27 +20,53 @@ from uuid import UUID
 from app.domain.ports.data_exchange import EntityConfig, FieldConfig, FieldType
 
 # Optional dependency - runtime import with graceful fallback
+openpyxl: Any = None
+Alignment: Any = None
+Border: Any = None
+Font: Any = None
+PatternFill: Any = None
+Side: Any = None
+get_column_letter: Any = None
+
 try:
-    import openpyxl  # type: ignore[import-not-found]
-    from openpyxl.styles import (  # type: ignore[import-not-found]
-        Alignment,
-        Border,
-        Font,
-        PatternFill,
-        Side,
+    import openpyxl as _openpyxl
+    from openpyxl.styles import (
+        Alignment as _Alignment,
     )
-    from openpyxl.utils import get_column_letter  # type: ignore[import-not-found]
+    from openpyxl.styles import (
+        Border as _Border,
+    )
+    from openpyxl.styles import (
+        Font as _Font,
+    )
+    from openpyxl.styles import (
+        PatternFill as _PatternFill,
+    )
+    from openpyxl.styles import (
+        Side as _Side,
+    )
+    from openpyxl.utils import (
+        get_column_letter as _get_column_letter,
+    )
+
+    openpyxl = _openpyxl
+    Alignment = _Alignment
+    Border = _Border
+    Font = _Font
+    PatternFill = _PatternFill
+    Side = _Side
+    get_column_letter = _get_column_letter
 
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
-    openpyxl = None  # type: ignore[assignment]
-    Font = None  # type: ignore[assignment,misc]
-    PatternFill = None  # type: ignore[assignment,misc]
-    Alignment = None  # type: ignore[assignment,misc]
-    Border = None  # type: ignore[assignment,misc]
-    Side = None  # type: ignore[assignment,misc]
-    get_column_letter = None  # type: ignore[assignment,misc]
+    openpyxl = None
+    Font = None
+    PatternFill = None
+    Alignment = None
+    Border = None
+    Side = None
+    get_column_letter = None
 
 
 class ExcelHandler:
@@ -53,7 +79,7 @@ class ExcelHandler:
     Requires openpyxl to be installed.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Excel handler."""
         if not OPENPYXL_AVAILABLE:
             raise ImportError(
@@ -346,7 +372,7 @@ class ExcelHandler:
 
     def _get_example_value(self, field: FieldConfig) -> str:
         """Get an example value for a field."""
-        examples = {
+        examples: dict[FieldType, object] = {
             FieldType.STRING: "Texto ejemplo",
             FieldType.INTEGER: 123,
             FieldType.FLOAT: 123.45,
@@ -359,7 +385,7 @@ class ExcelHandler:
             FieldType.JSON: '{"key": "value"}',
         }
 
-        return examples.get(field.field_type, "valor")
+        return str(examples.get(field.field_type, "valor"))
 
 
 # Singleton instance

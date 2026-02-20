@@ -67,8 +67,24 @@ Regla de consolidación:
 
 ## Backlog inicial sugerido
 
-- [ ] Inventario de duplicaciones Auth (`test_auth_*`, `*_coverage`, `*_extended`).
-- [ ] Inventario de duplicaciones OAuth (`test_oauth_*` en unit/integration/e2e).
-- [ ] Unificar notificaciones (`test_notification_*` vs `test_notifications_*`).
-- [ ] Consolidar Search tests con enfoque por contratos.
+- [x] Inventario de duplicaciones Auth (`test_auth_*`, `*_coverage`, `*_extended`).
+- [x] Inventario de duplicaciones OAuth (`test_oauth_*` en unit/integration/e2e).
+- [x] Unificar notificaciones (`test_notification_*` vs `test_notifications_*`).
+- [x] Consolidar Search tests con enfoque por contratos.
 - [ ] Definir y aplicar marker `flaky` a tests inestables conocidos.
+
+---
+
+## Progreso ejecutado (2026-02-18)
+
+Primera y segunda ola de deduplicación aplicadas en `backend/tests/unit/api`:
+
+- Eliminadas suites redundantes en Auth: `test_auth_endpoints_additional.py`, `test_auth_extended.py`.
+- Eliminadas suites redundantes en Notifications: `test_notifications_endpoints.py`, `test_notifications_endpoints_extended.py`.
+- Eliminadas suites redundantes en OAuth: `test_oauth_endpoints_extended.py`, `test_oauth_endpoints.py`.
+- Eliminadas suites redundantes en Search: `test_search_endpoints.py`, `test_search_endpoints_real.py`, `test_search_extended.py`, `test_search_schemas.py`.
+
+Notas:
+
+- Se mantienen suites canónicas de comportamiento/cobertura por dominio (`*_coverage.py`, `*_additional.py` cuando aporta casos únicos).
+- Validación local completa limitada en Windows por dependencia nativa de WeasyPrint (`libgobject-2.0-0`); validación final recomendada en CI Linux.

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from app.domain.entities.mfa import MFAConfig
@@ -63,7 +63,6 @@ def _dict_to_mfa_config(data: dict[str, Any]) -> MFAConfig:
     The TOTP secret is decrypted after retrieval.
     """
     from datetime import datetime
-    from uuid import UUID
 
     from app.infrastructure.auth.encryption import decrypt_value
 
@@ -134,8 +133,8 @@ async def get_mfa_config(
             from app.infrastructure.auth.encryption import decrypt_value
 
             config = MFAConfig(
-                id=cast("UUID", model.id),
-                user_id=cast("UUID", model.user_id),
+                id=model.id,
+                user_id=model.user_id,
                 secret=decrypt_value(model.secret),
                 is_enabled=model.is_enabled,
                 backup_codes=model.backup_codes or [],

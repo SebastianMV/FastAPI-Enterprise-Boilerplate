@@ -148,7 +148,7 @@ class SQLAlchemyRoleRepository(RoleRepositoryPort):
         result = await self._session.execute(stmt)
         return result.scalar_one()
 
-    async def list(
+    async def list_roles(
         self,
         *,
         tenant_id: UUID,

@@ -99,8 +99,8 @@ class GenericImporter(ImportPort):
         if format == "excel":
             if not is_excel_available():
                 raise ValueError("Excel support not available. Install openpyxl.")
-            handler = get_excel_handler()
-            return handler.generate_template(config)
+            excel_handler = get_excel_handler()
+            return excel_handler.generate_template(config)
         raise ValueError("Unsupported template format")
 
     async def _process_import(self, request: ImportRequest) -> ImportResult:
@@ -241,7 +241,7 @@ class GenericImporter(ImportPort):
         Returns:
             Dictionary with batch results
         """
-        result = {
+        result: dict[str, Any] = {
             "inserted": 0,
             "updated": 0,
             "skipped": 0,

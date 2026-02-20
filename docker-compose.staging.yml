@@ -40,10 +40,11 @@ services:
       - DEBUG=false
       - LOG_LEVEL=DEBUG
       - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL must be set}
-      - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-true}
+      - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:?AUTH_COOKIE_SECURE must be set}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY must be set}
       - RATE_LIMIT_ENABLED=true
       - CSRF_ENABLED=true
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     expose:
       - "8000"
     security_opt:
@@ -79,11 +80,8 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 1G
+    cpus: 2
+    mem_limit: 1g
 
   # ===========================================
   # Frontend (Nginx - Staging)
@@ -105,9 +103,9 @@ services:
     read_only: true
     pids_limit: 100
     tmpfs:
-      - /tmp:size=32m,noexec,nosuid,nodev
-      - /var/cache/nginx:size=128m,noexec,nosuid,nodev
-      - /var/run:size=8m,noexec,nosuid,nodev
+      - /tmp:size=32m,noexec,nosuid,nodev,uid=101,gid=101,mode=1777
+      - /var/cache/nginx:size=128m,noexec,nosuid,nodev,uid=101,gid=101,mode=1775
+      - /var/run:size=8m,noexec,nosuid,nodev,uid=101,gid=101,mode=1775
     depends_on:
       - backend
     healthcheck:
@@ -131,11 +129,8 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
+    cpus: 0.5
+    mem_limit: 256m
 
   # ===========================================
   # PostgreSQL Database
@@ -145,10 +140,7 @@ services:
     container_name: staging-db
     restart: unless-stopped
     stop_grace_period: 30s
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    user: "999:999" # postgres uid/gid in alpine image — pre-start as non-root; no privilege switch needed
     pids_limit: 200
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
@@ -159,7 +151,7 @@ services:
       - staging_postgres_data:/var/lib/postgresql/data
       - ./backend/alembic/init_prod.sh:/docker-entrypoint-initdb.d/init_prod.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -170,11 +162,8 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 1G
+    cpus: 1
+    mem_limit: 1g
 
   # ===========================================
   # Redis Cache
@@ -184,10 +173,9 @@ services:
     container_name: staging-redis
     restart: unless-stopped
     stop_grace_period: 30s
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    user: "999:1000" # redis uid/gid in alpine image — pre-start as non-root; no privilege switch needed
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     pids_limit: 100
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     volumes:
@@ -208,11 +196,8 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
+    cpus: 0.5
+    mem_limit: 512m
 
 networks:
   staging-frontend:

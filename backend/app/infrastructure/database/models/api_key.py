@@ -4,10 +4,10 @@
 """SQLAlchemy model for API Key."""
 
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.database.connection import Base
@@ -26,14 +26,14 @@ class APIKeyModel(Base):
 
     # Primary key
     id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
 
     # Tenant isolation
     tenant_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -56,7 +56,7 @@ class APIKeyModel(Base):
 
     # Owner
     user_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -108,7 +108,7 @@ class APIKeyModel(Base):
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
-    created_by: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_by: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
 
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

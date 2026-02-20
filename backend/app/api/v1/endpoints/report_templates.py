@@ -587,7 +587,7 @@ async def update_template(
             if key in _escape_fields and isinstance(value, str):
                 template[key] = _html.escape(value)
             elif key == "tags" and isinstance(value, list):
-                tags_list: list[str] = value  # type: ignore[assignment]
+                tags_list: list[str] = value
                 template[key] = [_html.escape(str(t)) for t in tags_list]
             else:
                 template[key] = value

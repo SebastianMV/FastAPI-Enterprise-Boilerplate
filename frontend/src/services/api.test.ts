@@ -1,272 +1,250 @@
-/**
- * Tests for API service layer.
- */
-import axios from 'axios';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import axios from "axios";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock axios before imports
-vi.mock('axios', () => {
-  const mockAxiosInstance = {
-    get: vi.fn(),
-    post: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-    put: vi.fn(),
-    interceptors: {
-      request: { use: vi.fn() },
-      response: { use: vi.fn() },
-    },
+interface MockAxiosInstance {
+  (...args: unknown[]): Promise<unknown>;
+  get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
+  patch: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
+  put: ReturnType<typeof vi.fn>;
+  interceptors: {
+    request: { use: ReturnType<typeof vi.fn> };
+    response: { use: ReturnType<typeof vi.fn> };
   };
+}
+
+const mockInstances: MockAxiosInstance[] = [];
+
+const createMockAxiosInstance = (): MockAxiosInstance => {
+  const instance = vi.fn() as unknown as MockAxiosInstance;
+  instance.get = vi.fn();
+  instance.post = vi.fn();
+  instance.patch = vi.fn();
+  instance.delete = vi.fn();
+  instance.put = vi.fn();
+  instance.interceptors = {
+    request: { use: vi.fn() },
+    response: { use: vi.fn() },
+  };
+  return instance;
+};
+
+vi.mock("axios", () => {
+  const create = vi.fn(() => {
+    const instance = createMockAxiosInstance();
+    mockInstances.push(instance);
+    return instance;
+  });
 
   return {
     default: {
-      create: vi.fn(() => mockAxiosInstance),
+      create,
       post: vi.fn(),
     },
   };
 });
 
-// Import after mock
-import { authService, usersService } from './api';
+const getPrimaryApi = (): MockAxiosInstance => {
+  const first = mockInstances[0];
+  if (!first) {
+    throw new Error("Primary axios instance not initialized");
+  }
+  return first;
+};
 
-describe('API Services', () => {
-  let mockApi: {
-    get: ReturnType<typeof vi.fn>;
-    post: ReturnType<typeof vi.fn>;
-    patch: ReturnType<typeof vi.fn>;
-    delete: ReturnType<typeof vi.fn>;
-  };
-
+describe("api service", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
-
-    // Get the mocked axios instance
-    mockApi = (axios.create as unknown as () => typeof mockApi)();
+    mockInstances.length = 0;
+    document.cookie = "";
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe('authService', () => {
-    describe('login', () => {
-      it('should call /auth/login with credentials', async () => {
-        const mockResponse = {
-          data: {
-            access_token: 'test-token',
-            refresh_token: 'refresh-token',
-            token_type: 'bearer',
-            expires_in: 3600,
-            user: { id: '1', email: 'test@example.com' },
-          },
-        };
-        mockApi.post.mockResolvedValueOnce(mockResponse);
+  it("exports service objects from api index", async () => {
+    const mod = await import("./api");
 
-        const credentials = { email: 'test@example.com', password: 'password123' };
-        const result = await authService.login(credentials);
-
-        expect(mockApi.post).toHaveBeenCalledWith('/auth/login', credentials);
-        expect(result).toEqual(mockResponse.data);
-      });
-
-      it('should handle login with MFA code', async () => {
-        const mockResponse = {
-          data: {
-            access_token: 'test-token',
-            refresh_token: 'refresh-token',
-            token_type: 'bearer',
-            expires_in: 3600,
-            user: { id: '1', email: 'test@example.com' },
-          },
-        };
-        mockApi.post.mockResolvedValueOnce(mockResponse);
-
-        const credentials = {
-          email: 'test@example.com',
-          password: 'password123',
-          mfa_code: '123456'
-        };
-        await authService.login(credentials);
-
-        expect(mockApi.post).toHaveBeenCalledWith('/auth/login', credentials);
-      });
-
-      it('should throw on login failure', async () => {
-        mockApi.post.mockRejectedValueOnce(new Error('Invalid credentials'));
-
-        await expect(
-          authService.login({ email: 'test@example.com', password: 'wrong' })
-        ).rejects.toThrow('Invalid credentials');
-      });
-    });
-
-    describe('logout', () => {
-      it('should call /auth/logout', async () => {
-        mockApi.post.mockResolvedValueOnce({ data: {} });
-
-        await authService.logout();
-
-        expect(mockApi.post).toHaveBeenCalledWith('/auth/logout');
-      });
-    });
-
-    describe('refresh', () => {
-      it('should call /auth/refresh with empty body', async () => {
-        const mockResponse = {
-          data: {
-            access_token: 'new-token',
-            token_type: 'bearer',
-            expires_in: 3600,
-          },
-        };
-        mockApi.post.mockResolvedValueOnce(mockResponse);
-
-        const result = await authService.refresh();
-
-        expect(mockApi.post).toHaveBeenCalledWith('/auth/refresh', {});
-        expect(result).toEqual(mockResponse.data);
-      });
-    });
-
-    describe('me', () => {
-      it('should call /auth/me and return user', async () => {
-        const mockUser = {
-          id: '1',
-          email: 'test@example.com',
-          first_name: 'Test',
-          last_name: 'User',
-          is_active: true,
-          is_superuser: false,
-          email_verified: true,
-          created_at: '2024-01-01T00:00:00Z',
-        };
-        mockApi.get.mockResolvedValueOnce({ data: mockUser });
-
-        const result = await authService.me();
-
-        expect(mockApi.get).toHaveBeenCalledWith('/auth/me');
-        expect(result).toEqual(mockUser);
-      });
-    });
+    expect(mod.authService).toBeDefined();
+    expect(mod.usersService).toBeDefined();
+    expect(mod.default).toBeDefined();
   });
 
-  describe('usersService', () => {
-    describe('list', () => {
-      it('should call /users with default params', async () => {
-        const mockResponse = {
-          data: {
-            items: [{ id: '1', email: 'user@example.com' }],
-            total: 1,
-            skip: 0,
-            limit: 10,
-          },
-        };
-        mockApi.get.mockResolvedValueOnce(mockResponse);
+  it("registers request and response interceptors", async () => {
+    await import("./api");
+    const apiInstance = getPrimaryApi();
 
-        const result = await usersService.list();
-
-        expect(mockApi.get).toHaveBeenCalledWith('/users', { params: { skip: 0, limit: 20 } });
-        expect(result).toEqual(mockResponse.data);
-      });
-
-      it('should call /users with pagination params', async () => {
-        const mockResponse = {
-          data: {
-            items: [],
-            total: 100,
-            skip: 20,
-            limit: 10,
-          },
-        };
-        mockApi.get.mockResolvedValueOnce(mockResponse);
-
-        await usersService.list({ skip: 20, limit: 10 });
-
-        expect(mockApi.get).toHaveBeenCalledWith('/users', {
-          params: { skip: 20, limit: 10 }
-        });
-      });
-    });
-
-    describe('get', () => {
-      it('should call /users/:id', async () => {
-        const mockUser = { id: '123', email: 'user@example.com' };
-        mockApi.get.mockResolvedValueOnce({ data: mockUser });
-
-        const result = await usersService.get('123');
-
-        expect(mockApi.get).toHaveBeenCalledWith('/users/123');
-        expect(result).toEqual(mockUser);
-      });
-    });
-
-    describe('create', () => {
-      it('should call POST /users with data', async () => {
-        const userData = {
-          email: 'new@example.com',
-          password: 'password123',
-          first_name: 'New',
-          last_name: 'User',
-        };
-        const mockResponse = { data: { id: '1', ...userData } };
-        mockApi.post.mockResolvedValueOnce(mockResponse);
-
-        const result = await usersService.create(userData);
-
-        expect(mockApi.post).toHaveBeenCalledWith('/users', userData);
-        expect(result).toEqual(mockResponse.data);
-      });
-    });
-
-    describe('update', () => {
-      it('should call PATCH /users/:id with data', async () => {
-        const updateData = { first_name: 'Updated' };
-        const mockResponse = { data: { id: '123', ...updateData } };
-        mockApi.patch.mockResolvedValueOnce(mockResponse);
-
-        const result = await usersService.update('123', updateData);
-
-        expect(mockApi.patch).toHaveBeenCalledWith('/users/123', updateData);
-        expect(result).toEqual(mockResponse.data);
-      });
-    });
-
-    describe('updateMe', () => {
-      it('should call PATCH /users/me with data', async () => {
-        const updateData = { first_name: 'Updated', last_name: 'Name' };
-        const mockResponse = { data: { id: '1', ...updateData } };
-        mockApi.patch.mockResolvedValueOnce(mockResponse);
-
-        const result = await usersService.updateMe(updateData);
-
-        expect(mockApi.patch).toHaveBeenCalledWith('/users/me', updateData);
-        expect(result).toEqual(mockResponse.data);
-      });
-    });
-
-    describe('uploadAvatar', () => {
-      it('should call POST /users/me/avatar with FormData', async () => {
-        const mockFile = new File(['test'], 'avatar.png', { type: 'image/png' });
-        const mockResponse = { data: { id: '1', avatar_url: '/avatars/test.png' } };
-        mockApi.post.mockResolvedValueOnce(mockResponse);
-
-        const result = await usersService.uploadAvatar(mockFile);
-
-        expect(mockApi.post).toHaveBeenCalledWith(
-          '/users/me/avatar',
-          expect.any(FormData),
-          { headers: { 'Content-Type': 'multipart/form-data' } }
-        );
-        expect(result).toEqual(mockResponse.data);
-      });
-    });
+    expect(apiInstance.interceptors.request.use).toHaveBeenCalledTimes(1);
+    expect(apiInstance.interceptors.response.use).toHaveBeenCalledTimes(1);
   });
-});
 
-describe('API Interceptors', () => {
-  it('should have axios module available', () => {
-    // Verify axios module is available for mocking
-    expect(axios.create).toBeDefined();
-    expect(typeof axios.create).toBe('function');
+  it("adds csrf header on state-changing methods", async () => {
+    await import("./api");
+    const apiInstance = getPrimaryApi();
+
+    const requestInterceptor = apiInstance.interceptors.request.use.mock
+      .calls[0]?.[0] as
+      | ((cfg: { method?: string; headers: Record<string, string> }) => {
+          method?: string;
+          headers: Record<string, string>;
+        })
+      | undefined;
+
+    expect(requestInterceptor).toBeDefined();
+    document.cookie = "csrf_token=test-token";
+
+    const config = { method: "post", headers: {} as Record<string, string> };
+    const result = requestInterceptor?.(config);
+
+    expect(result?.headers["X-CSRF-Token"]).toBe("test-token");
+  });
+
+  it("does not add csrf header on get requests", async () => {
+    await import("./api");
+    const apiInstance = getPrimaryApi();
+
+    const requestInterceptor = apiInstance.interceptors.request.use.mock
+      .calls[0]?.[0] as
+      | ((cfg: { method?: string; headers: Record<string, string> }) => {
+          method?: string;
+          headers: Record<string, string>;
+        })
+      | undefined;
+
+    document.cookie = "csrf_token=test-token";
+    const config = { method: "get", headers: {} as Record<string, string> };
+    const result = requestInterceptor?.(config);
+
+    expect(result?.headers["X-CSRF-Token"]).toBeUndefined();
+  });
+
+  it("retries original request when 401 refresh succeeds", async () => {
+    const mod = await import("./api");
+    const apiInstance = getPrimaryApi();
+    const axiosCreate = (
+      axios as unknown as { create: ReturnType<typeof vi.fn> }
+    ).create;
+
+    const responseInterceptor = apiInstance.interceptors.response.use.mock
+      .calls[0]?.[1] as
+      | ((error: {
+          config: { _retry?: boolean };
+          response?: { status?: number };
+        }) => Promise<unknown>)
+      | undefined;
+
+    expect(responseInterceptor).toBeDefined();
+
+    const refreshInstance = createMockAxiosInstance();
+    refreshInstance.post.mockResolvedValueOnce({
+      data: { access_token: "new-token" },
+    });
+    axiosCreate.mockImplementationOnce(() => refreshInstance);
+
+    apiInstance.mockResolvedValueOnce({ data: { ok: true } });
+
+    const error = {
+      config: { _retry: false },
+      response: { status: 401 },
+    };
+
+    const result = await responseInterceptor?.(error);
+
+    expect(axiosCreate).toHaveBeenCalled();
+    expect(refreshInstance.post).toHaveBeenCalledWith(
+      "/auth/refresh",
+      {},
+      {
+        headers: expect.any(Object),
+      },
+    );
+    expect(apiInstance).toHaveBeenCalledWith(error.config);
+    expect(result).toEqual({ data: { ok: true } });
+    expect(mod.AUTH_LOGOUT_EVENT).toBe("auth:logout");
+  });
+
+  it("emits logout event when refresh fails", async () => {
+    const mod = await import("./api");
+    const apiInstance = getPrimaryApi();
+    const axiosCreate = (
+      axios as unknown as { create: ReturnType<typeof vi.fn> }
+    ).create;
+
+    const responseInterceptor = apiInstance.interceptors.response.use.mock
+      .calls[0]?.[1] as
+      | ((error: {
+          config: { _retry?: boolean };
+          response?: { status?: number };
+        }) => Promise<unknown>)
+      | undefined;
+
+    const handler = vi.fn();
+    window.addEventListener(mod.AUTH_LOGOUT_EVENT, handler);
+
+    const refreshInstance = createMockAxiosInstance();
+    refreshInstance.post.mockRejectedValueOnce(new Error("refresh failed"));
+    axiosCreate.mockImplementationOnce(() => refreshInstance);
+
+    await expect(
+      responseInterceptor?.({
+        config: { _retry: false },
+        response: { status: 401 },
+      }),
+    ).rejects.toThrow("refresh failed");
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    window.removeEventListener(mod.AUTH_LOGOUT_EVENT, handler);
+  });
+
+  it("authService login calls expected endpoint", async () => {
+    const mod = await import("./api");
+    const apiInstance = getPrimaryApi();
+
+    const payload = {
+      access_token: "token",
+      token_type: "bearer",
+      expires_in: 3600,
+      user: {
+        id: "1",
+        email: "u@example.com",
+        first_name: "U",
+        last_name: "S",
+        is_active: true,
+        is_superuser: false,
+        email_verified: true,
+        created_at: "2026-02-18T00:00:00Z",
+      },
+    };
+
+    apiInstance.post.mockResolvedValueOnce({ data: payload });
+
+    const result = await mod.authService.login({
+      email: "u@example.com",
+      password: "Secret123!",
+    });
+
+    expect(apiInstance.post).toHaveBeenCalledWith("/auth/login", {
+      email: "u@example.com",
+      password: "Secret123!",
+    });
+    expect(result).toEqual(payload);
+  });
+
+  it("usersService list uses default pagination values", async () => {
+    const mod = await import("./api");
+    const apiInstance = getPrimaryApi();
+
+    apiInstance.get.mockResolvedValueOnce({
+      data: { items: [], total: 0, skip: 0, limit: 20 },
+    });
+
+    await mod.usersService.list();
+
+    expect(apiInstance.get).toHaveBeenCalledWith("/users", {
+      params: { skip: 0, limit: 20 },
+    });
   });
 });

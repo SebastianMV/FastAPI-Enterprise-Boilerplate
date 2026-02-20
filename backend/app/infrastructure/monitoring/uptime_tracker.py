@@ -120,12 +120,12 @@ class UptimeTracker:
                     "timestamp": now.isoformat(),
                     "type": "health_check_failed",
                 }
-                await client.lpush(
+                await client.lpush(  # type: ignore[misc]
                     self._key("incidents"),
                     json.dumps(incident),
                 )
                 # Trim old incidents
-                await client.ltrim(
+                await client.ltrim(  # type: ignore[misc]
                     self._key("incidents"),
                     0,
                     999,  # Keep last 1000 incidents
@@ -223,7 +223,7 @@ class UptimeTracker:
         try:
             client = await self._get_redis_client()
 
-            incidents = await client.lrange(
+            incidents = await client.lrange(  # type: ignore[misc]
                 self._key("incidents"),
                 0,
                 limit - 1,

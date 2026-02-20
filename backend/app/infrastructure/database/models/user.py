@@ -9,10 +9,10 @@ Maps domain User entity to database table.
 
 from datetime import datetime
 from typing import TYPE_CHECKING
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.connection import Base
@@ -34,14 +34,14 @@ class UserModel(Base):
 
     # Primary key
     id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
 
     # Tenant isolation
     tenant_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -153,15 +153,15 @@ class UserModel(Base):
 
     # Audit
     created_by: Mapped[UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         nullable=True,
     )
     updated_by: Mapped[UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         nullable=True,
     )
     deleted_by: Mapped[UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         nullable=True,
     )
 

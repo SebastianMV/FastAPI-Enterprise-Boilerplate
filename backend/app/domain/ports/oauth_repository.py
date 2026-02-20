@@ -8,6 +8,7 @@ Defines the contract for OAuth provider configuration persistence.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 
@@ -23,22 +24,26 @@ class OAuthRepositoryPort(ABC):
     @abstractmethod
     async def get_by_provider(
         self, provider: str, tenant_id: UUID | None = None
-    ) -> dict | None:
+    ) -> dict[str, Any] | None:
         """Get OAuth configuration for a given provider."""
         ...
 
     @abstractmethod
-    async def list_providers(self, tenant_id: UUID | None = None) -> list[dict]:
+    async def list_providers(
+        self, tenant_id: UUID | None = None
+    ) -> list[dict[str, Any]]:
         """List all configured OAuth providers."""
         ...
 
     @abstractmethod
-    async def create(self, config: dict) -> dict:
+    async def create(self, config: dict[str, Any]) -> dict[str, Any]:
         """Create a new OAuth provider configuration."""
         ...
 
     @abstractmethod
-    async def update(self, provider: str, data: dict) -> dict | None:
+    async def update(
+        self, provider: str, data: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Update an existing OAuth provider configuration."""
         ...
 

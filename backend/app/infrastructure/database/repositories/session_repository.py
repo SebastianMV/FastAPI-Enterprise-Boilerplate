@@ -15,10 +15,11 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.session import UserSession
+from app.domain.ports.session_repository import SessionRepositoryPort
 from app.infrastructure.database.models.session import UserSessionModel
 
 
-class SQLAlchemySessionRepository:
+class SQLAlchemySessionRepository(SessionRepositoryPort):
     """
     SQLAlchemy implementation of session repository.
 
@@ -60,6 +61,7 @@ class SQLAlchemySessionRepository:
     async def get_user_sessions(
         self,
         user_id: UUID,
+        *,
         include_revoked: bool = False,
         tenant_id: UUID | None = None,
     ) -> list[UserSession]:
@@ -97,7 +99,7 @@ class SQLAlchemySessionRepository:
         )
         result = await self._session.execute(stmt)
         await self._session.flush()
-        return result.rowcount > 0  # type: ignore[union-attr]
+        return bool(result.rowcount > 0)  # type: ignore[attr-defined]
 
     async def revoke_all_except(
         self, user_id: UUID, current_session_id: UUID, tenant_id: UUID | None = None
@@ -120,7 +122,7 @@ class SQLAlchemySessionRepository:
         )
         result = await self._session.execute(stmt)
         await self._session.flush()
-        return result.rowcount  # type: ignore[union-attr]
+        return int(result.rowcount)  # type: ignore[attr-defined]
 
     async def revoke_all(self, user_id: UUID, tenant_id: UUID | None = None) -> int:
         """Revoke all sessions for a user, optionally scoped to tenant."""
@@ -140,7 +142,7 @@ class SQLAlchemySessionRepository:
         )
         result = await self._session.execute(stmt)
         await self._session.flush()
-        return result.rowcount  # type: ignore[union-attr]
+        return int(result.rowcount)  # type: ignore[attr-defined]
 
     async def update_activity(
         self, session_id: UUID, ip_address: str | None = None
@@ -168,14 +170,14 @@ class SQLAlchemySessionRepository:
         )
         result = await self._session.execute(stmt)
         await self._session.flush()
-        return result.rowcount  # type: ignore[union-attr]
+        return int(result.rowcount)  # type: ignore[attr-defined]
 
     def _to_entity(self, model: UserSessionModel) -> UserSession:
         """Convert SQLAlchemy model to domain entity."""
         return UserSession(
-            id=model.id,  # type: ignore[arg-type]
-            tenant_id=model.tenant_id,  # type: ignore[arg-type]
-            user_id=model.user_id,  # type: ignore[arg-type]
+            id=model.id,
+            tenant_id=model.tenant_id,
+            user_id=model.user_id,
             refresh_token_hash=model.refresh_token_hash,
             device_name=model.device_name,
             device_type=model.device_type,

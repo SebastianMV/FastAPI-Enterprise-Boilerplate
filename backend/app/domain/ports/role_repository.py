@@ -46,7 +46,7 @@ class RoleRepositoryPort(ABC):
         ...
 
     @abstractmethod
-    async def list(
+    async def list_roles(
         self,
         *,
         tenant_id: UUID,

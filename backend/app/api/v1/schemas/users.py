@@ -97,7 +97,7 @@ class UserResponse(BaseModel):
     def convert_email(cls, v: Any) -> str:
         """Convert Email value object to string."""
         if hasattr(v, "value"):
-            return v.value
+            return str(v.value)
         return str(v)
 
 

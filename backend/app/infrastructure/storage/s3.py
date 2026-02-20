@@ -23,15 +23,15 @@ from typing import Any, BinaryIO
 # Install with: pip install boto3
 # These type: ignore comments are intentional for optional dependency handling
 try:
-    import boto3  # type: ignore[import-not-found]
-    from botocore.config import Config as BotoConfig  # type: ignore[import-not-found]
-    from botocore.exceptions import ClientError  # type: ignore[import-not-found]
+    import boto3
+    from botocore.config import Config as BotoConfig
+    from botocore.exceptions import ClientError
 
     HAS_BOTO3 = True
 except ImportError:
     HAS_BOTO3 = False
-    boto3 = None  # type: ignore[assignment]
-    BotoConfig = None  # type: ignore[assignment, misc]
+    boto3 = None
+    BotoConfig = None
 
     class ClientError(Exception):  # type: ignore[no-redef]
         """Stub for botocore.exceptions.ClientError when boto3 is not installed."""
@@ -118,7 +118,7 @@ class S3StorageAdapter(StoragePort):
         self._default_acl = default_acl
 
         # Create S3 client
-        config = BotoConfig(  # type: ignore[misc]
+        config = BotoConfig(
             signature_version="s3v4",
             retries={"max_attempts": 3, "mode": "adaptive"},
         )
@@ -136,7 +136,7 @@ class S3StorageAdapter(StoragePort):
         if secret_access_key:
             client_kwargs["aws_secret_access_key"] = secret_access_key
 
-        self._client: Any = boto3.client("s3", **client_kwargs)  # type: ignore[union-attr]
+        self._client: Any = boto3.client("s3", **client_kwargs)
 
     @property
     def backend_name(self) -> str:
@@ -152,9 +152,9 @@ class S3StorageAdapter(StoragePort):
         self,
         content_type: str | None,
         metadata: dict[str, str] | None,
-    ) -> dict[str, str]:
+    ) -> dict[str, Any]:
         """Build extra arguments for upload operations."""
-        args = {}
+        args: dict[str, Any] = {}
 
         if content_type:
             args["ContentType"] = content_type

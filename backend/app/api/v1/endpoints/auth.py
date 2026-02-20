@@ -163,7 +163,7 @@ async def login(
     user_agent = http_request.headers.get("User-Agent", "Unknown")
 
     try:
-        result = use_case.execute(
+        result = await use_case.execute(
             LoginInput(
                 email=request.email,
                 password=request.password,
@@ -172,7 +172,6 @@ async def login(
                 ip_address=ip_address,
             )
         )
-        result = await result
     except AuthenticationError as exc:
         status_map = {
             "ACCOUNT_LOCKED": status.HTTP_423_LOCKED,

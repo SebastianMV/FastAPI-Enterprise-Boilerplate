@@ -4,6 +4,7 @@
 """Dashboard statistics and analytics endpoints."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -261,7 +262,7 @@ async def get_recent_activity(
     activities: list[ActivityItem] = []
 
     # Get recent user registrations (tenant-scoped)
-    user_filters = [UserModel.deleted_at.is_(None)]
+    user_filters: list[Any] = [UserModel.deleted_at.is_(None)]
     if tenant_id:
         user_filters.append(UserModel.tenant_id == tenant_id)
 

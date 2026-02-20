@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import UsersPage from "./UsersPage";
@@ -113,6 +114,9 @@ describe("UsersPage", () => {
     vi.clearAllMocks();
     mockUsersList.mockResolvedValue(mockUsers);
     mockRolesList.mockResolvedValue(mockRoles);
+    mockUsersCreate.mockResolvedValue({ id: "u4" });
+    mockUsersUpdate.mockResolvedValue({ id: "u1" });
+    mockUsersDelete.mockResolvedValue({});
   });
 
   it("renders page title", () => {
@@ -206,5 +210,94 @@ describe("UsersPage", () => {
     const searchInput = screen.getByPlaceholderText("users.searchPlaceholder");
     fireEvent.change(searchInput, { target: { value: "nonexistent" } });
     expect(screen.getByText("users.noUsersFound")).toBeInTheDocument();
+  });
+
+  it("creates user from create modal", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("John Doe")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("users.addUser"));
+
+    const firstNameInput = screen.getByPlaceholderText(
+      "common.placeholderFirstName",
+    );
+    const lastNameInput = screen.getByPlaceholderText(
+      "common.placeholderLastName",
+    );
+    const emailInput = screen.getByPlaceholderText("common.placeholderEmail");
+    const passwordInput = screen.getByPlaceholderText("••••••••");
+
+    await user.type(firstNameInput, "Alice");
+    await user.type(lastNameInput, "Smith");
+    await user.type(emailInput, "alice@example.com");
+    await user.type(passwordInput, "ValidPass1!");
+
+    const submitButtons = screen.getAllByRole("button", {
+      name: "users.createUser",
+    });
+    await user.click(submitButtons[submitButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockUsersCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          first_name: "Alice",
+          last_name: "Smith",
+          email: "alice@example.com",
+          password: "ValidPass1!",
+        }),
+      );
+    });
+  });
+
+  it("updates selected user from edit modal", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("John Doe")).toBeInTheDocument();
+    });
+
+    const editButtons = screen.getAllByLabelText("common.edit");
+    await user.click(editButtons[0]);
+
+    const firstNameInput = screen.getByDisplayValue("John");
+    await user.clear(firstNameInput);
+    await user.type(firstNameInput, "Johnny");
+
+    await user.click(screen.getByRole("button", { name: "common.save" }));
+
+    await waitFor(() => {
+      expect(mockUsersUpdate).toHaveBeenCalledWith(
+        "u1",
+        expect.objectContaining({ first_name: "Johnny" }),
+      );
+    });
+  });
+
+  it("deletes selected user from confirm modal", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("John Doe")).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByLabelText("common.delete");
+    await user.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("confirm-modal")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(mockUsersDelete).toHaveBeenCalled();
+    });
+    expect(mockUsersDelete.mock.calls[0]?.[0]).toBe("u1");
   });
 });

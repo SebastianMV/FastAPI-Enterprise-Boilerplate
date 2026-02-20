@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-02-18T16:35:19.181516+00:00",
+  "mypy_target": "app",
+  "report_file": "mypy-report.txt",
+  "total_errors": 282,
+  "module_errors": {
+    "app/api": 30,
+    "app/application": 10,
+    "app/cli": 19,
+    "app/domain": 15,
+    "app/infrastructure": 194,
+    "app/middleware": 12,
+    "app/root": 1,
+    "other": 1
+  }
+}

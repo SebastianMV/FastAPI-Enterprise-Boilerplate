@@ -241,7 +241,7 @@ class EntityConfig:
     report_title: str = ""
     report_grouping: list[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.report_title:
             self.report_title = f"Reporte de {self.display_name}"
 

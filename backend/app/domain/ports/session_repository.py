@@ -42,7 +42,7 @@ class SessionRepositoryPort(ABC):
         self,
         user_id: UUID,
         *,
-        active_only: bool = True,
+        include_revoked: bool = False,
         tenant_id: UUID | None = None,
     ) -> list[Any]:
         """List all sessions for a user, optionally scoped to tenant."""
@@ -71,7 +71,7 @@ class SessionRepositoryPort(ABC):
         session_id: UUID,
         *,
         ip_address: str | None = None,
-    ) -> bool:
+    ) -> None:
         """Update session last_activity timestamp."""
         ...
 

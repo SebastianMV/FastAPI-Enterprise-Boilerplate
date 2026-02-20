@@ -10,6 +10,7 @@ but are queried on almost every request for RLS context.
 """
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from app.config import settings
@@ -200,7 +201,7 @@ class CachedTenantRepository:
         await cache.delete_pattern(f"{self.CACHE_PREFIX}:list:*")
 
     @staticmethod
-    def _tenant_to_dict(tenant: Tenant) -> dict:
+    def _tenant_to_dict(tenant: Tenant) -> dict[str, Any]:
         """Convert Tenant to cacheable dict."""
         return {
             "id": str(tenant.id),
@@ -228,7 +229,7 @@ class CachedTenantRepository:
         }
 
     @staticmethod
-    def _dict_to_tenant(data: dict) -> Tenant:
+    def _dict_to_tenant(data: dict[str, Any]) -> Tenant:
         """Convert cached dict back to Tenant."""
 
         return Tenant(

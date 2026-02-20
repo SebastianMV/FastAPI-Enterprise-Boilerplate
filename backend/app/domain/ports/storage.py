@@ -135,7 +135,7 @@ class StoragePort(ABC):
         ...
 
     @abstractmethod
-    async def download_stream(self, path: str) -> AsyncIterator[bytes]:
+    def download_stream(self, path: str) -> AsyncIterator[bytes]:
         """
         Download a file as a stream (for large files).
 

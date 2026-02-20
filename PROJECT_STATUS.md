@@ -1,7 +1,7 @@
 ﻿# Project Status & Roadmap
 
 **Version:** v0.9.5
-**Date:** February 18, 2026
+**Date:** February 19, 2026
 **Status:** Beta feature-complete, 38 security audits passed
 
 ---
@@ -12,23 +12,24 @@
 JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.
 The backend has 99% test coverage and has undergone **38 security audit cycles**
 covering 700+ individual hardening items. The React frontend is fully functional
-with 568 tests passing.
+with 598 tests passing.
 
 ### Quality Metrics
 
-| Metric                    | Value                                | Status  |
-| ------------------------- | ------------------------------------ | ------- |
-| Backend Unit Tests        | ~3,500 passing                       | OK      |
-| Backend Integration Tests | ~247 passing                         | OK      |
-| Backend E2E Tests         | 20/84 passing (63 skipped)           | Partial |
-| Frontend Unit Tests       | 568/568 passing                      | OK      |
-| Backend Coverage          | 99%                                  | OK      |
-| Frontend Coverage         | ~32% statements                      | Partial |
-| Type Check (Python/MyPy)  | Non-blocking in CI (deuda pendiente) | Partial |
-| Type Errors (TypeScript)  | 0                                    | OK      |
-| Docker Services           | 4/4 healthy                          | OK      |
-| Alembic Migrations        | 12 applied                           | OK      |
-| Security Audits Passed    | 38 cycles                            | OK      |
+| Metric                    | Value                                          | Status  |
+| ------------------------- | ---------------------------------------------- | ------- |
+| Backend Unit Tests        | ~3,500 passing                                 | OK      |
+| Backend Integration Tests | ~247 passing                                   | OK      |
+| Backend E2E Tests         | 20/84 passing (63 skipped)                     | Partial |
+| Frontend Unit Tests       | 598/598 passing                                | OK      |
+| Backend Coverage          | 99%                                            | OK      |
+| Frontend Coverage         | 72.43% statements (medición 2026-02-18)        | OK      |
+| Type Check (Python/MyPy)  | Non-blocking + baseline anti-regresión en CI   | ✅      |
+| MyPy Current              | **0 errors** (delta -282 vs original baseline) | ✅      |
+| Type Errors (TypeScript)  | 0                                              | OK      |
+| Docker Services           | 4/4 healthy                                    | OK      |
+| Alembic Migrations        | 12 applied                                     | OK      |
+| Security Audits Passed    | 38 cycles                                      | OK      |
 
 ---
 
@@ -127,18 +128,17 @@ pids_limit, and pinned image tags.
 
 ### v1.0.0 -- Production Release
 
-| Prerequisite                               | Status         |
-| ------------------------------------------ | -------------- |
-| All severity >= 5 items resolved           | Done           |
-| 38 security audit cycles passed            | Done           |
-| Frontend tests >= 50% coverage             | Pending (~32%) |
-| All i18n locales >= 95%                    | Done           |
-| Container hardening (non-root, caps, pids) | Done           |
-| Supply chain pinning (images, CI actions)  | Done           |
-| Semgrep automated rules                    | Done           |
+| Prerequisite                               | Status        |
+| ------------------------------------------ | ------------- |
+| All severity >= 5 items resolved           | Done          |
+| 38 security audit cycles passed            | Done          |
+| Frontend tests >= 50% coverage             | Done (72.43%) |
+| All i18n locales >= 95%                    | Done          |
+| Container hardening (non-root, caps, pids) | Partial       |
+| Supply chain pinning (images, CI actions)  | Done          |
+| Semgrep automated rules                    | Done          |
 
-**Remaining blockers:** Frontend statement coverage target (~32% to 50%) and
-backend MyPy debt before re-enabling strict blocking gate.
+**Remaining blockers:** staging release rehearsal no exitoso por conflicto runtime de `db/redis` con hardening actual (`no-new-privileges` + entrypoint user switch).
 
 ---
 
@@ -175,15 +175,19 @@ Change these in production.
 
 ## Documentation
 
-| Document                             | Description                                    |
-| ------------------------------------ | ---------------------------------------------- |
-| README.md                            | Quick start guide                              |
-| CHANGELOG.md                         | Version history                                |
-| CONTRIBUTING.md                      | Contribution guidelines                        |
-| MAKEFILE.md                          | Make / PowerShell commands                     |
-| docs/ROADMAP_1_0_OPERATIONAL_PLAN.md | Plan operativo hacia v1.0.0                    |
-| docs/WEEK1_RELEASE_ALIGNMENT.md      | Acta operativa de Semana 1 (release alignment) |
-| docs/                                | Full technical documentation (16 docs)         |
+| Document                             | Description                                        |
+| ------------------------------------ | -------------------------------------------------- |
+| README.md                            | Quick start guide                                  |
+| CHANGELOG.md                         | Version history                                    |
+| CONTRIBUTING.md                      | Contribution guidelines                            |
+| MAKEFILE.md                          | Make / PowerShell commands                         |
+| docs/ROADMAP_1_0_OPERATIONAL_PLAN.md | Plan operativo hacia v1.0.0                        |
+| docs/WEEK1_RELEASE_ALIGNMENT.md      | Acta operativa de Semana 1 (release alignment)     |
+| docs/WEEKLY_RELEASE_METRICS.md       | Reporte semanal único de métricas de release       |
+| docs/WEEK2_FRONTEND_COVERAGE_PLAN.md | Plan de ejecución de cobertura frontend (Semana 2) |
+| docs/WEEK3_MYPY_E2E_EXECUTION.md     | Evidencia de ejecución de Semana 3                 |
+| docs/WEEK4_RELEASE_HARDENING.md      | Acta de hardening y readiness de Semana 4          |
+| docs/                                | Full technical documentation (17 docs)             |
 
 ---
 

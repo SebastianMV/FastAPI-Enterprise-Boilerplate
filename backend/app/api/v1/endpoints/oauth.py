@@ -837,9 +837,9 @@ async def list_providers(
             )
 
     # Add built-in providers
-    for config in provider_configs:
+    for provider_cfg in provider_configs:
         # Skip if there's an SSO config that overrides it
-        if not any(p.provider == config.provider for p in providers):
-            providers.append(config)
+        if not any(p.provider == provider_cfg.provider for p in providers):
+            providers.append(provider_cfg)
 
     return providers

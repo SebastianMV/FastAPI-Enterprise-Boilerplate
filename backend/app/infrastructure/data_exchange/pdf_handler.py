@@ -30,16 +30,19 @@ logger = get_logger(__name__)
 # ============================================================================
 
 _weasyprint_available = False
-HTML: Any = None
-CSS: Any = None
-FontConfiguration: Any = None
+WeasyHTML: Any = None
+WeasyCSS: Any = None
+WeasyFontConfiguration: Any = None
 
 try:
-    from weasyprint import CSS, HTML
-    from weasyprint.text.fonts import FontConfiguration
+    from weasyprint import CSS as WeasyCSS  # type: ignore[no-redef]
+    from weasyprint import HTML as WeasyHTML  # type: ignore[no-redef]
+    from weasyprint.text.fonts import (  # type: ignore[no-redef]
+        FontConfiguration as WeasyFontConfiguration,
+    )
 
     _weasyprint_available = True
-except ImportError:
+except (ImportError, OSError):
     logger.warning("weasyprint_not_installed")
 
 
@@ -167,15 +170,15 @@ class PDFHandler:
 
         # Generate PDF using WeasyPrint
         try:
-            font_config = FontConfiguration()
-            css = CSS(string=self._get_pdf_styles(), font_config=font_config)
+            font_config = WeasyFontConfiguration()
+            css = WeasyCSS(string=self._get_pdf_styles(), font_config=font_config)
 
-            pdf_bytes = HTML(string=html).write_pdf(
+            pdf_bytes = WeasyHTML(string=html).write_pdf(
                 stylesheets=[css],
                 font_config=font_config,
             )
 
-            return pdf_bytes
+            return bytes(pdf_bytes)
         except Exception as e:
             logger.error("pdf_generation_failed", error_type=type(e).__name__)
             # Fallback to HTML
@@ -616,7 +619,7 @@ h3 {{
 
         slices_svg = []
         legend_svg = []
-        start_angle = 0
+        start_angle = 0.0
 
         for i, value in enumerate(chart.data):
             percentage = value / total

@@ -8,6 +8,7 @@ Defines the contract for API key persistence and validation.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 
@@ -21,17 +22,17 @@ class APIKeyRepositoryPort(ABC):
     """
 
     @abstractmethod
-    async def create(self, api_key: dict) -> dict:
+    async def create(self, api_key: dict[str, Any]) -> dict[str, Any]:
         """Create a new API key record."""
         ...
 
     @abstractmethod
-    async def get_by_id(self, key_id: UUID) -> dict | None:
+    async def get_by_id(self, key_id: UUID) -> dict[str, Any] | None:
         """Get API key by ID."""
         ...
 
     @abstractmethod
-    async def get_by_key_hash(self, key_hash: str) -> dict | None:
+    async def get_by_key_hash(self, key_hash: str) -> dict[str, Any] | None:
         """Look up an API key by its hashed value."""
         ...
 
@@ -42,12 +43,12 @@ class APIKeyRepositoryPort(ABC):
         *,
         skip: int = 0,
         limit: int = 50,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """List all API keys for a user."""
         ...
 
     @abstractmethod
-    async def update(self, key_id: UUID, data: dict) -> dict | None:
+    async def update(self, key_id: UUID, data: dict[str, Any]) -> dict[str, Any] | None:
         """Update an API key's metadata (name, scopes, active status)."""
         ...
 

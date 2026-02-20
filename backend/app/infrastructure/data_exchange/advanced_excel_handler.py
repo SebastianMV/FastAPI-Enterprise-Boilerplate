@@ -53,31 +53,72 @@ Side: Any = None
 get_column_letter: Any = None
 dataframe_to_rows: Any = None
 DataValidation: Any = None
+column_index_from_string: Any = None
 
 try:
-    from openpyxl import Workbook  # type: ignore[import-not-found]
-    from openpyxl.chart import (  # type: ignore[import-not-found]
-        BarChart,
-        LineChart,
-        PieChart,
-        Reference,
+    from openpyxl import Workbook as _Workbook
+    from openpyxl.chart import (
+        BarChart as _BarChart,
     )
-    from openpyxl.formatting.rule import (  # type: ignore[import-not-found]
-        ColorScaleRule,
-        FormulaRule,
-        IconSetRule,
+    from openpyxl.chart import (
+        LineChart as _LineChart,
     )
-    from openpyxl.styles import (  # type: ignore[import-not-found]
-        Alignment,
-        Border,
-        Font,
-        PatternFill,
-        Side,
+    from openpyxl.chart import (
+        PieChart as _PieChart,
     )
-    from openpyxl.utils import get_column_letter  # type: ignore[import-not-found]
+    from openpyxl.chart import (
+        Reference as _Reference,
+    )
+    from openpyxl.formatting.rule import (
+        ColorScaleRule as _ColorScaleRule,
+    )
+    from openpyxl.formatting.rule import (
+        FormulaRule as _FormulaRule,
+    )
+    from openpyxl.formatting.rule import (
+        IconSetRule as _IconSetRule,
+    )
+    from openpyxl.styles import (
+        Alignment as _Alignment,
+    )
+    from openpyxl.styles import (
+        Border as _Border,
+    )
+    from openpyxl.styles import (
+        Font as _Font,
+    )
+    from openpyxl.styles import (
+        PatternFill as _PatternFill,
+    )
+    from openpyxl.styles import (
+        Side as _Side,
+    )
+    from openpyxl.utils import (
+        column_index_from_string as _column_index_from_string,
+    )
+    from openpyxl.utils import (
+        get_column_letter as _get_column_letter,
+    )
     from openpyxl.worksheet.datavalidation import (
-        DataValidation,  # type: ignore[import-not-found]
+        DataValidation as _DataValidation,
     )
+
+    Workbook = _Workbook
+    BarChart = _BarChart
+    LineChart = _LineChart
+    PieChart = _PieChart
+    Reference = _Reference
+    ColorScaleRule = _ColorScaleRule
+    FormulaRule = _FormulaRule
+    IconSetRule = _IconSetRule
+    Alignment = _Alignment
+    Border = _Border
+    Font = _Font
+    PatternFill = _PatternFill
+    Side = _Side
+    get_column_letter = _get_column_letter
+    column_index_from_string = _column_index_from_string
+    DataValidation = _DataValidation
 
     OPENPYXL_AVAILABLE = True
 except ImportError:
@@ -208,7 +249,7 @@ class AdvancedExcelHandler:
     ALTERNATE_ROW_FILL = "f9fafb"
     BORDER_COLOR = "e5e7eb"
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize advanced Excel handler."""
         if not OPENPYXL_AVAILABLE:
             raise ImportError(
@@ -428,10 +469,6 @@ class AdvancedExcelHandler:
                 end = parts[1]
 
                 # Get min/max row and column
-                from openpyxl.utils import (
-                    column_index_from_string,  # type: ignore[import-not-found]
-                )
-
                 start_col = column_index_from_string(
                     "".join(c for c in start if c.isalpha())
                 )

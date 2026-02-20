@@ -9,10 +9,11 @@ This table is append-only for compliance and security.
 """
 
 from datetime import datetime
-from uuid import uuid4
+from typing import Any
+from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.database.connection import Base
@@ -39,7 +40,7 @@ class AuditLogModel(Base):
 
     # Primary key
     id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
@@ -53,7 +54,7 @@ class AuditLogModel(Base):
 
     # Actor information (who)
     actor_id: Mapped[UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
@@ -95,24 +96,24 @@ class AuditLogModel(Base):
 
     # Tenant context
     tenant_id: Mapped[UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        PGUUID(as_uuid=True),
         ForeignKey("tenants.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
 
     # Change details (stored as JSONB for flexibility)
-    old_value: Mapped[dict | None] = mapped_column(
+    old_value: Mapped[dict[str, Any] | None] = mapped_column(
         JSONBCompat,
         nullable=True,
     )
-    new_value: Mapped[dict | None] = mapped_column(
+    new_value: Mapped[dict[str, Any] | None] = mapped_column(
         JSONBCompat,
         nullable=True,
     )
 
     # Additional context
-    extra_data: Mapped[dict | None] = mapped_column(
+    extra_data: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata",  # Column name in DB
         JSONBCompat,
         nullable=True,

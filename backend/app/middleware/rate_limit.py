@@ -11,6 +11,7 @@ different limits per endpoint, user tier, and API key.
 import ipaddress
 import time
 from collections.abc import Callable
+from typing import Any
 
 from fastapi import HTTPException, status
 from starlette.requests import Request
@@ -67,7 +68,7 @@ class InMemoryRateLimiter:
     Not suitable for production with multiple instances.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._requests: dict[str, list[float]] = {}
         self._last_cleanup: float = time.time()
         self._cleanup_interval: int = _CLEANUP_INTERVAL_SECONDS
@@ -135,7 +136,7 @@ class RedisRateLimiter:
     Suitable for distributed deployments.
     """
 
-    def __init__(self, redis_client):
+    def __init__(self, redis_client: Any) -> None:
         self.redis = redis_client
 
     async def is_allowed(
@@ -422,7 +423,7 @@ def rate_limit(
     limit: int = 100,
     window_seconds: int = 60,
     key_func: Callable[[Request], str] | None = None,
-):
+) -> Callable[..., Any]:
     """
     Decorator for applying custom rate limits to specific endpoints.
 
@@ -438,11 +439,11 @@ def rate_limit(
         key_func: Custom function to generate rate limit key
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         from functools import wraps
 
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Get request from args/kwargs
             request = None
             for arg in args:

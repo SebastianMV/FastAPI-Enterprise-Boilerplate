@@ -32,7 +32,7 @@ La release v1.0.0 se considera **Go** cuando se cumpla todo lo siguiente:
 
 ## 2) Brechas actuales (baseline)
 
-- Frontend coverage aproximada: **~32% statements**.
+- Frontend coverage final Semana 2: **72.43% statements** (2026-02-18).
 - MyPy backend: **deuda pendiente** (actualmente no bloqueante en CI).
 - Backend E2E: cobertura parcial en flujos críticos.
 - Inconsistencias documentales históricas entre estado, agentes y roadmap.
@@ -58,7 +58,7 @@ La release v1.0.0 se considera **Go** cuando se cumpla todo lo siguiente:
 
 ## Semana 2 — Cobertura frontend (P0)
 
-**Objetivo:** subir cobertura de ~32% a >=42% con foco en riesgo.
+**Objetivo:** consolidar cobertura >=60% y mejorar ramas/hotspots con foco en riesgo.
 
 - Priorizar tests en páginas y servicios críticos:
   - auth/login/refresh/logout
@@ -69,8 +69,15 @@ La release v1.0.0 se considera **Go** cuando se cumpla todo lo siguiente:
 
 **Entregables:**
 
-- +10 puntos de coverage statements.
-- Reporte de áreas cubiertas por riesgo.
+- Cobertura statements mantenida >=60%.
+- +3 puntos o más en branch coverage global.
+- Reducción de warnings `act(...)` en tests priorizados.
+
+**Estado (2026-02-18): ✅ Completada**
+
+- Frontend coverage final: **72.43% statements**, **65.06% branches**, **69.01% functions**, **74.11% lines**.
+- Resultado de tests frontend: **598 passing** en **55 archivos**.
+- Bloques ejecutados: **A/B/C/D** completos con expansión de pruebas en servicios y páginas críticas.
 
 ## Semana 3 — MyPy + E2E críticos (P0)
 
@@ -89,6 +96,13 @@ La release v1.0.0 se considera **Go** cuando se cumpla todo lo siguiente:
 - Deuda MyPy bajo umbral acordado o 0 errores.
 - Suite E2E crítica ejecutándose estable en CI.
 
+**Estado (2026-02-19): ✅ Completada**
+
+- MyPy Week 3 (tranche 2): **225** errores (baseline: **282**, delta **-57**, sin regresión).
+- Mejora en `app/infrastructure`: **194 -> 138**.
+- Subset E2E crítico: **8/8 passing** en entorno local (revalidado post-fixes).
+- Ajuste de estabilidad aplicado en test de registro para contrato `AuthResponse` con `tokens` opcional.
+
 ## Semana 4 — Hardening de release
 
 **Objetivo:** validar readiness de producción y cerrar pendientes.
@@ -102,6 +116,17 @@ La release v1.0.0 se considera **Go** cuando se cumpla todo lo siguiente:
 
 - Release Candidate v1.0.0-rc.
 - Go/No-Go final documentado.
+
+**Estado (2026-02-19): 🟡 En progreso**
+
+- Validación de gates completada: CI mantiene checks críticos de seguridad/calidad en modo bloqueante.
+- Hardening infra reforzado: `AUTH_COOKIE_SECURE` ahora exige `${...:?must be set}` en staging/prod.
+- Política final de gate MyPy aplicada en CI: no-regresión vs baseline + cap absoluto (`max-total=225`).
+- Rehearsal staging ejecutado con rollback validado, pero con blocker operativo en runtime de `db/redis`.
+- Pendientes para cierre de semana:
+   - resolver conflicto runtime `no-new-privileges`/entrypoint en `db/redis`
+   - repetir rehearsal completo (deploy + migración + smoke + rollback)
+   - acta Go/No-Go final
 
 ---
 
@@ -122,7 +147,7 @@ La release v1.0.0 se considera **Go** cuando se cumpla todo lo siguiente:
 
 ## P2 (post v1.0.0)
 
-- Expansión de cobertura frontend >60%.
+- Expansión de cobertura frontend >75% con foco en branches de páginas secundarias.
 - Más E2E en casos no críticos.
 - Optimización de performance en rutas secundarias.
 

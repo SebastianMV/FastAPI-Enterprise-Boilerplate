@@ -41,7 +41,7 @@ services:
       - REFRESH_TOKEN_EXPIRE_DAYS=7
       - ENVIRONMENT=production
       - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL must be set}
-      - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-true}
+      - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:?AUTH_COOKIE_SECURE must be set}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY must be set}
       - RATE_LIMIT_ENABLED=true
       - CSRF_ENABLED=true
@@ -82,14 +82,8 @@ services:
     networks:
       - boilerplate-frontend
       - boilerplate-backend
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 1G
-        reservations:
-          cpus: "0.5"
-          memory: 256M
+    cpus: 2
+    mem_limit: 1g
 
   # ===========================================
   # Frontend (Nginx - Production)
@@ -138,11 +132,8 @@ services:
         max-file: "5"
     networks:
       - boilerplate-frontend
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
+    cpus: 0.5
+    mem_limit: 256m
 
   # ===========================================
   # PostgreSQL Database
@@ -152,10 +143,7 @@ services:
     container_name: boilerplate-db
     restart: unless-stopped
     stop_grace_period: 30s
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    user: "999:999" # postgres uid/gid in alpine image — pre-start as non-root; no privilege switch needed
     pids_limit: 200
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
@@ -177,11 +165,8 @@ services:
         max-file: "5"
     networks:
       - boilerplate-backend
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 1G
+    cpus: 1
+    mem_limit: 1g
 
   # ===========================================
   # Redis Cache
@@ -191,10 +176,7 @@ services:
     container_name: boilerplate-redis
     restart: unless-stopped
     stop_grace_period: 30s
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    user: "999:1000" # redis uid/gid in alpine image — pre-start as non-root; no privilege switch needed
     pids_limit: 100
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     volumes:
@@ -215,11 +197,8 @@ services:
         max-file: "5"
     networks:
       - boilerplate-backend
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
+    cpus: 0.5
+    mem_limit: 512m
 
 networks:
   boilerplate-frontend:

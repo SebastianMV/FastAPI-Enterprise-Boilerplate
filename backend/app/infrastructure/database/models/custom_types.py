@@ -8,6 +8,7 @@ These types ensure models work with both PostgreSQL (production) and SQLite (tes
 """
 
 import json
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import String, Text, TypeDecorator
@@ -15,7 +16,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 
 
-class JSONEncodedList(TypeDecorator):
+class JSONEncodedList(TypeDecorator[list[Any]]):
     """
     Type decorator that stores list as JSON for SQLite compatibility.
 
@@ -25,13 +26,13 @@ class JSONEncodedList(TypeDecorator):
     impl = Text
     cache_ok = True
 
-    def load_dialect_impl(self, dialect):
+    def load_dialect_impl(self, dialect: Any) -> Any:
         """Load appropriate type based on dialect."""
         if dialect.name == "postgresql":
             return dialect.type_descriptor(ARRAY(String(100)))
         return dialect.type_descriptor(Text())
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value: list[Any] | None, dialect: Any) -> Any:
         """Convert Python list to storage format."""
         if value is None:
             return value
@@ -40,7 +41,7 @@ class JSONEncodedList(TypeDecorator):
         # For SQLite/others, encode as JSON
         return json.dumps(value)
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: Any, dialect: Any) -> list[Any]:
         """Convert storage format to Python list."""
         if value is None:
             return []
@@ -50,7 +51,7 @@ class JSONEncodedList(TypeDecorator):
         return json.loads(value) if value else []
 
 
-class JSONEncodedUUIDList(TypeDecorator):
+class JSONEncodedUUIDList(TypeDecorator[list[UUID]]):
     """
     Type decorator that stores list of UUIDs as JSON for SQLite compatibility.
 
@@ -60,13 +61,13 @@ class JSONEncodedUUIDList(TypeDecorator):
     impl = Text
     cache_ok = True
 
-    def load_dialect_impl(self, dialect):
+    def load_dialect_impl(self, dialect: Any) -> Any:
         """Load appropriate type based on dialect."""
         if dialect.name == "postgresql":
             return dialect.type_descriptor(ARRAY(PgUUID(as_uuid=True)))
         return dialect.type_descriptor(Text())
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value: list[UUID] | None, dialect: Any) -> Any:
         """Convert Python list of UUIDs to storage format."""
         if value is None:
             return value
@@ -75,7 +76,7 @@ class JSONEncodedUUIDList(TypeDecorator):
         # For SQLite/others, encode as JSON (convert UUIDs to strings)
         return json.dumps([str(uuid) for uuid in value])
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: Any, dialect: Any) -> list[UUID]:
         """Convert storage format to Python list of UUIDs."""
         if value is None:
             return []
@@ -86,7 +87,7 @@ class JSONEncodedUUIDList(TypeDecorator):
         return [UUID(s) for s in uuid_strings]
 
 
-class JSONBCompat(TypeDecorator):
+class JSONBCompat(TypeDecorator[dict[str, Any]]):
     """
     Type decorator for JSONB that's SQLite compatible.
 
@@ -96,13 +97,13 @@ class JSONBCompat(TypeDecorator):
     impl = Text
     cache_ok = True
 
-    def load_dialect_impl(self, dialect):
+    def load_dialect_impl(self, dialect: Any) -> Any:
         """Load appropriate type based on dialect."""
         if dialect.name == "postgresql":
             return dialect.type_descriptor(JSONB())
         return dialect.type_descriptor(Text())
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value: dict[str, Any] | None, dialect: Any) -> Any:
         """Convert Python dict to storage format."""
         if value is None:
             return value
@@ -111,7 +112,7 @@ class JSONBCompat(TypeDecorator):
         # For SQLite/others, encode as JSON
         return json.dumps(value)
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: Any, dialect: Any) -> dict[str, Any]:
         """Convert storage format to Python dict."""
         if value is None:
             return {}

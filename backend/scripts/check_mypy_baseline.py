@@ -13,20 +13,35 @@ def normalize_path(raw_path: str) -> str:
     return raw_path.replace("\\", "/").strip()
 
 
+def read_report_content(report_path: Path) -> str:
+    raw = report_path.read_bytes()
+    for encoding in ("utf-8-sig", "utf-16", "utf-16-le", "utf-16-be"):
+        try:
+            content = raw.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        content = raw.decode("utf-8", errors="replace")
+
+    return content.replace("\x00", "")
+
+
 def module_from_path(file_path: str) -> str:
     normalized = normalize_path(file_path)
     parts = normalized.split("/")
-    if len(parts) >= 2 and parts[0] == "app":
+    if len(parts) >= 3 and parts[0] == "app":
         return f"app/{parts[1]}"
     if normalized.startswith("app"):
-        return "app"
+        return "app/root"
     return "other"
 
 
 def parse_report(report_content: str) -> Counter[str]:
     counts: Counter[str] = Counter()
     for line in report_content.splitlines():
-        match = ERROR_LINE_PATTERN.match(line)
+        cleaned_line = line.strip().lstrip("\ufeff\ufffd")
+        match = ERROR_LINE_PATTERN.match(cleaned_line)
         if match is None:
             continue
         module_name = module_from_path(match.group("path"))
@@ -48,6 +63,12 @@ def main() -> int:
         default="mypy-report.txt",
         help="Path to current mypy report file",
     )
+    parser.add_argument(
+        "--max-total",
+        type=int,
+        default=None,
+        help="Optional absolute ceiling for total MyPy errors",
+    )
     args = parser.parse_args()
 
     baseline_path = Path(args.baseline)
@@ -65,7 +86,7 @@ def main() -> int:
     }
     baseline_total = int(baseline_data.get("total_errors", 0))
 
-    report_content = report_path.read_text(encoding="utf-8", errors="replace")
+    report_content = read_report_content(report_path)
     current_counts = parse_report(report_content)
     current_total = int(sum(current_counts.values()))
 
@@ -105,6 +126,12 @@ def main() -> int:
 
     if regressions or total_delta > 0:
         print("❌ MyPy debt increased vs baseline. Failing check.")
+        return 1
+
+    if args.max_total is not None and current_total > args.max_total:
+        print(
+            f"❌ MyPy total exceeds absolute cap: {current_total} > {args.max_total}."
+        )
         return 1
 
     print("✅ MyPy debt did not increase vs baseline.")

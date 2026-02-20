@@ -28,7 +28,7 @@ class Base(DeclarativeBase):
 
 
 # Build connect_args with optional SSL
-_connect_args: dict = {}
+_connect_args: dict[str, object] = {}
 if settings.DB_SSL_REQUIRED:
     import ssl as _ssl
 
@@ -185,6 +185,12 @@ async def init_database() -> None:
     backend_dir = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     )
+    process_env = os.environ.copy()
+    existing_pythonpath = process_env.get("PYTHONPATH", "")
+    if existing_pythonpath:
+        process_env["PYTHONPATH"] = f"{backend_dir}{os.pathsep}{existing_pythonpath}"
+    else:
+        process_env["PYTHONPATH"] = backend_dir
 
     try:
         # Run alembic upgrade head (non-blocking)
@@ -193,6 +199,7 @@ async def init_database() -> None:
             "upgrade",
             "head",
             cwd=backend_dir,
+            env=process_env,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )

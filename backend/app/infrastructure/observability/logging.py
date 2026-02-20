@@ -11,8 +11,10 @@ context enrichment, and multiple output handlers.
 import json
 import logging
 import sys
+from collections.abc import MutableMapping
 from contextvars import ContextVar
 from datetime import UTC, datetime
+from typing import Any
 
 from app.config import settings
 
@@ -54,7 +56,7 @@ class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON."""
         # Base log structure
-        log_data = {
+        log_data: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
@@ -159,7 +161,7 @@ class ConsoleFormatter(logging.Formatter):
         return message
 
 
-class ContextLogger(logging.LoggerAdapter):
+class ContextLogger(logging.LoggerAdapter[logging.Logger]):
     """
     Logger adapter that adds extra context to all log messages.
 
@@ -176,7 +178,9 @@ class ContextLogger(logging.LoggerAdapter):
     # kwargs that logging.Logger._log() natively accepts
     _LOGGING_KWARGS = frozenset({"exc_info", "extra", "stack_info", "stacklevel"})
 
-    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
+    def process(
+        self, msg: str, kwargs: MutableMapping[str, Any]
+    ) -> tuple[str, MutableMapping[str, Any]]:
         """Process log message and add extra context."""
         extra = kwargs.get("extra", {})
 

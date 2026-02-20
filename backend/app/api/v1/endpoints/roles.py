@@ -92,7 +92,7 @@ async def list_roles(
             detail={"code": "NO_TENANT", "message": "Tenant context required"},
         )
 
-    roles = await repo.list(tenant_id=tenant_id, skip=skip, limit=limit)
+    roles = await repo.list_roles(tenant_id=tenant_id, skip=skip, limit=limit)
     total = await repo.count(tenant_id=tenant_id)
 
     return RoleListResponse(

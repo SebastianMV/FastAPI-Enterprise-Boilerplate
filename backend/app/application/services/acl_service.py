@@ -229,7 +229,7 @@ def create_default_roles(tenant_id: UUID) -> list[Role]:
             id=uuid4(),
             tenant_id=tenant_id,
             name=role_name,
-            description=config["description"],
+            description=str(config["description"]),
             permissions=permissions,
             is_system=True,
         )
