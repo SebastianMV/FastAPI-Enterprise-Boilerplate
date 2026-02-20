@@ -5,7 +5,7 @@ import json
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 issues: list[dict] = []
 
 
@@ -25,7 +25,7 @@ def add_issue(
 
 
 # ============================================================
-# 1) BACKEND/FRONTEND scan (reuse baseline from audit38)
+# 1) BACKEND/FRONTEND scan
 # ============================================================
 route_methods = {"get", "post", "put", "patch", "delete", "options", "head"}
 endpoint_dir = ROOT / "backend" / "app" / "api" / "v1" / "endpoints"
@@ -345,7 +345,7 @@ for ts_file in sorted(frontend_src.rglob("*.ts*")):
 
 
 # ============================================================
-# 2) INFRASTRUCTURE scan (NEW in audit39)
+# 2) INFRASTRUCTURE scan
 # ============================================================
 infra_files: list[Path] = []
 infra_files.extend(sorted(ROOT.glob("docker-compose*.yml")))
@@ -361,7 +361,6 @@ for p in [
     if p.exists():
         infra_files.append(p)
 
-# compose + docker hardening patterns
 re_image = re.compile(r"^\s*image:\s*([^\s#]+)")
 re_unpinned_image = re.compile(r"^\s*image:\s*[^\s#]+:(latest|\d+(?:\.\d+)?)(\s|$)")
 re_secrets_default = re.compile(r"\$\{([^}:]+):-([^}]+)\}")
@@ -380,7 +379,6 @@ for file_path in infra_files:
     text = file_path.read_text(encoding="utf-8")
     lines = text.splitlines()
 
-    # Global scans by line
     for i, line in enumerate(lines, start=1):
         if re_unpinned_image.search(line):
             add_issue(
@@ -453,12 +451,10 @@ for file_path in infra_files:
                     line,
                 )
 
-    # Compose block-level checks for security_opt/cap_drop
     if file_path.name.startswith("docker-compose"):
         has_no_new_priv = "no-new-privileges:true" in text
         has_cap_drop = "cap_drop:" in text and "- ALL" in text
 
-        # only enforce for staging/prod per project rules
         if file_path.name in {"docker-compose.staging.yml", "docker-compose.prod.yml"}:
             if not has_no_new_priv:
                 add_issue(
@@ -479,7 +475,6 @@ for file_path in infra_files:
                     "cap_drop",
                 )
 
-            # If any secret interpolation exists but no required-form interpolation appears, flag weak posture
             if "${" in text and not re_secrets_required.search(text):
                 add_issue(
                     8,
@@ -492,7 +487,7 @@ for file_path in infra_files:
 
 
 # ============================================================
-# 3) dedupe + output
+# 3) Dedupe + output
 # ============================================================
 unique: dict[tuple, dict] = {}
 for it in issues:

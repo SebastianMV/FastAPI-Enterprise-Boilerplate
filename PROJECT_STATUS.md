@@ -1,8 +1,8 @@
 ﻿# Project Status & Roadmap
 
 **Version:** v0.9.5
-**Date:** February 19, 2026
-**Status:** Beta feature-complete, 41 security audit cycles passed
+**Date:** February 20, 2026
+**Status:** Beta feature-complete, 43 security audit cycles passed
 
 ---
 
@@ -28,7 +28,7 @@ with 568 tests passing (statement coverage ~32%, CI threshold 30%, v1.0.0 target
 | Type Errors (TypeScript)  | 0                                    | OK      |
 | Docker Services           | 4/4 healthy                          | OK      |
 | Alembic Migrations        | 12 applied                           | OK      |
-| Security Audits Passed    | 41 cycles (Audit 42 scanner configured) | OK  |
+| Security Audits Passed    | 43 cycles (0 open critical/high issues) | OK  |
 
 ---
 
@@ -123,16 +123,16 @@ pids_limit, and pinned image tags.
 | v0.9.3 -- Backend Hardening                  | Done                        |
 | v0.9.4 -- DevOps & CI                        | Done                        |
 | v0.9.5 -- Security Audit Cycle (22 audits)              | Done        |
-| Post-v0.9.5 -- Security Audit Cycles N°36-38            | Done        |
-| Post-v0.9.5 -- Security Audit Cycles N°39-41 (0 issues) | Done        |
-| Post-v0.9.5 -- Audit N°42 scanner configured            | In progress |
+| Post-v0.9.5 -- Security Audit Cycles N°36-41 (backend, frontend, infra) | Done |
+| Post-v0.9.5 -- Security Audit N°42 (Semgrep + AST scan)                | Done |
+| Post-v0.9.5 -- Security Audit N°43 (manual, 2 issues fixed)            | Done |
 
 ### v1.0.0 -- Production Release
 
 | Prerequisite                               | Status         |
 | ------------------------------------------ | -------------- |
 | All severity >= 5 items resolved           | Done           |
-| 41 security audit cycles passed (0 open issues since N°39) | Done |
+| 43 security audit cycles passed (0 open critical/high since N°39) | Done |
 | Frontend tests >= 50% coverage             | Pending (~32%) |
 | All i18n locales >= 95%                    | Done           |
 | Container hardening (non-root, caps, pids) | Done           |
@@ -177,15 +177,22 @@ Change these in production.
 
 ## Documentation
 
-| Document                             | Description                                    |
-| ------------------------------------ | ---------------------------------------------- |
-| README.md                            | Quick start guide                              |
-| CHANGELOG.md                         | Version history                                |
-| CONTRIBUTING.md                      | Contribution guidelines                        |
-| MAKEFILE.md                          | Make / PowerShell commands                     |
-| docs/ROADMAP_1_0_OPERATIONAL_PLAN.md | Plan operativo hacia v1.0.0                    |
-| docs/WEEK1_RELEASE_ALIGNMENT.md      | Acta operativa de Semana 1 (release alignment) |
-| docs/                                | Full technical documentation (16 docs)         |
+Documentation is consolidated in [docs/README.md](docs/README.md) as the canonical index.
+
+Primary project documents:
+
+- [README.md](README.md) — Quick start and overview
+- [CHANGELOG.md](CHANGELOG.md) — Version history
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guidelines
+- [MAKEFILE.md](MAKEFILE.md) — Make/PowerShell command reference
+- [SECURITY_AUDIT.md](SECURITY_AUDIT.md) — Latest security audit report (N°43)
+- [docs/ROADMAP_1_0_OPERATIONAL_PLAN.md](docs/ROADMAP_1_0_OPERATIONAL_PLAN.md) — v1.0.0 release plan
+
+Audit tools (static AST + Semgrep scan):
+
+- `backend/scripts/audit_scan.py` — canonical AST-based scanner
+- `backend/scripts/build_audit_tables.py` — Markdown report generator
+- `.semgrep/` — custom Semgrep YAML rules
 
 ---
 

@@ -47,9 +47,18 @@
 - [ ] Migrar `report_templates` y `scheduled_reports` de in-memory a storage persistente (base de datos) para uso en producción.
 - [ ] Agregar resolución DNS en tiempo de validación en `_validate_webhook_url` para mitigar DNS rebinding / SSRF completo (actualmente bloqueado por `_check_demo_mode()` en prod/staging).
 
-### Ejecución recomendada (aislada)
+### Ejecución recomendada (AST scan canónico)
 
 ```powershell
+# Run static AST scan (outputs issues_full.json + issues_summary.json in backend/scripts/)
+python backend/scripts/audit_scan.py
+
+# Generate Markdown report tables from scan output
+python backend/scripts/build_audit_tables.py "N43"
+```
+
+```powershell
+# Semgrep scan (aislado)
 pwsh -File backend/scripts/run_semgrep_isolated.ps1
 ```
 

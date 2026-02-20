@@ -9,20 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Audit cycles N°36, N°37 and N°38 completed (backend + frontend scope, excluding infrastructure)
-- Resolved tenant isolation gaps in search admin endpoints by enforcing `CurrentTenantId` in `create_index` and `delete_index`
-- Hardened OAuth callback redirect validation to require valid `http/https` scheme plus exact allowlisted origin match
-- Updated static audit scanner rules to reduce false positives (superuser dependency recognition, context-aware redirect checks, DEV-guarded console detection)
-
-### Changed
-
-- Kept reusable audit tooling and machine-readable outputs under `audit36_static/`, `audit37_static/`, and `audit38_static/`
-- Removed obsolete markdown report artifacts from Audit36 to reduce repository noise while preserving executable scanners
+- Audit N°39–N°41 completed (backend + frontend + infrastructure scope) — 0 new issues each
+- Audit N°42: Semgrep isolated run + AST scan — 0 new critical/high issues
+- Audit N°43 (2026-02-20): 2 issues found and fixed (M-01 Stored XSS in `report_templates.py`; L-01 file-type detection by extension in `data_exchange.py`)
 
 ### Maintenance
 
-- Cleaned temporary local debugging artifacts generated during Python/SQLAlchemy diagnostics
-- Added `.gitignore` rules for backend diagnostic scripts/logs to keep future commits clean
+- Consolidated static audit tooling: canonical scanner moved to `backend/scripts/audit_scan.py` (was `auditNN_static/auditNN_scan.py`)
+- Added `backend/scripts/build_audit_tables.py` as generic Markdown report generator (replaces per-audit `build_tables.py` copies)
+- Removed historical `audit36_static/` through `audit42_static/` directories — all had empty result JSONs (2 bytes) and are superseded by the canonical scripts
+- Added `.gitignore` rules for `audit*_static/`, `semgrep_results*.json`, and generated audit report tables so future scan outputs never land in the repo
+- Updated `PROJECT_STATUS.md`: audit count corrected to 43, audit tooling section added
 
 ## [0.9.5] - 2026-02-11
 
