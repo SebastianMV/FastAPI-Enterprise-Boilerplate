@@ -10,7 +10,7 @@
 | Campo         | Valor                                                                                                             |
 | ------------- | ----------------------------------------------------------------------------------------------------------------- |
 | **Nombre**    | FastAPI-Enterprise-Boilerplate                                                                                    |
-| **Versión**   | v0.9.0 (Feb 2026) — SemVer estricto                                                                               |
+| **Versión**   | v0.9.5 (Feb 2026, 43 audit cycles) — SemVer estricto                                                              |
 | **Autor**     | Sebastián Muñoz                                                                                                   |
 | **Licencia**  | MIT                                                                                                               |
 | **Estado**    | 🔶 Beta — core feature-complete, hardening en progreso                                                            |
@@ -836,3 +836,30 @@ _Última actualización: 2026-02-16 por GitHub Copilot (Claude Opus 4.6) — Aud
 - ✅ Semgrep movido a entorno dedicado `.venv-semgrep` para evitar conflictos con la `.venv` de backend.
 - ✅ Runner reproducible agregado: `backend/scripts/run_semgrep_isolated.ps1`.
 - ✅ `.gitignore` actualizado para excluir `.venv-semgrep/`.
+
+---
+
+## Auditoría 43 — Manual Security Audit (2026-02-20)
+
+**Alcance:** 19 endpoints, 3 middlewares, 2 servicios de infra, 1 config.
+**Nuevos hallazgos:** 2 (1 medio, 1 bajo) — ambos corregidos.
+
+993. ✅ M-01 (sev5-6, CWE-79): `report_templates.py` — `create_schedule` y `update_schedule`: se aplica `html.escape()` a `name` y `description` (XSS almacenado).
+994. ✅ L-01 (sev3-4, CWE-434): `data_exchange.py` — `import_data`: detección de tipo de archivo por magic bytes (8 bytes) además de extensión; `.lower()` en `endswith()`; HTTP 400 `FILE_TYPE_MISMATCH` si extensión y contenido no coinciden.
+
+**Regresiones:** 0. **Estado:** ✅ LIMPIO.
+
+---
+
+## Consolidación de Documentación y Limpieza de Artefactos (2026-02-20)
+
+- ✅ Eliminados `audit36_static/` a `audit42_static/` del repositorio — directorios de artefactos históricos con JSONs vacíos (2 bytes) y scripts per-audit sin vigencia.
+- ✅ Script canónico de auditoría AST consolidado en `backend/scripts/audit_scan.py` (migrado desde `audit42_static/audit42_scan.py`, ROOT actualizado de `parents[1]` a `parents[2]`).
+- ✅ Generador de tablas Markdown consolidado en `backend/scripts/build_audit_tables.py` (genérico, sin número de auditoría hardcodeado, acepta `label` como argumento CLI).
+- ✅ `.gitignore` actualizado: añadidos `audit*_static/`, `semgrep_results*.json`, outputs de `audit_scan.py` en `backend/scripts/`.
+- ✅ `PROJECT_STATUS.md` actualizado: conteo de auditorías corregido a 43, sección de herramientas de auditoría añadida.
+- ✅ `CHANGELOG.md` [Unreleased] — reemplazado contenido de auditorías N°36-38 estático por estado real N°39-43.
+- ✅ `SECURITY_AUDIT.md` — sección de ejecución actualizada para apuntar a `backend/scripts/audit_scan.py`.
+- ✅ `backend/scripts/README.md` — documentados `audit_scan.py`, `build_audit_tables.py`, `run_semgrep_isolated.ps1`.
+
+_Última actualización: 2026-02-20 por GitHub Copilot (Claude Sonnet 4.6) — Auditoría 43 + consolidación de documentación_

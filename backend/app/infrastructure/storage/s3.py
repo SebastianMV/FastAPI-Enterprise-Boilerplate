@@ -240,7 +240,7 @@ class S3StorageAdapter(StoragePort):
             )
             raise
 
-    async def download_stream(self, path: str) -> AsyncIterator[bytes]:
+    async def download_stream(self, path: str) -> AsyncIterator[bytes]:  # type: ignore[override]
         """Download a file as a stream."""
         loop = asyncio.get_running_loop()
         try:

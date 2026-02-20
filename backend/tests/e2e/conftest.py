@@ -95,7 +95,7 @@ async def admin_headers(client: AsyncClient) -> dict:
         "/api/v1/auth/login",
         data={
             "username": "admin@example.com",
-            "password": "AdminPassword123!",
+            "password": "Admin123!",
         },
     )
 
@@ -112,8 +112,8 @@ async def superuser_headers(client: AsyncClient) -> dict:
     response = await client.post(
         "/api/v1/auth/login",
         data={
-            "username": "superuser@example.com",
-            "password": "SuperuserPassword123!",
+            "username": "admin@example.com",
+            "password": "Admin123!",
         },
     )
 

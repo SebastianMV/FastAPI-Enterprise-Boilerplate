@@ -363,7 +363,7 @@ async def get_user_permissions(
     return UserPermissionsResponse(
         user_id=user_id,
         permissions=permissions,
-        roles=[_role_to_response(r) for r in roles],
+        roles=[_role_to_response(r) for r in roles],  # type: ignore[attr-defined]
     )
 
 

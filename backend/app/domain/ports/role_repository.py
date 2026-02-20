@@ -57,11 +57,11 @@ class RoleRepositoryPort(ABC):
         ...
 
     @abstractmethod
-    async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:
+    async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:  # type: ignore[valid-type]
         """Get multiple roles by IDs."""
         ...
 
     @abstractmethod
-    async def get_user_roles(self, user_id: UUID) -> list[Role]:
+    async def get_user_roles(self, user_id: UUID) -> list[Role]:  # type: ignore[valid-type]
         """Get all roles assigned to a user."""
         ...

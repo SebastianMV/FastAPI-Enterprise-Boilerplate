@@ -15,9 +15,7 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 
-pytestmark = pytest.mark.skip(
-    reason="E2E WebSocket tests require WebSocket client support"
-)
+pytestmark = pytest.mark.e2e
 
 
 class TestWebSocketConnectionE2E:

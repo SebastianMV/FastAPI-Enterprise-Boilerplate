@@ -13,7 +13,7 @@ They are marked as skip until the implementation is complete.
 import pytest
 from httpx import AsyncClient
 
-pytestmark = pytest.mark.skip(reason="E2E tests require full endpoint implementation")
+pytestmark = pytest.mark.e2e
 
 
 class TestAuthenticationE2E:

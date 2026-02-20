@@ -404,6 +404,7 @@ class GenericReporter(ReportPort):
 
         workbook = openpyxl.Workbook()
         sheet = workbook.active
+        assert sheet is not None
         sheet.title = "Datos"
 
         # Get fields
@@ -725,7 +726,7 @@ class GenericReporter(ReportPort):
         """
         # Try weasyprint
         try:
-            from weasyprint import HTML  # pyright: ignore[reportMissingImports]
+            from weasyprint import HTML  # type: ignore[import-untyped]
 
             return HTML(string=html_content.decode("utf-8")).write_pdf()  # type: ignore[no-any-return]
         except ImportError:

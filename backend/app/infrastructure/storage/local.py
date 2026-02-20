@@ -164,7 +164,7 @@ class LocalStorageAdapter(StoragePort):
             data = await f.read()
             return bytes(data)
 
-    async def download_stream(self, path: str) -> AsyncIterator[bytes]:
+    async def download_stream(self, path: str) -> AsyncIterator[bytes]:  # type: ignore[override]
         """Download a file as a stream."""
         full_path = self._get_full_path(path)
 
