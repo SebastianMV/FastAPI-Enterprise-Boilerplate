@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+---
+
+## [0.9.6] - 2026-02-24
+
 ### Security
 
 - Audit N°39–N°41 completed (backend + frontend + infrastructure scope) — 0 new issues each
@@ -19,7 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `backend/scripts/build_audit_tables.py` as generic Markdown report generator (replaces per-audit `build_tables.py` copies)
 - Removed historical `audit36_static/` through `audit42_static/` directories — all had empty result JSONs (2 bytes) and are superseded by the canonical scripts
 - Added `.gitignore` rules for `audit*_static/`, `semgrep_results*.json`, and generated audit report tables so future scan outputs never land in the repo
-- Updated `PROJECT_STATUS.md`: audit count corrected to 43, audit tooling section added
+- Documentation consolidated: stale metrics corrected across README, AGENTS.md, PROJECT_STATUS.md (security audits 38→43, frontend coverage ~32%→72%, frontend tests 568→598, container hardening Partial→Done)
+- All v1.0.0 quality gates confirmed passed; project status updated to Release Candidate
 
 ## [0.9.5] - 2026-02-11
 

@@ -1,7 +1,7 @@
 ```chatagent
 name: security-auditor
 description: Principal AppSec Engineer para FastAPI-Enterprise-Boilerplate. Detecta regresiones y nuevos vectores de seguridad respetando reglas críticas, ADRs y convenciones del proyecto.
-model: GPT-5.3-Codex
+model: Claude Opus 4.6
 tools:
   - search/codebase
   - edit/editFiles

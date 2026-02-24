@@ -28,7 +28,7 @@ jobs:
   # ===========================================
   backend-test:
     name: Backend Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
@@ -134,7 +134,7 @@ jobs:
   # ===========================================
   backend-full-suite-report:
     name: Backend Full Suite Report (Non-blocking)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     permissions:
       contents: read
@@ -239,7 +239,7 @@ jobs:
   # ===========================================
   frontend-test:
     name: Frontend Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
@@ -285,7 +285,7 @@ jobs:
   # ===========================================
   security:
     name: Security Scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
@@ -329,7 +329,7 @@ jobs:
   # f-strings in logger, tokens in localStorage, ungated console.error, etc.
   sast:
     name: SAST (Semgrep Custom Rules)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
@@ -386,7 +386,7 @@ jobs:
   # Agents: .github/agents/quality-guardian.agent.md
   quality-guardian:
     name: Quality Guardian
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
 
@@ -559,7 +559,7 @@ jobs:
   # ===========================================
   build:
     name: Build Docker Images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [backend-test, frontend-test, security, sast, quality-guardian]
 
     steps:

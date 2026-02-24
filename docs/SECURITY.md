@@ -1,6 +1,6 @@
 # Security Documentation
 
-**FastAPI Enterprise Boilerplate v0.9.0**  
+**FastAPI Enterprise Boilerplate v0.9.0**
 **Last Updated:** February 2026
 
 ---
@@ -20,18 +20,18 @@ This document provides comprehensive security documentation for the FastAPI Ente
 
 ### Security Status Summary
 
-| Category | Status | Notes |
-| --- | --- | --- |
-| Authentication | ✅ Secure | JWT + Refresh tokens |
-| Authorization | ✅ Secure | RBAC + Scopes |
-| Data Validation | ✅ Secure | Pydantic v2 |
-| SQL Injection | ✅ Protected | SQLAlchemy ORM |
-| XSS Prevention | ✅ Protected | Input validation |
-| CSRF Protection | ✅ Protected | SameSite cookies |
-| Rate Limiting | ✅ Implemented | Redis-based |
-| Multi-Tenant | ✅ Isolated | RLS policies |
-| Secrets Management | ✅ Secure | Environment variables |
-| Dependencies | ⚠️ Monitor | Regular updates needed |
+| Category           | Status         | Notes                  |
+| ------------------ | -------------- | ---------------------- |
+| Authentication     | ✅ Secure      | JWT + Refresh tokens   |
+| Authorization      | ✅ Secure      | RBAC + Scopes          |
+| Data Validation    | ✅ Secure      | Pydantic v2            |
+| SQL Injection      | ✅ Protected   | SQLAlchemy ORM         |
+| XSS Prevention     | ✅ Protected   | Input validation       |
+| CSRF Protection    | ✅ Protected   | SameSite cookies       |
+| Rate Limiting      | ✅ Implemented | Redis-based            |
+| Multi-Tenant       | ✅ Isolated    | RLS policies           |
+| Secrets Management | ✅ Secure      | Environment variables  |
+| Dependencies       | ⚠️ Monitor     | Regular updates needed |
 
 ---
 
@@ -103,11 +103,11 @@ Track and manage active login sessions across devices.
 
 #### API Endpoints
 
-| Method | Endpoint | Description |
-| ------ | -------- | ----------- |
-| GET | `/api/v1/sessions` | List all active sessions |
-| DELETE | `/api/v1/sessions/{id}` | Revoke a specific session |
-| DELETE | `/api/v1/sessions` | Revoke all sessions except current |
+| Method | Endpoint                | Description                        |
+| ------ | ----------------------- | ---------------------------------- |
+| GET    | `/api/v1/sessions`      | List all active sessions           |
+| DELETE | `/api/v1/sessions/{id}` | Revoke a specific session          |
+| DELETE | `/api/v1/sessions`      | Revoke all sessions except current |
 
 #### Example Response
 
@@ -160,11 +160,11 @@ EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS=24
 
 #### API Endpoints
 
-| Method | Endpoint | Description |
-| ------ | -------- | ----------- |
-| POST | `/api/v1/auth/send-verification` | Send/resend verification email |
-| POST | `/api/v1/auth/verify-email?token=xxx` | Verify email with token |
-| GET | `/api/v1/auth/verification-status` | Check verification status |
+| Method | Endpoint                              | Description                    |
+| ------ | ------------------------------------- | ------------------------------ |
+| POST   | `/api/v1/auth/send-verification`      | Send/resend verification email |
+| POST   | `/api/v1/auth/verify-email?token=xxx` | Verify email with token        |
+| GET    | `/api/v1/auth/verification-status`    | Check verification status      |
 
 #### UI Components
 
@@ -263,11 +263,11 @@ password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))
 
 **Default Roles:**
 
-| Role | Permissions |
-| --- | --- |
-| superuser | All permissions |
-| admin | Tenant management |
-| user | Read own data |
+| Role      | Permissions       |
+| --------- | ----------------- |
+| superuser | All permissions   |
+| admin     | Tenant management |
+| user      | Read own data     |
 
 #### 2.2 Resource Ownership
 
@@ -428,15 +428,15 @@ All dependencies pinned with minimum versions in `requirements.txt`.
 
 #### 8.1 Test Coverage
 
-| Test Category | Tests | Status |
-| --- | --- | --- |
-| Authentication | 8 | ✅ |
-| Authorization | 6 | ✅ |
-| Password Security | 4 | ✅ |
-| Injection Prevention | 4 | ✅ |
-| Rate Limiting | 3 | ✅ |
-| Multi-Tenant | 4 | ✅ |
-| API Keys | 5 | ✅ |
+| Test Category        | Tests | Status |
+| -------------------- | ----- | ------ |
+| Authentication       | 8     | ✅     |
+| Authorization        | 6     | ✅     |
+| Password Security    | 4     | ✅     |
+| Injection Prevention | 4     | ✅     |
+| Rate Limiting        | 3     | ✅     |
+| Multi-Tenant         | 4     | ✅     |
+| API Keys             | 5     | ✅     |
 
 #### 8.2 Running Security Tests
 
@@ -498,18 +498,97 @@ RATE_LIMIT_REQUESTS_PER_MINUTE=100
 
 ### OWASP Top 10 (2021) Compliance
 
-| Risk | Status | Implementation |
-| --- | --- | --- |
-| A01: Broken Access Control | ✅ Mitigated | RBAC, RLS |
-| A02: Cryptographic Failures | ✅ Mitigated | bcrypt, TLS |
-| A03: Injection | ✅ Mitigated | ORM, validation |
-| A04: Insecure Design | ✅ Mitigated | Secure defaults |
-| A05: Security Misconfiguration | ⚠️ User responsibility | Docs provided |
-| A06: Vulnerable Components | ⚠️ Monitor | Update regularly |
-| A07: Auth Failures | ✅ Mitigated | JWT, rate limiting |
-| A08: Data Integrity | ✅ Mitigated | Signed tokens |
-| A09: Logging Failures | ✅ Mitigated | Structured logging |
-| A10: SSRF | ✅ Mitigated | No external fetch |
+| Risk                           | Status                 | Implementation     |
+| ------------------------------ | ---------------------- | ------------------ |
+| A01: Broken Access Control     | ✅ Mitigated           | RBAC, RLS          |
+| A02: Cryptographic Failures    | ✅ Mitigated           | bcrypt, TLS        |
+| A03: Injection                 | ✅ Mitigated           | ORM, validation    |
+| A04: Insecure Design           | ✅ Mitigated           | Secure defaults    |
+| A05: Security Misconfiguration | ⚠️ User responsibility | Docs provided      |
+| A06: Vulnerable Components     | ⚠️ Monitor             | Update regularly   |
+| A07: Auth Failures             | ✅ Mitigated           | JWT, rate limiting |
+| A08: Data Integrity            | ✅ Mitigated           | Signed tokens      |
+| A09: Logging Failures          | ✅ Mitigated           | Structured logging |
+| A10: SSRF                      | ✅ Mitigated           | No external fetch  |
+
+---
+
+## Per-PR Security Checklist
+
+> **Codified from 43+ security audits (992+ issues resolved).**
+> Use this checklist when adding new features, endpoints, or pages.
+> Expanded examples: see [Quality Gates](./analisis_interno/QUALITY_GATES.md).
+
+### Backend — New API Endpoint
+
+- [ ] **Authorization**: Uses `require_permission("resource", "action")`, not just `CurrentUser`
+- [ ] **Tenant isolation**: Queries filter by `CurrentTenantId` (multi-tenant RLS)
+- [ ] **Error responses**: Generic messages only — never `str(e)` or f-strings with exceptions
+- [ ] **Logging**: Uses `get_logger()` from `app.infrastructure.logging`, not `import logging`
+- [ ] **Log format**: Structured kwargs `logger.info("event", key=val)` — never f-strings
+- [ ] **Input validation**: Pydantic schemas with `NameStr`, `ShortStr`, `TextStr` (never bare `str`)
+- [ ] **SQL safety**: Parameterized queries only — no f-strings in `text()` or `.execute()`
+- [ ] **LIKE wildcards**: `%`, `_`, `\` escaped with `ESCAPE '\\'` when using user input
+- [ ] **Rate limiting**: Sensitive endpoints (auth, password) have rate limits
+- [ ] **Pagination limits**: `Query(ge=1, le=100)` on limit parameters
+
+### Backend — Auth & Tokens
+
+- [ ] **Tokens in cookies**: Never return tokens in JSON response body
+- [ ] **Cookie flags**: `httponly=True, secure=True, samesite="lax"`
+- [ ] **Token comparison**: Uses `hmac.compare_digest()` for all token/CSRF/OTP comparisons
+- [ ] **Password changes**: Invalidate all sessions via `session_repo.revoke_all()`
+- [ ] **Refresh token**: Check JTI blacklist before issuing new tokens
+- [ ] **CSRF exempt**: Only specific callback URLs, never broad prefixes
+
+### Backend — Cryptographic & Async Safety
+
+- [ ] **hashlib.md5/sha1**: Always include `usedforsecurity=False` for non-security uses
+- [ ] **datetime**: Uses `datetime.now(UTC)`, never `datetime.utcnow()`
+- [ ] **Secrets encryption**: OAuth client_secret, MFA secret encrypted with `encrypt_value()`
+- [ ] **No blocking calls**: No `subprocess.run()`, `redis.Redis()` (sync), or `time.sleep()` in async code
+
+### Frontend — New Page/Component
+
+- [ ] **No `error.message`**: Never render `error.message` or `err.response.data.detail` to users
+- [ ] **i18n only**: All user-facing strings use `t('key')` — no hardcoded English
+- [ ] **Console gating**: `console.error/log/warn` gated behind `import.meta.env.DEV`
+- [ ] **Use axios**: Never use raw `fetch()` — use centralized `api.ts`
+- [ ] **No tokens in localStorage**: Auth tokens handled via HttpOnly cookies only
+- [ ] **AbortController**: `useEffect` with fetch calls uses `AbortController` for cleanup
+- [ ] **useCallback**: Wrap handlers passed as deps to `useEffect`
+- [ ] **URL params**: `encodeURIComponent(id)` in all API URL interpolations
+
+### Frontend — Accessibility
+
+- [ ] **aria-labels**: Uses `t()` i18n keys, not hardcoded English
+- [ ] **Interactive elements**: Clickable `<div>` has `role="button"`, `tabIndex={0}`, `onKeyDown`
+- [ ] **Password inputs**: Have `autoComplete` attribute
+- [ ] **Icon-only buttons**: Have `aria-label` with i18n key
+
+### Infrastructure — Docker & CI
+
+- [ ] **No hardcoded secrets**: Use `${VAR:?must be set}` in compose files
+- [ ] **Pinned images**: Specific version tags (e.g., `postgres:17.2-alpine`)
+- [ ] **Container hardening**: `security_opt: [no-new-privileges:true]`, `cap_drop: [ALL]`
+- [ ] **Ports**: Bind to `127.0.0.1` in dev, use `expose` instead of `ports` in prod
+- [ ] **CI actions**: Pinned to commit SHA with version comment
+- [ ] **Network segmentation**: Separate frontend/backend networks in prod/staging
+
+### Automated Enforcement
+
+| Pattern                    | Tool                          | Blocks PR? |
+| -------------------------- | ----------------------------- | ---------- |
+| `eval()`, `exec()`         | Semgrep + Bandit + Ruff S     | Yes        |
+| `str(e)` in HTTP response  | Semgrep                       | Yes        |
+| f-string in logger         | Semgrep + Ruff G              | Yes        |
+| `import logging` (direct)  | Semgrep                       | Warning    |
+| `datetime.utcnow()`        | Ruff DTZ                      | Yes        |
+| `console.error()` ungated  | ESLint no-console             | Warning    |
+| `error.message` in UI      | Semgrep                       | Yes        |
+| `localStorage` with tokens | Semgrep                       | Yes        |
+| Docker `:latest` tags      | Semgrep                       | Warning    |
+| Known CVEs                 | pip-audit + npm audit + Trivy | Yes        |
 
 ---
 
@@ -518,3 +597,5 @@ RATE_LIMIT_REQUESTS_PER_MINUTE=100
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment guide
 - [GETTING_STARTED.md](./GETTING_STARTED.md) - Setup and configuration
 - [API_REFERENCE.md](./API_REFERENCE.md) - API endpoints documentation
+- [Quality Gates](./analisis_interno/QUALITY_GATES.md) - Expanded ❌/✅ examples for each rule
+- [ADRs](./adr/) - Architecture Decision Records

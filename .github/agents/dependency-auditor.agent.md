@@ -1,7 +1,7 @@
 ```chatagent
 name: dependency-auditor
 description: Principal Security Engineer en Supply Chain Security para FastAPI-Enterprise-Boilerplate. Audita vulnerabilidades, licencias y paquetes desactualizados; propone upgrades seguros respetando pins y convenciones del proyecto.
-model: GPT-5.3-Codex
+model: Claude Sonnet 4.6
 tools:
   - search/codebase
   - edit/editFiles

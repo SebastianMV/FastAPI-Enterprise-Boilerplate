@@ -1,6 +1,6 @@
 # Frontend
 
-React 18.3.1 LTS + TypeScript + Tailwind CSS frontend for FastAPI Enterprise Boilerplate.
+React 19 + TypeScript + Tailwind CSS frontend for FastAPI Enterprise Boilerplate.
 
 ## Quick Start
 
@@ -55,25 +55,25 @@ src/
 
 ## Available Scripts
 
-| Command | Description |
-| ------- | ----------- |
-| `npm run dev` | Start development server on port 3000 |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run tests |
-| `npm run type-check` | TypeScript type checking |
+| Command              | Description                           |
+| -------------------- | ------------------------------------- |
+| `npm run dev`        | Start development server on port 3000 |
+| `npm run build`      | Build for production                  |
+| `npm run preview`    | Preview production build              |
+| `npm run lint`       | Run ESLint                            |
+| `npm run test`       | Run tests                             |
+| `npm run type-check` | TypeScript type checking              |
 
 ## Features
 
-- **React 19** - Latest React with concurrent features
-- **TypeScript** - Full type safety
+- **React 19** - Latest React with TypeScript
+- **TypeScript 5.7** - Full type safety
 - **Tailwind CSS** - Utility-first styling
 - **React Query** - Server state management
 - **Zustand** - Client state management
-- **React Router** - Client-side routing
+- **React Router v6** - Client-side routing
 - **React Hook Form** - Form handling
-- **Zod** - Schema validation
+- **i18next** - Multi-language support (EN/ES/PT)
 - **Lucide Icons** - Beautiful icons
 
 ## Environment Variables

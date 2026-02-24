@@ -16,12 +16,11 @@
 
 ## 🔐 Security & Authentication
 
-| Document                                         | Description                                                |
-| ------------------------------------------------ | ---------------------------------------------------------- |
-| [SECURITY.md](./SECURITY.md)                     | Security features, audit, OWASP compliance, best practices |
-| [SECURITY_CHECKLIST.md](./SECURITY_CHECKLIST.md) | Per-PR security checklist (from 13 security audits)        |
-| [OAUTH2_SSO.md](./OAUTH2_SSO.md)                 | Social login (Google, GitHub, Microsoft, Discord)          |
-| [RLS_SETUP.md](./RLS_SETUP.md)                   | Row-Level Security for multi-tenant data isolation         |
+| Document                         | Description                                                            |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| [SECURITY.md](./SECURITY.md)     | Security features, audit, OWASP compliance + per-PR security checklist |
+| [OAUTH2_SSO.md](./OAUTH2_SSO.md) | Social login (Google, GitHub, Microsoft, Discord)                      |
+| [RLS_SETUP.md](./RLS_SETUP.md)   | Row-Level Security for multi-tenant data isolation                     |
 
 ---
 
@@ -49,19 +48,13 @@
 
 ## 📋 Project-Level Documentation
 
-| File                                                                 | Description                                                         |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| [README.md](../README.md)                                            | Project overview, quick start, features, architecture               |
-| [CHANGELOG.md](../CHANGELOG.md)                                      | Version history and release notes                                   |
-| [CONTRIBUTING.md](../CONTRIBUTING.md)                                | Contribution guidelines                                             |
-| [PROJECT_STATUS.md](../PROJECT_STATUS.md)                            | Current status, metrics, and roadmap to v1.0.0                      |
-| [ROADMAP_1_0_OPERATIONAL_PLAN.md](./ROADMAP_1_0_OPERATIONAL_PLAN.md) | Plan operativo de 30 días para salida a producción v1.0.0           |
-| [WEEK1_RELEASE_ALIGNMENT.md](./WEEK1_RELEASE_ALIGNMENT.md)           | Acta operativa de Semana 1: criterios, matriz CI y baseline técnico |
-| [WEEKLY_RELEASE_METRICS.md](./WEEKLY_RELEASE_METRICS.md)             | Reporte semanal único de métricas de release v1.0.0                 |
-| [WEEK2_FRONTEND_COVERAGE_PLAN.md](./WEEK2_FRONTEND_COVERAGE_PLAN.md) | Plan de ejecución de cobertura frontend para Semana 2               |
-| [WEEK3_MYPY_E2E_EXECUTION.md](./WEEK3_MYPY_E2E_EXECUTION.md)         | Evidencia de ejecución de Semana 3 (MyPy + subset E2E crítico)      |
-| [WEEK4_RELEASE_HARDENING.md](./WEEK4_RELEASE_HARDENING.md)           | Acta de Semana 4: hardening de release y semáforo Go/No-Go          |
-| [MAKEFILE.md](../MAKEFILE.md)                                        | Cross-platform Make/PowerShell command reference                    |
+| File                                      | Description                                           |
+| ----------------------------------------- | ----------------------------------------------------- |
+| [README.md](../README.md)                 | Project overview, quick start, features, architecture |
+| [CHANGELOG.md](../CHANGELOG.md)           | Version history and release notes                     |
+| [CONTRIBUTING.md](../CONTRIBUTING.md)     | Contribution guidelines                               |
+| [PROJECT_STATUS.md](../PROJECT_STATUS.md) | Current status, metrics, and roadmap to v1.0.0        |
+| [MAKEFILE.md](../MAKEFILE.md)             | Cross-platform Make/PowerShell command reference      |
 
 ---
 
@@ -71,10 +64,9 @@
 
 1. **Setup** → [GETTING_STARTED.md](./GETTING_STARTED.md)
 2. **API** → [API_REFERENCE.md](./API_REFERENCE.md)
-3. **Security** → [SECURITY.md](./SECURITY.md)
-4. **PR Checklist** → [SECURITY_CHECKLIST.md](./SECURITY_CHECKLIST.md)
-5. **i18n** → [I18N.md](./I18N.md)
-6. **Real-time** → [WEBSOCKET.md](./WEBSOCKET.md)
+3. **Security + PR Checklist** → [SECURITY.md](./SECURITY.md)
+4. **i18n** → [I18N.md](./I18N.md)
+5. **Real-time** → [WEBSOCKET.md](./WEBSOCKET.md)
 
 ### For DevOps
 

@@ -21,12 +21,12 @@ Complete guide for deploying the FastAPI Enterprise Boilerplate to production.
 
 ### System Requirements
 
-| Component | Minimum | Recommended |
-| --------- | ------- | ----------- |
-| CPU | 2 cores | 4+ cores |
-| RAM | 2 GB | 4+ GB |
-| Storage | 20 GB | 50+ GB SSD |
-| OS | Ubuntu 22.04+ | Ubuntu 24.04 LTS |
+| Component | Minimum       | Recommended      |
+| --------- | ------------- | ---------------- |
+| CPU       | 2 cores       | 4+ cores         |
+| RAM       | 2 GB          | 4+ GB            |
+| Storage   | 20 GB         | 50+ GB SSD       |
+| OS        | Ubuntu 22.04+ | Ubuntu 24.04 LTS |
 
 ### Required Software
 
@@ -122,7 +122,7 @@ Options for managing secrets:
 Create `docker-compose.prod.yml`:
 
 ```yaml
-version: '3.9'
+version: "3.9"
 
 services:
   backend:
@@ -148,14 +148,14 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: "2"
           memory: 2G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
 
   db:
-    image: postgres:17-alpine
+    image: postgres:17.7-alpine
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -172,11 +172,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: "1"
           memory: 1G
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     restart: always
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     volumes:
@@ -188,7 +188,7 @@ services:
       retries: 5
 
   nginx:
-    image: nginx:1.28-alpine
+    image: nginx:1.29-alpine
     restart: always
     ports:
       - "80:80"
@@ -209,56 +209,43 @@ volumes:
 
 Create `backend/Dockerfile.prod`:
 
+> **Note:** The actual [Dockerfile.prod](../backend/Dockerfile.prod) in the repo is the source of truth.
+> This is a simplified reference.
+
 ```dockerfile
 # Build stage
-FROM python:3.13-slim as builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir build && \
-    pip wheel --no-cache-dir --wheel-dir /wheels .
+COPY requirements-prod.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r requirements-prod.txt
 
 # Production stage
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 # Create non-root user
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+RUN groupadd -r appgroup && useradd -r -g appgroup -u 1000 appuser
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies from builder
+COPY --from=builder /install /usr/local
 
-# Install Python packages from wheels
-COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir /wheels/*.whl && rm -rf /wheels
+# Copy application (no tests, no scripts)
+COPY --chown=appuser:appgroup app/ ./app/
 
-# Copy application
-COPY --chown=appuser:appgroup . .
-
-# Switch to non-root user
 USER appuser
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
-# Run with Gunicorn + Uvicorn workers
-CMD ["gunicorn", "app.main:app", \
-     "-w", "4", \
-     "-k", "uvicorn.workers.UvicornWorker", \
-     "-b", "0.0.0.0:8000", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-"]
+# Run with Uvicorn (4 workers, uvloop)
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", "--port", "8000", \
+     "--workers", "4", \
+     "--loop", "uvloop", "--http", "httptools", \
+     "--no-access-log"]
 ```
 
 ### Deploy Commands
@@ -292,11 +279,11 @@ docker compose -f docker-compose.prod.yml restart backend
 
 #### Development Users (Created by Migrations)
 
-| Email | Password | Role | Purpose |
-|-------|----------|------|----------|
-| `admin@example.com` | `Admin123!` | superadmin | Testing only |
-| `manager@example.com` | `Manager123!` | admin | Testing only |
-| `user@example.com` | `User123!` | user | Testing only |
+| Email                 | Password      | Role       | Purpose      |
+| --------------------- | ------------- | ---------- | ------------ |
+| `admin@example.com`   | `Admin123!`   | superadmin | Testing only |
+| `manager@example.com` | `Manager123!` | admin      | Testing only |
+| `user@example.com`    | `User123!`    | user       | Testing only |
 
 > **⚠️ SECURITY RISK**: These users have known credentials and will compromise your production system if not removed!
 
@@ -434,7 +421,7 @@ If you prefer to prevent development users from being created in the first place
 
 def upgrade() -> None:
     # ... existing table creation ...
-    
+
     # Only seed development users in non-production environments
     import os
     if os.getenv('ENVIRONMENT', 'development') != 'production':
@@ -830,14 +817,14 @@ volumes:
 
 ### Key Metrics to Monitor
 
-| Metric | Alert Threshold |
-| ------ | --------------- |
-| Request latency (p99) | > 500ms |
-| Error rate | > 1% |
-| CPU usage | > 80% |
-| Memory usage | > 85% |
-| Database connections | > 90% pool |
-| Redis memory | > 80% |
+| Metric                | Alert Threshold |
+| --------------------- | --------------- |
+| Request latency (p99) | > 500ms         |
+| Error rate            | > 1%            |
+| CPU usage             | > 80%           |
+| Memory usage          | > 85%           |
+| Database connections  | > 90% pool      |
+| Redis memory          | > 80%           |
 
 ---
 

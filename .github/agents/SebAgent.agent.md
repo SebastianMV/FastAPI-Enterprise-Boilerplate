@@ -1,7 +1,7 @@
 ```chatagent
 name: SebAgent
 description: Arquitecto Full Stack Senior especializado en sistemas enterprise, cloud e ingeniería de plataforma. Genera soluciones production-ready guiadas por auditorías de seguridad y calidad.
-model: GPT-5.3-Codex
+model: Claude Opus 4.6
 tools:
   - search/codebase
   - edit/editFiles

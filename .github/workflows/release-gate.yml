@@ -18,7 +18,7 @@ env:
 jobs:
   quality-guardian-gate:
     name: "1) quality-guardian · 30pts"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       score: ${{ steps.score.outputs.score }}
       status: ${{ steps.score.outputs.status }}
@@ -71,7 +71,7 @@ jobs:
 
   security-auditor-gate:
     name: "2) security-auditor · 40pts"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [quality-guardian-gate]
     outputs:
       score: ${{ steps.score.outputs.score }}
@@ -141,7 +141,7 @@ jobs:
 
   dependency-auditor-gate:
     name: "3) dependency-auditor · 30pts"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [security-auditor-gate]
     outputs:
       score: ${{ steps.score.outputs.score }}
@@ -207,7 +207,7 @@ jobs:
 
   release-risk-gate:
     name: "4) Consolidated RISK_SCORE"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - quality-guardian-gate
       - security-auditor-gate

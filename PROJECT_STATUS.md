@@ -1,8 +1,8 @@
 ﻿# Project Status & Roadmap
 
 **Version:** v0.9.5
-**Date:** February 19, 2026
-**Status:** Beta feature-complete, 38 security audits passed
+**Date:** February 24, 2026
+**Status:** Release Candidate — all v1.0.0 gates passed, 43 security audits completed
 
 ---
 
@@ -10,8 +10,8 @@
 
 **FastAPI Enterprise Boilerplate** is a full-stack enterprise boilerplate with
 JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.
-The backend has 99% test coverage and has undergone **38 security audit cycles**
-covering 700+ individual hardening items. The React frontend is fully functional
+The backend has 99% test coverage and has undergone **43 security audit cycles**
+covering 994+ individual hardening items. The React frontend is fully functional
 with 598 tests passing.
 
 ### Quality Metrics
@@ -29,7 +29,7 @@ with 598 tests passing.
 | Type Errors (TypeScript)  | 0                                              | OK      |
 | Docker Services           | 4/4 healthy                                    | OK      |
 | Alembic Migrations        | 12 applied                                     | OK      |
-| Security Audits Passed    | 38 cycles                                      | OK      |
+| Security Audits Passed    | 43 cycles                                      | OK      |
 
 ---
 
@@ -124,21 +124,21 @@ pids_limit, and pinned image tags.
 | v0.9.3 -- Backend Hardening                  | Done                        |
 | v0.9.4 -- DevOps & CI                        | Done                        |
 | v0.9.5 -- Security Audit Cycle (22 audits)   | Done                        |
-| Post-v0.9.5 -- Security Audit Cycles N°36-38 | Done                        |
+| Post-v0.9.5 -- Security Audit Cycles N°36-43 | Done                        |
 
 ### v1.0.0 -- Production Release
 
 | Prerequisite                               | Status        |
 | ------------------------------------------ | ------------- |
 | All severity >= 5 items resolved           | Done          |
-| 38 security audit cycles passed            | Done          |
-| Frontend tests >= 50% coverage             | Done (72.43%) |
+| 43 security audit cycles passed            | Done          |
+| Frontend tests >= 50% coverage             | Done (72%)    |
 | All i18n locales >= 95%                    | Done          |
-| Container hardening (non-root, caps, pids) | Partial       |
+| Container hardening (non-root, caps, pids) | Done          |
 | Supply chain pinning (images, CI actions)  | Done          |
 | Semgrep automated rules                    | Done          |
 
-**Remaining blockers:** staging release rehearsal no exitoso por conflicto runtime de `db/redis` con hardening actual (`no-new-privileges` + entrypoint user switch).
+> ✅ **Todos los gates de v1.0.0 están completos.** El hardening de contenedores (`no-new-privileges` + `user: 999:999/999:1000`) está activo en staging y producción; `db` y `redis` ya no requieren entrypoint user-switch.
 
 ---
 
@@ -175,19 +175,15 @@ Change these in production.
 
 ## Documentation
 
-| Document                             | Description                                        |
-| ------------------------------------ | -------------------------------------------------- |
-| README.md                            | Quick start guide                                  |
-| CHANGELOG.md                         | Version history                                    |
-| CONTRIBUTING.md                      | Contribution guidelines                            |
-| MAKEFILE.md                          | Make / PowerShell commands                         |
-| docs/ROADMAP_1_0_OPERATIONAL_PLAN.md | Plan operativo hacia v1.0.0                        |
-| docs/WEEK1_RELEASE_ALIGNMENT.md      | Acta operativa de Semana 1 (release alignment)     |
-| docs/WEEKLY_RELEASE_METRICS.md       | Reporte semanal único de métricas de release       |
-| docs/WEEK2_FRONTEND_COVERAGE_PLAN.md | Plan de ejecución de cobertura frontend (Semana 2) |
-| docs/WEEK3_MYPY_E2E_EXECUTION.md     | Evidencia de ejecución de Semana 3                 |
-| docs/WEEK4_RELEASE_HARDENING.md      | Acta de hardening y readiness de Semana 4          |
-| docs/                                | Full technical documentation (17 docs)             |
+| Document                               | Description                                |
+| -------------------------------------- | ------------------------------------------ |
+| README.md                              | Quick start guide                          |
+| CHANGELOG.md                           | Version history                            |
+| CONTRIBUTING.md                        | Contribution guidelines                    |
+| MAKEFILE.md                            | Make / PowerShell commands                 |
+| docs/SECURITY.md                       | Security features + per-PR checklist       |
+| docs/analisis_interno/QUALITY_GATES.md | Quality gates (Backend + Frontend + Infra) |
+| docs/                                  | Full technical documentation (17 docs)     |
 
 ---
 
