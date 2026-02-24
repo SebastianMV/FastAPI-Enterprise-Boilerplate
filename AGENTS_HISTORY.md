@@ -1,4 +1,4 @@
-#  AGENTS_HISTORY.md  Historial Completo de Auditorías
+# AGENTS_HISTORY.md Historial Completo de Auditorías
 
 > **Registro histórico de 994+ fixes en 43 auditorías de seguridad.**
 > Para contexto del proyecto y reglas actuales, ver [AGENTS.md](AGENTS.md).

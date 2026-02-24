@@ -128,15 +128,15 @@ pids_limit, and pinned image tags.
 
 ### v1.0.0 -- Production Release
 
-| Prerequisite                               | Status        |
-| ------------------------------------------ | ------------- |
-| All severity >= 5 items resolved           | Done          |
-| 43 security audit cycles passed            | Done          |
-| Frontend tests >= 50% coverage             | Done (72%)    |
-| All i18n locales >= 95%                    | Done          |
-| Container hardening (non-root, caps, pids) | Done          |
-| Supply chain pinning (images, CI actions)  | Done          |
-| Semgrep automated rules                    | Done          |
+| Prerequisite                               | Status     |
+| ------------------------------------------ | ---------- |
+| All severity >= 5 items resolved           | Done       |
+| 43 security audit cycles passed            | Done       |
+| Frontend tests >= 50% coverage             | Done (72%) |
+| All i18n locales >= 95%                    | Done       |
+| Container hardening (non-root, caps, pids) | Done       |
+| Supply chain pinning (images, CI actions)  | Done       |
+| Semgrep automated rules                    | Done       |
 
 > ✅ **Todos los gates de v1.0.0 están completos.** El hardening de contenedores (`no-new-privileges` + `user: 999:999/999:1000`) está activo en staging y producción; `db` y `redis` ya no requieren entrypoint user-switch.
 
