@@ -137,7 +137,7 @@ export default function RolesPage() {
   // Fetch roles
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["roles"],
-    queryFn: () => rolesService.list({ limit: 100 }),
+    queryFn: () => rolesService.list({ page_size: 100 }),
   });
 
   // Create mutation

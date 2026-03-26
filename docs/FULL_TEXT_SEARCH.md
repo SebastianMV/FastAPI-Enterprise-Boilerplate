@@ -1,17 +1,17 @@
 # Full-Text Search
 
-This document describes the Full-Text Search capabilities available in the FastAPI Enterprise Boilerplate.
+This document describes the Full-Text Search capabilities available in FastAPI-Enterprise-Boilerplate.
 
 ## Overview
 
 The boilerplate uses **PostgreSQL Full-Text Search** (FTS), which provides powerful search capabilities without additional infrastructure.
 
-| Feature | Description |
-| --- | --- |
-| Built-in | No extra services required |
-| GIN Indexes | Fast indexed searches |
+| Feature        | Description                          |
+| -------------- | ------------------------------------ |
+| Built-in       | No extra services required           |
+| GIN Indexes    | Fast indexed searches                |
 | Multi-language | Configurable stemming and stop words |
-| Ranking | Relevance scoring |
+| Ranking        | Relevance scoring                    |
 
 ## Quick Start
 
@@ -129,25 +129,25 @@ Response:
 
 ### Available Search Indices
 
-| Index | Description | Searchable Fields |
-| ----- | ----------- | ----------------- |
-| `users` | User accounts | email, first_name, last_name |
-| `audit_logs` | Audit trail | action, resource_type, details |
+| Index        | Description   | Searchable Fields              |
+| ------------ | ------------- | ------------------------------ |
+| `users`      | User accounts | email, first_name, last_name   |
+| `audit_logs` | Audit trail   | action, resource_type, details |
 
 ### Filter Operators
 
-| Operator | Description | Example |
-| -------- | ----------- | ------- |
-| `eq` | Equals | `{"field": "status", "value": "active", "operator": "eq"}` |
-| `ne` | Not equals | `{"field": "status", "value": "deleted", "operator": "ne"}` |
-| `gt` | Greater than | `{"field": "age", "value": 18, "operator": "gt"}` |
-| `gte` | Greater or equal | `{"field": "price", "value": 100, "operator": "gte"}` |
-| `lt` | Less than | `{"field": "stock", "value": 10, "operator": "lt"}` |
-| `lte` | Less or equal | `{"field": "rating", "value": 5, "operator": "lte"}` |
-| `in` | In list | `{"field": "category", "value": ["tech", "science"], "operator": "in"}` |
-| `contains` | Contains substring | `{"field": "name", "value": "john", "operator": "contains"}` |
-| `startswith` | Starts with | `{"field": "code", "value": "PRD-", "operator": "startswith"}` |
-| `endswith` | Ends with | `{"field": "email", "value": "@company.com", "operator": "endswith"}` |
+| Operator     | Description        | Example                                                                 |
+| ------------ | ------------------ | ----------------------------------------------------------------------- |
+| `eq`         | Equals             | `{"field": "status", "value": "active", "operator": "eq"}`              |
+| `ne`         | Not equals         | `{"field": "status", "value": "deleted", "operator": "ne"}`             |
+| `gt`         | Greater than       | `{"field": "age", "value": 18, "operator": "gt"}`                       |
+| `gte`        | Greater or equal   | `{"field": "price", "value": 100, "operator": "gte"}`                   |
+| `lt`         | Less than          | `{"field": "stock", "value": 10, "operator": "lt"}`                     |
+| `lte`        | Less or equal      | `{"field": "rating", "value": 5, "operator": "lte"}`                    |
+| `in`         | In list            | `{"field": "category", "value": ["tech", "science"], "operator": "in"}` |
+| `contains`   | Contains substring | `{"field": "name", "value": "john", "operator": "contains"}`            |
+| `startswith` | Starts with        | `{"field": "code", "value": "PRD-", "operator": "startswith"}`          |
+| `endswith`   | Ends with          | `{"field": "email", "value": "@company.com", "operator": "endswith"}`   |
 
 ## Search Syntax
 
@@ -205,12 +205,12 @@ PostgreSQL Full-Text Search uses:
 
 Fields are assigned weights for relevance ranking:
 
-| Weight | Priority | Example Fields |
-| --- | --- | --- |
-| A | Highest | title, email |
-| B | High | username, content |
-| C | Medium | tags, description |
-| D | Low | metadata |
+| Weight | Priority | Example Fields    |
+| ------ | -------- | ----------------- |
+| A      | Highest  | title, email      |
+| B      | High     | username, content |
+| C      | Medium   | tags, description |
+| D      | Low      | metadata          |
 
 ### Multi-Language Support
 
@@ -293,9 +293,9 @@ PostgreSQL FTS supports fuzzy matching through trigram similarity:
 ### React Search Component
 
 ```tsx
-import { useState, useEffect, useCallback } from 'react';
-import { debounce } from 'lodash';
-import api from '@/services/api';
+import { useState, useEffect, useCallback } from "react";
+import { debounce } from "lodash";
+import api from "@/services/api";
 
 interface SearchResult {
   id: string;
@@ -305,7 +305,7 @@ interface SearchResult {
 }
 
 const SearchComponent = () => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -320,20 +320,20 @@ const SearchComponent = () => {
 
       setLoading(true);
       try {
-        const response = await api.post('/search', {
+        const response = await api.post("/search", {
           query: q,
-          index: 'posts',
+          index: "posts",
           page: 1,
           page_size: 10,
         });
         setResults(response.data.hits);
         setSuggestions(response.data.suggestions);
       } catch (error) {
-        console.error('Search error:', error);
+        console.error("Search error:", error);
       }
       setLoading(false);
     }, 300),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -349,17 +349,20 @@ const SearchComponent = () => {
         placeholder="Search..."
         className="search-input"
       />
-      
+
       {loading && <div className="loading">Searching...</div>}
-      
+
       {suggestions.length > 0 && (
         <div className="suggestions">
-          Did you mean: {suggestions.map((s, i) => (
-            <button key={i} onClick={() => setQuery(s)}>{s}</button>
+          Did you mean:{" "}
+          {suggestions.map((s, i) => (
+            <button key={i} onClick={() => setQuery(s)}>
+              {s}
+            </button>
           ))}
         </div>
       )}
-      
+
       <div className="results">
         {results.map((result) => (
           <div key={result.id} className="result-item">
@@ -370,10 +373,14 @@ const SearchComponent = () => {
             />
             <p
               dangerouslySetInnerHTML={{
-                __html: result.highlights.content?.[0] || result.source.content?.substring(0, 200),
+                __html:
+                  result.highlights.content?.[0] ||
+                  result.source.content?.substring(0, 200),
               }}
             />
-            <span className="score">Relevance: {(result.score * 100).toFixed(0)}%</span>
+            <span className="score">
+              Relevance: {(result.score * 100).toFixed(0)}%
+            </span>
           </div>
         ))}
       </div>
@@ -385,12 +392,12 @@ const SearchComponent = () => {
 ### Autocomplete Hook
 
 ```tsx
-import { useState, useEffect, useCallback } from 'react';
-import { debounce } from 'lodash';
-import api from '@/services/api';
+import { useState, useEffect, useCallback } from "react";
+import { debounce } from "lodash";
+import api from "@/services/api";
 
-export const useAutocomplete = (index: string, field: string = 'title') => {
-  const [query, setQuery] = useState('');
+export const useAutocomplete = (index: string, field: string = "title") => {
+  const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -403,16 +410,16 @@ export const useAutocomplete = (index: string, field: string = 'title') => {
 
       setLoading(true);
       try {
-        const response = await api.get('/search/suggest', {
+        const response = await api.get("/search/suggest", {
           params: { q, index, field, size: 5 },
         });
         setSuggestions(response.data.suggestions);
       } catch (error) {
-        console.error('Autocomplete error:', error);
+        console.error("Autocomplete error:", error);
       }
       setLoading(false);
     }, 150),
-    [index, field]
+    [index, field],
   );
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Tests for websocket port interfaces and types."""
 
@@ -103,7 +103,7 @@ class TestWebSocketMessage:
         """Test WebSocketMessage with sender_id."""
         sender_id = uuid4()
         message = WebSocketMessage(
-            type=MessageType.PRESENCE_ONLINE,
+            type=MessageType.NOTIFICATION,
             payload={"status": "online"},
             sender_id=sender_id,
         )
@@ -134,10 +134,6 @@ class TestMessageType:
     def test_notification_type(self) -> None:
         """Test NOTIFICATION message type."""
         assert MessageType.NOTIFICATION is not None
-
-    def test_presence_online_type(self) -> None:
-        """Test PRESENCE_ONLINE message type."""
-        assert MessageType.PRESENCE_ONLINE is not None
 
     def test_NOTIFICATION_type(self) -> None:
         """Test NOTIFICATION message type."""

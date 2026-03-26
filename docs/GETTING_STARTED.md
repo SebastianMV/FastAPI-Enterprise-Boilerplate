@@ -82,7 +82,7 @@ cp .env.example .env
 # Edit .env with production values (database, secrets, etc.)
 
 # 2. Build and start production containers
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.deploy.yml up -d --build
 
 # 3. Check health
 curl http://localhost:8000/health

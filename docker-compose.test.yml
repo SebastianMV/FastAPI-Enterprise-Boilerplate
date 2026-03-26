@@ -44,7 +44,6 @@ services:
       - CHOWN
       - SETUID
       - SETGID
-    pids_limit: 200
     logging:
       driver: json-file
       options:
@@ -76,7 +75,6 @@ services:
     cap_add:
       - SETUID
       - SETGID
-    pids_limit: 100
     logging:
       driver: json-file
       options:

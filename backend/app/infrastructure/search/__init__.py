@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastian Munoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Search infrastructure package.

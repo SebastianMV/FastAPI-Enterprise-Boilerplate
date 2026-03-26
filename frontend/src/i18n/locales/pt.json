@@ -143,7 +143,8 @@
     "notifications": "Notificações",
     "security": "Segurança",
     "sessions": "Sessões",
-    "dataExchange": "Troca de Dados"
+    "dataExchange": "Troca de Dados",
+    "systemHealth": "Saúde do Sistema"
   },
   "userMenu": {
     "myProfile": "Meu Perfil",
@@ -976,5 +977,27 @@
   },
   "config": {
     "fetchError": "Falha ao carregar a configuração"
+  },
+  "systemHealth": {
+    "title": "Saúde do Sistema",
+    "subtitle": "Status em tempo real dos serviços de infraestrutura",
+    "loading": "Carregando saúde do sistema...",
+    "failedToLoad": "Falha ao carregar dados de saúde do sistema.",
+    "autoRefresh": "Atualização automática",
+    "allSystemsOperational": "Todos os sistemas operacionais",
+    "issuesDetected": "Problemas detectados",
+    "uptimeLabel": "Disponibilidade: {{value}}%",
+    "database": "Banco de Dados",
+    "cache": "Cache (Redis)",
+    "status": "Status",
+    "healthy": "Saudável",
+    "degraded": "Degradado",
+    "unhealthy": "Indisponível",
+    "activeSessions": "Sessões Ativas",
+    "avgResponseTime": "Tempo de Resposta Médio",
+    "uptime": "Disponibilidade",
+    "responseExcellent": "Excelente — menos de 100ms",
+    "responseAcceptable": "Aceitável — menos de 500ms",
+    "responseSlow": "Lento — investigar desempenho"
   }
 }

@@ -1,6 +1,6 @@
 # API Reference
 
-Complete API documentation with examples for the FastAPI Enterprise Boilerplate.
+Complete API documentation with examples for FastAPI-Enterprise-Boilerplate.
 
 ## Base URL
 
@@ -206,9 +206,9 @@ curl -X POST http://localhost:8000/api/v1/auth/verify-reset-token \
 
 **Errors:**
 
-| Status | Description |
-| ------ | ----------- |
-| 400 | Invalid or expired token |
+| Status | Description              |
+| ------ | ------------------------ |
+| 400    | Invalid or expired token |
 
 ---
 
@@ -237,10 +237,10 @@ curl -X POST http://localhost:8000/api/v1/auth/reset-password \
 
 **Errors:**
 
-| Status | Description |
-| ------ | ----------- |
-| 400 | Invalid or expired token |
-| 422 | Password too weak |
+| Status | Description              |
+| ------ | ------------------------ |
+| 400    | Invalid or expired token |
+| 422    | Password too weak        |
 
 ---
 
@@ -259,11 +259,11 @@ curl -X GET "http://localhost:8000/api/v1/users?limit=10&skip=0" \
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| skip | int | 0 | Number of records to skip |
-| limit | int | 100 | Maximum records to return (max 1000) |
-| is_active | bool | - | Filter by active status |
+| Parameter | Type | Default | Description                          |
+| --------- | ---- | ------- | ------------------------------------ |
+| skip      | int  | 0       | Number of records to skip            |
+| limit     | int  | 100     | Maximum records to return (max 1000) |
+| is_active | bool | -       | Filter by active status              |
 
 **Response (200 OK):**
 
@@ -629,16 +629,16 @@ All errors follow a consistent format:
 
 ### Common Error Codes
 
-| HTTP Status | Code | Description |
-| ----------- | ---- | ----------- |
-| 400 | `VALIDATION_ERROR` | Request validation failed |
-| 401 | `AUTHENTICATION_ERROR` | Invalid or missing credentials |
-| 403 | `PERMISSION_DENIED` | User lacks required permission |
-| 404 | `NOT_FOUND` | Resource not found |
-| 409 | `CONFLICT` | Resource already exists |
-| 422 | `UNPROCESSABLE_ENTITY` | Request body validation failed |
-| 429 | `RATE_LIMITED` | Too many requests |
-| 500 | `INTERNAL_ERROR` | Server error |
+| HTTP Status | Code                   | Description                    |
+| ----------- | ---------------------- | ------------------------------ |
+| 400         | `VALIDATION_ERROR`     | Request validation failed      |
+| 401         | `AUTHENTICATION_ERROR` | Invalid or missing credentials |
+| 403         | `PERMISSION_DENIED`    | User lacks required permission |
+| 404         | `NOT_FOUND`            | Resource not found             |
+| 409         | `CONFLICT`             | Resource already exists        |
+| 422         | `UNPROCESSABLE_ENTITY` | Request body validation failed |
+| 429         | `RATE_LIMITED`         | Too many requests              |
+| 500         | `INTERNAL_ERROR`       | Server error                   |
 
 ---
 
@@ -717,7 +717,7 @@ class BoilerplateClient:
     def __init__(self, base_url: str, api_key: str):
         self.base_url = base_url
         self.headers = {"X-API-Key": api_key}
-    
+
     def get_users(self, limit: int = 100) -> dict:
         response = httpx.get(
             f"{self.base_url}/users",
@@ -741,31 +741,28 @@ users = client.get_users(limit=10)
 class BoilerplateClient {
   constructor(
     private baseUrl: string,
-    private apiKey: string
+    private apiKey: string,
   ) {}
 
   async getUsers(limit = 100): Promise<UserList> {
-    const response = await fetch(
-      `${this.baseUrl}/users?limit=${limit}`,
-      {
-        headers: {
-          'X-API-Key': this.apiKey,
-        },
-      }
-    );
-    
+    const response = await fetch(`${this.baseUrl}/users?limit=${limit}`, {
+      headers: {
+        "X-API-Key": this.apiKey,
+      },
+    });
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     return response.json();
   }
 }
 
 // Usage
 const client = new BoilerplateClient(
-  'http://localhost:8000/api/v1',
-  'bp_abc123def456...'
+  "http://localhost:8000/api/v1",
+  "bp_abc123def456...",
 );
 const users = await client.getUsers(10);
 ```

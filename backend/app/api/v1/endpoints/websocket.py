@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 WebSocket endpoint for real-time communication.
@@ -141,7 +141,7 @@ async def websocket_endpoint(
 
     Message format (JSON):
     {
-        "type": "chat_message|notification|ping|...",
+        "type": "notification|ping|...",
         "payload": {...},
         "recipient_id": "uuid" (optional),
         "room_id": "string" (optional)

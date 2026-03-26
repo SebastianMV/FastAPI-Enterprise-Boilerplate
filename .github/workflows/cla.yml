@@ -1,0 +1,102 @@
+# Copyright (c) 2025-2026 Sebastián Muñoz
+# Licensed under the Apache License, Version 2.0
+
+name: CLA Check
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla-check:
+    name: Verify CLA Signature
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check CLA signature
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const prAuthor = context.payload.pull_request.user.login;
+
+            // Read signatories file
+            let signatories = '';
+            try {
+              signatories = fs.readFileSync('.github/CLA-SIGNATORIES.md', 'utf8');
+            } catch (e) {
+              core.setFailed('CLA-SIGNATORIES.md not found');
+              return;
+            }
+
+            // Check if PR author is listed (case-insensitive)
+            const authorPattern = new RegExp(`@${prAuthor}\\b`, 'i');
+            const isSigned = authorPattern.test(signatories);
+
+            if (isSigned) {
+              core.info(`✅ CLA signed by @${prAuthor}`);
+
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: context.payload.pull_request.head.sha,
+                state: 'success',
+                context: 'CLA Verification',
+                description: 'CLA signed'
+              });
+            } else {
+              const body = [
+                `👋 Thanks for your contribution, @${prAuthor}!`,
+                '',
+                'Before we can merge this PR, you need to sign our **Contributor License Agreement (CLA)**.',
+                '',
+                '### How to sign:',
+                '',
+                '1. Read the [CLA](../blob/main/CLA.md)',
+                '2. Add your name and GitHub username to [`.github/CLA-SIGNATORIES.md`](../blob/main/.github/CLA-SIGNATORIES.md)',
+                '3. Include that change in this PR (or submit a separate PR first)',
+                '',
+                'The CLA grants the project maintainer the right to relicense contributions,',
+                'while you retain copyright of your work. See the [Quick Reference](../blob/main/CLA.md#quick-reference) for details.',
+              ].join('\n');
+
+              // Post comment only if not already posted
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number
+              });
+
+              const alreadyCommented = comments.data.some(
+                c => c.user.type === 'Bot' && c.body.includes('Contributor License Agreement')
+              );
+
+              if (!alreadyCommented) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  body: body
+                });
+              }
+
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: context.payload.pull_request.head.sha,
+                state: 'pending',
+                context: 'CLA Verification',
+                description: 'CLA signature required — see PR comment'
+              });
+
+              core.setFailed(`CLA not signed by @${prAuthor}. See PR comment for instructions.`);
+            }

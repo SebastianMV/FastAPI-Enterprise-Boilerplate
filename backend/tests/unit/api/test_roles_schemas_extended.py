@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Tests for roles endpoint schemas and validation."""
 
@@ -145,7 +145,7 @@ class TestRoleListResponse:
 
     def test_role_list_response_empty(self) -> None:
         """Test empty RoleListResponse."""
-        data = RoleListResponse(items=[], total=0)
+        data = RoleListResponse(items=[], total=0, page=1, page_size=100, pages=0)
         assert data.items == []
         assert data.total == 0
 
@@ -171,7 +171,9 @@ class TestRoleListResponse:
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
-        data = RoleListResponse(items=[role1, role2], total=2)
+        data = RoleListResponse(
+            items=[role1, role2], total=2, page=1, page_size=100, pages=1
+        )
         assert len(data.items) == 2
         assert data.total == 2
 

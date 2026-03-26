@@ -1,5 +1,5 @@
-import api from './api';
-import { clampPaginationParams } from '@/utils/security';
+import { clampPaginationParams } from "@/utils/security";
+import api from "./api";
 
 // Tenant Types
 export interface TenantSettings {
@@ -37,8 +37,9 @@ export interface Tenant {
 export interface TenantListResponse {
   items: Tenant[];
   total: number;
-  skip: number;
-  limit: number;
+  page: number;
+  page_size: number;
+  pages: number;
 }
 
 export interface CreateTenantData {
@@ -66,61 +67,105 @@ export interface UpdateTenantData {
 }
 
 export const tenantsService = {
-  list: async (params?: { skip?: number; limit?: number; is_active?: boolean }): Promise<TenantListResponse> => {
-    const { skip, limit } = clampPaginationParams(params);
-    const response = await api.get<TenantListResponse>('/tenants', { 
-      params: { skip, limit, is_active: params?.is_active } 
+  list: async (params?: {
+    page?: number;
+    page_size?: number;
+    is_active?: boolean;
+  }): Promise<TenantListResponse> => {
+    const { page, page_size } = clampPaginationParams(params);
+    const response = await api.get<TenantListResponse>("/tenants", {
+      params: { page, page_size, is_active: params?.is_active },
     });
     return response.data;
   },
 
   get: async (id: string): Promise<Tenant> => {
-    const response = await api.get<Tenant>(`/tenants/${encodeURIComponent(id)}`);
+    const response = await api.get<Tenant>(
+      `/tenants/${encodeURIComponent(id)}`,
+    );
     return response.data;
   },
 
   create: async (data: CreateTenantData): Promise<Tenant> => {
-    const ALLOWED_FIELDS: (keyof CreateTenantData)[] = ['name', 'slug', 'email', 'phone', 'domain', 'timezone', 'locale', 'plan', 'settings'];
+    const ALLOWED_FIELDS: (keyof CreateTenantData)[] = [
+      "name",
+      "slug",
+      "email",
+      "phone",
+      "domain",
+      "timezone",
+      "locale",
+      "plan",
+      "settings",
+    ];
     const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_FIELDS) {
       if (data[key] !== undefined) safeData[key] = data[key];
     }
-    const response = await api.post<Tenant>('/tenants', safeData);
+    const response = await api.post<Tenant>("/tenants", safeData);
     return response.data;
   },
 
   update: async (id: string, data: UpdateTenantData): Promise<Tenant> => {
-    const ALLOWED_FIELDS: (keyof UpdateTenantData)[] = ['name', 'slug', 'email', 'phone', 'domain', 'timezone', 'locale', 'plan', 'settings'];
+    const ALLOWED_FIELDS: (keyof UpdateTenantData)[] = [
+      "name",
+      "slug",
+      "email",
+      "phone",
+      "domain",
+      "timezone",
+      "locale",
+      "plan",
+      "settings",
+    ];
     const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_FIELDS) {
       if (data[key] !== undefined) safeData[key] = data[key];
     }
-    const response = await api.patch<Tenant>(`/tenants/${encodeURIComponent(id)}`, safeData);
+    const response = await api.patch<Tenant>(
+      `/tenants/${encodeURIComponent(id)}`,
+      safeData,
+    );
     return response.data;
   },
 
   delete: async (id: string): Promise<{ message: string }> => {
-    const response = await api.delete<{ message: string }>(`/tenants/${encodeURIComponent(id)}`);
+    const response = await api.delete<{ message: string }>(
+      `/tenants/${encodeURIComponent(id)}`,
+    );
     return response.data;
   },
 
   activate: async (id: string): Promise<Tenant> => {
-    const response = await api.post<Tenant>(`/tenants/${encodeURIComponent(id)}/activate`);
+    const response = await api.post<Tenant>(
+      `/tenants/${encodeURIComponent(id)}/activate`,
+    );
     return response.data;
   },
 
   deactivate: async (id: string): Promise<Tenant> => {
-    const response = await api.post<Tenant>(`/tenants/${encodeURIComponent(id)}/deactivate`);
+    const response = await api.post<Tenant>(
+      `/tenants/${encodeURIComponent(id)}/deactivate`,
+    );
     return response.data;
   },
 
   verify: async (id: string): Promise<Tenant> => {
-    const response = await api.post<Tenant>(`/tenants/${encodeURIComponent(id)}/verify`);
+    const response = await api.post<Tenant>(
+      `/tenants/${encodeURIComponent(id)}/verify`,
+    );
     return response.data;
   },
 
-  updatePlan: async (id: string, plan: string, expiresAt?: string): Promise<Tenant> => {
-    const response = await api.patch<Tenant>(`/tenants/${encodeURIComponent(id)}/plan`, { plan, plan_expires_at: expiresAt });
+  updatePlan: async (
+    id: string,
+    plan: string,
+    expiresAt?: string,
+  ): Promise<Tenant> => {
+    const response = await api.patch<Tenant>(
+      `/tenants/${encodeURIComponent(id)}/plan`,
+      { plan, plan_expires_at: expiresAt },
+    );
     return response.data;
   },
 };

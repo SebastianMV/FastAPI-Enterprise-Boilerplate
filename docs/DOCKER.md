@@ -1,6 +1,6 @@
 # 🐳 Docker Guide
 
-Complete guide for running FastAPI Enterprise Boilerplate with Docker.
+Complete guide for running FastAPI-Enterprise-Boilerplate with Docker.
 
 ## Table of Contents
 
@@ -23,19 +23,19 @@ Below you'll find detailed Docker configuration and troubleshooting information.
 
 ## Development vs Production
 
-| Feature | Development | Production |
-| ------- | ----------- | ---------- |
-| **Compose File** | `docker-compose.yml` | `docker-compose.prod.yml` |
-| **Backend Dockerfile** | `Dockerfile` | `Dockerfile.prod` |
-| **Frontend Dockerfile** | `Dockerfile.dev` | `Dockerfile` |
-| **Backend Server** | Uvicorn (1 worker, reload) | Uvicorn (4 workers) |
-| **Frontend Server** | Vite dev server | Nginx |
-| **Hot-Reload** | ✅ Yes | ❌ No |
-| **Volume Mounting** | ✅ Yes | ❌ No |
-| **Ports** | Backend: 8000, Frontend: 3000 | Backend: 8000, Frontend: 80 |
-| **Build Time** | Fast (uses cache) | Slower (optimized) |
-| **Image Size** | Larger | Smaller (multi-stage) |
-| **Security** | Standard | Enhanced (non-root, limits) |
+| Feature                 | Development                   | Production                  |
+| ----------------------- | ----------------------------- | --------------------------- |
+| **Compose File**        | `docker-compose.yml`          | `docker-compose.deploy.yml` |
+| **Backend Dockerfile**  | `Dockerfile`                  | `Dockerfile.prod`           |
+| **Frontend Dockerfile** | `Dockerfile.dev`              | `Dockerfile`                |
+| **Backend Server**      | Uvicorn (1 worker, reload)    | Uvicorn (4 workers)         |
+| **Frontend Server**     | Vite dev server               | Nginx                       |
+| **Hot-Reload**          | ✅ Yes                        | ❌ No                       |
+| **Volume Mounting**     | ✅ Yes                        | ❌ No                       |
+| **Ports**               | Backend: 8000, Frontend: 3000 | Backend: 8000, Frontend: 80 |
+| **Build Time**          | Fast (uses cache)             | Slower (optimized)          |
+| **Image Size**          | Larger                        | Smaller (multi-stage)       |
+| **Security**            | Standard                      | Enhanced (non-root, limits) |
 
 ---
 
@@ -57,14 +57,14 @@ Below you'll find detailed Docker configuration and troubleshooting information.
 
 ```yaml
 services:
-  backend:    # FastAPI with auto-reload
-  frontend:   # Vite dev server
-  db:         # PostgreSQL 17
-  redis:      # Redis 7
-  jaeger:     # Optional observability
+  backend: # FastAPI with auto-reload
+  frontend: # Vite dev server
+  db: # PostgreSQL 17
+  redis: # Redis 7
+  jaeger: # Optional observability
 ```
 
-### `docker-compose.prod.yml` (Production)
+### `docker-compose.deploy.yml` (Production)
 
 **Purpose:** Production deployment with optimizations.
 
@@ -197,22 +197,22 @@ docker compose down -v
 
 ```bash
 # Build and start
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.deploy.yml up -d --build
 
 # View logs
-docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.deploy.yml logs -f
 
 # Check health
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.deploy.yml ps
 
 # Scale backend (multiple workers)
-docker compose -f docker-compose.prod.yml up -d --scale backend=3
+docker compose -f docker-compose.deploy.yml up -d --scale backend=3
 
 # Update single service
-docker compose -f docker-compose.prod.yml up -d --build frontend
+docker compose -f docker-compose.deploy.yml up -d --build frontend
 
 # Stop all
-docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.deploy.yml down
 ```
 
 ### Database Migrations

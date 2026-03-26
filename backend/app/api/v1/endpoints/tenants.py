@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Tenant management endpoints.
@@ -14,10 +14,10 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_superuser
+from app.api.v1.schemas.common import PaginatedResponse
 from app.api.v1.schemas.tenants import (
     TenantActivateRequest,
     TenantCreate,
-    TenantListResponse,
     TenantPlanUpdate,
     TenantResponse,
     TenantSettingsSchema,
@@ -55,26 +55,27 @@ def get_tenant_repository(
 
 @router.get(
     "",
-    response_model=TenantListResponse,
+    response_model=PaginatedResponse[TenantResponse],
     summary="List all tenants",
     description="List all tenants with pagination. Superuser only.",
 )
 async def list_tenants(
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
     is_active: bool | None = Query(default=None),
     _: UUID = Depends(require_superuser),
     repo: CachedTenantRepository = Depends(get_tenant_repository),
-) -> TenantListResponse:
+) -> PaginatedResponse[TenantResponse]:
     """List all tenants."""
-    tenants = await repo.list_all(skip=skip, limit=limit, is_active=is_active)
+    skip = (page - 1) * page_size
+    tenants = await repo.list_all(skip=skip, limit=page_size, is_active=is_active)
     total = await repo.count(is_active=is_active)
 
-    return TenantListResponse(
+    return PaginatedResponse.create(
         items=[_to_response(t) for t in tenants],
         total=total,
-        skip=skip,
-        limit=limit,
+        page=page,
+        page_size=page_size,
     )
 
 

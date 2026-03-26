@@ -7,12 +7,11 @@
 
 ## Agentes disponibles
 
-| Agente                 | Archivo                       | Propósito principal                                                   |
-| ---------------------- | ----------------------------- | --------------------------------------------------------------------- |
-| **SebAgent**           | `SebAgent.agent.md`           | Orquestador full-stack: implementa y coordina handoffs especializados |
-| **quality-guardian**   | `quality-guardian.agent.md`   | Gate de calidad: convenciones, arquitectura, i18n y reglas críticas   |
-| **security-auditor**   | `security-auditor.agent.md`   | AppSec profundo: vulnerabilidades nuevas y regresiones                |
-| **dependency-auditor** | `dependency-auditor.agent.md` | Supply chain: CVEs, licencias, pinning y estrategia de upgrades       |
+| Agente                 | Archivo                       | Propósito principal                                                 |
+| ---------------------- | ----------------------------- | ------------------------------------------------------------------- |
+| **quality-guardian**   | `quality-guardian.agent.md`   | Gate de calidad: convenciones, arquitectura, i18n y reglas críticas |
+| **security-auditor**   | `security-auditor.agent.md`   | AppSec profundo: vulnerabilidades nuevas y regresiones              |
+| **dependency-auditor** | `dependency-auditor.agent.md` | Supply chain: CVEs, licencias, pinning y estrategia de upgrades     |
 
 ---
 
@@ -41,7 +40,6 @@ Objetivo: evitar agentes “genéricos” y forzar respuestas auditables, consis
 Abre Copilot Chat (`Ctrl+Alt+I`) y usa `@`:
 
 ```text
-@SebAgent implementa endpoint de exportación y coordina validación
 @quality-guardian revisa este cambio contra las 19 reglas
 @security-auditor audita riesgo AppSec en auth y multi-tenant
 @dependency-auditor evalúa CVEs y plan de upgrade seguro
@@ -72,7 +70,7 @@ Cambio de código
 @dependency-auditor ← CVEs + licencias + pinning + upgrades
 ```
 
-`SebAgent` puede iniciar o coordinar todo el flujo end-to-end.
+Any agent can initiate or coordinate the full end-to-end flow.
 
 ---
 
@@ -92,10 +90,6 @@ Cada agente responde con una estructura fija para facilitar revisión en PR:
   - `SUPPLY-CHAIN STATUS: PASS | FAIL`
   - `VULNERABILITY SUMMARY`, `AFFECTED ARTIFACTS`, `REQUIRED UPGRADES`, `SAFE UPGRADE PLAN`
 
-- **SebAgent**
-  - `EXECUTION STATUS: DONE | BLOCKED`
-  - `CHANGE SUMMARY`, `SECURITY STATUS`, `VALIDATION`, `NEXT ACTION`
-
 ---
 
 ## Cuándo usar cada agente
@@ -105,7 +99,7 @@ Cada agente responde con una estructura fija para facilitar revisión en PR:
 | Antes de push a `main`/`develop`              | `@quality-guardian`                         |
 | Feature nueva con auth/datos sensibles        | `@security-auditor`                         |
 | Actualización de librerías/imágenes/workflows | `@dependency-auditor`                       |
-| Release readiness end-to-end                  | `@SebAgent`                                 |
+| Release readiness end-to-end                  | `@quality-guardian` + `@security-auditor`   |
 | CI falla en calidad                           | `@quality-guardian` para diagnóstico        |
 | CVE crítico reportado                         | `@dependency-auditor` + `@security-auditor` |
 
@@ -124,10 +118,7 @@ Los agentes **complementan** CI; no lo reemplazan:
 
 Todos los agentes están pensados para operar con:
 
-- `AGENTS_HISTORY.md`
 - `.github/copilot-instructions.md`
-- `docs/analisis_interno/RECURRING_AUDIT_PATTERNS.md`
-- `docs/analisis_interno/AUDIT_RETROSPECTIVE.md`
 - `.semgrep/*.yml`
 - `docs/adr/`
 

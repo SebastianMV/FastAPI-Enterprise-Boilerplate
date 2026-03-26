@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Pydantic schemas for Audit Log endpoints."""
 
@@ -9,7 +9,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.api.v1.schemas.common import DescriptionStr, NameStr, ShortStr
+from app.api.v1.schemas.common import (
+    DescriptionStr,
+    NameStr,
+    PaginatedResponse,
+    ShortStr,
+)
 
 # Keys that must never appear in audit log value diffs
 _SENSITIVE_KEYS = frozenset(
@@ -64,13 +69,8 @@ class AuditLogResponse(BaseModel):
         return _strip_sensitive(v)
 
 
-class AuditLogListResponse(BaseModel):
-    """Schema for paginated audit log list."""
-
-    items: list[AuditLogResponse]
-    total: int
-    skip: int
-    limit: int
+AuditLogListResponse = PaginatedResponse[AuditLogResponse]
+"""Paginated audit log list — alias for PaginatedResponse[AuditLogResponse]."""
 
 
 class AuditLogFilters(BaseModel):

@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Tests for tenant endpoints module."""
 
@@ -184,8 +184,9 @@ class TestTenantListResponseSchema:
         response = TenantListResponse(
             items=items,
             total=10,
-            skip=0,
-            limit=3,
+            page=1,
+            page_size=20,
+            pages=1,
         )
         assert len(response.items) == 3
         assert response.total == 10
@@ -195,8 +196,9 @@ class TestTenantListResponseSchema:
         response = TenantListResponse(
             items=[],
             total=0,
-            skip=0,
-            limit=20,
+            page=1,
+            page_size=20,
+            pages=0,
         )
         assert len(response.items) == 0
         assert response.total == 0

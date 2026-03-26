@@ -27,7 +27,7 @@ import { useTranslation } from 'react-i18next';
 
 function MyComponent() {
   const { t } = useTranslation();
-  
+
   return (
     <div>
       <h1>{t('common.title')}</h1>
@@ -44,7 +44,7 @@ import { useTranslation } from 'react-i18next';
 
 function LanguageSwitcher() {
   const { i18n } = useTranslation();
-  
+
   return (
     <button onClick={() => i18n.changeLanguage('es')}>
       Cambiar a Español
@@ -57,12 +57,12 @@ function LanguageSwitcher() {
 
 ## 📊 Current Status
 
-| Metric | Value |
-| ------ | ----- |
-| **Coverage** | 100% (all pages translated) |
-| **Languages** | 3 (EN, ES, PT) |
-| **Translation Keys** | ~700 per language |
-| **Loading Strategy** | Lazy loading (optimized) |
+| Metric               | Value                       |
+| -------------------- | --------------------------- |
+| **Coverage**         | 100% (all pages translated) |
+| **Languages**        | 3 (EN, ES, PT)              |
+| **Translation Keys** | ~700 per language           |
+| **Loading Strategy** | Lazy loading (optimized)    |
 
 ---
 
@@ -114,20 +114,20 @@ Topics covered:
 ### Simple Translation
 
 ```typescript
-t('common.save') // → "Save"
+t("common.save"); // → "Save"
 ```
 
 ### With Parameters
 
 ```typescript
-t('users.welcome', { name: 'John' })
+t("users.welcome", { name: "John" });
 // → "Welcome back, John!"
 ```
 
 ### Pluralization
 
 ```typescript
-t('notifications.unreadCount', { count: 5 })
+t("notifications.unreadCount", { count: 5 });
 // → "You have 5 unread notifications"
 ```
 
@@ -135,7 +135,7 @@ t('notifications.unreadCount', { count: 5 })
 
 ```typescript
 const plan = "professional";
-t(`tenants.plans.${plan}`)
+t(`tenants.plans.${plan}`);
 // → "Professional"
 ```
 
@@ -215,7 +215,7 @@ t('welcome', { name: 'John' })
 
 ```typescript
 const { i18n } = useTranslation();
-i18n.changeLanguage('es'); // Triggers re-render
+i18n.changeLanguage("es"); // Triggers re-render
 ```
 
 ---
@@ -229,5 +229,5 @@ i18n.changeLanguage('es'); // Triggers re-render
 
 ---
 
-**Last Updated:** January 13, 2026  
-**Maintained By:** FastAPI Enterprise Boilerplate Team
+**Last Updated:** January 13, 2026
+**Maintained By:** FastAPI-Enterprise-Boilerplate Team

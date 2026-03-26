@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Session management endpoints."""
 
@@ -66,7 +66,7 @@ class SessionResponse(BaseModel):
 class SessionListResponse(BaseModel):
     """List of user sessions."""
 
-    sessions: list[SessionResponse]
+    items: list[SessionResponse]
     total: int
 
 
@@ -124,7 +124,7 @@ async def list_sessions(
     ]
 
     return SessionListResponse(
-        sessions=sessions,
+        items=sessions,
         total=len(sessions),
     )
 

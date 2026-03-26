@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Unit tests for Roles API endpoints.
@@ -279,6 +279,9 @@ class TestRoleSchemas:
                 )
             ],
             total=1,
+            page=1,
+            page_size=100,
+            pages=1,
         )
 
         assert len(response.items) == 1

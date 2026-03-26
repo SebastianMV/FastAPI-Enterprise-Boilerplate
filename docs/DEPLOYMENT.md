@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Complete guide for deploying the FastAPI Enterprise Boilerplate to production.
+Complete guide for deploying FastAPI-Enterprise-Boilerplate to production.
 
 ## Table of Contents
 
@@ -119,7 +119,7 @@ Options for managing secrets:
 
 ### Production Docker Compose
 
-Create `docker-compose.prod.yml`:
+Create `docker-compose.deploy.yml`:
 
 ```yaml
 version: "3.9"
@@ -238,7 +238,7 @@ COPY --chown=appuser:appgroup app/ ./app/
 USER appuser
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"
 
 # Run with Uvicorn (4 workers, uvloop)
 CMD ["uvicorn", "app.main:app", \
@@ -252,21 +252,21 @@ CMD ["uvicorn", "app.main:app", \
 
 ```bash
 # Build and start
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.deploy.yml up -d --build
 
 # View logs
-docker compose -f docker-compose.prod.yml logs -f backend
+docker compose -f docker-compose.deploy.yml logs -f backend
 
 # Run migrations
-docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+docker compose -f docker-compose.deploy.yml exec backend alembic upgrade head
 
 # Create superuser
-docker compose -f docker-compose.prod.yml exec backend \
+docker compose -f docker-compose.deploy.yml exec backend \
     python -m app.cli users create-superuser \
     --email admin@myapp.com
 
 # Restart services
-docker compose -f docker-compose.prod.yml restart backend
+docker compose -f docker-compose.deploy.yml restart backend
 ```
 
 ---
@@ -291,7 +291,7 @@ docker compose -f docker-compose.prod.yml restart backend
 
 ```bash
 # List all users in the system
-docker compose -f docker-compose.prod.yml exec backend \
+docker compose -f docker-compose.deploy.yml exec backend \
   python -m app.cli users list
 ```
 
@@ -301,7 +301,7 @@ docker compose -f docker-compose.prod.yml exec backend \
 
 ```bash
 # Deactivate development users
-docker compose -f docker-compose.prod.yml exec backend \
+docker compose -f docker-compose.deploy.yml exec backend \
   python -m app.cli users deactivate <user-id>
 
 # Repeat for each development user
@@ -311,7 +311,7 @@ docker compose -f docker-compose.prod.yml exec backend \
 
 ```sql
 -- Connect to production database
-docker compose -f docker-compose.prod.yml exec db psql -U boilerplate -d myapp
+docker compose -f docker-compose.deploy.yml exec db psql -U boilerplate -d myapp
 
 -- Delete all development users
 DELETE FROM users WHERE email IN (
@@ -328,7 +328,7 @@ SELECT email, first_name, last_name, is_active FROM users;
 
 ```bash
 # Create your production superuser
-docker compose -f docker-compose.prod.yml exec backend \
+docker compose -f docker-compose.deploy.yml exec backend \
   python -m app.cli users create-superuser \
   --email admin@yourcompany.com \
   --first-name "Your" \
@@ -342,7 +342,7 @@ docker compose -f docker-compose.prod.yml exec backend \
 
 ```bash
 # List users to confirm only production accounts exist
-docker compose -f docker-compose.prod.yml exec backend \
+docker compose -f docker-compose.deploy.yml exec backend \
   python -m app.cli users list --active
 
 # Test login with your new admin account

@@ -1,30 +1,30 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { sessionsService, type UserSession } from '@/services/api';
-import { maskIpAddress, sanitizeText } from '@/utils/security';
-import { formatRelativeTime as formatRelativeTimeShared } from '@/utils/formatRelativeTime';
-import { ConfirmModal, AlertModal } from '@/components/common/Modal';
+import { AlertModal, ConfirmModal } from "@/components/common/Modal";
+import { sessionsService, type UserSession } from "@/services/api";
+import { formatRelativeTime as formatRelativeTimeShared } from "@/utils/formatRelativeTime";
+import { maskIpAddress, sanitizeText } from "@/utils/security";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  CheckCircle,
+  Clock,
+  Globe,
+  LogOut,
   Monitor,
+  Shield,
   Smartphone,
   Tablet,
-  Globe,
-  Clock,
   Trash2,
-  LogOut,
-  Shield,
-  CheckCircle,
-} from 'lucide-react';
+} from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 /**
  * Get device icon based on device type
  */
 function DeviceIcon({ type }: { type: string }) {
   switch (type.toLowerCase()) {
-    case 'mobile':
+    case "mobile":
       return <Smartphone className="w-5 h-5" />;
-    case 'tablet':
+    case "tablet":
       return <Tablet className="w-5 h-5" />;
     default:
       return <Monitor className="w-5 h-5" />;
@@ -34,12 +34,15 @@ function DeviceIcon({ type }: { type: string }) {
 /**
  * Format relative time
  */
-function formatRelativeTime(dateStr: string, t: (key: string, options?: Record<string, unknown>) => string): string {
+function formatRelativeTime(
+  dateStr: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
   return formatRelativeTimeShared(dateStr, {
-    justNow: t('sessions.timeAgo.justNow'),
-    minutesAgo: (count: number) => t('sessions.timeAgo.minutesAgo', { count }),
-    hoursAgo: (count: number) => t('sessions.timeAgo.hoursAgo', { count }),
-    daysAgo: (count: number) => t('sessions.timeAgo.daysAgo', { count }),
+    justNow: t("sessions.timeAgo.justNow"),
+    minutesAgo: (count: number) => t("sessions.timeAgo.minutesAgo", { count }),
+    hoursAgo: (count: number) => t("sessions.timeAgo.hoursAgo", { count }),
+    daysAgo: (count: number) => t("sessions.timeAgo.daysAgo", { count }),
   });
 }
 
@@ -50,17 +53,19 @@ export default function SessionsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [showRevokeAllModal, setShowRevokeAllModal] = useState(false);
-  const [sessionToRevoke, setSessionToRevoke] = useState<UserSession | null>(null);
+  const [sessionToRevoke, setSessionToRevoke] = useState<UserSession | null>(
+    null,
+  );
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
     title: string;
     message: string;
-    variant: 'success' | 'error';
-  }>({ isOpen: false, title: '', message: '', variant: 'success' });
+    variant: "success" | "error";
+  }>({ isOpen: false, title: "", message: "", variant: "success" });
 
   // Fetch sessions
   const { data, isLoading, error } = useQuery({
-    queryKey: ['sessions'],
+    queryKey: ["sessions"],
     queryFn: sessionsService.list,
   });
 
@@ -68,22 +73,22 @@ export default function SessionsPage() {
   const revokeMutation = useMutation({
     mutationFn: (sessionId: string) => sessionsService.revoke(sessionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
       setSessionToRevoke(null);
       setAlertModal({
         isOpen: true,
-        title: t('sessions.sessionRevoked'),
-        message: t('sessions.sessionRevokedMessage'),
-        variant: 'success',
+        title: t("sessions.sessionRevoked"),
+        message: t("sessions.sessionRevokedMessage"),
+        variant: "success",
       });
     },
     onError: () => {
       setSessionToRevoke(null);
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('sessions.revokeError'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("sessions.revokeError"),
+        variant: "error",
       });
     },
   });
@@ -92,22 +97,22 @@ export default function SessionsPage() {
   const revokeAllMutation = useMutation({
     mutationFn: sessionsService.revokeAll,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
       setShowRevokeAllModal(false);
       setAlertModal({
         isOpen: true,
-        title: t('sessions.sessionsRevoked'),
-        message: t('sessions.allSessionsRevokedMessage'),
-        variant: 'success',
+        title: t("sessions.sessionsRevoked"),
+        message: t("sessions.allSessionsRevokedMessage"),
+        variant: "success",
       });
     },
     onError: () => {
       setShowRevokeAllModal(false);
       setAlertModal({
         isOpen: true,
-        title: t('common.error'),
-        message: t('sessions.revokeAllError'),
-        variant: 'error',
+        title: t("common.error"),
+        message: t("sessions.revokeAllError"),
+        variant: "error",
       });
     },
   });
@@ -124,13 +129,13 @@ export default function SessionsPage() {
     return (
       <div className="card p-6">
         <div className="text-center text-red-600">
-          {t('sessions.loadError')}
+          {t("sessions.loadError")}
         </div>
       </div>
     );
   }
 
-  const sessions = data?.sessions || [];
+  const sessions = data?.items || [];
 
   return (
     <div className="space-y-6">
@@ -138,10 +143,10 @@ export default function SessionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {t('sessions.title')}
+            {t("sessions.title")}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {t('sessions.subtitle')}
+            {t("sessions.subtitle")}
           </p>
         </div>
         {sessions.length > 1 && (
@@ -150,7 +155,7 @@ export default function SessionsPage() {
             className="btn-danger flex items-center space-x-2"
           >
             <LogOut className="w-4 h-4" />
-            <span>{t('sessions.signOutAll')}</span>
+            <span>{t("sessions.signOutAll")}</span>
           </button>
         )}
       </div>
@@ -161,10 +166,10 @@ export default function SessionsPage() {
           <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
           <div>
             <h3 className="font-medium text-blue-900 dark:text-blue-100">
-              {t('sessions.securityTip')}
+              {t("sessions.securityTip")}
             </h3>
             <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              {t('sessions.securityTipMessage')}
+              {t("sessions.securityTipMessage")}
             </p>
           </div>
         </div>
@@ -174,23 +179,25 @@ export default function SessionsPage() {
       <div className="card divide-y divide-slate-200 dark:divide-slate-700">
         {sessions.length === 0 ? (
           <div className="p-6 text-center text-slate-500">
-            {t('sessions.noSessions')}
+            {t("sessions.noSessions")}
           </div>
         ) : (
           sessions.map((session) => (
             <div
               key={session.id}
               className={`p-6 flex items-center justify-between ${
-                session.is_current ? 'bg-green-50 dark:bg-green-900/10' : ''
+                session.is_current ? "bg-green-50 dark:bg-green-900/10" : ""
               }`}
             >
               <div className="flex items-center space-x-4">
                 {/* Device icon */}
-                <div className={`p-3 rounded-full ${
-                  session.is_current 
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                }`}>
+                <div
+                  className={`p-3 rounded-full ${
+                    session.is_current
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                  }`}
+                >
                   <DeviceIcon type={session.device_type} />
                 </div>
 
@@ -203,7 +210,7 @@ export default function SessionsPage() {
                     {session.is_current && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        {t('sessions.currentSession')}
+                        {t("sessions.currentSession")}
                       </span>
                     )}
                   </div>
@@ -211,7 +218,8 @@ export default function SessionsPage() {
                     <span className="flex items-center">
                       <Globe className="w-4 h-4 mr-1" />
                       {maskIpAddress(session.ip_address)}
-                      {session.location && ` • ${sanitizeText(session.location)}`}
+                      {session.location &&
+                        ` • ${sanitizeText(session.location)}`}
                     </span>
                     <span className="flex items-center">
                       <Clock className="w-4 h-4 mr-1" />
@@ -219,7 +227,12 @@ export default function SessionsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                    {t('sessions.browserOnOs', { browser: sanitizeText(session.browser), os: sanitizeText(session.os) })} • {t('sessions.started')} {new Date(session.created_at).toLocaleDateString()}
+                    {t("sessions.browserOnOs", {
+                      browser: sanitizeText(session.browser),
+                      os: sanitizeText(session.os),
+                    })}{" "}
+                    • {t("sessions.started")}{" "}
+                    {new Date(session.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -229,7 +242,7 @@ export default function SessionsPage() {
                 <button
                   onClick={() => setSessionToRevoke(session)}
                   className="btn-ghost text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  aria-label={t('sessions.revokeSession')}
+                  aria-label={t("sessions.revokeSession")}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -243,10 +256,14 @@ export default function SessionsPage() {
       <ConfirmModal
         isOpen={!!sessionToRevoke}
         onClose={() => setSessionToRevoke(null)}
-        onConfirm={() => sessionToRevoke && revokeMutation.mutate(sessionToRevoke.id)}
-        title={t('sessions.revokeSession')}
-        message={t('sessions.revokeMessage', { device: sessionToRevoke?.device_name })}
-        confirmText={t('apiKeys.revoke')}
+        onConfirm={() =>
+          sessionToRevoke && revokeMutation.mutate(sessionToRevoke.id)
+        }
+        title={t("sessions.revokeSession")}
+        message={t("sessions.revokeMessage", {
+          device: sessionToRevoke?.device_name,
+        })}
+        confirmText={t("apiKeys.revoke")}
         variant="danger"
         isLoading={revokeMutation.isPending}
       />
@@ -256,9 +273,9 @@ export default function SessionsPage() {
         isOpen={showRevokeAllModal}
         onClose={() => setShowRevokeAllModal(false)}
         onConfirm={() => revokeAllMutation.mutate()}
-        title={t('sessions.revokeAllTitle')}
-        message={t('sessions.revokeAllMessage')}
-        confirmText={t('sessions.revokeAllConfirm')}
+        title={t("sessions.revokeAllTitle")}
+        message={t("sessions.revokeAllMessage")}
+        confirmText={t("sessions.revokeAllConfirm")}
         variant="danger"
         isLoading={revokeAllMutation.isPending}
       />

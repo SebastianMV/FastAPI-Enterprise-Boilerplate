@@ -1,14 +1,14 @@
-import { usersService, type User } from '@/services/api';
-import { clampPaginationParams } from '@/utils/security';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { usersService, type User } from "@/services/api";
+import { clampPaginationParams } from "@/utils/security";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 /**
  * Hook for fetching users list.
  */
-export function useUsers(params?: { skip?: number; limit?: number }) {
+export function useUsers(params?: { page?: number; page_size?: number }) {
   const safeParams = clampPaginationParams(params);
   return useQuery({
-    queryKey: ['users', safeParams],
+    queryKey: ["users", safeParams],
     queryFn: () => usersService.list(safeParams),
   });
 }
@@ -18,7 +18,7 @@ export function useUsers(params?: { skip?: number; limit?: number }) {
  */
 export function useUser(id: string) {
   return useQuery({
-    queryKey: ['users', id],
+    queryKey: ["users", id],
     queryFn: () => usersService.get(id),
     enabled: !!id,
   });
@@ -34,7 +34,7 @@ export function useCreateUser() {
     mutationFn: (data: Parameters<typeof usersService.create>[0]) =>
       usersService.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 }
@@ -49,8 +49,8 @@ export function useUpdateUser() {
     mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
       usersService.update(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['users', id] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["users", id] });
     },
   });
 }
@@ -64,7 +64,7 @@ export function useDeleteUser() {
   return useMutation({
     mutationFn: usersService.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 }

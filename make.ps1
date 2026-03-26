@@ -1,7 +1,7 @@
 # ==============================================================================
-# FastAPI Enterprise Boilerplate - PowerShell Scripts (Windows)
+# FastAPI-Enterprise-Boilerplate - PowerShell Scripts (Windows)
 # ==============================================================================
-# 
+#
 # Este archivo contiene comandos equivalentes al Makefile para Windows/PowerShell
 # Copia y pega los comandos que necesites en tu terminal PowerShell
 #
@@ -42,17 +42,33 @@ function Clear-Docker {
 
 # Iniciar producción
 function Start-Production {
-    docker compose -f docker-compose.prod.yml up -d
+    docker compose -f docker-compose.deploy.yml up -d
 }
 
 # Rebuild producción
 function Start-ProductionBuild {
-    docker compose -f docker-compose.prod.yml up -d --build
+    docker compose -f docker-compose.deploy.yml up -d --build
 }
 
 # Detener producción
 function Stop-Production {
-    docker compose -f docker-compose.prod.yml down
+    docker compose -f docker-compose.deploy.yml down
+}
+
+# Ver logs producción
+function Show-ProductionLogs {
+    docker compose -f docker-compose.deploy.yml logs -f
+}
+
+# Build producción
+function Build-Production {
+    docker compose -f docker-compose.deploy.yml build
+}
+
+# Deploy producción
+function Deploy-Production {
+    docker compose -f docker-compose.deploy.yml up -d
+    docker compose -f docker-compose.deploy.yml exec backend alembic upgrade head
 }
 
 # ------------------------------------------------------------------------------
@@ -65,12 +81,12 @@ function Install-Dependencies {
     Set-Location backend
     pip install -e ".[dev]"
     Set-Location ..
-    
+
     Write-Host "📦 Instalando frontend..." -ForegroundColor Cyan
     Set-Location frontend
     npm install
     Set-Location ..
-    
+
     Write-Host "✅ Dependencias instaladas" -ForegroundColor Green
 }
 
@@ -156,7 +172,7 @@ function Invoke-Lint {
     Set-Location backend
     ruff check .
     Set-Location ..
-    
+
     Write-Host "🔍 Linting frontend..." -ForegroundColor Cyan
     Set-Location frontend
     npm run lint
@@ -169,7 +185,7 @@ function Format-Code {
     Set-Location backend
     ruff format .
     Set-Location ..
-    
+
     Write-Host "✨ Formateando frontend..." -ForegroundColor Cyan
     Set-Location frontend
     npm run format
@@ -251,22 +267,22 @@ function Test-Health {
 # Limpiar artefactos
 function Clear-Artifacts {
     Write-Host "🧹 Limpiando artefactos..." -ForegroundColor Cyan
-    
+
     # Python
     Get-ChildItem -Path . -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
     Get-ChildItem -Path . -Recurse -Directory -Filter ".pytest_cache" | Remove-Item -Recurse -Force
     Get-ChildItem -Path . -Recurse -Directory -Filter ".mypy_cache" | Remove-Item -Recurse -Force
     Get-ChildItem -Path . -Recurse -Directory -Filter ".ruff_cache" | Remove-Item -Recurse -Force
     Get-ChildItem -Path . -Recurse -Directory -Filter "htmlcov" | Remove-Item -Recurse -Force
-    
+
     # Frontend
     Get-ChildItem -Path . -Recurse -Directory -Filter "node_modules" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     Get-ChildItem -Path . -Recurse -Directory -Filter "dist" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-    
+
     # Coverage
     if (Test-Path "backend\.coverage") { Remove-Item "backend\.coverage" -Force }
     if (Test-Path "frontend\coverage") { Remove-Item "frontend\coverage" -Recurse -Force }
-    
+
     Write-Host "✅ Limpieza completa" -ForegroundColor Green
 }
 
@@ -276,7 +292,7 @@ function Clear-Artifacts {
 
 function Show-Help {
     Write-Host ""
-    Write-Host "FastAPI Enterprise Boilerplate - Comandos PowerShell" -ForegroundColor Green
+    Write-Host "FastAPI-Enterprise-Boilerplate - Comandos PowerShell" -ForegroundColor Green
     Write-Host "======================================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "🐳 Docker - Development:" -ForegroundColor Cyan
@@ -290,6 +306,9 @@ function Show-Help {
     Write-Host "  Start-Production             Iniciar producción"
     Write-Host "  Start-ProductionBuild        Rebuild producción"
     Write-Host "  Stop-Production              Detener producción"
+    Write-Host "  Show-ProductionLogs          Ver logs producción"
+    Write-Host "  Build-Production             Build imágenes prod"
+    Write-Host "  Deploy-Production            Deploy producción"
     Write-Host ""
     Write-Host "💻 Local Development:" -ForegroundColor Cyan
     Write-Host "  Install-Dependencies         Instalar dependencias"
@@ -300,7 +319,10 @@ function Show-Help {
     Write-Host "  Invoke-AllTests              Tests completos"
     Write-Host "  Invoke-UnitTests             Tests unitarios"
     Write-Host "  Invoke-IntegrationTests      Tests integración"
+    Write-Host "  Invoke-IntegrationTestsCoverage  Tests integración + coverage"
     Write-Host "  Invoke-FrontendTests         Tests frontend"
+    Write-Host "  Start-TestDatabase           Iniciar DB de testing"
+    Write-Host "  Stop-TestDatabase            Detener DB de testing"
     Write-Host ""
     Write-Host "🔍 Code Quality:" -ForegroundColor Cyan
     Write-Host "  Invoke-Lint                  Linting"

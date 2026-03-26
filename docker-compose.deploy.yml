@@ -1,52 +1,63 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 # ============================================
-# Docker Compose - Production
+# Docker Compose - Deploy (Staging & Production)
 # ============================================
 #
+# Single file for both staging and production. Behavior is
+# controlled via the ENVIRONMENT variable (staging | production).
+#
 # Usage:
-#   docker compose -f docker-compose.prod.yml up -d --build
-#   docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+#   # Staging
+#   ENVIRONMENT=staging docker compose -f docker-compose.deploy.yml up -d --build
 #
-# IMPORTANT: Run migrations after first deploy and after each code update.
-# The `make deploy` target automates both steps.
+#   # Production
+#   ENVIRONMENT=production docker compose -f docker-compose.deploy.yml up -d --build
 #
-# Features:
-#   - Multi-stage optimized builds
-#   - Nginx serving static frontend
-#   - Production-ready uvicorn workers
-#   - Resource limits and healthchecks
-#   - Non-root users for security
+#   # Run migrations after first deploy / code update
+#   docker compose -f docker-compose.deploy.yml exec backend alembic upgrade head
+#
+# Required env vars (all validated with :? — no silent defaults):
+#   DATABASE_URL, REDIS_URL, JWT_SECRET_KEY, FRONTEND_URL,
+#   AUTH_COOKIE_SECURE, ENCRYPTION_KEY, REDIS_PASSWORD,
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, APP_USER_PASSWORD
+#
+# Optional:
+#   ENVIRONMENT    — staging (default) | production
+#   LOG_LEVEL      — defaults to DEBUG (staging) or INFO (production)
+#   FRONTEND_BIND  — defaults to 0.0.0.0
+#   COMPOSE_PROJECT_NAME — override to isolate multiple deploys
 # ============================================
 
 services:
   # ===========================================
-  # Backend API (Production)
+  # Backend API
   # ===========================================
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
-    container_name: boilerplate-backend
+    container_name: ${COMPOSE_PROJECT_NAME:-deploy}-backend
     restart: unless-stopped
     stop_grace_period: 30s
     environment:
-      # SECURITY: Use app_user (non-owner) for RLS enforcement in production
       - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
       - REDIS_URL=${REDIS_URL:?REDIS_URL must be set}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set}
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=15
       - REFRESH_TOKEN_EXPIRE_DAYS=7
-      - ENVIRONMENT=production
+      - ENVIRONMENT=${ENVIRONMENT:-staging}
+      - DEBUG=false
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL must be set}
       - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:?AUTH_COOKIE_SECURE must be set}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY must be set}
       - RATE_LIMIT_ENABLED=true
       - CSRF_ENABLED=true
-      - DEBUG=false
-      - LOG_LEVEL=INFO
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     expose:
       - "8000"
     security_opt:
@@ -61,42 +72,44 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    pids_limit: 200
     healthcheck:
       test:
         [
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')",
         ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - app-frontend
+      - app-backend
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "5"
-    networks:
-      - boilerplate-frontend
-      - boilerplate-backend
-    cpus: 2
-    mem_limit: 1g
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1G
+          pids: 200
 
   # ===========================================
-  # Frontend (Nginx - Production)
+  # Frontend (Nginx)
   # ===========================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: boilerplate-frontend
+    container_name: ${COMPOSE_PROJECT_NAME:-deploy}-frontend
     restart: unless-stopped
     stop_grace_period: 15s
-    # NOTE: In production, restrict to 127.0.0.1:80:80 if behind a load balancer.
-    # Exposed on 0.0.0.0 for standalone deploys where nginx IS the edge proxy.
+    # Restrict to 127.0.0.1:80:80 when behind a load balancer.
     ports:
       - "${FRONTEND_BIND:-0.0.0.0}:80:80"
     security_opt:
@@ -104,11 +117,10 @@ services:
     cap_drop:
       - ALL
     read_only: true
-    pids_limit: 100
     tmpfs:
-      - /tmp:size=32m,noexec,nosuid,nodev
-      - /var/cache/nginx:size=128m,noexec,nosuid,nodev
-      - /var/run:size=8m,noexec,nosuid,nodev
+      - /tmp:size=32m,noexec,nosuid,nodev,uid=101,gid=101,mode=1777
+      - /var/cache/nginx:size=128m,noexec,nosuid,nodev,uid=101,gid=101,mode=1775
+      - /var/run:size=8m,noexec,nosuid,nodev,uid=101,gid=101,mode=1775
     depends_on:
       - backend
     healthcheck:
@@ -119,32 +131,44 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:80/health",
+          "http://127.0.0.1:80/health",
         ]
       interval: 30s
       timeout: 10s
       start_period: 5s
       retries: 3
+    networks:
+      - app-frontend
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "5"
-    networks:
-      - boilerplate-frontend
-    cpus: 0.5
-    mem_limit: 256m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+          pids: 100
 
   # ===========================================
   # PostgreSQL Database
   # ===========================================
   db:
     image: postgres:17.7-alpine
-    container_name: boilerplate-db
+    container_name: ${COMPOSE_PROJECT_NAME:-deploy}-db
     restart: unless-stopped
     stop_grace_period: 30s
-    user: "999:999" # postgres uid/gid in alpine image — pre-start as non-root; no privilege switch needed
-    pids_limit: 200
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_READ_SEARCH
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
@@ -154,30 +178,41 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/alembic/init_prod.sh:/docker-entrypoint-initdb.d/init_prod.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app-backend
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "5"
-    networks:
-      - boilerplate-backend
-    cpus: 1
-    mem_limit: 1g
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+          pids: 200
 
   # ===========================================
   # Redis Cache
   # ===========================================
   redis:
     image: redis:7.4-alpine
-    container_name: boilerplate-redis
+    container_name: ${COMPOSE_PROJECT_NAME:-deploy}-redis
     restart: unless-stopped
     stop_grace_period: 30s
-    user: "999:1000" # redis uid/gid in alpine image — pre-start as non-root; no privilege switch needed
-    pids_limit: 100
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     volumes:
       - redis_data:/data
@@ -190,20 +225,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app-backend
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "5"
-    networks:
-      - boilerplate-backend
-    cpus: 0.5
-    mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+          pids: 100
 
 networks:
-  boilerplate-frontend:
+  app-frontend:
     driver: bridge
-  boilerplate-backend:
+  app-backend:
     driver: bridge
     internal: true
 

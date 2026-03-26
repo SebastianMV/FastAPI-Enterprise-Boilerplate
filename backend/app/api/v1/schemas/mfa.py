@@ -1,9 +1,12 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """MFA (Multi-Factor Authentication) schemas for request/response validation."""
 
+from __future__ import annotations
+
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
@@ -15,6 +18,16 @@ from app.api.v1.schemas.common import (
     TokenStr,
     UrlStr,
 )
+
+# MFA code types with strict length constraints
+MFACodeStr = Annotated[
+    str,
+    Field(min_length=6, max_length=8, pattern=r"^[0-9A-Za-z]+$"),
+]
+TOTPCodeStr = Annotated[
+    str,
+    Field(min_length=6, max_length=6, pattern=r"^\d{6}$"),
+]
 
 # ===========================================
 # Request Schemas
@@ -30,11 +43,8 @@ class MFASetupRequest(BaseModel):
 class MFAVerifyRequest(BaseModel):
     """Request to verify MFA code during setup or login."""
 
-    code: ShortStr = Field(
+    code: MFACodeStr = Field(
         ...,
-        min_length=6,
-        max_length=8,
-        pattern=r"^[0-9A-Za-z]+$",
         description="6-digit TOTP code or 8-character backup code",
         examples=["123456", "AB12CD34"],
     )
@@ -43,11 +53,8 @@ class MFAVerifyRequest(BaseModel):
 class MFADisableRequest(BaseModel):
     """Request to disable MFA (requires password confirmation)."""
 
-    code: ShortStr = Field(
+    code: TOTPCodeStr = Field(
         ...,
-        min_length=6,
-        max_length=6,
-        pattern=r"^\d{6}$",
         description="Current TOTP code for verification",
         examples=["123456"],
     )
@@ -67,11 +74,8 @@ class MFALoginRequest(BaseModel):
         max_length=512,
         description="Temporary MFA token from initial login",
     )
-    code: ShortStr = Field(
+    code: MFACodeStr = Field(
         ...,
-        min_length=6,
-        max_length=8,
-        pattern=r"^[0-9A-Za-z]+$",
         description="6-digit TOTP code or 8-character backup code",
         examples=["123456"],
     )

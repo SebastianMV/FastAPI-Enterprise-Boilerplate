@@ -43,6 +43,7 @@ storage/
 
 # Documentation
 *.md
+!README.md
 docs/
 LICENSE
 

@@ -143,7 +143,8 @@
     "notifications": "Notifications",
     "security": "Security",
     "sessions": "Sessions",
-    "dataExchange": "Data Exchange"
+    "dataExchange": "Data Exchange",
+    "systemHealth": "System Health"
   },
   "userMenu": {
     "myProfile": "My Profile",
@@ -976,5 +977,27 @@
   },
   "config": {
     "fetchError": "Failed to load configuration"
+  },
+  "systemHealth": {
+    "title": "System Health",
+    "subtitle": "Real-time status of infrastructure services",
+    "loading": "Loading system health...",
+    "failedToLoad": "Failed to load system health data.",
+    "autoRefresh": "Auto-refresh",
+    "allSystemsOperational": "All systems operational",
+    "issuesDetected": "Issues detected",
+    "uptimeLabel": "Uptime: {{value}}%",
+    "database": "Database",
+    "cache": "Cache (Redis)",
+    "status": "Status",
+    "healthy": "Healthy",
+    "degraded": "Degraded",
+    "unhealthy": "Unhealthy",
+    "activeSessions": "Active Sessions",
+    "avgResponseTime": "Avg Response Time",
+    "uptime": "Uptime",
+    "responseExcellent": "Excellent — under 100ms",
+    "responseAcceptable": "Acceptable — under 500ms",
+    "responseSlow": "Slow — investigate performance"
   }
 }

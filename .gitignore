@@ -34,6 +34,7 @@ pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
+coverage/
 .tox/
 .nox/
 .coverage
@@ -149,6 +150,24 @@ alembic/versions/*.pyc
 AGENTS.md
 # Internal analysis documents (team only, not for public repo)
 docs/analisis_interno/
+# Internal development tracking (not for public repo)
+AGENTS_HISTORY.md
+PROJECT_STATUS.md
+MAKEFILE.md
+docs/SECURITY_AUDIT.md
+# Personal agent configs
+.github/agents/SebAgent.agent.md
+
+# Internal dev-only scripts and tooling
+backend/_run_mypy.py
+backend/mypy-baseline.json
+backend/scripts/audit_scan.py
+backend/scripts/build_audit_tables.py
+backend/scripts/check_api_keys_columns.py
+backend/scripts/check_mypy_baseline.py
+backend/scripts/check_policy.py
+backend/scripts/generate_mypy_baseline.py
+backend/scripts/run_semgrep_isolated.ps1
 
 # Local debugging artifacts (backend)
 backend/pip_*.txt
@@ -160,9 +179,10 @@ backend/run_tests.py
 backend/sqlalchemy-*.whl
 test_output.txt
 
-# MyPy generated report (committed: mypy-baseline.json, not the report)
+# MyPy generated reports
 mypy-report.txt
 backend/mypy-report.txt
+backend/mypy-report-week*.txt
 
 # Local Python virtual environment (created for tooling, not for CI)
 backend/.venv/

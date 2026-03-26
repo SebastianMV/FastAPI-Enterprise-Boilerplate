@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Audit Log endpoints.
@@ -15,9 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentTenantId, require_permission
 from app.api.v1.schemas.audit_logs import (
-    AuditLogListResponse,
     AuditLogResponse,
 )
+from app.api.v1.schemas.common import PaginatedResponse
 from app.domain.entities.audit_log import AuditAction, AuditLog, AuditResourceType
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.database.repositories.audit_log_repository import (
@@ -62,15 +62,15 @@ def _to_response(log: AuditLog) -> AuditLogResponse:
 
 @router.get(
     "",
-    response_model=AuditLogListResponse,
+    response_model=PaginatedResponse[AuditLogResponse],
     summary="List audit logs",
     description="List audit logs for the current tenant with optional filters.",
 )
 async def list_audit_logs(
     current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
     tenant_id: CurrentTenantId = None,
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=100),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=50, ge=1, le=100, description="Items per page"),
     action: str | None = Query(
         default=None, max_length=50, description="Filter by action type"
     ),
@@ -84,7 +84,7 @@ async def list_audit_logs(
         default=None, description="Filter until this date"
     ),
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
-) -> AuditLogListResponse:
+) -> PaginatedResponse[AuditLogResponse]:
     """List audit logs for the current tenant."""
     if not tenant_id:
         raise HTTPException(
@@ -117,9 +117,10 @@ async def list_audit_logs(
                 },
             ) from None
 
+    skip = (page - 1) * page_size
     logs = await repo.list_by_tenant(
         tenant_id=tenant_id,
-        limit=limit,
+        limit=page_size,
         offset=skip,
         action=action_enum,
         resource_type=resource_type_enum,
@@ -135,63 +136,64 @@ async def list_audit_logs(
         end_date=end_date,
     )
 
-    return AuditLogListResponse(
+    return PaginatedResponse.create(
         items=[_to_response(log) for log in logs],
         total=total,
-        skip=skip,
-        limit=limit,
+        page=page,
+        page_size=page_size,
     )
 
 
 @router.get(
     "/my-activity",
-    response_model=AuditLogListResponse,
+    response_model=PaginatedResponse[AuditLogResponse],
     summary="Get my activity",
     description="Get audit logs for the current user's actions.",
 )
 async def get_my_activity(
     current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
     tenant_id: CurrentTenantId = None,
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=100),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=50, ge=1, le=100, description="Items per page"),
     start_date: datetime | None = Query(default=None),
     end_date: datetime | None = Query(default=None),
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
-) -> AuditLogListResponse:
+) -> PaginatedResponse[AuditLogResponse]:
     """Get audit logs for the current user."""
+    skip = (page - 1) * page_size
     logs = await repo.list_by_actor(
         actor_id=current_user_id,
-        limit=limit,
+        limit=page_size,
         offset=skip,
         start_date=start_date,
         end_date=end_date,
         tenant_id=tenant_id,
     )
 
-    return AuditLogListResponse(
+    return PaginatedResponse.create(
         items=[_to_response(log) for log in logs],
         # TODO: Implement count method in repository for accurate pagination totals
         total=len(logs),
-        skip=skip,
-        limit=limit,
+        page=page,
+        page_size=page_size,
     )
 
 
 @router.get(
     "/recent-logins",
-    response_model=AuditLogListResponse,
+    response_model=PaginatedResponse[AuditLogResponse],
     summary="Get recent logins",
     description="Get recent login attempts for the tenant.",
 )
 async def get_recent_logins(
     current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
     tenant_id: CurrentTenantId = None,
-    limit: int = Query(default=50, ge=1, le=100),
+    page_size: int = Query(default=50, ge=1, le=100, description="Items per page"),
     include_failed: bool = Query(
         default=True, description="Include failed login attempts"
     ),
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
-) -> AuditLogListResponse:
+) -> PaginatedResponse[AuditLogResponse]:
     """Get recent login attempts."""
     if not tenant_id:
         raise HTTPException(
@@ -201,21 +203,21 @@ async def get_recent_logins(
 
     logs = await repo.list_recent_logins(
         tenant_id=tenant_id,
-        limit=limit,
+        limit=page_size,
         include_failed=include_failed,
     )
 
-    return AuditLogListResponse(
+    return PaginatedResponse.create(
         items=[_to_response(log) for log in logs],
         total=len(logs),
-        skip=0,
-        limit=limit,
+        page=1,
+        page_size=page_size,
     )
 
 
 @router.get(
     "/resource/{resource_type}/{resource_id}",
-    response_model=AuditLogListResponse,
+    response_model=PaginatedResponse[AuditLogResponse],
     summary="Get resource history",
     description="Get audit log history for a specific resource.",
 )
@@ -224,10 +226,10 @@ async def get_resource_history(
     resource_id: str = Path(..., max_length=100),
     current_user_id: UUID = Depends(require_permission("audit_logs", "read")),
     tenant_id: CurrentTenantId = None,
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=100),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=50, ge=1, le=100, description="Items per page"),
     repo: SQLAlchemyAuditLogRepository = Depends(get_audit_repository),
-) -> AuditLogListResponse:
+) -> PaginatedResponse[AuditLogResponse]:
     """Get audit log history for a specific resource."""
     if not tenant_id:
         raise HTTPException(
@@ -246,19 +248,20 @@ async def get_resource_history(
             },
         ) from None
 
+    skip = (page - 1) * page_size
     logs = await repo.list_by_resource(
         resource_type=resource_type_enum,
         resource_id=resource_id,
-        limit=limit,
+        limit=page_size,
         offset=skip,
         tenant_id=tenant_id,
     )
 
-    return AuditLogListResponse(
+    return PaginatedResponse.create(
         items=[_to_response(log) for log in logs],
         total=len(logs),
-        skip=skip,
-        limit=limit,
+        page=page,
+        page_size=page_size,
     )
 
 

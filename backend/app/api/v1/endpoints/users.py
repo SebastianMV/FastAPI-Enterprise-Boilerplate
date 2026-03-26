@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Users CRUD endpoints."""
 
@@ -15,11 +15,10 @@ from app.api.deps import (
     SuperuserId,
     require_permission,
 )
-from app.api.v1.schemas.common import MessageResponse
+from app.api.v1.schemas.common import MessageResponse, PaginatedResponse
 from app.api.v1.schemas.users import (
     UserCreate,
     UserDetailResponse,
-    UserListResponse,
     UserResponse,
     UserUpdate,
     UserUpdateSelf,
@@ -58,7 +57,7 @@ logger = get_logger(__name__)
 
 @router.get(
     "",
-    response_model=UserListResponse,
+    response_model=PaginatedResponse[UserResponse],
     summary="List users",
     description="List all users with pagination. Requires authentication.",
 )
@@ -69,7 +68,7 @@ async def list_users(
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
     is_active: bool | None = Query(default=None, description="Filter by active status"),
-) -> UserListResponse:
+) -> PaginatedResponse[UserResponse]:
     """
     List all users with pagination.
 
@@ -85,12 +84,11 @@ async def list_users(
     )
     total = await repo.count(is_active=is_active, tenant_id=tenant_id)
 
-    return UserListResponse(
+    return PaginatedResponse.create(
         items=[UserResponse.model_validate(u) for u in users],
         total=total,
         page=page,
         page_size=page_size,
-        pages=(total + page_size - 1) // page_size if page_size > 0 else 0,
     )
 
 

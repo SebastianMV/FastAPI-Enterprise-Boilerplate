@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Unit tests for tenant endpoint schemas."""
 
@@ -241,15 +241,16 @@ class TestTenantListResponse:
                 )
             ],
             total=1,
-            skip=0,
-            limit=20,
+            page=1,
+            page_size=20,
+            pages=1,
         )
         assert len(response.items) == 1
         assert response.total == 1
 
     def test_tenant_list_response_empty(self):
         """Test empty tenant list."""
-        response = TenantListResponse(items=[], total=0, skip=0, limit=20)
+        response = TenantListResponse(items=[], total=0, page=1, page_size=20, pages=0)
         assert len(response.items) == 0
 
 

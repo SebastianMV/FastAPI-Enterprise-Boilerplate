@@ -1,4 +1,4 @@
-# FastAPI Enterprise Boilerplate - Production Dependencies
+# FastAPI-Enterprise-Boilerplate - Production Dependencies
 # Python 3.13+
 # Last Updated: February 2026
 # NOTE: Dev/test dependencies live in requirements.txt only.

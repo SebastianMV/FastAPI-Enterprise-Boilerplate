@@ -1,27 +1,29 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import App from './App';
-import './index.css';
-import './i18n'; // Initialize i18n
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./i18n"; // Initialize i18n
+import "./index.css";
 
 // Initialize theme from localStorage before first render to avoid flash
 const initializeTheme = () => {
-  const raw = localStorage.getItem('theme');
-  const VALID_THEMES = ['light', 'dark', 'system'] as const;
-  const theme = (VALID_THEMES as readonly string[]).includes(raw ?? '') ? (raw as typeof VALID_THEMES[number]) : 'system';
-  
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else if (theme === 'light') {
-    document.documentElement.classList.remove('dark');
+  const raw = localStorage.getItem("theme");
+  const VALID_THEMES = ["light", "dark", "system"] as const;
+  const theme = (VALID_THEMES as readonly string[]).includes(raw ?? "")
+    ? (raw as (typeof VALID_THEMES)[number])
+    : "system";
+
+  if (theme === "dark") {
+    document.documentElement.classList.add("dark");
+  } else if (theme === "light") {
+    document.documentElement.classList.remove("dark");
   } else {
     // System preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.classList.add('dark');
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }
 };
@@ -34,9 +36,10 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60, // 1 minute
       retry: (failureCount, error) => {
         if (failureCount >= 1) return false;
-        const status = error instanceof Error && 'response' in error
-          ? (error as { response?: { status?: number } }).response?.status
-          : undefined;
+        const status =
+          error instanceof Error && "response" in error
+            ? (error as { response?: { status?: number } }).response?.status
+            : undefined;
         if (status === 401 || status === 403) return false;
         return true;
       },
@@ -45,10 +48,12 @@ const queryClient = new QueryClient({
   },
 });
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+      <BrowserRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <App />
       </BrowserRouter>
     </QueryClientProvider>

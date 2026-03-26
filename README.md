@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="FastAPI-Enterprise-Boilerplate Logo" width="200" height="200">
+  <img src="docs/assets/logo.svg" alt="FastAPI Enterprise Boilerplate Logo" width="200" height="200">
 </p>
 
-<h1 align="center">FastAPI-Enterprise-Boilerplate</h1>
+<h1 align="center">FastAPI Enterprise Boilerplate</h1>
 
 <p align="center">
-  <strong>Production-ready FastAPI boilerplate with JWT authentication, granular ACL, multi-tenant RLS, and hexagonal architecture.</strong>
+  <strong>Full-Stack Enterprise Boilerplate — FastAPI + React 19 + PostgreSQL 17 + Redis. Enterprise boilerplate with JWT auth, granular ACL, multi-tenant RLS, and hexagonal architecture.</strong>
 </p>
 
 <p align="center">
@@ -13,7 +13,7 @@
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115+-green.svg" alt="FastAPI"></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white" alt="React"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=node.js&logoColor=white" alt="Node.js"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
 </p>
 
 <p align="center">
@@ -22,8 +22,8 @@
   <a href="#"><img src="https://img.shields.io/badge/frontend%20tests-598%20passing-brightgreen.svg" alt="Frontend Tests"></a>
   <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
   <a href="#"><img src="https://img.shields.io/badge/security%20audits-43%20cycles-brightgreen.svg" alt="Security Audits"></a>
-  <a href="PROJECT_STATUS.md"><img src="https://img.shields.io/badge/status-beta-orange.svg" alt="Beta"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.9.5-blue.svg" alt="v0.9.5"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/status-stable-brightgreen.svg" alt="Stable"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="v1.0.0"></a>
 </p>
 
 ---
@@ -64,7 +64,7 @@ docker compose up -d
 > Show-Help
 > ```
 >
-> Ver documentación completa en [MAKEFILE.md](MAKEFILE.md)
+> Ver todos los comandos con `Show-Help` o `make help`
 
 **Comandos útiles** (Linux/Mac con Makefile, Windows con make.ps1):
 
@@ -90,7 +90,7 @@ Clear-Docker             # Windows (PowerShell)
 
 ```bash
 # Build and start production containers
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.deploy.yml up -d --build
 
 # Access:
 # - API: http://localhost:8000
@@ -457,7 +457,7 @@ cli version
 
 ```bash
 # Production
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.deploy.yml up -d
 
 # Kubernetes
 kubectl apply -f k8s/
@@ -472,16 +472,15 @@ Use the centralized documentation index: [docs/README.md](docs/README.md).
 Quick links:
 
 - [⭐ Getting Started](docs/GETTING_STARTED.md)
-- [📋 Project Status](PROJECT_STATUS.md)
-- [🔐 Security](docs/SECURITY.md)
+- [� Security](docs/SECURITY.md)
 - [📡 API Reference](docs/API_REFERENCE.md)
-- [⚙️ Commands](MAKEFILE.md)
+- [📝 Changelog](CHANGELOG.md)
 
 ## 🎯 Project Status
 
-**Version:** v0.9.5 � **Release Candidate** — feature-complete, 43 security audit cycles passed (Feb 2026)
+**Version:** v1.0.0 — **Stable Release** — feature-complete, 43 security audit cycles passed (Mar 2026)
 
-> 📋 See [PROJECT_STATUS.md](PROJECT_STATUS.md) for the full quality metrics and roadmap to v1.0.0.
+> See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ### 📊 Metrics
 
@@ -496,11 +495,14 @@ Quick links:
 | Security Audits   | 43 cycles (992+ items resolved) | ✅     |
 | Docker Build      | < 2 minutes                     | ✅     |
 
-See [PROJECT_STATUS.md](PROJECT_STATUS.md) for complete roadmap and [CHANGELOG.md](CHANGELOG.md) for release notes.
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## 📝 License
 
-MIT License - See [LICENSE](LICENSE) for details.
+Apache License 2.0 — See [LICENSE](LICENSE) and [NOTICE](NOTICE) for details.
+
+Contributors must sign the [CLA](CLA.md) before their first PR can be merged.
+The CLA grants relicensing rights so the maintainer can adjust licensing in the future if needed.
 
 ## 🙏 Credits
 

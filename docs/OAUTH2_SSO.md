@@ -1,18 +1,18 @@
 # OAuth2 & SSO Authentication
 
-This document describes the OAuth2 and Single Sign-On (SSO) authentication features available in the FastAPI Enterprise Boilerplate.
+This document describes the OAuth2 and Single Sign-On (SSO) authentication features available in FastAPI-Enterprise-Boilerplate.
 
 ## Overview
 
 The boilerplate supports multiple OAuth2 providers out of the box:
 
-| Provider | Status | Features |
-| --- | --- | --- |
-| Google | ✅ Ready | Email, profile, OIDC |
-| GitHub | ✅ Ready | Email, profile, organizations |
-| Microsoft | ✅ Ready | Azure AD, multi-tenant |
-| Apple | 🔜 Planned | OIDC with SIWA |
-| Facebook | 🔜 Planned | Email, profile |
+| Provider  | Status     | Features                      |
+| --------- | ---------- | ----------------------------- |
+| Google    | ✅ Ready   | Email, profile, OIDC          |
+| GitHub    | ✅ Ready   | Email, profile, organizations |
+| Microsoft | ✅ Ready   | Azure AD, multi-tenant        |
+| Apple     | 🔜 Planned | OIDC with SIWA                |
+| Facebook  | 🔜 Planned | Email, profile                |
 
 ## Quick Start
 
@@ -74,11 +74,11 @@ GET /api/v1/auth/oauth/{provider}/authorize
 
 Parameters:
 
-| Name | Type | Description |
-| --- | --- | --- |
-| provider | path | Provider name (google, github, microsoft) |
-| redirect_uri | query | Custom redirect URI (optional) |
-| scope | query | Additional scopes (space-separated) |
+| Name         | Type  | Description                               |
+| ------------ | ----- | ----------------------------------------- |
+| provider     | path  | Provider name (google, github, microsoft) |
+| redirect_uri | query | Custom redirect URI (optional)            |
+| scope        | query | Additional scopes (space-separated)       |
 
 Response:
 
@@ -105,10 +105,10 @@ GET /api/v1/auth/oauth/{provider}/callback
 
 Parameters:
 
-| Name | Type | Description |
-| --- | --- | --- |
-| code | query | Authorization code from provider |
-| state | query | State for CSRF protection |
+| Name  | Type  | Description                      |
+| ----- | ----- | -------------------------------- |
+| code  | query | Authorization code from provider |
+| state | query | State for CSRF protection        |
 
 Response:
 
@@ -178,7 +178,7 @@ Content-Type: application/json
 ### React Example
 
 ```tsx
-import { useState } from 'react';
+import { useState } from "react";
 
 const OAuthButtons = () => {
   const [loading, setLoading] = useState(false);
@@ -186,15 +186,13 @@ const OAuthButtons = () => {
   const handleOAuth = async (provider: string) => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `/api/v1/auth/oauth/${provider}/authorize`
-      );
+      const response = await fetch(`/api/v1/auth/oauth/${provider}/authorize`);
       const data = await response.json();
-      
+
       // Redirect to OAuth provider
       window.location.href = data.authorization_url;
     } catch (error) {
-      console.error('OAuth error:', error);
+      console.error("OAuth error:", error);
     }
     setLoading(false);
   };
@@ -202,7 +200,7 @@ const OAuthButtons = () => {
   return (
     <div className="flex flex-col gap-2">
       <button
-        onClick={() => handleOAuth('google')}
+        onClick={() => handleOAuth("google")}
         className="flex items-center gap-2 px-4 py-2 bg-white border rounded"
         disabled={loading}
       >
@@ -210,7 +208,7 @@ const OAuthButtons = () => {
         Continue with Google
       </button>
       <button
-        onClick={() => handleOAuth('github')}
+        onClick={() => handleOAuth("github")}
         className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded"
         disabled={loading}
       >
@@ -226,9 +224,9 @@ const OAuthButtons = () => {
 
 ```tsx
 // pages/auth/callback.tsx
-import { useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/authStore";
 
 const OAuthCallback = () => {
   const [searchParams] = useSearchParams();
@@ -236,19 +234,19 @@ const OAuthCallback = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    const error = searchParams.get('error');
+    const accessToken = searchParams.get("access_token");
+    const refreshToken = searchParams.get("refresh_token");
+    const error = searchParams.get("error");
 
     if (error) {
-      console.error('OAuth error:', error);
-      navigate('/login?error=' + error);
+      console.error("OAuth error:", error);
+      navigate("/login?error=" + error);
       return;
     }
 
     if (accessToken && refreshToken) {
       setAuth({ accessToken, refreshToken });
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
   }, [searchParams]);
 

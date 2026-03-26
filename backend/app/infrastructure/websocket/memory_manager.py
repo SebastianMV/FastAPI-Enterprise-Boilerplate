@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 In-memory WebSocket manager.
@@ -150,18 +150,6 @@ class MemoryWebSocketManager(WebSocketPort):
             ).to_dict(),
         )
 
-        # Notify presence
-        if tenant_id:
-            await self.broadcast_to_tenant(
-                tenant_id,
-                WebSocketMessage(
-                    type=MessageType.PRESENCE_ONLINE,
-                    payload={"user_id": str(user_id)},
-                    sender_id=user_id,
-                ),
-                exclude_user=user_id,
-            )
-
         return connection_id
 
     async def disconnect(self, connection_id: str) -> None:
@@ -197,17 +185,6 @@ class MemoryWebSocketManager(WebSocketPort):
             del self._connections[connection_id]
 
         logger.info("websocket_disconnected", connection_id=connection_id)
-
-        # Notify presence if user has no more connections
-        if not await self.is_user_online(user_id) and tenant_id:
-            await self.broadcast_to_tenant(
-                tenant_id,
-                WebSocketMessage(
-                    type=MessageType.PRESENCE_OFFLINE,
-                    payload={"user_id": str(user_id)},
-                    sender_id=user_id,
-                ),
-            )
 
     async def _send_json(self, websocket: WebSocket, data: dict[str, Any]) -> bool:
         """Send JSON data to a WebSocket."""

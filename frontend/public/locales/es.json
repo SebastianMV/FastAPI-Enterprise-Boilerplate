@@ -29,6 +29,7 @@
     "accessDenied": "No tienes permiso para acceder a esta página",
     "fetchError": "Error al obtener datos",
     "na": "N/D",
+    "ms": "ms",
     "never": "Nunca",
     "retry": "Reintentar",
     "brandName": "FastAPI Enterprise",
@@ -145,7 +146,8 @@
     "notifications": "Notificaciones",
     "security": "Seguridad",
     "sessions": "Sesiones",
-    "dataExchange": "Intercambio de Datos"
+    "dataExchange": "Intercambio de Datos",
+    "systemHealth": "Salud del Sistema"
   },
   "dashboard": {
     "title": "Panel",
@@ -387,6 +389,11 @@
     "lightMode": "Claro",
     "systemTheme": "Sistema",
     "timezone": "Zona Horaria",
+    "timezoneOptionAmericaSantiago": "America/Santiago (GMT-4)",
+    "timezoneOptionAmericaNewYork": "America/New_York (GMT-5)",
+    "timezoneOptionAmericaLosAngeles": "America/Los_Angeles (GMT-8)",
+    "timezoneOptionEuropeLondon": "Europe/London (GMT)",
+    "timezoneOptionEuropeMadrid": "Europe/Madrid (GMT+1)",
     "dateFormat": "Formato de Fecha",
     "editProfile": "Editar Perfil",
     "administrator": "Administrador",
@@ -991,5 +998,27 @@
   },
   "config": {
     "fetchError": "Error al cargar la configuración"
+  },
+  "systemHealth": {
+    "title": "Estado del Sistema",
+    "subtitle": "Estado en tiempo real de los servicios de infraestructura",
+    "loading": "Cargando estado del sistema...",
+    "failedToLoad": "Error al cargar datos de estado del sistema.",
+    "autoRefresh": "Auto-actualizar",
+    "allSystemsOperational": "Todos los sistemas operativos",
+    "issuesDetected": "Problemas detectados",
+    "uptimeLabel": "Disponibilidad: {{value}}%",
+    "database": "Base de Datos",
+    "cache": "Caché (Redis)",
+    "status": "Estado",
+    "healthy": "Saludable",
+    "degraded": "Degradado",
+    "unhealthy": "No disponible",
+    "activeSessions": "Sesiones Activas",
+    "avgResponseTime": "Tiempo de Respuesta Promedio",
+    "uptime": "Disponibilidad",
+    "responseExcellent": "Excelente \u2014 menos de 100ms",
+    "responseAcceptable": "Aceptable \u2014 menos de 500ms",
+    "responseSlow": "Lento \u2014 investigar rendimiento"
   }
 }

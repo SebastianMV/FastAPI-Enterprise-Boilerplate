@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Comprehensive tests for OAuth service to improve coverage.

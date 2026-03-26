@@ -26,6 +26,8 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://boilerplate:boilerplate@db:5432/boilerplate
       - REDIS_URL=redis://:devpassword@redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=devpassword
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-in-production-with-strong-secret-key-min-32-chars}
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=15
@@ -50,7 +52,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')",
         ]
       interval: 30s
       timeout: 10s
@@ -61,7 +63,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    pids_limit: 200
     logging:
       driver: json-file
       options:
@@ -72,6 +73,7 @@ services:
         limits:
           cpus: "2"
           memory: 1G
+          pids: 200
 
   # ===========================================
   # Nginx Reverse Proxy (Development)
@@ -87,7 +89,7 @@ services:
       - vite
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:80/"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -95,7 +97,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    pids_limit: 100
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
     logging:
       driver: json-file
       options:
@@ -106,6 +111,7 @@ services:
         limits:
           cpus: "0.5"
           memory: 128M
+          pids: 100
 
   # ===========================================
   # Frontend Vite Dev Server (Internal)
@@ -123,7 +129,7 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5173/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:5173/"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -131,7 +137,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    pids_limit: 100
     logging:
       driver: json-file
       options:
@@ -142,6 +147,7 @@ services:
         limits:
           cpus: "1"
           memory: 1G
+          pids: 100
 
   # ===========================================
   # Database (PostgreSQL 17)
@@ -167,7 +173,12 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    pids_limit: 200
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
     logging:
       driver: json-file
       options:
@@ -178,6 +189,7 @@ services:
         limits:
           cpus: "1"
           memory: 1G
+          pids: 200
 
   # ===========================================
   # Cache (Redis)
@@ -200,7 +212,9 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    pids_limit: 100
+    cap_add:
+      - SETUID
+      - SETGID
     logging:
       driver: json-file
       options:
@@ -211,6 +225,7 @@ services:
         limits:
           cpus: "0.5"
           memory: 512M
+          pids: 100
 
   # ===========================================
   # Observability (Optional - dev)
@@ -231,7 +246,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    pids_limit: 200
     logging:
       driver: json-file
       options:
@@ -242,6 +256,7 @@ services:
         limits:
           cpus: "1"
           memory: 1G
+          pids: 200
 
 volumes:
   postgres_data:

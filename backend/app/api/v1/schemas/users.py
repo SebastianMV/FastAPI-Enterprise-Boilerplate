@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """User schemas for request/response validation."""
 
@@ -9,7 +9,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.api.v1.schemas.common import NameStr, PasswordStr, UrlStr
+from app.api.v1.schemas.common import NameStr, PaginatedResponse, PasswordStr, UrlStr
 
 # ===========================================
 # Request Schemas
@@ -108,11 +108,5 @@ class UserDetailResponse(UserResponse):
     tenant_id: UUID
 
 
-class UserListResponse(BaseModel):
-    """Paginated user list response."""
-
-    items: list[UserResponse]
-    total: int
-    page: int
-    page_size: int
-    pages: int
+UserListResponse = PaginatedResponse[UserResponse]
+"""Paginated user list — alias for PaginatedResponse[UserResponse]."""

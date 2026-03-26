@@ -1,6 +1,6 @@
 # Security Documentation
 
-**FastAPI Enterprise Boilerplate v0.9.0**
+**FastAPI-Enterprise-Boilerplate v1.0.0**
 **Last Updated:** February 2026
 
 ---
@@ -16,7 +16,7 @@
 
 ## Security Overview
 
-This document provides comprehensive security documentation for the FastAPI Enterprise Boilerplate, including implemented security features, audit results, and best practices.
+This document provides comprehensive security documentation for FastAPI-Enterprise-Boilerplate, including implemented security features, audit results, and best practices.
 
 ### Security Status Summary
 

@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 # ============================================
 # Development Dockerfile - Frontend
@@ -13,10 +13,13 @@ WORKDIR /app
 
 # Install dependencies
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts --legacy-peer-deps
 
 # Copy source code
 COPY . .
+
+# Security: ensure node user owns the app dir (needed for Vite dep optimization cache)
+RUN chown -R node:node /app
 
 # Security: Run as non-root user
 USER node

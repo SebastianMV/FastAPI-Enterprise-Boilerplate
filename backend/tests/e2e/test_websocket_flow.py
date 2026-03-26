@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 End-to-End Tests - WebSocket Flow.
@@ -153,34 +153,6 @@ class TestWebSocketNotificationsE2E:
         # 1. User sets notification preferences (no chat notifications)
         # 2. Chat event occurs
         # 3. User should not receive that notification type via WebSocket
-
-
-class TestWebSocketPresenceE2E:
-    """End-to-end WebSocket presence tests."""
-
-    @pytest.mark.asyncio
-    async def test_presence_online_flow(self, client: AsyncClient) -> None:
-        """Test presence online notification flow."""
-        # 1. User B monitoring presence
-        # 2. User A connects
-        # 3. User B receives "presence_online" for User A
-
-    @pytest.mark.asyncio
-    async def test_presence_offline_flow(self, client: AsyncClient) -> None:
-        """Test presence offline notification flow."""
-        # 1. User A and B connected
-        # 2. User A disconnects
-        # 3. User B receives "presence_offline" for User A
-
-    @pytest.mark.asyncio
-    async def test_presence_across_multiple_tabs(self, client: AsyncClient) -> None:
-        """Test presence with multiple connections."""
-        # 1. User A connects from Tab 1
-        # 2. User A connects from Tab 2
-        # 3. User A closes Tab 1
-        # 4. User A still shows as online (Tab 2 active)
-        # 5. User A closes Tab 2
-        # 6. User A now offline
 
 
 class TestWebSocketRoomE2E:

@@ -29,6 +29,7 @@
     "accessDenied": "You don't have permission to access this page",
     "fetchError": "Failed to fetch data",
     "na": "N/A",
+    "ms": "ms",
     "never": "Never",
     "retry": "Retry",
     "brandName": "FastAPI Enterprise",
@@ -145,7 +146,8 @@
     "notifications": "Notifications",
     "security": "Security",
     "sessions": "Sessions",
-    "dataExchange": "Data Exchange"
+    "dataExchange": "Data Exchange",
+    "systemHealth": "System Health"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -387,6 +389,11 @@
     "lightMode": "Light",
     "systemTheme": "System",
     "timezone": "Timezone",
+    "timezoneOptionAmericaSantiago": "America/Santiago (GMT-4)",
+    "timezoneOptionAmericaNewYork": "America/New_York (GMT-5)",
+    "timezoneOptionAmericaLosAngeles": "America/Los_Angeles (GMT-8)",
+    "timezoneOptionEuropeLondon": "Europe/London (GMT)",
+    "timezoneOptionEuropeMadrid": "Europe/Madrid (GMT+1)",
     "dateFormat": "Date Format",
     "saveChanges": "Save Changes",
     "changesSaved": "Settings saved successfully",
@@ -991,5 +998,27 @@
   },
   "config": {
     "fetchError": "Failed to load configuration"
+  },
+  "systemHealth": {
+    "title": "System Health",
+    "subtitle": "Real-time status of infrastructure services",
+    "loading": "Loading system health...",
+    "failedToLoad": "Failed to load system health data.",
+    "autoRefresh": "Auto-refresh",
+    "allSystemsOperational": "All systems operational",
+    "issuesDetected": "Issues detected",
+    "uptimeLabel": "Uptime: {{value}}%",
+    "database": "Database",
+    "cache": "Cache (Redis)",
+    "status": "Status",
+    "healthy": "Healthy",
+    "degraded": "Degraded",
+    "unhealthy": "Unhealthy",
+    "activeSessions": "Active Sessions",
+    "avgResponseTime": "Avg Response Time",
+    "uptime": "Uptime",
+    "responseExcellent": "Excellent \u2014 under 100ms",
+    "responseAcceptable": "Acceptable \u2014 under 500ms",
+    "responseSlow": "Slow \u2014 investigate performance"
   }
 }

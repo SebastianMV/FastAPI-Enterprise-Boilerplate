@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 ACL (Access Control List) Service.
@@ -195,6 +195,9 @@ DEFAULT_ROLES = {
             "roles:read",
             "settings:read",
             "settings:update",
+            "mfa:read",
+            "mfa:write",
+            "config:read",
         ],
     },
     "viewer": {
@@ -203,6 +206,7 @@ DEFAULT_ROLES = {
             "users:read",
             "roles:read",
             "settings:read",
+            "config:read",
         ],
     },
 }

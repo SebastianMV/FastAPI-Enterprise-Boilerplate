@@ -1,7 +1,7 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
-# https://github.com/SebastianMV/fastapi-enterprise-boilerplate
+# Licensed under the Apache License, Version 2.0
+# https://github.com/SebastianMV/FastAPI-Enterprise-Boilerplate
 
-"""FastAPI Enterprise Boilerplate - Production-ready starter kit."""
+"""FastAPI-Enterprise-Boilerplate — Production-ready full-stack enterprise boilerplate."""
 
-__version__ = "0.9.5"
+__version__ = "1.0.0"

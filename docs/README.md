@@ -1,6 +1,6 @@
 # 📚 Documentation
 
-> FastAPI Enterprise Boilerplate v0.9.5 — Complete Documentation Index
+> FastAPI-Enterprise-Boilerplate v1.0.0 — Complete Documentation Index
 
 ---
 
@@ -48,13 +48,11 @@
 
 ## 📋 Project-Level Documentation
 
-| File                                      | Description                                           |
-| ----------------------------------------- | ----------------------------------------------------- |
-| [README.md](../README.md)                 | Project overview, quick start, features, architecture |
-| [CHANGELOG.md](../CHANGELOG.md)           | Version history and release notes                     |
-| [CONTRIBUTING.md](../CONTRIBUTING.md)     | Contribution guidelines                               |
-| [PROJECT_STATUS.md](../PROJECT_STATUS.md) | Current status, metrics, and roadmap to v1.0.0        |
-| [MAKEFILE.md](../MAKEFILE.md)             | Cross-platform Make/PowerShell command reference      |
+| File                                  | Description                                           |
+| ------------------------------------- | ----------------------------------------------------- |
+| [README.md](../README.md)             | Project overview, quick start, features, architecture |
+| [CHANGELOG.md](../CHANGELOG.md)       | Version history and release notes                     |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | Contribution guidelines                               |
 
 ---
 
@@ -78,8 +76,7 @@
 ### For Contributors
 
 1. **Guidelines** → [CONTRIBUTING.md](../CONTRIBUTING.md)
-2. **Status** → [PROJECT_STATUS.md](../PROJECT_STATUS.md)
-3. **Changes** → [CHANGELOG.md](../CHANGELOG.md)
+2. **Changes** → [CHANGELOG.md](../CHANGELOG.md)
 
 ---
 
@@ -88,4 +85,4 @@
 - 🔴 Delete development users — see [DEPLOYMENT.md](./DEPLOYMENT.md#production-security--initial-setup)
 - 🔴 Change all default passwords and secrets
 - 🔴 Use `app_user` database role for RLS enforcement
-- 🔴 Review the [Pre-Production Security Checklist](../PROJECT_STATUS.md#-pre-production-security-checklist)
+- 🔴 Review the security guidelines in [SECURITY.md](./SECURITY.md)

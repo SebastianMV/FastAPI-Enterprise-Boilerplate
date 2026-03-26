@@ -27,19 +27,19 @@ export interface FileValidationResult {
 }
 
 const AVATAR_OPTIONS: FileValidationOptions = {
-  allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  allowedTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
   maxSizeBytes: 5 * 1024 * 1024, // 5MB
-  allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+  allowedExtensions: [".jpg", ".jpeg", ".png", ".gif", ".webp"],
 };
 
 const IMPORT_OPTIONS: FileValidationOptions = {
   allowedTypes: [
-    'text/csv',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    "text/csv",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ],
   maxSizeBytes: 50 * 1024 * 1024, // 50MB
-  allowedExtensions: ['.csv', '.xls', '.xlsx'],
+  allowedExtensions: [".csv", ".xls", ".xlsx"],
 };
 
 /**
@@ -51,27 +51,30 @@ const IMPORT_OPTIONS: FileValidationOptions = {
  * - `file.invalidExtension` — interpolation: `{ allowed: string }`
  * - `file.invalidMimeType`  — interpolation: `{ allowed: string }`
  */
-export function validateFile(file: File, options: FileValidationOptions): FileValidationResult {
+export function validateFile(
+  file: File,
+  options: FileValidationOptions,
+): FileValidationResult {
   // Check file size
   if (file.size > options.maxSizeBytes) {
     const maxMB = Math.round(options.maxSizeBytes / (1024 * 1024));
-    return { valid: false, error: 'file.tooLarge', errorParams: { maxMB } };
+    return { valid: false, error: "file.tooLarge", errorParams: { maxMB } };
   }
 
   if (file.size === 0) {
-    return { valid: false, error: 'file.empty' };
+    return { valid: false, error: "file.empty" };
   }
 
   // Check file extension
   const fileName = file.name.toLowerCase();
-  const hasValidExtension = options.allowedExtensions.some(ext =>
-    fileName.endsWith(ext)
+  const hasValidExtension = options.allowedExtensions.some((ext) =>
+    fileName.endsWith(ext),
   );
   if (!hasValidExtension) {
     return {
       valid: false,
-      error: 'file.invalidExtension',
-      errorParams: { allowed: options.allowedExtensions.join(', ') },
+      error: "file.invalidExtension",
+      errorParams: { allowed: options.allowedExtensions.join(", ") },
     };
   }
 
@@ -79,8 +82,8 @@ export function validateFile(file: File, options: FileValidationOptions): FileVa
   if (file.type && !options.allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: 'file.invalidMimeType',
-      errorParams: { allowed: options.allowedTypes.join(', ') },
+      error: "file.invalidMimeType",
+      errorParams: { allowed: options.allowedTypes.join(", ") },
     };
   }
 
@@ -101,11 +104,11 @@ export function validateImportFile(file: File): FileValidationResult {
 
 /** Known-safe OAuth provider domains */
 const TRUSTED_OAUTH_DOMAINS = [
-  'accounts.google.com',
-  'github.com',
-  'login.microsoftonline.com',
-  'login.live.com',
-  'appleid.apple.com',
+  "accounts.google.com",
+  "github.com",
+  "login.microsoftonline.com",
+  "login.live.com",
+  "appleid.apple.com",
 ];
 
 /**
@@ -113,7 +116,7 @@ const TRUSTED_OAUTH_DOMAINS = [
  * Only allows relative URLs starting with '/' (same-origin) that don't escape.
  */
 export function isSafeRedirectUrl(url: string): boolean {
-  if (!url || typeof url !== 'string') return false;
+  if (!url || typeof url !== "string") return false;
 
   // Decode URL-encoded characters to catch encoded bypasses (%2f%2f → //)
   let decoded: string;
@@ -127,22 +130,22 @@ export function isSafeRedirectUrl(url: string): boolean {
   const lower = decoded.toLowerCase().trim();
   if (
     // eslint-disable-next-line no-script-url -- security check for dangerous URL schemes
-    lower.startsWith('javascript:') ||
-    lower.startsWith('data:') ||
-    lower.startsWith('vbscript:') ||
-    lower.startsWith('blob:')
+    lower.startsWith("javascript:") ||
+    lower.startsWith("data:") ||
+    lower.startsWith("vbscript:") ||
+    lower.startsWith("blob:")
   ) {
     return false;
   }
 
   // Must start with a single forward slash (not //)
-  if (!decoded.startsWith('/') || decoded.startsWith('//')) return false;
+  if (!decoded.startsWith("/") || decoded.startsWith("//")) return false;
 
   // Block path traversal
-  if (decoded.includes('..')) return false;
+  if (decoded.includes("..")) return false;
 
   // Block backslash tricks
-  if (decoded.includes('\\')) return false;
+  if (decoded.includes("\\")) return false;
 
   return true;
 }
@@ -152,17 +155,17 @@ export function isSafeRedirectUrl(url: string): boolean {
  * Allows relative paths and HTTPS URLs; blocks dangerous schemes.
  */
 export function isSafeImageUrl(url: string): boolean {
-  if (!url || typeof url !== 'string') return false;
+  if (!url || typeof url !== "string") return false;
   const trimmed = url.trim();
   if (!trimmed) return false;
 
   // Allow relative URLs
-  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return true;
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return true;
 
   // Allow HTTPS URLs
   try {
     const parsed = new URL(trimmed);
-    return parsed.protocol === 'https:';
+    return parsed.protocol === "https:";
   } catch {
     return false;
   }
@@ -173,14 +176,12 @@ export function isSafeImageUrl(url: string): boolean {
  * Matches exact hostnames only — does not allow arbitrary subdomains.
  */
 export function isValidOAuthUrl(url: string): boolean {
-  if (!url || typeof url !== 'string') return false;
-  if (!url.startsWith('https://')) return false;
+  if (!url || typeof url !== "string") return false;
+  if (!url.startsWith("https://")) return false;
 
   try {
     const parsed = new URL(url);
-    return TRUSTED_OAUTH_DOMAINS.some(domain =>
-      parsed.hostname === domain
-    );
+    return TRUSTED_OAUTH_DOMAINS.some((domain) => parsed.hostname === domain);
   } catch {
     return false;
   }
@@ -195,14 +196,14 @@ export function isValidOAuthUrl(url: string): boolean {
  * Uses DOMParser to strip all HTML tags reliably, including unclosed tags.
  */
 export function sanitizeText(input: string): string {
-  if (typeof input !== 'string') return '';
+  if (typeof input !== "string") return "";
   // Use DOMParser for robust HTML stripping (handles unclosed tags, edge cases)
   try {
-    const doc = new DOMParser().parseFromString(input, 'text/html');
-    return (doc.body.textContent ?? '').trim();
+    const doc = new DOMParser().parseFromString(input, "text/html");
+    return (doc.body.textContent ?? "").trim();
   } catch {
     // Fallback: regex-based stripping
-    return input.replace(/<[^>]*>?/g, '').trim();
+    return input.replace(/<[^>]*>?/g, "").trim();
   }
 }
 
@@ -211,12 +212,12 @@ export function sanitizeText(input: string): string {
  * Removes special characters that could be interpreted as operators.
  */
 export function sanitizeSearchQuery(query: string, maxLength = 500): string {
-  if (typeof query !== 'string') return '';
+  if (typeof query !== "string") return "";
   // Remove Elasticsearch/Lucene special chars: + - = && || > < ! ( ) { } [ ] ^ " ~ * ? : \ /
   return query
-    .replace(/[+\-=&|><!()[\]{}^"~*?:\\/]/g, ' ')
-    .replace(/\b(AND|OR|NOT|TO)\b/gi, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/[+\-=&|><!()[\]{}^"~*?:\\/]/g, " ")
+    .replace(/\b(AND|OR|NOT|TO)\b/gi, " ")
+    .replace(/\s+/g, " ")
     .trim()
     .slice(0, maxLength);
 }
@@ -226,12 +227,12 @@ export function sanitizeSearchQuery(query: string, maxLength = 500): string {
  * Only allows hex colors (#fff, #ffffff, #ffffffaa).
  */
 export function sanitizeCssColor(color: string): string {
-  if (typeof color !== 'string') return '#000000';
+  if (typeof color !== "string") return "#000000";
   const hex = color.trim();
   if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(hex)) {
     return hex;
   }
-  return '#000000';
+  return "#000000";
 }
 
 /**
@@ -239,17 +240,18 @@ export function sanitizeCssColor(color: string): string {
  * Removes path separators, special characters, and Windows reserved device names.
  */
 export function sanitizeFilename(name: string): string {
-  if (typeof name !== 'string') return 'download';
+  if (typeof name !== "string") return "download";
   const WINDOWS_RESERVED = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$/i;
   let safe = name
-    .replace(/[/\\:*?"<>|]/g, '_')
-    .replace(/\.\./g, '_')    // Strip control characters (U+0000–U+001F, U+007F–U+009F)
+    .replace(/[/\\:*?"<>|]/g, "_")
+    .replace(/\.\./g, "_") // Strip control characters (U+0000–U+001F, U+007F–U+009F)
     // eslint-disable-next-line no-control-regex
-    .replace(/[\x00-\x1f\x7f-\x9f]/g, '')    .slice(0, 255);
+    .replace(/[\x00-\x1f\x7f-\x9f]/g, "")
+    .slice(0, 255);
   if (WINDOWS_RESERVED.test(safe)) {
     safe = `_${safe}`;
   }
-  return safe || 'download';
+  return safe || "download";
 }
 
 // =============================================================================
@@ -258,38 +260,57 @@ export function sanitizeFilename(name: string): string {
 
 /**
  * Clamps pagination parameters to safe bounds.
+ * Uses page-based pagination (page ≥ 1, 1 ≤ page_size ≤ 100).
  */
-export function clampPaginationParams(params?: { skip?: number; limit?: number }): { skip: number; limit: number } {
-  const skip = Math.max(0, Math.floor(Number(params?.skip) || 0));
-  const limit = Math.min(100, Math.max(1, Math.floor(Number(params?.limit) || 20)));
-  return { skip, limit };
+export function clampPaginationParams(params?: {
+  page?: number;
+  page_size?: number;
+}): { page: number; page_size: number } {
+  const page = Math.max(1, Math.floor(Number(params?.page) || 1));
+  const page_size = Math.min(
+    100,
+    Math.max(1, Math.floor(Number(params?.page_size) || 20)),
+  );
+  return { page, page_size };
 }
 
 /**
  * Validates a password meets minimum security requirements.
  * Returns i18n error codes — callers must translate via `t(error, errorParams)`.
  */
-export function validatePasswordStrength(password: string): { valid: boolean; error?: string; errorParams?: Record<string, unknown> } {
-  if (!password || typeof password !== 'string') {
-    return { valid: false, error: 'validation.passwordRequired' };
+export function validatePasswordStrength(password: string): {
+  valid: boolean;
+  error?: string;
+  errorParams?: Record<string, unknown>;
+} {
+  if (!password || typeof password !== "string") {
+    return { valid: false, error: "validation.passwordRequired" };
   }
   if (password.length < 8) {
-    return { valid: false, error: 'validation.passwordMin', errorParams: { min: 8 } };
+    return {
+      valid: false,
+      error: "validation.passwordMin",
+      errorParams: { min: 8 },
+    };
   }
   if (password.length > 256) {
-    return { valid: false, error: 'validation.passwordMax', errorParams: { max: 256 } };
+    return {
+      valid: false,
+      error: "validation.passwordMax",
+      errorParams: { max: 256 },
+    };
   }
   if (!/[A-Z]/.test(password)) {
-    return { valid: false, error: 'validation.passwordUppercase' };
+    return { valid: false, error: "validation.passwordUppercase" };
   }
   if (!/[a-z]/.test(password)) {
-    return { valid: false, error: 'validation.passwordLowercase' };
+    return { valid: false, error: "validation.passwordLowercase" };
   }
   if (!/[0-9]/.test(password)) {
-    return { valid: false, error: 'validation.passwordDigit' };
+    return { valid: false, error: "validation.passwordDigit" };
   }
   if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
-    return { valid: false, error: 'validation.passwordSpecial' };
+    return { valid: false, error: "validation.passwordSpecial" };
   }
   return { valid: true };
 }
@@ -298,9 +319,9 @@ export function validatePasswordStrength(password: string): { valid: boolean; er
  * Masks an email address for display (e.g., j***@example.com).
  */
 export function maskEmail(email: string): string {
-  if (!email || typeof email !== 'string') return '***';
-  const [local, domain] = email.split('@');
-  if (!local || !domain) return '***';
+  if (!email || typeof email !== "string") return "***";
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "***";
   const visibleChars = Math.min(2, local.length);
   return `${local.slice(0, visibleChars)}***@${domain}`;
 }
@@ -309,45 +330,47 @@ export function maskEmail(email: string): string {
  * Masks an IP address for display (e.g., 192.168.x.x).
  */
 export function maskIpAddress(ip: string): string {
-  if (!ip || typeof ip !== 'string') return '***';
+  if (!ip || typeof ip !== "string") return "***";
   // IPv4
-  const parts = ip.split('.');
+  const parts = ip.split(".");
   if (parts.length === 4) {
     return `${parts[0]}.${parts[1]}.x.x`;
   }
   // IPv6 - show first 2 segments
-  const v6parts = ip.split(':');
+  const v6parts = ip.split(":");
   if (v6parts.length > 2) {
     return `${v6parts[0]}:${v6parts[1]}:****`;
   }
-  return '***';
+  return "***";
 }
 
 /**
  * Validates that a QR code data URI is a safe PNG base64 image.
  */
 export function isValidQrCodeUri(uri: string): boolean {
-  if (typeof uri !== 'string') return false;
+  if (typeof uri !== "string") return false;
   return /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(uri);
 }
 
 /**
  * Safely decode a JWT payload (handles base64url encoding).
  */
-export function safeDecodeJwtPayload(token: string): Record<string, unknown> | null {
+export function safeDecodeJwtPayload(
+  token: string,
+): Record<string, unknown> | null {
   try {
     // Reject tokens larger than 10KB to prevent abuse
     if (token.length > 10240) return null;
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length !== 3) return null;
     // Convert base64url to standard base64
-    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     // Pad if necessary
     while (base64.length % 4 !== 0) {
-      base64 += '=';
+      base64 += "=";
     }
     const payload = JSON.parse(atob(base64));
-    if (typeof payload !== 'object' || payload === null) return null;
+    if (typeof payload !== "object" || payload === null) return null;
     return payload;
   } catch {
     return null;
@@ -357,11 +380,11 @@ export function safeDecodeJwtPayload(token: string): Record<string, unknown> | n
 /**
  * Validates a theme value from localStorage.
  */
-export function validateTheme(value: unknown): 'light' | 'dark' | 'system' {
-  if (value === 'light' || value === 'dark' || value === 'system') {
+export function validateTheme(value: unknown): "light" | "dark" | "system" {
+  if (value === "light" || value === "dark" || value === "system") {
     return value;
   }
-  return 'system';
+  return "system";
 }
 
 /**
@@ -369,6 +392,6 @@ export function validateTheme(value: unknown): 'light' | 'dark' | 'system' {
  * Allows only relative paths starting with '/' that don't traverse.
  */
 export function validateActionUrl(url: unknown): string | undefined {
-  if (typeof url !== 'string' || !url) return undefined;
+  if (typeof url !== "string" || !url) return undefined;
   return isSafeRedirectUrl(url) ? url : undefined;
 }

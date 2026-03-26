@@ -272,8 +272,7 @@ class TestDockerImagePins:
         for f in [
             "docker-compose.yml",
             "docker-compose.test.yml",
-            "docker-compose.staging.yml",
-            "docker-compose.prod.yml",
+            "docker-compose.deploy.yml",
         ]
     ]
 

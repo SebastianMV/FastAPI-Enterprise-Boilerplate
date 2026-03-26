@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Security Headers Middleware (Pure ASGI).
@@ -34,6 +34,7 @@ class SecurityHeadersMiddleware:
     """
 
     HSTS_DEFAULT_MAX_AGE = 31536000  # 1 year in seconds
+    _DOCS_PATHS = {"/docs", "/redoc", "/openapi.json"}
 
     def __init__(
         self,
@@ -64,6 +65,9 @@ class SecurityHeadersMiddleware:
 
         # Pre-build security headers for performance
         self._security_headers = self._build_security_headers()
+        self._docs_security_headers = self._build_security_headers(
+            csp_override=self._docs_csp_policy(),
+        )
 
         logger.info(
             "security_headers_initialized",
@@ -95,13 +99,32 @@ class SecurityHeadersMiddleware:
         ]
         return "; ".join(directives)
 
-    def _build_security_headers(self) -> list[tuple[bytes, bytes]]:
+    @staticmethod
+    def _docs_csp_policy() -> str:
+        """CSP for /docs and /redoc — allows Swagger UI CDN resources."""
+        directives = [
+            "default-src 'self'",
+            "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+            "img-src 'self' data: https:",
+            "font-src 'self' https://cdn.jsdelivr.net",
+            "connect-src 'self' https://cdn.jsdelivr.net",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+        ]
+        return "; ".join(directives)
+
+    def _build_security_headers(
+        self, *, csp_override: str | None = None
+    ) -> list[tuple[bytes, bytes]]:
         """Pre-build security headers as bytes for performance."""
+        csp = csp_override or self.csp_policy
         headers = [
             (b"x-content-type-options", b"nosniff"),
             (b"x-frame-options", self.frame_options.encode()),
             (b"x-xss-protection", b"0"),  # Deprecated; CSP provides XSS protection
-            (b"content-security-policy", self.csp_policy.encode()),
+            (b"content-security-policy", csp.encode()),
             (b"referrer-policy", self.referrer_policy.encode()),
             (b"cache-control", b"no-store"),
             (
@@ -121,12 +144,18 @@ class SecurityHeadersMiddleware:
             await self.app(scope, receive, send)
             return
 
+        path: str = scope.get("path", "")
+        is_docs = path in self._DOCS_PATHS
+
         async def send_with_security_headers(message: Message) -> None:
             if message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
 
-                # Add security headers
-                headers.extend(self._security_headers)
+                # Use relaxed CSP for API docs pages (disabled in prod)
+                sec_headers = (
+                    self._docs_security_headers if is_docs else self._security_headers
+                )
+                headers.extend(sec_headers)
 
                 # Remove server header if present
                 headers = [(k, v) for k, v in headers if k.lower() != b"server"]

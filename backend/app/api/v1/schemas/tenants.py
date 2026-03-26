@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Pydantic schemas for Tenant endpoints."""
 
@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.api.v1.schemas.common import LongNameStr, ShortStr, UrlStr
+from app.api.v1.schemas.common import LongNameStr, PaginatedResponse, ShortStr, UrlStr
 
 
 class TenantSettingsSchema(BaseModel):
@@ -93,13 +93,8 @@ class TenantResponse(BaseModel):
     updated_at: datetime
 
 
-class TenantListResponse(BaseModel):
-    """Schema for paginated tenant list."""
-
-    items: list[TenantResponse]
-    total: int
-    skip: int
-    limit: int
+TenantListResponse = PaginatedResponse[TenantResponse]
+"""Paginated tenant list — alias for PaginatedResponse[TenantResponse]."""
 
 
 class TenantActivateRequest(BaseModel):

@@ -1,5 +1,5 @@
-import api from './api';
-import { clampPaginationParams } from '@/utils/security';
+import { clampPaginationParams } from "@/utils/security";
+import api from "./api";
 
 // Role Types
 export interface Role {
@@ -15,6 +15,9 @@ export interface Role {
 export interface RoleListResponse {
   items: Role[];
   total: number;
+  page: number;
+  page_size: number;
+  pages: number;
 }
 
 export interface CreateRoleData {
@@ -41,8 +44,13 @@ export interface AssignRoleRequest {
 }
 
 export const rolesService = {
-  list: async (params?: { skip?: number; limit?: number }): Promise<RoleListResponse> => {
-    const response = await api.get<RoleListResponse>('/roles', { params: clampPaginationParams(params) });
+  list: async (params?: {
+    page?: number;
+    page_size?: number;
+  }): Promise<RoleListResponse> => {
+    const response = await api.get<RoleListResponse>("/roles", {
+      params: clampPaginationParams(params),
+    });
     return response.data;
   },
 
@@ -52,8 +60,12 @@ export const rolesService = {
   },
 
   create: async (data: CreateRoleData): Promise<Role> => {
-    const safeData = { name: data.name, description: data.description, permissions: data.permissions };
-    const response = await api.post<Role>('/roles', safeData);
+    const safeData = {
+      name: data.name,
+      description: data.description,
+      permissions: data.permissions,
+    };
+    const response = await api.post<Role>("/roles", safeData);
     return response.data;
   },
 
@@ -62,29 +74,46 @@ export const rolesService = {
     if (data.name !== undefined) safeData.name = data.name;
     if (data.description !== undefined) safeData.description = data.description;
     if (data.permissions !== undefined) safeData.permissions = data.permissions;
-    const response = await api.patch<Role>(`/roles/${encodeURIComponent(id)}`, safeData);
+    const response = await api.patch<Role>(
+      `/roles/${encodeURIComponent(id)}`,
+      safeData,
+    );
     return response.data;
   },
 
   delete: async (id: string): Promise<{ message: string }> => {
-    const response = await api.delete<{ message: string }>(`/roles/${encodeURIComponent(id)}`);
+    const response = await api.delete<{ message: string }>(
+      `/roles/${encodeURIComponent(id)}`,
+    );
     return response.data;
   },
 
-  assignToUser: async (data: AssignRoleRequest): Promise<{ message: string }> => {
+  assignToUser: async (
+    data: AssignRoleRequest,
+  ): Promise<{ message: string }> => {
     const safeData = { user_id: data.user_id, role_id: data.role_id };
-    const response = await api.post<{ message: string }>('/roles/assign', safeData);
+    const response = await api.post<{ message: string }>(
+      "/roles/assign",
+      safeData,
+    );
     return response.data;
   },
 
-  revokeFromUser: async (data: AssignRoleRequest): Promise<{ message: string }> => {
+  revokeFromUser: async (
+    data: AssignRoleRequest,
+  ): Promise<{ message: string }> => {
     const safeData = { user_id: data.user_id, role_id: data.role_id };
-    const response = await api.post<{ message: string }>('/roles/revoke', safeData);
+    const response = await api.post<{ message: string }>(
+      "/roles/revoke",
+      safeData,
+    );
     return response.data;
   },
 
   getUserPermissions: async (userId: string): Promise<UserPermissions> => {
-    const response = await api.get<UserPermissions>(`/roles/users/${encodeURIComponent(userId)}/permissions`);
+    const response = await api.get<UserPermissions>(
+      `/roles/users/${encodeURIComponent(userId)}/permissions`,
+    );
     return response.data;
   },
 };

@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Tests for roles endpoints API."""
 
@@ -84,7 +84,7 @@ class TestRolesSchemas:
         """Test RoleListResponse schema."""
         from app.api.v1.schemas.roles import RoleListResponse
 
-        data = RoleListResponse(items=[], total=0)
+        data = RoleListResponse(items=[], total=0, page=1, page_size=100, pages=0)
         assert data.total == 0
         assert len(data.items) == 0
 

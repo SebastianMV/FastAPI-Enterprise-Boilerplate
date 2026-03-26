@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 WebSocket port interface.
@@ -30,11 +30,6 @@ class MessageType(str, Enum):
     # Notification messages
     NOTIFICATION = "notification"
     NOTIFICATION_READ = "notification_read"
-
-    # Presence messages
-    PRESENCE_ONLINE = "presence_online"
-    PRESENCE_OFFLINE = "presence_offline"
-    PRESENCE_AWAY = "presence_away"
 
     # Broadcast messages
     BROADCAST = "broadcast"

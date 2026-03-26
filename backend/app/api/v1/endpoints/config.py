@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Configuration endpoints for feature flags and settings."""
 
@@ -8,7 +8,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.api.deps import CurrentTenantId, get_current_user
+from uuid import UUID
+
+from app.api.deps import CurrentTenantId, get_current_user, require_permission
 from app.config import settings
 from app.domain.entities.user import User
 
@@ -25,6 +27,7 @@ class FeatureConfigResponse(BaseModel):
 @router.get("/features", response_model=FeatureConfigResponse)
 async def get_feature_config(
     current_user: User = Depends(get_current_user),
+    _user_id: UUID = Depends(require_permission("config", "read")),
     tenant_id: CurrentTenantId = None,
 ) -> FeatureConfigResponse:
     """

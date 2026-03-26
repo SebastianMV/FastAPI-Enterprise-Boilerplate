@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 MFA (Multi-Factor Authentication) API endpoints.
@@ -17,7 +17,9 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps import get_current_user
+from uuid import UUID
+
+from app.api.deps import CurrentTenantId, get_current_user, require_permission
 from app.api.v1.schemas.mfa import (
     MFABackupCodesResponse,
     MFADisableRequest,
@@ -50,6 +52,8 @@ router = APIRouter(prefix="/mfa", tags=["MFA"])
 )
 async def get_mfa_status(
     current_user: User = Depends(get_current_user),
+    _user_id: UUID = Depends(require_permission("mfa", "read")),
+    tenant_id: CurrentTenantId = None,
 ) -> MFAStatusResponse:
     """Get MFA status for current user."""
     config = await get_mfa_config(str(current_user.id))
@@ -82,6 +86,8 @@ async def get_mfa_status(
 )
 async def setup_mfa(
     current_user: User = Depends(get_current_user),
+    _user_id: UUID = Depends(require_permission("mfa", "write")),
+    tenant_id: CurrentTenantId = None,
     mfa_service: MFAService = Depends(get_mfa_service),
 ) -> MFASetupResponse:
     """Setup MFA for current user."""
@@ -125,6 +131,8 @@ async def setup_mfa(
 async def verify_mfa_setup(
     request: MFAVerifyRequest,
     current_user: User = Depends(get_current_user),
+    _user_id: UUID = Depends(require_permission("mfa", "write")),
+    tenant_id: CurrentTenantId = None,
     mfa_service: MFAService = Depends(get_mfa_service),
 ) -> MFAEnableResponse:
     """Verify MFA setup and enable it."""
@@ -178,6 +186,8 @@ async def verify_mfa_setup(
 async def disable_mfa(
     request: MFADisableRequest,
     current_user: User = Depends(get_current_user),
+    _user_id: UUID = Depends(require_permission("mfa", "write")),
+    tenant_id: CurrentTenantId = None,
     mfa_service: MFAService = Depends(get_mfa_service),
 ) -> MFADisableResponse:
     """Disable MFA for current user."""
@@ -224,6 +234,8 @@ async def disable_mfa(
 async def regenerate_backup_codes(
     request: MFAVerifyRequest,
     current_user: User = Depends(get_current_user),
+    _user_id: UUID = Depends(require_permission("mfa", "write")),
+    tenant_id: CurrentTenantId = None,
     mfa_service: MFAService = Depends(get_mfa_service),
 ) -> MFABackupCodesResponse:
     """Regenerate backup codes."""

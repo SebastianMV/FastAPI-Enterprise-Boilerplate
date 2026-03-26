@@ -1,10 +1,10 @@
-import api from './api';
-import { clampPaginationParams } from '@/utils/security';
+import { clampPaginationParams } from "@/utils/security";
+import api from "./api";
 
 // Notification Types
 export interface Notification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: "info" | "success" | "warning" | "error";
   title: string;
   message: string;
   read: boolean;
@@ -15,18 +15,21 @@ export interface Notification {
 export interface NotificationsResponse {
   items: Notification[];
   total: number;
+  page: number;
+  page_size: number;
+  pages: number;
   unread_count: number;
 }
 
 export const notificationsService = {
-  list: async (params?: { 
-    skip?: number; 
-    limit?: number; 
-    unread_only?: boolean 
+  list: async (params?: {
+    page?: number;
+    page_size?: number;
+    unread_only?: boolean;
   }): Promise<NotificationsResponse> => {
-    const { skip, limit } = clampPaginationParams(params);
-    const response = await api.get<NotificationsResponse>('/notifications', { 
-      params: { skip, limit, unread_only: params?.unread_only } 
+    const { page, page_size } = clampPaginationParams(params);
+    const response = await api.get<NotificationsResponse>("/notifications", {
+      params: { page, page_size, unread_only: params?.unread_only },
     });
     return response.data;
   },
@@ -36,10 +39,9 @@ export const notificationsService = {
     page_size?: number;
     unread_only?: boolean;
   }): Promise<NotificationsResponse> => {
-    const safePage = Math.max(1, Math.min(1000, Math.floor(Number(params?.page) || 1)));
-    const safePageSize = Math.min(100, Math.max(1, Math.floor(Number(params?.page_size) || 20)));
-    const response = await api.get<NotificationsResponse>('/notifications', { 
-      params: { page: safePage, page_size: safePageSize, unread_only: params?.unread_only } 
+    const { page, page_size } = clampPaginationParams(params);
+    const response = await api.get<NotificationsResponse>("/notifications", {
+      params: { page, page_size, unread_only: params?.unread_only },
     });
     return response.data;
   },
@@ -49,7 +51,7 @@ export const notificationsService = {
   },
 
   markAllAsRead: async (): Promise<void> => {
-    await api.post('/notifications/mark-all-read');
+    await api.post("/notifications/mark-all-read");
   },
 
   delete: async (id: string): Promise<void> => {
@@ -57,7 +59,9 @@ export const notificationsService = {
   },
 
   getUnreadCount: async (): Promise<number> => {
-    const response = await api.get<{ count: number }>('/notifications/unread-count');
+    const response = await api.get<{ count: number }>(
+      "/notifications/unread-count",
+    );
     return response.data.count;
   },
 };

@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Tests for role endpoints module."""
 
@@ -119,13 +119,15 @@ class TestRoleListResponseSchema:
             )
             for i in range(3)
         ]
-        response = RoleListResponse(items=items, total=10)
+        response = RoleListResponse(
+            items=items, total=10, page=1, page_size=100, pages=1
+        )
         assert len(response.items) == 3
         assert response.total == 10
 
     def test_role_list_response_empty(self) -> None:
         """Test empty role list."""
-        response = RoleListResponse(items=[], total=0)
+        response = RoleListResponse(items=[], total=0, page=1, page_size=100, pages=0)
         assert len(response.items) == 0
         assert response.total == 0
 

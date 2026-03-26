@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Roles and ACL endpoints.
@@ -18,12 +18,11 @@ from app.api.deps import (
     SuperuserId,
     require_permission,
 )
-from app.api.v1.schemas.common import MessageResponse
+from app.api.v1.schemas.common import MessageResponse, PaginatedResponse
 from app.api.v1.schemas.roles import (
     AssignRoleRequest,
     RevokeRoleRequest,
     RoleCreate,
-    RoleListResponse,
     RoleResponse,
     RoleUpdate,
     UserPermissionsResponse,
@@ -73,7 +72,7 @@ def get_role_repository(
 
 @router.get(
     "",
-    response_model=RoleListResponse,
+    response_model=PaginatedResponse[RoleResponse],
     summary="List roles",
     description="List all roles for the current tenant.",
 )
@@ -81,10 +80,10 @@ async def list_roles(
     tenant_id: CurrentTenantId,
     session: DbSession,
     current_user_id: UUID = Depends(require_permission("roles", "read")),
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, ge=1, le=100),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=100, ge=1, le=100, description="Items per page"),
     repo: CachedRoleRepository = Depends(get_role_repository),
-) -> RoleListResponse:
+) -> PaginatedResponse[RoleResponse]:
     """List all roles for the current tenant with caching."""
     if not tenant_id:
         raise HTTPException(
@@ -92,12 +91,15 @@ async def list_roles(
             detail={"code": "NO_TENANT", "message": "Tenant context required"},
         )
 
-    roles = await repo.list_roles(tenant_id=tenant_id, skip=skip, limit=limit)
+    skip = (page - 1) * page_size
+    roles = await repo.list_roles(tenant_id=tenant_id, skip=skip, limit=page_size)
     total = await repo.count(tenant_id=tenant_id)
 
-    return RoleListResponse(
+    return PaginatedResponse.create(
         items=[_role_to_response(r) for r in roles],
         total=total,
+        page=page,
+        page_size=page_size,
     )
 
 

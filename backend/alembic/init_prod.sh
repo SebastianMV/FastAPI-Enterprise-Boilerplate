@@ -1,6 +1,6 @@
 #!/bin/sh
 # ===========================================
-# FastAPI Enterprise Boilerplate - Production Database Init
+# FastAPI-Enterprise-Boilerplate - Production Database Init
 # ===========================================
 # This script runs on first container startup (production).
 # It creates the app_user role used for RLS enforcement.
@@ -38,4 +38,4 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
     GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
 EOSQL
 
-echo "Production database initialized for FastAPI Enterprise Boilerplate"
+echo "Production database initialized for FastAPI-Enterprise-Boilerplate"

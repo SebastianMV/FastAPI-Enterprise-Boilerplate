@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Extended tests for application configuration."""
 
@@ -36,13 +36,13 @@ class TestSettingsAppConfig:
         """Test APP_NAME has default value."""
         from app.config import settings
 
-        assert settings.APP_NAME == "FastAPI Enterprise Boilerplate"
+        assert settings.APP_NAME == "FastAPI-Enterprise-Boilerplate"
 
     def test_app_version_default(self) -> None:
         """Test APP_VERSION has default value."""
         from app.config import settings
 
-        assert settings.APP_VERSION == "0.9.0"
+        assert settings.APP_VERSION == "1.0.0"
 
     def test_environment_default(self) -> None:
         """Test ENVIRONMENT has default value."""

@@ -9,13 +9,13 @@
 Over 24 consecutive security audits, 788 issues were identified and fixed. Analysis revealed
 that the same categories of issues recurred across audits:
 
-| Root Cause | Issues | % |
-|---|---|---|
-| Logging violations | ~95 | 12% |
-| Hardcoded strings (i18n) | ~157 | 20% |
-| Missing tenant isolation | ~30 | 4% |
-| Error message leaks | ~42 | 5% |
-| Docker hardening gaps | ~55 | 7% |
+| Root Cause               | Issues | %   |
+| ------------------------ | ------ | --- |
+| Logging violations       | ~95    | 12% |
+| Hardcoded strings (i18n) | ~157   | 20% |
+| Missing tenant isolation | ~30    | 4%  |
+| Error message leaks      | ~42    | 5%  |
+| Docker hardening gaps    | ~55    | 7%  |
 
 Standard linting tools (Ruff, ESLint, Bandit) catch general code quality issues but NOT
 project-specific patterns like "don't use `import logging`" or "every endpoint needs
@@ -36,6 +36,7 @@ recurring pattern from audits:
 These rules run as a **pre-commit hook** (blocking) and in **CI** (GitHub Actions).
 
 Current rule categories:
+
 - **Backend:** `import logging`, `str(e)` in responses, f-string logging, `datetime.utcnow()`,
   bare `str` in Pydantic, missing password min_length, HTML interpolation, CSV formula injection,
   token in URL params, missing tenant_id in endpoints
@@ -68,6 +69,7 @@ Current rule categories:
 ### Rely on Standard Linters Only
 
 Use Ruff + ESLint + Bandit without custom rules. Rejected because:
+
 - They don't catch project-specific patterns (`get_logger()` vs `import logging`)
 - 788 issues proved standard tools are insufficient for this codebase
 - No way to encode "every endpoint needs tenant_id" in standard linters
@@ -75,6 +77,7 @@ Use Ruff + ESLint + Bandit without custom rules. Rejected because:
 ### Custom ESLint/Ruff Plugins
 
 Write custom plugins for each linter. Rejected because:
+
 - Requires different plugin formats for each tool
 - Higher development and maintenance cost
 - Semgrep's YAML DSL is simpler and covers both Python and TypeScript
@@ -82,6 +85,7 @@ Write custom plugins for each linter. Rejected because:
 ### Code Review Checklists Only
 
 Document patterns in a checklist for human reviewers. Rejected because:
+
 - Humans forget, skip, or inconsistently apply checklists
 - AI agents don't read markdown checklists during code generation
 - Pre-commit hooks are deterministic — they never "miss" a violation
@@ -93,4 +97,4 @@ Document patterns in a checklist for human reviewers. Rejected because:
 - `.semgrep/infra-security.yml`: 2 infrastructure rules
 - `.pre-commit-config.yaml`: Semgrep hook configuration
 - `backend/tests/security/test_security_meta.py`: Meta-tests (complementary to Semgrep)
-- `AGENTS_HISTORY.md`: Full audit history with all 788+ fixes
+- `AGENTS.md`: Project context and critical rules for AI agents

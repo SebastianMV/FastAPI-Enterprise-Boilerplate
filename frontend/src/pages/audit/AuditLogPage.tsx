@@ -136,8 +136,8 @@ function getActionColor(action: string): string {
 export default function AuditLogPage() {
   const { t } = useTranslation();
   const [filters, setFilters] = useState<AuditLogFilters>({
-    skip: 0,
-    limit: 25,
+    page: 1,
+    page_size: 25,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
@@ -164,18 +164,16 @@ export default function AuditLogPage() {
   // Handle page change
   const handlePageChange = useCallback((direction: "prev" | "next") => {
     setFilters((prev) => {
-      const newSkip =
-        direction === "next"
-          ? (prev.skip || 0) + (prev.limit || 25)
-          : Math.max(0, (prev.skip || 0) - (prev.limit || 25));
-      return { ...prev, skip: newSkip };
+      const currentPage = prev.page || 1;
+      const newPage =
+        direction === "next" ? currentPage + 1 : Math.max(1, currentPage - 1);
+      return { ...prev, page: newPage };
     });
   }, []);
 
   // Calculate pagination info
-  const currentPage =
-    Math.floor((filters.skip || 0) / (filters.limit || 25)) + 1;
-  const totalPages = data ? Math.ceil(data.total / (filters.limit || 25)) : 0;
+  const currentPage = filters.page || 1;
+  const totalPages = data?.pages || 0;
 
   // View log details
   const viewLogDetails = useCallback((log: AuditLog) => {
@@ -256,7 +254,7 @@ export default function AuditLogPage() {
                   setFilters({
                     ...filters,
                     action: e.target.value || undefined,
-                    skip: 0,
+                    page: 1,
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -282,7 +280,7 @@ export default function AuditLogPage() {
                   setFilters({
                     ...filters,
                     resource_type: e.target.value || undefined,
-                    skip: 0,
+                    page: 1,
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -309,7 +307,7 @@ export default function AuditLogPage() {
                     start_date: e.target.value
                       ? `${e.target.value}T00:00:00Z`
                       : undefined,
-                    skip: 0,
+                    page: 1,
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -329,7 +327,7 @@ export default function AuditLogPage() {
                     end_date: e.target.value
                       ? `${e.target.value}T23:59:59Z`
                       : undefined,
-                    skip: 0,
+                    page: 1,
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -339,7 +337,7 @@ export default function AuditLogPage() {
 
           <div className="mt-4 flex justify-end">
             <button
-              onClick={() => setFilters({ skip: 0, limit: 25 })}
+              onClick={() => setFilters({ page: 1, page_size: 25 })}
               className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
             >
               {t("audit.filter.clearAll")}
@@ -474,9 +472,10 @@ export default function AuditLogPage() {
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {t("audit.pagination.range", {
-                  from: (filters.skip || 0) + 1,
+                  from:
+                    ((filters.page || 1) - 1) * (filters.page_size || 25) + 1,
                   to: Math.min(
-                    (filters.skip || 0) + (filters.limit || 25),
+                    (filters.page || 1) * (filters.page_size || 25),
                     data.total,
                   ),
                   total: data.total,

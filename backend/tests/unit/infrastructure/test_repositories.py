@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Unit tests for repository implementations.
@@ -72,7 +72,7 @@ class TestAuditLogRepository:
         assert model.action == sample_audit_log.action.value
         assert model.resource_type == sample_audit_log.resource_type.value
         assert model.resource_id == sample_audit_log.resource_id
-        assert model.metadata == sample_audit_log.metadata
+        assert model.extra_data == sample_audit_log.metadata
 
     def test_to_entity_converts_model(
         self, repository: SQLAlchemyAuditLogRepository, sample_audit_log: AuditLog
@@ -208,7 +208,7 @@ class TestAuditLogWithoutMetadata:
         )
 
         model = repository._to_model(audit_log)
-        assert model.metadata == {}
+        assert model.extra_data == {}
 
     def test_to_entity_with_none_actor(
         self, repository: SQLAlchemyAuditLogRepository

@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Unit tests for role endpoint schemas."""
 
@@ -216,13 +216,16 @@ class TestRoleListResponse:
                 )
             ],
             total=1,
+            page=1,
+            page_size=100,
+            pages=1,
         )
         assert len(response.items) == 1
         assert response.total == 1
 
     def test_role_list_response_empty(self):
         """Test empty role list response."""
-        response = RoleListResponse(items=[], total=0)
+        response = RoleListResponse(items=[], total=0, page=1, page_size=100, pages=0)
         assert len(response.items) == 0
         assert response.total == 0
 

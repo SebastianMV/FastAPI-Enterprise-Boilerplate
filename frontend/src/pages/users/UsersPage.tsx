@@ -1,8 +1,14 @@
 import { AlertModal, ConfirmModal, Modal } from "@/components/common/Modal";
-import { rolesService, usersService, type User } from "@/services/api";
+import {
+  useCreateUser,
+  useDeleteUser,
+  useUpdateUser,
+  useUsers,
+} from "@/hooks/useUsers";
+import { rolesService, type User } from "@/services/api";
 import { maskEmail, sanitizeText } from "@/utils/security";
 import { EMAIL_PATTERN, PASSWORD_PATTERN } from "@/utils/validation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle,
   Edit,
@@ -59,94 +65,23 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
-  const queryClient = useQueryClient();
-
-  // Fetch users
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["users", page],
-    queryFn: () =>
-      usersService.list({ skip: (page - 1) * pageSize, limit: pageSize }),
+  // Fetch users via custom hook
+  const { data, isLoading, error, refetch } = useUsers({
+    page: page,
+    page_size: pageSize,
   });
 
   // Fetch available roles for assignment
   const { data: rolesData } = useQuery({
     queryKey: ["roles"],
-    queryFn: () => rolesService.list({ limit: 100 }),
+    queryFn: () => rolesService.list({ page_size: 100 }),
   });
   const availableRoles = rolesData?.items || [];
 
-  // Create mutation
-  const createMutation = useMutation({
-    mutationFn: (data: CreateUserFormData) => usersService.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      setShowCreateModal(false);
-      resetCreateForm();
-      setAlertModal({
-        isOpen: true,
-        title: t("users.userCreated"),
-        message: t("users.createSuccess"),
-        variant: "success",
-      });
-    },
-    onError: () => {
-      setAlertModal({
-        isOpen: true,
-        title: t("common.error"),
-        message: t("users.createError"),
-        variant: "error",
-      });
-    },
-  });
-
-  // Update mutation
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
-      usersService.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      setShowEditModal(false);
-      setSelectedUser(null);
-      setAlertModal({
-        isOpen: true,
-        title: t("users.userUpdated"),
-        message: t("users.updateSuccess"),
-        variant: "success",
-      });
-    },
-    onError: () => {
-      setAlertModal({
-        isOpen: true,
-        title: t("common.error"),
-        message: t("users.updateError"),
-        variant: "error",
-      });
-    },
-  });
-
-  // Delete mutation (soft delete)
-  const deleteMutation = useMutation({
-    mutationFn: usersService.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      setShowDeleteModal(false);
-      setSelectedUser(null);
-      setAlertModal({
-        isOpen: true,
-        title: t("users.userDeleted"),
-        message: t("users.deleteSuccess"),
-        variant: "success",
-      });
-    },
-    onError: () => {
-      setAlertModal({
-        isOpen: true,
-        title: t("common.error"),
-        message: t("users.deleteError"),
-        variant: "error",
-      });
-    },
-  });
+  // CRUD mutations via custom hooks
+  const createMutation = useCreateUser();
+  const updateMutation = useUpdateUser();
+  const deleteMutation = useDeleteUser();
 
   // Create form
   const {
@@ -198,23 +133,83 @@ export default function UsersPage() {
 
   const onCreateSubmit = useCallback(
     (data: CreateUserFormData) => {
-      createMutation.mutate(data);
+      createMutation.mutate(data, {
+        onSuccess: () => {
+          setShowCreateModal(false);
+          resetCreateForm();
+          setAlertModal({
+            isOpen: true,
+            title: t("users.userCreated"),
+            message: t("users.createSuccess"),
+            variant: "success",
+          });
+        },
+        onError: () => {
+          setAlertModal({
+            isOpen: true,
+            title: t("common.error"),
+            message: t("users.createError"),
+            variant: "error",
+          });
+        },
+      });
     },
-    [createMutation],
+    [createMutation, resetCreateForm, t],
   );
 
   const onEditSubmit = useCallback(
     (data: EditUserFormData) => {
       if (!selectedUser) return;
-      updateMutation.mutate({ id: selectedUser.id, data });
+      updateMutation.mutate(
+        { id: selectedUser.id, data },
+        {
+          onSuccess: () => {
+            setShowEditModal(false);
+            setSelectedUser(null);
+            setAlertModal({
+              isOpen: true,
+              title: t("users.userUpdated"),
+              message: t("users.updateSuccess"),
+              variant: "success",
+            });
+          },
+          onError: () => {
+            setAlertModal({
+              isOpen: true,
+              title: t("common.error"),
+              message: t("users.updateError"),
+              variant: "error",
+            });
+          },
+        },
+      );
     },
-    [selectedUser, updateMutation],
+    [selectedUser, updateMutation, t],
   );
 
   const onDeleteConfirm = useCallback(() => {
     if (!selectedUser) return;
-    deleteMutation.mutate(selectedUser.id);
-  }, [selectedUser, deleteMutation]);
+    deleteMutation.mutate(selectedUser.id, {
+      onSuccess: () => {
+        setShowDeleteModal(false);
+        setSelectedUser(null);
+        setAlertModal({
+          isOpen: true,
+          title: t("users.userDeleted"),
+          message: t("users.deleteSuccess"),
+          variant: "success",
+        });
+      },
+      onError: () => {
+        setAlertModal({
+          isOpen: true,
+          title: t("common.error"),
+          message: t("users.deleteError"),
+          variant: "error",
+        });
+      },
+    });
+  }, [selectedUser, deleteMutation, t]);
 
   const filteredUsers = useMemo(
     () =>

@@ -1,4 +1,4 @@
-# FastAPI Enterprise Boilerplate - Backend
+# FastAPI-Enterprise-Boilerplate - Backend
 
 Production-ready FastAPI backend with JWT authentication, ACL, multi-tenant RLS, and hexagonal architecture.
 

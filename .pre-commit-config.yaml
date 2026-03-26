@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
@@ -105,7 +105,7 @@ repos:
           - -c
           - |
             import re, sys
-            files = ['docker-compose.staging.yml', 'docker-compose.prod.yml']
+            files = ['docker-compose.deploy.yml']
             errors = []
             [errors.extend(
               f'{f}:{i}: {l.strip()}'
@@ -115,7 +115,7 @@ repos:
             (print('\n'.join(errors)) or sys.exit(1)) if errors else None
         language: system
         pass_filenames: false
-        files: docker-compose\.(staging|prod)\.yml$
+        files: docker-compose\.deploy\.yml$
 
       # --- Secrets fail-safe check (no :- defaults for secrets in prod) ---
       - id: secrets-failsafe
@@ -126,7 +126,7 @@ repos:
           - |
             import sys
             secrets = ['PASSWORD', 'SECRET', 'KEY', 'TOKEN', 'ENCRYPTION']
-            files = ['docker-compose.staging.yml', 'docker-compose.prod.yml']
+            files = ['docker-compose.deploy.yml']
             errors = []
             [errors.extend(
               f'{f}:{i}: {l.strip()[:80]}'
@@ -136,7 +136,7 @@ repos:
             (print('Secrets with fallback defaults (use :? instead of :-):\n' + '\n'.join(errors)) or sys.exit(1)) if errors else None
         language: system
         pass_filenames: false
-        files: docker-compose\.(staging|prod)\.yml$
+        files: docker-compose\.deploy\.yml$
 
       # --- No import logging in backend source ---
       - id: no-stdlib-logging

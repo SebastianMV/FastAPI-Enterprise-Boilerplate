@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Database management CLI commands.
@@ -154,6 +154,9 @@ async def _seed_database(
                         "users:update",
                         "reports:read",
                         "reports:create",
+                        "mfa:read",
+                        "mfa:write",
+                        "config:read",
                     ],
                     "is_system": True,
                 },
@@ -163,6 +166,9 @@ async def _seed_database(
                     "permissions": [
                         "profile:read",
                         "profile:update",
+                        "mfa:read",
+                        "mfa:write",
+                        "config:read",
                     ],
                     "is_system": True,
                 },
@@ -171,6 +177,7 @@ async def _seed_database(
                     "description": "Read-only access",
                     "permissions": [
                         "dashboard:read",
+                        "config:read",
                     ],
                     "is_system": True,
                 },

@@ -1,6 +1,6 @@
 # Frontend
 
-React 19 + TypeScript + Tailwind CSS frontend for FastAPI Enterprise Boilerplate.
+React 19 + TypeScript + Tailwind CSS frontend for FastAPI-Enterprise-Boilerplate.
 
 ## Quick Start
 
@@ -32,7 +32,7 @@ docker compose up -d
 npm run build
 
 # Or with Docker
-docker compose -f docker-compose.prod.yml up --build
+docker compose -f docker-compose.deploy.yml up --build
 ```
 
 ## Docker Configuration

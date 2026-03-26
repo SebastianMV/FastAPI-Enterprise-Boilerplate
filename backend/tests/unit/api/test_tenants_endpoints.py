@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Unit tests for Tenants API endpoints.
@@ -276,8 +276,9 @@ class TestTenantSchemas:
                 )
             ],
             total=1,
-            skip=0,
-            limit=20,
+            page=1,
+            page_size=20,
+            pages=1,
         )
 
         assert len(response.items) == 1

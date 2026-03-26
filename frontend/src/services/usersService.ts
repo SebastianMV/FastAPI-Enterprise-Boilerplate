@@ -8,8 +8,8 @@ export type { PaginatedResponse, User };
 // Users service
 export const usersService = {
   list: async (params?: {
-    skip?: number;
-    limit?: number;
+    page?: number;
+    page_size?: number;
   }): Promise<PaginatedResponse<User>> => {
     const safeParams = clampPaginationParams(params);
     const response = await api.get<PaginatedResponse<User>>("/users", {

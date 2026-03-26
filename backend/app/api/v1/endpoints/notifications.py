@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Notifications REST API endpoints.
 
@@ -58,10 +58,13 @@ class NotificationResponse(BaseModel):
 
 
 class NotificationListResponse(BaseModel):
-    """List of notifications."""
+    """Paginated list of notifications with unread count."""
 
     items: list[NotificationResponse]
     total: int
+    page: int = Field(..., ge=1, description="Current page number")
+    page_size: int = Field(..., ge=1, le=100, description="Items per page")
+    pages: int = Field(..., ge=0, description="Total number of pages")
     unread_count: int
 
 
@@ -88,8 +91,8 @@ async def list_notifications(
     _current_user_id: NotificationsReader,
     tenant_id: CurrentTenantId = None,
     session: AsyncSession = Depends(get_db_session),
-    limit: int = Query(default=50, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=50, ge=1, le=100, description="Items per page"),
     unread_only: bool = Query(default=False),
 ) -> NotificationListResponse:
     """List user's notifications."""
@@ -105,8 +108,11 @@ async def list_notifications(
     if unread_only:
         query = query.where(NotificationModel.read_at.is_(None))
 
+    offset = (page - 1) * page_size
     query = (
-        query.order_by(NotificationModel.created_at.desc()).limit(limit).offset(offset)
+        query.order_by(NotificationModel.created_at.desc())
+        .limit(page_size)
+        .offset(offset)
     )
 
     result = await session.execute(query)
@@ -136,6 +142,8 @@ async def list_notifications(
     unread_result = await session.execute(unread_query)
     unread_count = unread_result.scalar() or 0
 
+    pages = (total + page_size - 1) // page_size if page_size > 0 else 0
+
     return NotificationListResponse(
         items=[
             NotificationResponse(
@@ -153,6 +161,9 @@ async def list_notifications(
             for n in notifications
         ],
         total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages,
         unread_count=unread_count,
     )
 

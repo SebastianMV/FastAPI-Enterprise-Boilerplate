@@ -11,6 +11,26 @@ _No unreleased changes._
 
 ---
 
+## [1.0.0] - 2026-03-25
+
+### Milestone — v1.0.0 Stable Release
+
+- **43 security audit cycles** completed — 994+ individual hardening items resolved
+- **All v1.0.0 quality gates passed** — Release Candidate promoted to stable
+- Backend: 3,500+ unit tests, 247 integration tests, 99% coverage
+- Frontend: 598 unit tests, 72% statement coverage
+- MyPy: 0 errors (baseline reduced from 282 to 0)
+- Infrastructure: Docker hardened, supply chain pinned, 48 Semgrep rules enabled
+
+### Changed
+
+- License changed from MIT to Apache 2.0 — adds mandatory attribution via NOTICE file
+- Added Contributor License Agreement (CLA) with relicensing rights
+  - CLA document: `CLA.md` | Signatories: `.github/CLA-SIGNATORIES.md`
+  - Automated CLA verification via GitHub Actions (`.github/workflows/cla.yml`)
+
+---
+
 ## [0.9.6] - 2026-02-24
 
 ### Security

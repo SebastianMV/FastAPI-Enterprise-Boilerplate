@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 CLI application entry point.
@@ -17,7 +17,7 @@ from app.cli.commands import apikeys, database, users
 
 app = typer.Typer(
     name="boilerplate",
-    help="FastAPI Enterprise Boilerplate CLI",
+    help="FastAPI-Enterprise-Boilerplate CLI",
     add_completion=True,
     no_args_is_help=True,
 )

@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Unit Tests - WebSocket Manager.
@@ -76,8 +76,6 @@ class TestWebSocketMessage:
             MessageType.PING,
             MessageType.PONG,
             MessageType.NOTIFICATION,
-            MessageType.PRESENCE_ONLINE,
-            MessageType.PRESENCE_OFFLINE,
         ]
 
         for msg_type in types:

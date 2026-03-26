@@ -92,7 +92,7 @@ export default function TenantsPage() {
     queryKey: ["tenants", statusFilter],
     queryFn: () =>
       tenantsService.list({
-        limit: 100,
+        page_size: 100,
         is_active:
           statusFilter === "all" ? undefined : statusFilter === "active",
       }),

@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Role schemas for request/response validation."""
 
@@ -8,7 +8,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.v1.schemas.common import DescriptionStr, RoleNameStr, ScopeStr, ShortStr
+from app.api.v1.schemas.common import (
+    DescriptionStr,
+    PaginatedResponse,
+    RoleNameStr,
+    ScopeStr,
+    ShortStr,
+)
 
 # ===========================================
 # Request Schemas
@@ -85,11 +91,8 @@ class RoleResponse(BaseModel):
     updated_at: datetime
 
 
-class RoleListResponse(BaseModel):
-    """Paginated role list response."""
-
-    items: list[RoleResponse]
-    total: int
+RoleListResponse = PaginatedResponse[RoleResponse]
+"""Paginated role list — alias for PaginatedResponse[RoleResponse]."""
 
 
 class UserPermissionsResponse(BaseModel):

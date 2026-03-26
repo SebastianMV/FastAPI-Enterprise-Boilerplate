@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Unit tests for WebSocket domain ports.
@@ -32,12 +32,6 @@ class TestMessageType:
         """Test notification message types."""
         assert MessageType.NOTIFICATION.value == "notification"
         assert MessageType.NOTIFICATION_READ.value == "notification_read"
-
-    def test_presence_messages(self) -> None:
-        """Test presence message types."""
-        assert MessageType.PRESENCE_ONLINE.value == "presence_online"
-        assert MessageType.PRESENCE_OFFLINE.value == "presence_offline"
-        assert MessageType.PRESENCE_AWAY.value == "presence_away"
 
     def test_broadcast_messages(self) -> None:
         """Test broadcast message types."""

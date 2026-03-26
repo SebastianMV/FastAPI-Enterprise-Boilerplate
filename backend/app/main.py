@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """FastAPI application entry point."""
 
@@ -94,7 +94,7 @@ app = FastAPI(
     description="""
 ## FastAPI Enterprise Boilerplate
 
-Production-ready starter kit with:
+Production-ready full-stack enterprise boilerplate with:
 
 - 🔐 **JWT Authentication** with refresh tokens
 - 🛡️ **Granular ACL** - Permission-based access control
@@ -104,7 +104,7 @@ Production-ready starter kit with:
 - ⚡ **Rate Limiting** - Redis-based API protection
 - 🚀 **Background Jobs** - Async task processing
 
-[GitHub Repository](https://github.com/SebastianMV/fastapi-enterprise-boilerplate)
+[GitHub Repository](https://github.com/SebastianMV/FastAPI-Enterprise-Boilerplate)
     """,
     docs_url="/docs" if not settings.is_production else None,
     redoc_url="/redoc" if not settings.is_production else None,

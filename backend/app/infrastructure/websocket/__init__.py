@@ -1,12 +1,12 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 WebSocket infrastructure module.
 
 Simple in-memory WebSocket management for:
 - Real-time notifications
-- Presence tracking (online/offline)
+- Notification delivery
 - PING/PONG keepalive
 """
 

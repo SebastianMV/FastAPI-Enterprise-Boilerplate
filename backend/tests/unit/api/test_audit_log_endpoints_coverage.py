@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """
 Unit tests for audit log endpoints to improve coverage.
@@ -76,8 +76,8 @@ class TestListAuditLogs:
         result = await list_audit_logs(
             current_user_id=user_id,
             tenant_id=tenant_id,
-            skip=0,
-            limit=50,
+            page=1,
+            page_size=50,
             action=None,
             resource_type=None,
             start_date=None,
@@ -87,8 +87,8 @@ class TestListAuditLogs:
 
         assert result.total == 2
         assert len(result.items) == 2
-        assert result.skip == 0
-        assert result.limit == 50
+        assert result.page == 1
+        assert result.page_size == 50
 
     @pytest.mark.asyncio
     async def test_list_audit_logs_no_tenant(self):
@@ -102,8 +102,8 @@ class TestListAuditLogs:
             await list_audit_logs(
                 current_user_id=user_id,
                 tenant_id=None,
-                skip=0,
-                limit=50,
+                page=1,
+                page_size=50,
                 action=None,
                 resource_type=None,
                 start_date=None,
@@ -127,8 +127,8 @@ class TestListAuditLogs:
             await list_audit_logs(
                 current_user_id=user_id,
                 tenant_id=tenant_id,
-                skip=0,
-                limit=50,
+                page=1,
+                page_size=50,
                 action="INVALID_ACTION",
                 resource_type=None,
                 start_date=None,
@@ -152,8 +152,8 @@ class TestListAuditLogs:
             await list_audit_logs(
                 current_user_id=user_id,
                 tenant_id=tenant_id,
-                skip=0,
-                limit=50,
+                page=1,
+                page_size=50,
                 action=None,
                 resource_type="INVALID_TYPE",
                 start_date=None,
@@ -181,8 +181,8 @@ class TestListAuditLogs:
         result = await list_audit_logs(
             current_user_id=user_id,
             tenant_id=tenant_id,
-            skip=0,
-            limit=50,
+            page=1,
+            page_size=50,
             action="CREATE",
             resource_type="user",
             start_date=start_date,
@@ -208,8 +208,8 @@ class TestGetMyActivity:
 
         result = await get_my_activity(
             current_user_id=user_id,
-            skip=0,
-            limit=50,
+            page=1,
+            page_size=50,
             start_date=None,
             end_date=None,
             repo=mock_repo,
@@ -242,7 +242,7 @@ class TestGetRecentLogins:
         result = await get_recent_logins(
             current_user_id=user_id,
             tenant_id=tenant_id,
-            limit=50,
+            page_size=50,
             include_failed=True,
             repo=mock_repo,
         )
@@ -274,8 +274,8 @@ class TestGetResourceHistory:
             resource_id=resource_id,
             current_user_id=user_id,
             tenant_id=tenant_id,
-            skip=0,
-            limit=50,
+            page=1,
+            page_size=50,
             repo=mock_repo,
         )
 
@@ -298,8 +298,8 @@ class TestGetResourceHistory:
                 resource_id=resource_id,
                 current_user_id=user_id,
                 tenant_id=tenant_id,
-                skip=0,
-                limit=50,
+                page=1,
+                page_size=50,
                 repo=mock_repo,
             )
 

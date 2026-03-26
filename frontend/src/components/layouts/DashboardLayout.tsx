@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import { maskEmail, sanitizeText } from "@/utils/security";
 import {
+  Activity,
   ArrowLeftRight,
   Bell,
   Building2,
@@ -79,22 +80,22 @@ export default function DashboardLayout() {
         href: "/dashboard",
         icon: LayoutDashboard,
       },
-      { name: t("navigation.users"), href: "/users", icon: Users },
-      { name: t("navigation.roles"), href: "/roles", icon: Shield },
       {
         name: t("navigation.notifications"),
         href: "/notifications",
         icon: Bell,
       },
-      {
-        name: t("navigation.auditLog"),
-        href: "/security/audit",
-        icon: FileText,
-      },
       { name: t("navigation.settings"), href: "/settings", icon: Settings },
       // Superuser only
       ...(user?.is_superuser
         ? [
+            { name: t("navigation.users"), href: "/users", icon: Users },
+            { name: t("navigation.roles"), href: "/roles", icon: Shield },
+            {
+              name: t("navigation.auditLog"),
+              href: "/security/audit",
+              icon: FileText,
+            },
             {
               name: t("navigation.tenants"),
               href: "/admin/tenants",
@@ -104,6 +105,11 @@ export default function DashboardLayout() {
               name: t("navigation.dataExchange"),
               href: "/admin/data",
               icon: ArrowLeftRight,
+            },
+            {
+              name: t("navigation.systemHealth"),
+              href: "/admin/health",
+              icon: Activity,
             },
           ]
         : []),

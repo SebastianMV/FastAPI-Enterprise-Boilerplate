@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 // Session Types
 export interface UserSession {
@@ -15,7 +15,7 @@ export interface UserSession {
 }
 
 export interface SessionListResponse {
-  sessions: UserSession[];
+  items: UserSession[];
   total: number;
 }
 
@@ -26,17 +26,19 @@ export interface RevokeSessionsResponse {
 
 export const sessionsService = {
   list: async (): Promise<SessionListResponse> => {
-    const response = await api.get<SessionListResponse>('/sessions');
+    const response = await api.get<SessionListResponse>("/sessions");
     return response.data;
   },
 
   revoke: async (sessionId: string): Promise<RevokeSessionsResponse> => {
-    const response = await api.delete<RevokeSessionsResponse>(`/sessions/${encodeURIComponent(sessionId)}`);
+    const response = await api.delete<RevokeSessionsResponse>(
+      `/sessions/${encodeURIComponent(sessionId)}`,
+    );
     return response.data;
   },
 
   revokeAll: async (): Promise<RevokeSessionsResponse> => {
-    const response = await api.delete<RevokeSessionsResponse>('/sessions');
+    const response = await api.delete<RevokeSessionsResponse>("/sessions");
     return response.data;
   },
 };

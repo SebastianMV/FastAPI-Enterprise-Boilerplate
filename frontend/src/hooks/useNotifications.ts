@@ -130,7 +130,7 @@ export function useNotifications(
       try {
         const data = await notificationsService.list({
           unread_only: opts?.unreadOnly,
-          limit: opts?.limit ?? limit,
+          page_size: opts?.limit ?? limit,
         });
 
         if (Array.isArray(data.items)) {

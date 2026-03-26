@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 interface MockAxiosInstance {
   (...args: unknown[]): Promise<unknown>;
+  mockResolvedValueOnce: ReturnType<typeof vi.fn>["mockResolvedValueOnce"];
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
@@ -238,13 +239,13 @@ describe("api service", () => {
     const apiInstance = getPrimaryApi();
 
     apiInstance.get.mockResolvedValueOnce({
-      data: { items: [], total: 0, skip: 0, limit: 20 },
+      data: { items: [], total: 0, page: 1, page_size: 20, pages: 0 },
     });
 
     await mod.usersService.list();
 
     expect(apiInstance.get).toHaveBeenCalledWith("/users", {
-      params: { skip: 0, limit: 20 },
+      params: { page: 1, page_size: 20 },
     });
   });
 });

@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Unit tests for auth endpoint schemas."""
 
@@ -99,9 +99,9 @@ class TestRefreshTokenRequest:
         assert request.refresh_token == "some.valid.token"
 
     def test_refresh_token_required(self):
-        """Test refresh_token has default empty string."""
+        """Test refresh_token defaults to None (token comes from HttpOnly cookie)."""
         request = RefreshTokenRequest()
-        assert request.refresh_token == ""
+        assert request.refresh_token is None
 
 
 class TestChangePasswordRequest:

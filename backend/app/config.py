@@ -1,5 +1,5 @@
 # Copyright (c) 2025-2026 Sebastián Muñoz
-# Licensed under the MIT License
+# Licensed under the Apache License, Version 2.0
 
 """Application configuration with environment validation."""
 
@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     # ===========================================
     # Application
     # ===========================================
-    APP_NAME: str = "FastAPI Enterprise Boilerplate"
-    APP_VERSION: str = "0.9.0"
+    APP_NAME: str = "FastAPI-Enterprise-Boilerplate"
+    APP_VERSION: str = "1.0.0"
     ENVIRONMENT: Literal["development", "staging", "production", "testing"] = (
         "development"
     )
