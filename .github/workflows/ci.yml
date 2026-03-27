@@ -132,6 +132,7 @@ jobs:
   backend-full-suite-report:
     name: Backend Full Suite Report (Non-blocking)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     continue-on-error: true
     permissions:
       contents: read
@@ -187,7 +188,7 @@ jobs:
           ENVIRONMENT: testing
         run: |
           alembic upgrade head
-          pytest tests/ -v --junitxml=full-suite-junit.xml --maxfail=0 || true
+          pytest tests/ -v --timeout=120 --junitxml=full-suite-junit.xml --maxfail=0 || true
 
       - name: Publish full suite summary
         if: always()
