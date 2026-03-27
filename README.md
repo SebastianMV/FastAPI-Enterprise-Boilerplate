@@ -160,7 +160,7 @@ Database migrations run automatically on startup, creating:
 
 #### Development Credentials
 
-| Usuario              | Email                 | Password      | Rol        |
+| User                 | Email                 | Password      | Role       |
 | -------------------- | --------------------- | ------------- | ---------- |
 | System Administrator | `admin@example.com`   | `Admin123!`   | superadmin |
 | Tenant Manager       | `manager@example.com` | `Manager123!` | admin      |
