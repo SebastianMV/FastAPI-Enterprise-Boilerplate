@@ -14,10 +14,9 @@ Provides endpoints for:
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-
-from uuid import UUID
 
 from app.api.deps import CurrentTenantId, get_current_user, require_permission
 from app.api.v1.schemas.mfa import (

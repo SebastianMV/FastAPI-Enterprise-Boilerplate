@@ -878,7 +878,9 @@ async def create_schedule(
         "template_id": template_id,
         "template_name": template.get("name"),
         "name": _html.escape(request.name),
-        "description": _html.escape(request.description) if request.description else None,
+        "description": _html.escape(request.description)
+        if request.description
+        else None,
         "frequency": request.frequency.model_dump(),
         "start_date": request.start_date,
         "end_date": request.end_date,
