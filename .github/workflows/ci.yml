@@ -112,6 +112,7 @@ jobs:
           ENCRYPTION_KEY: test-encryption-key-for-ci-only-32ch
           ENVIRONMENT: testing
         run: |
+          alembic upgrade head
           NODEIDS=$(tr '\n' ' ' < tests/e2e/release_critical_nodeids.txt)
           pytest -v $NODEIDS
 
@@ -185,6 +186,7 @@ jobs:
           ENCRYPTION_KEY: test-encryption-key-for-ci-only-32ch
           ENVIRONMENT: testing
         run: |
+          alembic upgrade head
           pytest tests/ -v --junitxml=full-suite-junit.xml --maxfail=0 || true
 
       - name: Publish full suite summary
