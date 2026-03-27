@@ -137,6 +137,7 @@ nul
 vitest_output.txt
 vitest_verbose.txt
 coverage_output.txt
+.pytest_bulk_latest.txt
 
 # Test artifacts
 MagicMock/

@@ -1,92 +1,92 @@
 # Playwright E2E Tests
 
-Este directorio contiene los tests end-to-end (E2E) usando Playwright.
+This directory contains end-to-end (E2E) tests using Playwright.
 
-## 📁 Estructura
+## Structure
 
 ```text
 e2e/
 ├── auth/
-│   ├── login.spec.ts          # Login básico sin MFA
-│   └── login-mfa.spec.ts      # Login con MFA habilitado
+│   ├── login.spec.ts          # Basic login without MFA
+│   └── login-mfa.spec.ts      # Login with MFA enabled
 ├── audit/
-│   └── audit.spec.ts          # Audit logs y filtros
+│   └── audit.spec.ts          # Audit logs and filters
 ├── dashboard/
-│   └── dashboard.spec.ts      # Dashboard principal y navegación
+│   └── dashboard.spec.ts      # Main dashboard and navigation
 ├── data/
-│   └── data-exchange.spec.ts  # Import/Export de datos
+│   └── data-exchange.spec.ts  # Data import/export
 ├── notifications/
-│   └── notifications.spec.ts  # Notificaciones y panel
+│   └── notifications.spec.ts  # Notifications and panel
 ├── profile/
-│   └── profile.spec.ts        # Perfil de usuario y sesiones
+│   └── profile.spec.ts        # User profile and sessions
 ├── roles/
-│   └── roles.spec.ts          # Gestión de roles RBAC
+│   └── roles.spec.ts          # RBAC role management
 ├── search/
-│   └── search.spec.ts         # Búsqueda global y resultados
+│   └── search.spec.ts         # Global search and results
 ├── security/
-│   └── security.spec.ts       # MFA setup y configuración de seguridad
+│   └── security.spec.ts       # MFA setup and security settings
 ├── settings/
-│   └── settings.spec.ts       # Página de configuración
+│   └── settings.spec.ts       # Settings page
 ├── users/
-│   └── users.spec.ts          # Gestión de usuarios
+│   └── users.spec.ts          # User management
 └── README.md
 ```
 
-## 🚀 Ejecutar Tests
+## Running Tests
 
-### Ejecutar todos los tests
+### Run all tests
 
 ```bash
 npm run test:e2e
 ```
 
-### Modo interactivo con UI
+### Interactive mode with UI
 
 ```bash
 npm run test:e2e:ui
 ```
 
-### Modo visible (headed)
+### Headed mode (visible browser)
 
 ```bash
 npm run test:e2e:headed
 ```
 
-### Modo debug
+### Debug mode
 
 ```bash
 npm run test:e2e:debug
 ```
 
-### Ver reporte HTML
+### View HTML report
 
 ```bash
 npm run test:e2e:report
 ```
 
-## 📝 Comandos Disponibles
+## Available Commands
 
-- `npm run test:e2e` - Ejecuta tests en modo headless
-- `npm run test:e2e:ui` - Abre la UI de Playwright con modo watch
-- `npm run test:e2e:headed` - Ejecuta tests con el navegador visible
-- `npm run test:e2e:debug` - Ejecuta tests en modo debug paso a paso
-- `npm run test:e2e:report` - Muestra el reporte HTML de la última ejecución
+- `npm run test:e2e` - Run tests in headless mode
+- `npm run test:e2e:ui` - Open Playwright UI with watch mode
+- `npm run test:e2e:headed` - Run tests with visible browser
+- `npm run test:e2e:debug` - Run tests in step-by-step debug mode
+- `npm run test:e2e:report` - Show HTML report from last run
 
-## 🔧 Configuración
+## Configuration
 
-La configuración se encuentra en `playwright.config.ts`:
+Configuration is in `playwright.config.ts`:
 
 - **baseURL**: `http://localhost:3000`
-- **Browser**: Chromium (se puede agregar Firefox y WebKit)
-- **Screenshots**: Solo en fallos
-- **Videos**: Solo en fallos
-- **Traces**: Solo en reintentos
+- **Browser**: Chromium (Firefox and WebKit can be added)
+- **Screenshots**: On failure only
+- **Videos**: On failure only
+- **Traces**: On retries only
 
-## 📊 Cobertura Actual
+## Current Coverage
 
-### Tests Implementados (12 archivos, ~70 tests)
+### Implemented Tests (12 files, ~70 tests)
 
-#### ✅ Auth - Login Básico (`login.spec.ts`)
+#### Auth - Basic Login (`login.spec.ts`)
 
 - [x] Display login form
 - [x] Validation for empty fields
@@ -97,7 +97,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Toggle password visibility
 - [x] Show MFA field when required
 
-#### ✅ Auth - Login MFA (`login-mfa.spec.ts`)
+#### Auth - Login MFA (`login-mfa.spec.ts`)
 
 - [x] Complete login with MFA code
 - [x] Error for invalid MFA code
@@ -105,21 +105,21 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Only accept numeric input
 - [x] Show MFA field after password
 
-#### ✅ Settings Page (`settings.spec.ts`)
+#### Settings Page (`settings.spec.ts`)
 
 - [x] Display all sections
-- [x] **Theme buttons visible with contrast** ⚠️ Detecta bug arreglado
+- [x] Theme buttons visible with contrast (detects fixed bug)
 - [x] Theme buttons functional
 - [x] Selected theme visually distinct
-- [x] **Timezone selector functional** ⚠️ Detecta bug arreglado
+- [x] Timezone selector functional (detects fixed bug)
 - [x] Language selector functional
 - [x] Notification toggle works
 - [x] Navigate to profile page
 - [x] Delete account confirmation modal
 - [x] Features section read-only
-- [x] **Dark mode theme buttons visible** ⚠️ Test específico del bug
+- [x] Dark mode theme buttons visible (bug-specific test)
 
-#### ✅ Roles Page (`roles.spec.ts`)
+#### Roles Page (`roles.spec.ts`)
 
 - [x] Display roles page with header
 - [x] Show roles table/list
@@ -136,7 +136,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Display role count/pagination
 - [x] Redirect non-admin users
 
-#### ✅ Search Page (`search.spec.ts`)
+#### Search Page (`search.spec.ts`)
 
 - [x] Display search bar in header
 - [x] Focus on click
@@ -153,7 +153,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Keyboard navigation
 - [x] Accessibility labels
 
-#### ✅ Users Page (`users.spec.ts`)
+#### Users Page (`users.spec.ts`)
 
 - [x] Display users page with header
 - [x] Show users table/list
@@ -164,7 +164,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Show user count
 - [x] View user details
 
-#### ✅ Notifications (`notifications.spec.ts`)
+#### Notifications (`notifications.spec.ts`)
 
 - [x] Display notifications page
 - [x] Show notification list or empty state
@@ -174,7 +174,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Show dropdown on click
 - [x] Notification count badge
 
-#### ✅ Dashboard (`dashboard.spec.ts`)
+#### Dashboard (`dashboard.spec.ts`)
 
 - [x] Display dashboard page
 - [x] Show welcome message or user info
@@ -188,7 +188,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Responsive on mobile viewport
 - [x] Quick action buttons
 
-#### ✅ Profile (`profile.spec.ts`)
+#### Profile (`profile.spec.ts`)
 
 - [x] Display profile page
 - [x] Show user information
@@ -202,7 +202,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Navigate to sessions
 - [x] Show current session
 
-#### ✅ Audit Logs (`audit.spec.ts`)
+#### Audit Logs (`audit.spec.ts`)
 
 - [x] Display audit logs page
 - [x] Show logs table/list
@@ -216,7 +216,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Actor/user display
 - [x] Access control for non-admin
 
-#### ✅ Data Exchange (`data-exchange.spec.ts`)
+#### Data Exchange (`data-exchange.spec.ts`)
 
 - [x] Display data exchange page
 - [x] Export section
@@ -230,7 +230,7 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Validation mode option
 - [x] Import/export history
 
-#### ✅ Security/MFA (`security.spec.ts`)
+#### Security/MFA (`security.spec.ts`)
 
 - [x] Display security page
 - [x] MFA status section
@@ -246,74 +246,74 @@ La configuración se encuentra en `playwright.config.ts`:
 - [x] Active sessions section
 - [x] Sign out all sessions
 
-## 📖 Guía de Escritura de Tests
+## Test Writing Guide
 
-### Patrón AAA (Arrange, Act, Assert)
+### AAA Pattern (Arrange, Act, Assert)
 
 ```typescript
 test('should do something', async ({ page }) => {
   // Arrange: Setup
   await page.goto('/some-page');
-  
+
   // Act: Perform action
   await page.getByRole('button', { name: /click me/i }).click();
-  
+
   // Assert: Verify result
   await expect(page.getByText('Success')).toBeVisible();
 });
 ```
 
-### Selectores Recomendados (en orden de preferencia)
+### Recommended Selectors (in order of preference)
 
 1. **Role-based**: `page.getByRole('button', { name: /submit/i })`
 2. **Label**: `page.getByLabel(/email/i)`
 3. **Placeholder**: `page.getByPlaceholder(/enter email/i)`
 4. **Text**: `page.getByText(/welcome/i)`
-5. **Test ID**: `page.getByTestId('login-form')` (último recurso)
+5. **Test ID**: `page.getByTestId('login-form')` (last resort)
 
-### Esperas Recomendadas
+### Recommended Waits
 
 ```typescript
-// ✅ Bueno: Espera automática de Playwright
+// Good: Playwright auto-wait
 await expect(element).toBeVisible();
 
-// ⚠️ Evitar: Espera fija (frágil)
+// Avoid: Fixed wait (fragile)
 await page.waitForTimeout(3000);
 
-// ✅ Bueno: Espera condicional
+// Good: Conditional wait
 await page.waitForURL(/\/dashboard/);
 ```
 
-## 🐛 Tests que Detectan Bugs Arreglados
+## Tests That Detect Fixed Bugs
 
-Los siguientes tests **habrían detectado automáticamente** los bugs que arreglamos manualmente:
+The following tests **would have automatically detected** the bugs we fixed manually:
 
-### 1. Botones de Appearance no visibles (Dark Mode)
+### 1. Appearance Buttons Not Visible (Dark Mode)
 
 **Test**: `e2e/settings/settings.spec.ts` → "theme buttons are visible in dark mode"
 
 ```typescript
-// Este test falla si los botones no tienen color de texto en dark mode
+// This test fails if buttons have no text color in dark mode
 const lightBtnColor = await lightBtn.evaluate((el) => {
   return window.getComputedStyle(el).color;
 });
-expect(lightBtnColor).not.toBe('rgb(0, 0, 0)'); // ❌ Fallaría antes del fix
+expect(lightBtnColor).not.toBe('rgb(0, 0, 0)'); // Would fail before the fix
 ```
 
-### 2. Timezone selector no funcional
+### 2. Timezone Selector Not Functional
 
 **Test**: `e2e/settings/settings.spec.ts` → "timezone selector is functional"
 
 ```typescript
-// Este test falla si el selector no tiene onChange handler
+// This test fails if the selector has no onChange handler
 await timezoneSelect.selectOption('Europe/Madrid');
 const savedTimezone = await page.evaluate(() => localStorage.getItem('timezone'));
-expect(savedTimezone).toBe('Europe/Madrid'); // ❌ Fallaría antes del fix
+expect(savedTimezone).toBe('Europe/Madrid'); // Would fail before the fix
 ```
 
-## 🔄 CI/CD Integration
+## CI/CD Integration
 
-Para agregar a `.github/workflows/frontend.yml`:
+To add to `.github/workflows/frontend.yml`:
 
 ```yaml
 - name: Install Playwright Browsers
@@ -321,7 +321,7 @@ Para agregar a `.github/workflows/frontend.yml`:
 
 - name: Run E2E Tests
   run: npm run test:e2e
-  
+
 - name: Upload Test Report
   if: always()
   uses: actions/upload-artifact@v3
@@ -330,15 +330,15 @@ Para agregar a `.github/workflows/frontend.yml`:
     path: playwright-report/
 ```
 
-## 💡 Tips
+## Tips
 
-- Ejecuta `npm run test:e2e:ui` para modo visual interactivo
-- Los tests reintentan automáticamente 2 veces en CI
-- Screenshots y videos se guardan solo en fallos
-- Usa `test.only()` para ejecutar un solo test durante desarrollo
-- Usa `test.skip()` para deshabilitar temporalmente un test
+- Run `npm run test:e2e:ui` for visual interactive mode
+- Tests automatically retry 2 times in CI
+- Screenshots and videos are saved only on failures
+- Use `test.only()` to run a single test during development
+- Use `test.skip()` to temporarily disable a test
 
-## 📚 Recursos
+## Resources
 
 - [Playwright Docs](https://playwright.dev)
 - [Best Practices](https://playwright.dev/docs/best-practices)

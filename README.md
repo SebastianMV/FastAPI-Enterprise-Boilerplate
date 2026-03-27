@@ -12,7 +12,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.14+-blue.svg" alt="Python 3.14+"></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115+-green.svg" alt="FastAPI"></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white" alt="React"></a>
-  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=node.js&logoColor=white" alt="Node.js"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-24%20LTS-339933?logo=node.js&logoColor=white" alt="Node.js"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
 </p>
 
@@ -51,37 +51,37 @@ docker compose up -d
 # - Frontend: http://localhost:3000 (with hot-reload)
 ```
 
-> **👨‍💻 Windows Users:** Usa PowerShell con `make.ps1` para comandos de desarrollo:
+> **👨‍💻 Windows Users:** Use PowerShell with `make.ps1` for development commands:
 >
 > ```powershell
-> # Cargar funciones
+> # Load functions
 > . .\make.ps1
 >
-> # Iniciar desarrollo
+> # Start development
 > Start-DevEnvironment
 >
-> # Ver todos los comandos
+> # Show all commands
 > Show-Help
 > ```
 >
-> Ver todos los comandos con `Show-Help` o `make help`
+> See all commands with `Show-Help` or `make help`
 
-**Comandos útiles** (Linux/Mac con Makefile, Windows con make.ps1):
+**Useful commands** (Linux/Mac with Makefile, Windows with make.ps1):
 
 ```bash
-# Ver todos los comandos disponibles
+# Show all available commands
 make help                # Linux/Mac
 Show-Help                # Windows (PowerShell)
 
-# Ejecutar tests
+# Run tests
 make test                # Linux/Mac
 Invoke-AllTests          # Windows (PowerShell)
 
-# Ver logs
+# View logs
 make docker-logs         # Linux/Mac
 Show-DockerLogs          # Windows (PowerShell)
 
-# Limpiar contenedores
+# Clean containers
 make docker-clean        # Linux/Mac
 Clear-Docker             # Windows (PowerShell)
 ```
@@ -114,51 +114,51 @@ npm install
 npm run dev
 ```
 
-### 🚀 Próximos Pasos
+### 🚀 Next Steps
 
-Después de iniciar el proyecto **por primera vez**:
+After starting the project **for the first time**:
 
-#### Inicialización Automática
+#### Automatic Initialization
 
-Las migraciones de base de datos se ejecutan automáticamente al iniciar, creando:
+Database migrations run automatically on startup, creating:
 
-- ✅ **Tenant por defecto**: "Default Organization"
-- ✅ **3 Usuarios de desarrollo** (ver tabla abajo)
-- ✅ **Roles ACL**: superadmin, admin, user
-- ✅ **Permisos configurados** para cada rol
+- ✅ **Default tenant**: "Default Organization"
+- ✅ **3 Development users** (see table below)
+- ✅ **ACL Roles**: superadmin, admin, user
+- ✅ **Permissions configured** for each role
 
-> **Nota**: Los datos se crean mediante migraciones de Alembic. Es idempotente y seguro.
+> **Note**: Data is created via Alembic migrations. It is idempotent and safe.
 
-#### Primeros Pasos
+#### First Steps
 
-1. **Verifica que los servicios estén corriendo**:
+1. **Verify services are running**:
 
    ```bash
    docker compose ps
-   # Deberías ver: backend, frontend, db, redis (todos healthy/running)
+   # You should see: backend, frontend, db, redis (all healthy/running)
    ```
 
-2. **Accede a la API Docs**: <http://localhost:8000/docs>
-   - Login con cualquier usuario de la tabla
-   - Explora los endpoints disponibles
+2. **Access the API Docs**: <http://localhost:8000/docs>
+   - Log in with any user from the table
+   - Explore available endpoints
 
-3. **Accede al Frontend**: <http://localhost:3000>
-   - Login con las credenciales de desarrollo
-   - Dashboard con datos en tiempo real
+3. **Access the Frontend**: <http://localhost:3000>
+   - Log in with the development credentials
+   - Dashboard with real-time data
 
-4. **Registra nuevos usuarios**: <http://localhost:3000/register>
-   - Los nuevos usuarios tendrán rol "user" por defecto
+4. **Register new users**: <http://localhost:3000/register>
+   - New users will have the "user" role by default
 
-5. **Explora la documentación**: Lee [docs/README.md](docs/README.md) para el índice completo
+5. **Explore the documentation**: Read [docs/README.md](docs/README.md) for the full index
 
-6. **Ejecuta los tests**:
+6. **Run tests**:
 
    ```bash
    make test              # Linux/Mac
    Invoke-AllTests           # Windows PowerShell
    ```
 
-#### Credenciales de Desarrollo
+#### Development Credentials
 
 | Usuario              | Email                 | Password      | Rol        |
 | -------------------- | --------------------- | ------------- | ---------- |
@@ -166,8 +166,8 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 | Tenant Manager       | `manager@example.com` | `Manager123!` | admin      |
 | Demo User            | `user@example.com`    | `User123!`    | user       |
 
-> ⚠️ **IMPORTANTE**: Estos usuarios son solo para desarrollo. Elimínalos antes de desplegar a producción.
-> 📖 **Documentación completa**: Comienza con [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+> ⚠️ **IMPORTANT**: These users are for development only. Delete them before deploying to production.
+> 📖 **Full documentation**: Start with [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
 
 ## 🎯 Features
 

@@ -1,82 +1,82 @@
-# 🤖 Agentes de Copilot — FastAPI-Enterprise-Boilerplate
+# Copilot Agents — FastAPI-Enterprise-Boilerplate
 
-> Agentes especializados para VS Code Copilot Chat, alineados a 38 auditorías,
-> 992+ fixes históricos y las 19 reglas críticas del proyecto.
-
----
-
-## Agentes disponibles
-
-| Agente                 | Archivo                       | Propósito principal                                                 |
-| ---------------------- | ----------------------------- | ------------------------------------------------------------------- |
-| **quality-guardian**   | `quality-guardian.agent.md`   | Gate de calidad: convenciones, arquitectura, i18n y reglas críticas |
-| **security-auditor**   | `security-auditor.agent.md`   | AppSec profundo: vulnerabilidades nuevas y regresiones              |
-| **dependency-auditor** | `dependency-auditor.agent.md` | Supply chain: CVEs, licencias, pinning y estrategia de upgrades     |
+> Specialized agents for VS Code Copilot Chat, aligned with 43 audits,
+> 994+ historical fixes, and the project's 19 critical rules.
 
 ---
 
-## Estructura estándar de los agentes
+## Available Agents
 
-Todos los `.agent.md` usan una plantilla homogénea:
+| Agent                  | File                          | Primary Purpose                                                |
+| ---------------------- | ----------------------------- | -------------------------------------------------------------- |
+| **quality-guardian**   | `quality-guardian.agent.md`   | Quality gate: conventions, architecture, i18n & critical rules |
+| **security-auditor**   | `security-auditor.agent.md`   | Deep AppSec: new vulnerabilities and regressions               |
+| **dependency-auditor** | `dependency-auditor.agent.md` | Supply chain: CVEs, licenses, pinning & upgrade strategy       |
+
+---
+
+## Standard Agent Structure
+
+All `.agent.md` files use a uniform template:
 
 1. **Metadata**: `name`, `description`, `model`, `tools`, `handoffs`, `user-invokable`
-2. **Prompt estructurado**:
+2. **Structured prompt**:
    - `IDENTITY`
    - `ROLE`
    - `SCOPE`
    - `CAPABILITIES`
    - `CRITICAL RULES`
-   - `CHECKLIST OPERATIVO`
+   - `OPERATIONAL CHECKLIST`
    - `OUTPUT CONTRACT`
    - `HANDOFF POLICY`
    - `COMMUNICATION STYLE`
 
-Objetivo: evitar agentes “genéricos” y forzar respuestas auditables, consistentes y accionables.
+Goal: avoid generic agents and enforce auditable, consistent, and actionable responses.
 
 ---
 
-## Cómo invocar (VS Code)
+## How to Invoke (VS Code)
 
-Abre Copilot Chat (`Ctrl+Alt+I`) y usa `@`:
+Open Copilot Chat (`Ctrl+Alt+I`) and use `@`:
 
 ```text
-@quality-guardian revisa este cambio contra las 19 reglas
-@security-auditor audita riesgo AppSec en auth y multi-tenant
-@dependency-auditor evalúa CVEs y plan de upgrade seguro
+@quality-guardian review this change against the 19 rules
+@security-auditor audit AppSec risk in auth and multi-tenant
+@dependency-auditor evaluate CVEs and safe upgrade plan
 ```
 
-Con scope reducido:
+With reduced scope:
 
 ```text
-@security-auditor revisa solo backend/app/api/v1/endpoints/
-@quality-guardian valida i18n y hooks en frontend/src/pages/
-@dependency-auditor analiza impacto de actualizar FastAPI a 0.116
+@security-auditor review only backend/app/api/v1/endpoints/
+@quality-guardian validate i18n and hooks in frontend/src/pages/
+@dependency-auditor analyze impact of upgrading FastAPI to 0.116
 ```
 
 ---
 
-## Flujo recomendado (handoffs)
+## Recommended Flow (handoffs)
 
 ```text
-Cambio de código
+Code change
       │
       ▼
-@quality-guardian   ← Gate rápido: convenciones + 19 reglas
+@quality-guardian   ← Quick gate: conventions + 19 rules
       │
-      ▼ (si hay riesgo de seguridad)
-@security-auditor   ← Profundiza AppSec / OWASP / multi-tenant
+      ▼ (if security risk detected)
+@security-auditor   ← Deep AppSec / OWASP / multi-tenant
       │
-      ▼ (si hay cambios de deps/infra)
-@dependency-auditor ← CVEs + licencias + pinning + upgrades
+      ▼ (if deps/infra changes)
+@dependency-auditor ← CVEs + licenses + pinning + upgrades
 ```
 
 Any agent can initiate or coordinate the full end-to-end flow.
 
 ---
 
-## Contrato de salida por agente
+## Output Contract per Agent
 
-Cada agente responde con una estructura fija para facilitar revisión en PR:
+Each agent responds with a fixed structure to facilitate PR review:
 
 - **quality-guardian**
   - `QUALITY STATUS: PASS | FAIL`
@@ -92,31 +92,31 @@ Cada agente responde con una estructura fija para facilitar revisión en PR:
 
 ---
 
-## Cuándo usar cada agente
+## When to Use Each Agent
 
-| Situación                                     | Agente recomendado                          |
-| --------------------------------------------- | ------------------------------------------- |
-| Antes de push a `main`/`develop`              | `@quality-guardian`                         |
-| Feature nueva con auth/datos sensibles        | `@security-auditor`                         |
-| Actualización de librerías/imágenes/workflows | `@dependency-auditor`                       |
-| Release readiness end-to-end                  | `@quality-guardian` + `@security-auditor`   |
-| CI falla en calidad                           | `@quality-guardian` para diagnóstico        |
-| CVE crítico reportado                         | `@dependency-auditor` + `@security-auditor` |
-
----
-
-## Relación con CI
-
-Los agentes **complementan** CI; no lo reemplazan:
-
-- CI ejecuta checks determinísticos (tests, semgrep, grep de reglas, pins, secrets).
-- Agentes aportan análisis semántico y priorización contextual de riesgo.
+| Situation                              | Recommended Agent                           |
+| -------------------------------------- | ------------------------------------------- |
+| Before push to `main`/`develop`        | `@quality-guardian`                         |
+| New feature with auth/sensitive data   | `@security-auditor`                         |
+| Library/image/workflow updates         | `@dependency-auditor`                       |
+| End-to-end release readiness           | `@quality-guardian` + `@security-auditor`   |
+| CI quality failure                     | `@quality-guardian` for diagnosis            |
+| Critical CVE reported                  | `@dependency-auditor` + `@security-auditor` |
 
 ---
 
-## Contexto base compartido
+## Relationship with CI
 
-Todos los agentes están pensados para operar con:
+Agents **complement** CI; they do not replace it:
+
+- CI runs deterministic checks (tests, semgrep, rule grep, pins, secrets).
+- Agents provide semantic analysis and contextual risk prioritization.
+
+---
+
+## Shared Base Context
+
+All agents are designed to operate with:
 
 - `.github/copilot-instructions.md`
 - `.semgrep/*.yml`
@@ -124,7 +124,7 @@ Todos los agentes están pensados para operar con:
 
 ---
 
-## Nota de mantenimiento
+## Maintenance Note
 
-Si se modifica la plantilla de un agente, replicar el cambio en los demás para mantener
-simetría de comportamiento y evitar regresiones de calidad en los handoffs.
+If an agent template is modified, replicate the change across all agents to maintain
+behavioral symmetry and prevent quality regressions in handoffs.

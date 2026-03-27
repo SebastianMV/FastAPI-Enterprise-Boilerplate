@@ -2,8 +2,8 @@
 # FastAPI-Enterprise-Boilerplate - PowerShell Scripts (Windows)
 # ==============================================================================
 #
-# Este archivo contiene comandos equivalentes al Makefile para Windows/PowerShell
-# Copia y pega los comandos que necesites en tu terminal PowerShell
+# This file contains Makefile-equivalent commands for Windows/PowerShell
+# Copy and paste the commands you need into your PowerShell terminal
 #
 # ==============================================================================
 
@@ -11,27 +11,27 @@
 # 🐳 DOCKER - DEVELOPMENT
 # ------------------------------------------------------------------------------
 
-# Iniciar ambiente de desarrollo
+# Start development environment
 function Start-DevEnvironment {
     docker compose up -d
 }
 
-# Rebuild y iniciar
+# Rebuild and start
 function Start-DevEnvironmentBuild {
     docker compose up -d --build
 }
 
-# Detener servicios
+# Stop services
 function Stop-DockerServices {
     docker compose down
 }
 
-# Ver logs
+# View logs
 function Show-DockerLogs {
     docker compose logs -f
 }
 
-# Limpiar (detener y eliminar volúmenes)
+# Clean (stop and remove volumes)
 function Clear-Docker {
     docker compose down -v
 }
@@ -40,33 +40,33 @@ function Clear-Docker {
 # 🚀 DOCKER - PRODUCTION
 # ------------------------------------------------------------------------------
 
-# Iniciar producción
+# Start production
 function Start-Production {
     docker compose -f docker-compose.deploy.yml up -d
 }
 
-# Rebuild producción
+# Rebuild production
 function Start-ProductionBuild {
     docker compose -f docker-compose.deploy.yml up -d --build
 }
 
-# Detener producción
+# Stop production
 function Stop-Production {
     docker compose -f docker-compose.deploy.yml down
 }
 
-# Ver logs producción
+# View production logs
 function Show-ProductionLogs {
     docker compose -f docker-compose.deploy.yml logs -f
 }
 
-# Build producción
-function Build-Production {
+# Build production
+function New-ProductionBuild {
     docker compose -f docker-compose.deploy.yml build
 }
 
-# Deploy producción
-function Deploy-Production {
+# Deploy production
+function Publish-Production {
     docker compose -f docker-compose.deploy.yml up -d
     docker compose -f docker-compose.deploy.yml exec backend alembic upgrade head
 }
@@ -75,28 +75,28 @@ function Deploy-Production {
 # 💻 LOCAL DEVELOPMENT
 # ------------------------------------------------------------------------------
 
-# Instalar dependencias
+# Install dependencies
 function Install-Dependencies {
-    Write-Host "📦 Instalando backend..." -ForegroundColor Cyan
+    Write-Host "📦 Installing backend..." -ForegroundColor Cyan
     Set-Location backend
     pip install -e ".[dev]"
     Set-Location ..
 
-    Write-Host "📦 Instalando frontend..." -ForegroundColor Cyan
+    Write-Host "📦 Installing frontend..." -ForegroundColor Cyan
     Set-Location frontend
     npm install
     Set-Location ..
 
-    Write-Host "✅ Dependencias instaladas" -ForegroundColor Green
+    Write-Host "✅ Dependencies installed" -ForegroundColor Green
 }
 
-# Desarrollo backend
+# Start backend development
 function Start-Backend {
     Set-Location backend
     uvicorn app.main:app --reload --port 8000
 }
 
-# Desarrollo frontend
+# Start frontend development
 function Start-Frontend {
     Set-Location frontend
     npm run dev
@@ -106,37 +106,37 @@ function Start-Frontend {
 # 🧪 TESTING
 # ------------------------------------------------------------------------------
 
-# Iniciar PostgreSQL para testing
+# Start PostgreSQL for testing
 function Start-TestDatabase {
-    Write-Host "🗄️  Iniciando PostgreSQL de testing..." -ForegroundColor Cyan
+    Write-Host "🗄️  Starting test PostgreSQL..." -ForegroundColor Cyan
     docker compose -f docker-compose.test.yml up -d
-    Write-Host "✅ PostgreSQL de testing iniciado en puerto 5433" -ForegroundColor Green
-    Write-Host "📝 Usa: `$env:TEST_DATABASE_URL='postgresql+asyncpg://test_user:test_password@localhost:5433/test_boilerplate'" -ForegroundColor Yellow
+    Write-Host "✅ Test PostgreSQL started on port 5433" -ForegroundColor Green
+    Write-Host "📝 Use: `$env:TEST_DATABASE_URL='postgresql+asyncpg://test_user:test_password@localhost:5433/test_boilerplate'" -ForegroundColor Yellow
 }
 
-# Detener PostgreSQL de testing
+# Stop test PostgreSQL
 function Stop-TestDatabase {
-    Write-Host "🛑 Deteniendo PostgreSQL de testing..." -ForegroundColor Cyan
+    Write-Host "🛑 Stopping test PostgreSQL..." -ForegroundColor Cyan
     docker compose -f docker-compose.test.yml down
 }
 
-# Tests completos (SQLite)
+# Run all tests (SQLite)
 function Invoke-AllTests {
     Set-Location backend
     python -m pytest tests/ -v --cov=app
     Set-Location ..
 }
 
-# Tests unitarios (SQLite)
+# Run unit tests (SQLite)
 function Invoke-UnitTests {
     Set-Location backend
     python -m pytest tests/unit/ -v
     Set-Location ..
 }
 
-# Tests integración con PostgreSQL
+# Run integration tests with PostgreSQL
 function Invoke-IntegrationTests {
-    Write-Host "🗄️  Ejecutando tests de integración con PostgreSQL..." -ForegroundColor Cyan
+    Write-Host "🗄️  Running integration tests with PostgreSQL..." -ForegroundColor Cyan
     Set-Location backend
     $env:TEST_DATABASE_URL = "postgresql+asyncpg://test_user:test_password@localhost:5433/test_boilerplate"
     python -m pytest tests/integration/ -v
@@ -144,9 +144,9 @@ function Invoke-IntegrationTests {
     Set-Location ..
 }
 
-# Tests integración con coverage
+# Run integration tests with coverage
 function Invoke-IntegrationTestsCoverage {
-    Write-Host "🗄️  Ejecutando tests de integración con coverage..." -ForegroundColor Cyan
+    Write-Host "🗄️  Running integration tests with coverage..." -ForegroundColor Cyan
     Set-Location backend
     $env:TEST_DATABASE_URL = "postgresql+asyncpg://test_user:test_password@localhost:5433/test_boilerplate"
     coverage run --source=app -m pytest tests/integration/ -v
@@ -155,7 +155,7 @@ function Invoke-IntegrationTestsCoverage {
     Set-Location ..
 }
 
-# Tests frontend
+# Run frontend tests
 function Invoke-FrontendTests {
     Set-Location frontend
     npm test
@@ -181,12 +181,12 @@ function Invoke-Lint {
 
 # Format code
 function Format-Code {
-    Write-Host "✨ Formateando backend..." -ForegroundColor Cyan
+    Write-Host "✨ Formatting backend..." -ForegroundColor Cyan
     Set-Location backend
     ruff format .
     Set-Location ..
 
-    Write-Host "✨ Formateando frontend..." -ForegroundColor Cyan
+    Write-Host "✨ Formatting frontend..." -ForegroundColor Cyan
     Set-Location frontend
     npm run format
     Set-Location ..
@@ -199,30 +199,30 @@ function Invoke-TypeCheck {
     Set-Location ..
 }
 
-# Check completo
+# Run all checks
 function Invoke-AllChecks {
     Invoke-Lint
     Invoke-TypeCheck
     Invoke-AllTests
-    Write-Host "✅ Todos los checks pasaron!" -ForegroundColor Green
+    Write-Host "✅ All checks passed!" -ForegroundColor Green
 }
 
 # ------------------------------------------------------------------------------
 # 🗄️ DATABASE
 # ------------------------------------------------------------------------------
 
-# Migraciones (upgrade)
+# Run migrations (upgrade)
 function Invoke-Migrations {
     docker compose exec backend alembic upgrade head
 }
 
-# Crear migración
+# Create migration
 function New-Migration {
     param([string]$Message)
     docker compose exec backend alembic revision --autogenerate -m "$Message"
 }
 
-# Downgrade migración
+# Downgrade migration
 function Undo-Migration {
     docker compose exec backend alembic downgrade -1
 }
@@ -233,7 +233,7 @@ function Initialize-Database {
 }
 
 # Cleanup E2E test users
-function Cleanup-E2EUsers {
+function Remove-E2EUsers {
     docker compose exec backend python cleanup_e2e_users.py
 }
 
@@ -241,12 +241,12 @@ function Cleanup-E2EUsers {
 # 👤 CLI COMMANDS
 # ------------------------------------------------------------------------------
 
-# Crear superusuario
+# Create superuser
 function New-Superuser {
     docker compose exec backend python -m app.cli.main users create-superuser
 }
 
-# Crear API key
+# Create API key
 function New-ApiKey {
     Set-Location backend
     python -m app.cli.main apikeys create
@@ -264,9 +264,9 @@ function Test-Health {
 # 🧹 CLEANUP
 # ------------------------------------------------------------------------------
 
-# Limpiar artefactos
+# Clean artifacts
 function Clear-Artifacts {
-    Write-Host "🧹 Limpiando artefactos..." -ForegroundColor Cyan
+    Write-Host "🧹 Cleaning artifacts..." -ForegroundColor Cyan
 
     # Python
     Get-ChildItem -Path . -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
@@ -283,7 +283,7 @@ function Clear-Artifacts {
     if (Test-Path "backend\.coverage") { Remove-Item "backend\.coverage" -Force }
     if (Test-Path "frontend\coverage") { Remove-Item "frontend\coverage" -Recurse -Force }
 
-    Write-Host "✅ Limpieza completa" -ForegroundColor Green
+    Write-Host "✅ Cleanup complete" -ForegroundColor Green
 }
 
 # ------------------------------------------------------------------------------
@@ -292,64 +292,64 @@ function Clear-Artifacts {
 
 function Show-Help {
     Write-Host ""
-    Write-Host "FastAPI-Enterprise-Boilerplate - Comandos PowerShell" -ForegroundColor Green
+    Write-Host "FastAPI-Enterprise-Boilerplate - PowerShell Commands" -ForegroundColor Green
     Write-Host "======================================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "🐳 Docker - Development:" -ForegroundColor Cyan
-    Write-Host "  Start-DevEnvironment         Iniciar ambiente dev"
-    Write-Host "  Start-DevEnvironmentBuild    Rebuild e iniciar dev"
-    Write-Host "  Stop-DockerServices          Detener servicios"
-    Write-Host "  Show-DockerLogs              Ver logs"
-    Write-Host "  Clear-Docker                 Limpiar volúmenes"
+    Write-Host "  Start-DevEnvironment         Start dev environment"
+    Write-Host "  Start-DevEnvironmentBuild    Rebuild and start dev"
+    Write-Host "  Stop-DockerServices          Stop services"
+    Write-Host "  Show-DockerLogs              View logs"
+    Write-Host "  Clear-Docker                 Clean volumes"
     Write-Host ""
     Write-Host "🚀 Docker - Production:" -ForegroundColor Cyan
-    Write-Host "  Start-Production             Iniciar producción"
-    Write-Host "  Start-ProductionBuild        Rebuild producción"
-    Write-Host "  Stop-Production              Detener producción"
-    Write-Host "  Show-ProductionLogs          Ver logs producción"
-    Write-Host "  Build-Production             Build imágenes prod"
-    Write-Host "  Deploy-Production            Deploy producción"
+    Write-Host "  Start-Production             Start production"
+    Write-Host "  Start-ProductionBuild        Rebuild production"
+    Write-Host "  Stop-Production              Stop production"
+    Write-Host "  Show-ProductionLogs          View production logs"
+    Write-Host "  New-ProductionBuild          Build prod images"
+    Write-Host "  Publish-Production           Deploy production"
     Write-Host ""
     Write-Host "💻 Local Development:" -ForegroundColor Cyan
-    Write-Host "  Install-Dependencies         Instalar dependencias"
-    Write-Host "  Start-Backend                Ejecutar backend"
-    Write-Host "  Start-Frontend               Ejecutar frontend"
+    Write-Host "  Install-Dependencies         Install dependencies"
+    Write-Host "  Start-Backend                Run backend"
+    Write-Host "  Start-Frontend               Run frontend"
     Write-Host ""
     Write-Host "🧪 Testing:" -ForegroundColor Cyan
-    Write-Host "  Invoke-AllTests              Tests completos"
-    Write-Host "  Invoke-UnitTests             Tests unitarios"
-    Write-Host "  Invoke-IntegrationTests      Tests integración"
-    Write-Host "  Invoke-IntegrationTestsCoverage  Tests integración + coverage"
-    Write-Host "  Invoke-FrontendTests         Tests frontend"
-    Write-Host "  Start-TestDatabase           Iniciar DB de testing"
-    Write-Host "  Stop-TestDatabase            Detener DB de testing"
+    Write-Host "  Invoke-AllTests              Run all tests"
+    Write-Host "  Invoke-UnitTests             Run unit tests"
+    Write-Host "  Invoke-IntegrationTests      Run integration tests"
+    Write-Host "  Invoke-IntegrationTestsCoverage  Integration tests + coverage"
+    Write-Host "  Invoke-FrontendTests         Run frontend tests"
+    Write-Host "  Start-TestDatabase           Start test DB"
+    Write-Host "  Stop-TestDatabase            Stop test DB"
     Write-Host ""
     Write-Host "🔍 Code Quality:" -ForegroundColor Cyan
     Write-Host "  Invoke-Lint                  Linting"
-    Write-Host "  Format-Code                  Formatear código"
+    Write-Host "  Format-Code                  Format code"
     Write-Host "  Invoke-TypeCheck             Type checking"
-    Write-Host "  Invoke-AllChecks             Todos los checks"
+    Write-Host "  Invoke-AllChecks             Run all checks"
     Write-Host ""
     Write-Host "🗄️ Database:" -ForegroundColor Cyan
-    Write-Host "  Invoke-Migrations            Aplicar migraciones"
-    Write-Host "  New-Migration -Message '...' Crear migración"
-    Write-Host "  Undo-Migration               Revertir migración"
+    Write-Host "  Invoke-Migrations            Apply migrations"
+    Write-Host "  New-Migration -Message '...' Create migration"
+    Write-Host "  Undo-Migration               Revert migration"
     Write-Host "  Initialize-Database          Seed data"
-    Write-Host "  Cleanup-E2EUsers             Eliminar usuarios E2E"
+    Write-Host "  Remove-E2EUsers              Remove E2E users"
     Write-Host ""
     Write-Host "👤 CLI:" -ForegroundColor Cyan
-    Write-Host "  New-Superuser                Crear superusuario"
-    Write-Host "  New-ApiKey                   Crear API key"
+    Write-Host "  New-Superuser                Create superuser"
+    Write-Host "  New-ApiKey                   Create API key"
     Write-Host "  Test-Health                  Health check"
     Write-Host ""
     Write-Host "🧹 Cleanup:" -ForegroundColor Cyan
-    Write-Host "  Clear-Artifacts              Limpiar artefactos"
+    Write-Host "  Clear-Artifacts              Clean artifacts"
     Write-Host ""
-    Write-Host "Para usar: dot-source este archivo primero:" -ForegroundColor Yellow
+    Write-Host "To use: dot-source this file first:" -ForegroundColor Yellow
     Write-Host "  . .\make.ps1" -ForegroundColor Yellow
     Write-Host "  Show-Help" -ForegroundColor Yellow
     Write-Host ""
 }
 
-# Mostrar help al cargar el script
+# Show help when loading the script
 Show-Help
