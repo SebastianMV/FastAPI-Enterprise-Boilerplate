@@ -1,0 +1,26 @@
+{
+  "description": "Semgrep findings baseline — accepted known patterns after 43 audit cycles (994+ issues resolved). Gate fails only on regressions (new findings above baseline).",
+  "baseline_count": 566,
+  "updated": "2026-03-27",
+  "breakdown": {
+    "timing-safe-comparison-for-tokens": 194,
+    "no-csv-formula-injection": 147,
+    "no-password-field-without-min-length": 100,
+    "no-error-message-in-ui": 47,
+    "no-unencoded-url-params": 25,
+    "no-hardcoded-passwords-in-compose": 12,
+    "endpoint-missing-tenant-id": 7,
+    "redirect-url-validation": 5,
+    "no-reflected-input-in-error": 5,
+    "no-sync-redis-in-async": 5,
+    "no-ungated-console-error": 4,
+    "hashlib-usedforsecurity": 3,
+    "oauth-url-must-be-https": 3,
+    "validate-redirect-urls": 3,
+    "client-ip-without-forwarded-for": 2,
+    "password-change-must-revoke-sessions": 1,
+    "no-stdlib-logging": 1,
+    "no-ungated-console-log": 1,
+    "no-response-detail-in-ui": 1
+  }
+}

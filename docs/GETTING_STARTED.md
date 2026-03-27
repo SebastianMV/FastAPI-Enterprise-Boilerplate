@@ -8,7 +8,7 @@
 - Docker & Docker Compose (recommended)
 - **OR** for local development:
   - Python 3.13+
-  - Node.js 22 LTS (Jod) — long-term support until Oct 2027
+  - Node.js 24 LTS (Krypton) — active LTS until Apr 2028
   - PostgreSQL 17+ (if not using Docker)
 
 ### First-Time Setup

@@ -6,8 +6,8 @@
 # Hot reload with Vite dev server
 # ============================================
 
-# Pin to LTS minor; update patch periodically: docker pull node:22.16-alpine
-FROM node:22.16-alpine
+# Pin to LTS minor; update patch periodically: docker pull node:24.14-alpine
+FROM node:24.14-alpine
 
 WORKDIR /app
 

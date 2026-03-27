@@ -16,7 +16,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.14"
-  NODE_VERSION: "22.16"
+  NODE_VERSION: "24.14"
 
 # Least-privilege: only read access to repo contents
 permissions:
@@ -346,10 +346,10 @@ jobs:
           fi
 
           CURRENT=$(python -c "import json;print(len(json.load(open('semgrep-results.json', encoding='utf-8')).get('results', [])))")
-          BASELINE_FILE="audit42_static/semgrep_results_isolated.json"
+          BASELINE_FILE=".semgrep/baseline.json"
 
           if [ -f "$BASELINE_FILE" ]; then
-            BASELINE=$(python -c "import json;print(len(json.load(open('$BASELINE_FILE', encoding='utf-8')).get('results', [])))")
+            BASELINE=$(python -c "import json;print(json.load(open('$BASELINE_FILE', encoding='utf-8')).get('baseline_count', 0))")
           else
             BASELINE=0
           fi
@@ -357,7 +357,7 @@ jobs:
           echo "Semgrep findings: current=$CURRENT baseline=$BASELINE"
 
           if [ "$CURRENT" -gt "$BASELINE" ]; then
-            echo "❌ Semgrep regression detected: findings increased above baseline"
+            echo "❌ Semgrep regression detected: findings increased above baseline ($CURRENT > $BASELINE)"
             exit 1
           fi
 

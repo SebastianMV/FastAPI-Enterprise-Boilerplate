@@ -215,7 +215,7 @@ Las migraciones de base de datos se ejecutan automáticamente al iniciar, creand
 ### Frontend
 
 - ✅ **React 19** - Latest React with TypeScript
-- ✅ **Node.js 22 LTS** - Long-term support (until Oct 2027)
+- ✅ **Node.js 24 LTS** (Krypton) - Active LTS (until Apr 2028)
 - ✅ **Vite 6** - Next-generation build tool
 - ✅ **Tailwind CSS** - Utility-first styling
 - ✅ **React Query** - Server state management

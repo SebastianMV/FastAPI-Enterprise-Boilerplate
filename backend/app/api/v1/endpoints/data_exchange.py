@@ -448,12 +448,12 @@ async def import_data(
     await file.seek(0)
 
     _XLSX_MAGIC = b"PK\x03\x04"
-    _XLS_MAGIC = b"\xD0\xCF\x11\xE0"
+    _XLS_MAGIC = b"\xd0\xcf\x11\xe0"
 
     filename = file.filename or ""
     if filename.lower().endswith(".csv"):
         # CSV has no magic bytes; accept only if not a binary format
-        if magic.startswith(_XLSX_MAGIC) or magic.startswith(_XLS_MAGIC):
+        if magic.startswith((_XLSX_MAGIC, _XLS_MAGIC)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
@@ -464,7 +464,7 @@ async def import_data(
         file_type = "csv"
     elif filename.lower().endswith((".xlsx", ".xls")):
         # Accept XLSX (ZIP-based) or legacy XLS (OLE2)
-        if not (magic.startswith(_XLSX_MAGIC) or magic.startswith(_XLS_MAGIC)):
+        if not magic.startswith((_XLSX_MAGIC, _XLS_MAGIC)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={

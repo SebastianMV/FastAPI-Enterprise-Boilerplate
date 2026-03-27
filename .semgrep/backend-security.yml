@@ -257,7 +257,7 @@ rules:
       confidence: HIGH
     paths:
       include:
-        - backend/app/
+        - /backend/app/
 
   - id: no-fstring-in-logger
     patterns:
@@ -373,7 +373,7 @@ rules:
       confidence: MEDIUM
     paths:
       include:
-        - backend/app/
+        - /backend/app/
 
   - id: no-subprocess-in-api
     patterns:
@@ -394,9 +394,9 @@ rules:
       confidence: MEDIUM
     paths:
       include:
-        - backend/app/api/
-        - backend/app/application/
-        - backend/app/infrastructure/
+        - /backend/app/api/
+        - /backend/app/application/
+        - /backend/app/infrastructure/
 
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # SEVERITY 8: Reflected User Input in Errors (Audit 14)
@@ -524,7 +524,7 @@ rules:
       confidence: LOW
     paths:
       include:
-        - backend/app/api/
+        - /backend/app/api/
 
   - id: no-password-field-without-min-length
     patterns:
@@ -626,4 +626,4 @@ rules:
       confidence: LOW
     paths:
       include:
-        - backend/app/api/
+        - /backend/app/api/
