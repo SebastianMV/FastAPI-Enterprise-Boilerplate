@@ -5,7 +5,6 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -34,8 +33,6 @@
     }
   },
   "include": ["src"],
-  "exclude": [
-    "e2e"
-  ],
+  "exclude": ["e2e"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
