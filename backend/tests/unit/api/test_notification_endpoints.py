@@ -81,12 +81,17 @@ class TestNotificationSchemas:
         response = NotificationListResponse(
             items=items,
             total=10,
+            page=1,
+            page_size=50,
+            pages=1,
             unread_count=7,
         )
 
         assert len(response.items) == 3
         assert response.total == 10
         assert response.unread_count == 7
+        assert response.page == 1
+        assert response.page_size == 50
 
     def test_mark_read_request_schema(self) -> None:
         """Test MarkReadRequest schema."""
@@ -177,9 +182,10 @@ class TestListNotificationsEndpoint:
 
         result = await list_notifications(
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
-            limit=50,
-            offset=0,
+            page=1,
+            page_size=50,
             unread_only=False,
         )
 
@@ -222,9 +228,10 @@ class TestListNotificationsEndpoint:
 
         result = await list_notifications(
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
-            limit=50,
-            offset=0,
+            page=1,
+            page_size=50,
             unread_only=False,
         )
 
@@ -266,9 +273,10 @@ class TestListNotificationsEndpoint:
 
         result = await list_notifications(
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
-            limit=50,
-            offset=0,
+            page=1,
+            page_size=50,
             unread_only=True,  # Test unread_only filter
         )
 
@@ -295,6 +303,7 @@ class TestGetUnreadCountEndpoint:
 
         result = await get_unread_count(
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
         )
 
@@ -315,6 +324,7 @@ class TestGetUnreadCountEndpoint:
 
         result = await get_unread_count(
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
         )
 
@@ -343,6 +353,7 @@ class TestGetNotificationEndpoint:
             await get_notification(
                 notification_id=uuid4(),
                 current_user=mock_user,
+                _current_user_id=mock_user.id,
                 session=mock_session,
             )
 
@@ -377,6 +388,7 @@ class TestGetNotificationEndpoint:
         result = await get_notification(
             notification_id=notification_id,
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
         )
 
@@ -404,6 +416,7 @@ class TestMarkAsReadEndpoint:
         await mark_as_read(
             request=request,
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
         )
 
@@ -425,6 +438,7 @@ class TestMarkAllAsReadEndpoint:
 
         await mark_all_as_read(
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
         )
 
@@ -450,6 +464,7 @@ class TestDeleteNotificationEndpoint:
         await delete_notification(
             notification_id=uuid4(),
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
         )
 
@@ -471,6 +486,7 @@ class TestDeleteReadNotificationsEndpoint:
 
         await delete_read_notifications(
             current_user=mock_user,
+            _current_user_id=mock_user.id,
             session=mock_session,
         )
 
@@ -509,6 +525,9 @@ class TestNotificationEdgeCases:
         response = NotificationListResponse(
             items=[],
             total=0,
+            page=1,
+            page_size=50,
+            pages=0,
             unread_count=0,
         )
 

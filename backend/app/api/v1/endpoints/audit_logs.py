@@ -170,10 +170,16 @@ async def get_my_activity(
         tenant_id=tenant_id,
     )
 
+    total = await repo.count_by_actor(
+        actor_id=current_user_id,
+        start_date=start_date,
+        end_date=end_date,
+        tenant_id=tenant_id,
+    )
+
     return PaginatedResponse.create(
         items=[_to_response(log) for log in logs],
-        # TODO: Implement count method in repository for accurate pagination totals
-        total=len(logs),
+        total=total,
         page=page,
         page_size=page_size,
     )

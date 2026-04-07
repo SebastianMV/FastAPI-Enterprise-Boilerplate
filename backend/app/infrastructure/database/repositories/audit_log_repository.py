@@ -131,6 +131,29 @@ class SQLAlchemyAuditLogRepository(AuditLogRepositoryPort):
         result = await self._session.execute(query)
         return [self._to_entity(model) for model in result.scalars()]
 
+    async def count_by_actor(
+        self,
+        actor_id: UUID,
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        tenant_id: UUID | None = None,
+    ) -> int:
+        """Count audit logs for a specific actor."""
+        query = select(func.count(AuditLogModel.id)).where(
+            AuditLogModel.actor_id == actor_id
+        )
+
+        if tenant_id:
+            query = query.where(AuditLogModel.tenant_id == tenant_id)
+        if start_date:
+            query = query.where(AuditLogModel.timestamp >= start_date)
+        if end_date:
+            query = query.where(AuditLogModel.timestamp <= end_date)
+
+        result = await self._session.execute(query)
+        return result.scalar_one()
+
     async def list_by_resource(
         self,
         resource_type: AuditResourceType,

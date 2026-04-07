@@ -10,15 +10,20 @@ Provides endpoints for:
 """
 
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentTenantId, CurrentUser, require_permission
+from app.api.v1.schemas.notifications import (
+    MarkReadRequest,
+    NotificationListResponse,
+    NotificationResponse,
+    UnreadCountResponse,
+)
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.database.models.notification import NotificationModel
 from app.infrastructure.observability.logging import get_logger
@@ -32,52 +37,6 @@ NotificationsReader = Annotated[
 NotificationsWriter = Annotated[
     UUID, Depends(require_permission("notifications", "write"))
 ]
-
-
-# ===========================================
-# Schemas
-# TODO: Extract to app/api/v1/schemas/notifications.py
-# ===========================================
-
-
-class NotificationResponse(BaseModel):
-    """Notification response."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    type: str = Field(max_length=50)
-    title: str = Field(max_length=200)
-    message: str = Field(max_length=2000)
-    priority: str = Field(max_length=20)
-    data: dict[str, Any] | None = None
-    action_url: str | None = Field(default=None, max_length=2048)
-    is_read: bool
-    read_at: datetime | None = None
-    created_at: datetime
-
-
-class NotificationListResponse(BaseModel):
-    """Paginated list of notifications with unread count."""
-
-    items: list[NotificationResponse]
-    total: int
-    page: int = Field(..., ge=1, description="Current page number")
-    page_size: int = Field(..., ge=1, le=100, description="Items per page")
-    pages: int = Field(..., ge=0, description="Total number of pages")
-    unread_count: int
-
-
-class MarkReadRequest(BaseModel):
-    """Request to mark notifications as read."""
-
-    notification_ids: list[UUID] = Field(..., min_length=1, max_length=100)
-
-
-class UnreadCountResponse(BaseModel):
-    """Unread notifications count."""
-
-    count: int
 
 
 # ===========================================
@@ -244,7 +203,6 @@ async def mark_as_read(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Mark notifications as read."""
-    from datetime import datetime
 
     stmt = (
         update(NotificationModel)
@@ -271,7 +229,6 @@ async def mark_all_as_read(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Mark all notifications as read."""
-    from datetime import datetime
 
     stmt = (
         update(NotificationModel)
@@ -298,7 +255,6 @@ async def delete_read_notifications(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Delete all read notifications."""
-    from datetime import datetime
 
     stmt = (
         update(NotificationModel)
@@ -326,7 +282,6 @@ async def delete_notification(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Delete a notification (soft delete)."""
-    from datetime import datetime
 
     stmt = (
         update(NotificationModel)

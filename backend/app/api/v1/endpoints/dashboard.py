@@ -8,11 +8,17 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
 from sqlalchemy import and_, case, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentTenantId, require_permission
+from app.api.v1.schemas.dashboard import (
+    ActivityItem,
+    DashboardStatsResponse,
+    RecentActivityResponse,
+    StatItem,
+    SystemHealthResponse,
+)
 from app.infrastructure.database.connection import get_db_session
 from app.infrastructure.database.models import (
     APIKeyModel,
@@ -24,68 +30,11 @@ from app.infrastructure.observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-# TODO: Migrate queries to repository layer for hexagonal architecture compliance.
+# Architecture note: Dashboard aggregation queries span multiple entities
+# (users, roles, API keys, sessions). These cross-cutting read-only analytics
+# are kept at the endpoint layer per ADR-005 (pragmatic query exception).
 
 router = APIRouter(tags=["Dashboard"])
-
-
-# ===========================================
-# Response Schemas
-# TODO: Extract to app/api/v1/schemas/dashboard.py
-# ===========================================
-
-
-class StatItem(BaseModel):
-    """Individual statistic item."""
-
-    name: str = Field(max_length=100)
-    value: int | str
-    change: str = Field(max_length=50)
-    change_type: str = Field(
-        max_length=20, description="positive, negative, or neutral"
-    )
-
-
-class ActivityItem(BaseModel):
-    """Recent activity item."""
-
-    id: str = Field(max_length=50)
-    action: str = Field(max_length=100)
-    description: str = Field(max_length=500)
-    timestamp: datetime
-    user_name: str | None = Field(default=None, max_length=200)
-    user_email: str | None = Field(default=None, max_length=320)
-
-
-class DashboardStatsResponse(BaseModel):
-    """Dashboard statistics response."""
-
-    total_users: int
-    active_users: int
-    inactive_users: int
-    total_roles: int
-    total_api_keys: int
-    active_api_keys: int
-    users_created_last_30_days: int
-    users_created_last_7_days: int
-    stats: list[StatItem]
-
-
-class RecentActivityResponse(BaseModel):
-    """Recent activity response."""
-
-    items: list[ActivityItem]
-    total: int
-
-
-class SystemHealthResponse(BaseModel):
-    """System health metrics."""
-
-    database_status: str = Field(max_length=20)
-    cache_status: str = Field(max_length=20)
-    avg_response_time_ms: float
-    uptime_percentage: float
-    active_sessions: int
 
 
 # ===========================================

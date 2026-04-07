@@ -37,8 +37,11 @@ class NotificationService:
 
     Handles notification creation, delivery, and lifecycle management.
 
-    # TODO: Extract NotificationRepository to comply with hexagonal architecture.
-    # Currently uses direct SQLAlchemy queries for pragmatic reasons.
+    Architecture note: Uses direct SQLAlchemy queries for notification CRUD.
+    A NotificationRepositoryPort exists in domain/ports/ for consumers that
+    need a pluggable implementation. The service uses direct queries because
+    notification delivery requires tight coupling with WebSocket delivery
+    and transactional consistency (flush + ws send + status update).
     """
 
     def __init__(

@@ -72,6 +72,7 @@ class AuditLogRepository(ABC):
         offset: int = 0,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+        tenant_id: UUID | None = None,
     ) -> Sequence[AuditLog]:
         """
         List audit logs for a specific actor (user).
@@ -82,9 +83,33 @@ class AuditLogRepository(ABC):
             offset: Number of results to skip
             start_date: Filter by minimum timestamp
             end_date: Filter by maximum timestamp
+            tenant_id: Optional tenant ID for access control
 
         Returns:
             List of matching audit log entries
+        """
+        ...
+
+    @abstractmethod
+    async def count_by_actor(
+        self,
+        actor_id: UUID,
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        tenant_id: UUID | None = None,
+    ) -> int:
+        """
+        Count audit logs for a specific actor (user).
+
+        Args:
+            actor_id: The user ID to filter by
+            start_date: Filter by minimum timestamp
+            end_date: Filter by maximum timestamp
+            tenant_id: Optional tenant ID for access control
+
+        Returns:
+            Count of matching audit log entries
         """
         ...
 
