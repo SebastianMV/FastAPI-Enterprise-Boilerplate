@@ -33,8 +33,8 @@ RUN npm run build
 
 # Stage 3: Production
 # Pin to specific version for reproducibility.
-# Update periodically and verify with: docker pull nginx:1.29-alpine
-FROM nginx:1.29-alpine AS production
+# Update periodically and verify with: docker pull nginx:1.29.8-alpine
+FROM nginx:1.29.8-alpine AS production
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/nginx.conf

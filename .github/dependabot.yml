@@ -103,6 +103,8 @@ updates:
     ignore:
       - dependency-name: "docker/setup-buildx-action"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "docker/build-push-action"
+        update-types: ["version-update:semver-major"]
 
   # Docker — base images
   - package-ecosystem: "docker"
