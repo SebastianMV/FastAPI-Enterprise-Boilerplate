@@ -1,0 +1,8 @@
+tests/e2e/test_v110_features.py::TestUserRegistrationE2E::test_register_new_user_success
+tests/e2e/test_v110_features.py::TestUserRegistrationE2E::test_register_weak_password_fails
+tests/e2e/test_v110_features.py::TestUserRegistrationE2E::test_register_invalid_email_fails
+tests/e2e/test_v110_features.py::TestPasswordRecoveryE2E::test_verify_invalid_reset_token
+tests/e2e/test_v110_features.py::TestPasswordRecoveryE2E::test_reset_password_invalid_token
+tests/e2e/test_v110_features.py::TestAPIKeysE2E::test_create_api_key_without_auth_fails
+tests/e2e/test_health_monitoring.py::TestHealthChecksE2E::test_basic_health_check
+tests/e2e/test_health_monitoring.py::TestVersionInfoE2E::test_openapi_schema_available

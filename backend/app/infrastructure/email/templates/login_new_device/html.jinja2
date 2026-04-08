@@ -1,0 +1,46 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.login_new_device.preheader') }}{% endblock %}
+
+{% block content %}
+<h1>🔔 {{ t('email.login_new_device.title') }}</h1>
+
+<p>{{ t('email.login_new_device.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.login_new_device.body') }}</p>
+
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.login_new_device.details') }}:</strong><br><br>
+        {% if device_info %}
+        📱 {{ t('email.login_new_device.device') }}: {{ device_info }}<br>
+        {% endif %}
+        {% if location %}
+        📍 {{ t('email.login_new_device.location') }}: {{ location }}<br>
+        {% endif %}
+        {% if ip_address %}
+        🌐 {{ t('email.login_new_device.ip_address') }}: {{ ip_address }}<br>
+        {% endif %}
+        {% if login_time %}
+        🕐 {{ t('email.login_new_device.time') }}: {{ login_time }}<br>
+        {% endif %}
+    </p>
+</div>
+
+<p>{{ t('email.login_new_device.if_you') }}</p>
+
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>⚠️ {{ t('email.login_new_device.not_you_title') }}</strong><br>
+        {{ t('email.login_new_device.not_you_body') }}
+    </p>
+</div>
+{% endblock %}
+
+{% block cta %}
+{% if security_url is defined and security_url %}
+<div class="cta-container">
+    <a href="{{ security_url }}" class="cta-button danger">{{ t('email.login_new_device.secure_account_button') }}</a>
+</div>
+{% endif %}
+{% endblock %}

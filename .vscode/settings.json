@@ -1,0 +1,195 @@
+{
+  // ==========================================================================
+  // FastAPI-Enterprise-Boilerplate — Shared Workspace Settings
+  // ==========================================================================
+  // These settings are committed to the repo to ensure consistency across all
+  // developers. Personal overrides go in .vscode/launch.json (gitignored).
+  //
+  // Rationale: 788 issues across 24 audits — many were formatting/linting
+  // inconsistencies that would have been caught with shared editor config.
+  // ==========================================================================
+  // ── Editor Defaults ───────────────────────────────────────────────────────
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.rulers": [88],
+  "editor.tabSize": 4,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  // ── Python (Backend) ──────────────────────────────────────────────────────
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.tabSize": 4,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "python.analysis.typeCheckingMode": "standard",
+  "python.analysis.extraPaths": ["backend"],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingTypeStubs": "none"
+  },
+  // ── TypeScript/React (Frontend) ───────────────────────────────────────────
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  // ── Markdown ──────────────────────────────────────────────────────────────
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.rulers": [120]
+  },
+  // ── YAML / Docker Compose ─────────────────────────────────────────────────
+  "[yaml]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[dockercompose]": {
+    "editor.tabSize": 2
+  },
+  // ── File Associations ─────────────────────────────────────────────────────
+  "files.associations": {
+    "*.yml": "yaml",
+    "docker-compose*.yml": "dockercompose",
+    ".env*": "dotenv"
+  },
+  // ── Search Exclusions (performance) ───────────────────────────────────────
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.venv": true,
+    "**/htmlcov": true,
+    "**/dist": true,
+    "**/__pycache__": true,
+    "**/coverage": true,
+    "**/.pytest_cache": true,
+    "**/backend/storage": true
+  },
+  // ── File Watcher Exclusions ───────────────────────────────────────────────
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.venv/**": true,
+    "**/htmlcov/**": true,
+    "**/__pycache__/**": true
+  },
+  // ── Testing ───────────────────────────────────────────────────────────────
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["backend/tests"],
+  // ── Spell Check (optional, if extension installed) ────────────────────────
+  "cSpell.enabled": false,
+  "cSpell.language": "en,es,pt,pt-BR",
+  "cSpell.allowCompoundWords": true,
+  "cSpell.ignorePaths": [
+    "**/node_modules/**",
+    "**/.venv/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/htmlcov/**",
+    "**/__pycache__/**",
+    "**/.pytest_cache/**",
+    "**/*.min.js",
+    "**/*.min.css",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml",
+    "**/yarn.lock"
+  ],
+  "cSpell.words": [
+    "Sebastián",
+    "Muñoz",
+    "FastAPI",
+    "Enterprise",
+    "Boilerplate",
+    "nginx",
+    "epoll",
+    "nodelay",
+    "uvloop",
+    "websocket",
+    "websockets",
+    "oauth",
+    "openid",
+    "sso",
+    "jwt",
+    "HttpOnly",
+    "samesite",
+    "hsts",
+    "cors",
+    "xss",
+    "csrf",
+    "rls",
+    "multitenant",
+    "multi-tenant",
+    "softdelete",
+    "soft-delete",
+    "semgrep",
+    "mypy",
+    "pyright",
+    "pylance",
+    "ruff",
+    "pytest",
+    "asyncio",
+    "postgres",
+    "postgresql",
+    "redis",
+    "sqlmodel",
+    "sqlalchemy",
+    "asyncpg",
+    "pydantic",
+    "uvicorn",
+    "alembic",
+    "bcrypt",
+    "pyotp",
+    "totp",
+    "dotenv",
+    "openapi",
+    "zod",
+    "tanstack",
+    "zustand",
+    "vite",
+    "vitest",
+    "playwright",
+    "tailwind",
+    "tailwindcss",
+    "typescript",
+    "tsx",
+    "eslint",
+    "prettier",
+    "commitizen",
+    "dependabot",
+    "codecov",
+    "asyncpg",
+    "sqlalchemy",
+    "pydantic",
+    "fastapi",
+    "uvicorn",
+    "httponly",
+    "csrf",
+    "totp",
+    "pyotp",
+    "bcrypt",
+    "alembic",
+    "zustand",
+    "tanstack",
+    "vitest",
+    "playwright",
+    "tailwindcss",
+    "boilerplate",
+    "multitenancy",
+    "hexagonal"
+  ]
+}

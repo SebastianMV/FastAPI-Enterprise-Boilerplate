@@ -1,0 +1,12 @@
+Generic single-database configuration with an async dbapi.
+
+Migration Naming Convention
+---------------------------
+New migrations should follow a consistent naming pattern:
+  alembic revision --autogenerate -m "<NNN>_short_description"
+
+Where <NNN> is the next sequential number (e.g., 012_add_avatar_column).
+This keeps migrations easy to identify in chronological order.
+
+Existing migrations with inconsistent names should NOT be renamed,
+as Alembic tracks them by revision hash, not filename.

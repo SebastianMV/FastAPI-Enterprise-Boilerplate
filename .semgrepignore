@@ -1,0 +1,36 @@
+﻿# .semgrepignore - Exclude non-production code from Semgrep scans
+# Uses gitignore syntax (Semgrep v2 / Gitignore v2 spec)
+
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+dist/
+build/
+*.egg-info/
+
+# Test files (security rules target production code only)
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+backend/tests/
+frontend/e2e/
+
+# Node.js
+node_modules/
+
+# Generated / build output
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+
+# Alembic migrations (auto-generated)
+backend/alembic/versions/
+
+# Scripts (ops tooling, not production code)
+backend/scripts/
+
+# Storage (uploaded files, not code)
+backend/storage/

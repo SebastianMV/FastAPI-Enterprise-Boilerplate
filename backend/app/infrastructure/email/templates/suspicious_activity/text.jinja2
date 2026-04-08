@@ -1,0 +1,37 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+🚨 {{ t('email.suspicious_activity.title', default='Suspicious Activity Detected') }}
+====================================================================================
+
+{{ t('email.suspicious_activity.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}
+
+{{ t('email.suspicious_activity.body', default='We detected unusual activity on your account that may indicate unauthorized access.') }}
+
+Activity Details
+----------------
+{{ t('email.suspicious_activity.activity_type', default='Activity Type') }}: {{ activity_type | default('Unknown') }}
+{{ t('email.suspicious_activity.time', default='Time') }}: {{ detected_at | default('Just now') }}
+{{ t('email.suspicious_activity.location', default='Location') }}: {{ location | default('Unknown') }}
+{{ t('email.suspicious_activity.ip', default='IP Address') }}: {{ ip_address | default('Unknown') }}
+
+{{ t('email.suspicious_activity.what_to_do', default='What should you do?') }}
+------------------------------------------------------------------------------
+
+1. {{ t('email.suspicious_activity.step_1', default='Change your password immediately') }}
+2. {{ t('email.suspicious_activity.step_2', default='Enable two-factor authentication if not already active') }}
+3. {{ t('email.suspicious_activity.step_3', default='Review your recent account activity') }}
+4. {{ t('email.suspicious_activity.step_4', default='Revoke any sessions you don\'t recognize') }}
+
+{{ t('email.suspicious_activity.contact_support', default='If this was you, you can safely ignore this email. Otherwise, please contact our support team.') }}
+
+{% if change_password_url is defined and change_password_url %}
+{{ t('email.suspicious_activity.change_password', default='Change Password') }}:
+{{ change_password_url }}
+{% endif %}
+
+{% if sessions_url is defined and sessions_url %}
+{{ t('email.suspicious_activity.review_sessions', default='Review Sessions') }}:
+{{ sessions_url }}
+{% endif %}
+{% endblock %}

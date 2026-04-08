@@ -1,0 +1,30 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.account_deactivated.preheader', default='Your account has been deactivated') }}{% endblock %}
+
+{% block content %}
+<h1>⚠️ {{ t('email.account_deactivated.title', default='Account Deactivated') }}</h1>
+
+<p>{{ t('email.account_deactivated.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}</p>
+
+<p>{{ t('email.account_deactivated.body', default='Your account has been deactivated. You will no longer be able to access the platform until it is reactivated.') }}</p>
+
+{% if reason is defined and reason %}
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.account_deactivated.reason_label', default='Reason') }}:</strong><br>
+        {{ reason }}
+    </p>
+</div>
+{% endif %}
+
+<p>{{ t('email.account_deactivated.contact_support', default='If you believe this was done in error, please contact our support team.') }}</p>
+{% endblock %}
+
+{% block cta %}
+{% if support_url is defined and support_url %}
+<div class="cta-container">
+    <a href="{{ support_url }}" class="cta-button">{{ t('email.account_deactivated.contact_button', default='Contact Support') }}</a>
+</div>
+{% endif %}
+{% endblock %}

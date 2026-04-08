@@ -1,0 +1,283 @@
+[project]
+name = "fastapi-enterprise-boilerplate"
+version = "1.0.0"
+description = "Production-ready FastAPI boilerplate with JWT, ACL, multi-tenant RLS, and hexagonal architecture"
+authors = [
+    {name = "Sebastián Muñoz", email = "sebastian.munoz@example.com"}
+]
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.13"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
+dependencies = [
+    # Web Framework
+    "fastapi>=0.135.3,<1.0.0",
+    "uvicorn[standard]>=0.44.0",
+    "python-multipart>=0.0.24",
+
+    # Database
+    "sqlalchemy[asyncio]>=2.0.49,<3.0.0",
+    "asyncpg>=0.31.0",
+    "alembic>=1.18.4",
+    "greenlet>=3.3.2",
+
+    # Validation & Serialization
+    "pydantic>=2.12.5,<3.0.0",
+    "pydantic-settings>=2.13.1",
+    "email-validator>=2.3.0",
+
+    # Authentication & Encryption
+    "PyJWT>=2.12.1",
+    "cryptography>=46.0.6",
+    "bcrypt>=4.2.1",
+
+    # MFA / Two-Factor Authentication
+    "pyotp>=2.9.0",
+    "qrcode[pil]>=8.2",
+
+    # Cache & Rate Limiting
+    "redis>=5.2.1",
+
+    # Background Tasks
+    "arq>=0.27.0",
+
+    # Observability
+    "opentelemetry-api>=1.40.0",
+    "opentelemetry-sdk>=1.40.0",
+    "opentelemetry-instrumentation-fastapi>=0.61b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.61b0",
+    "opentelemetry-instrumentation-redis>=0.61b0",
+    "opentelemetry-instrumentation-httpx>=0.61b0",
+    "opentelemetry-exporter-otlp>=1.40.0",
+    "prometheus-client>=0.24.1",
+
+    # CLI
+    "typer[all]>=0.24.1",
+    "rich>=13.9.4",
+
+    # Email
+    "fastapi-mail>=1.6.2",
+    "jinja2>=3.1.6",
+
+    # i18n / Internationalization
+    "babel>=2.18.0",
+
+    # Utilities
+    "httpx>=0.28.1",
+    "python-dotenv>=1.2.2",
+    "aiofiles>=25.1.0",
+
+    # Report Generation
+    "openpyxl>=3.1.5",
+    "weasyprint>=68.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
+    "pytest-timeout>=2.4.0",
+    "pytest-mock>=3.15.1",
+    "aiosqlite>=0.22.1",
+    "httpx>=0.28.1",
+    "factory-boy>=3.3.3",
+    "faker>=37.0.0",
+    "ruff>=0.15.9",
+    "mypy>=1.20.0",
+    "pre-commit>=4.5.1",
+]
+
+storage = [
+    # S3/MinIO Support
+    "boto3>=1.42.46",
+]
+
+[project.scripts]
+cli = "app.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "W",    # pycodestyle warnings
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    # === Security rules (added from 13 audit lessons) ===
+    "S",    # flake8-bandit (security)
+    "T20",  # flake8-print (no print() in production code)
+    "LOG",  # flake8-logging (logging best practices)
+    "G",    # flake8-logging-format (no f-strings in logger)
+    "DTZ",  # flake8-datetimez (timezone-aware datetimes)
+    "PERF", # perflint (performance anti-patterns)
+    "PIE",  # flake8-pie (misc. lints)
+    "RET",  # flake8-return (return statement checks)
+    "TCH",  # flake8-type-checking (TYPE_CHECKING imports)
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "S101",   # assert used (needed in domain logic validators)
+    "S104",   # binding to 0.0.0.0 (needed in Docker/uvicorn)
+    "RET504", # unnecessary assignment before return (readability)
+    # === Framework & formatter patterns ===
+    "B008",   # function-call-in-default-argument (FastAPI Depends/Query/Path/Body pattern)
+    "W291",   # trailing whitespace (handled by ruff format)
+    "W293",   # blank-line-with-whitespace (handled by ruff format)
+    "E712",   # true-false-comparison (SQLAlchemy column comparisons: Model.col == True)
+    "E402",   # module-import-not-at-top-of-file (middleware registration, logger setup)
+    # === Gradual migration / style preferences ===
+    "UP042",  # replace-str-enum (gradual StrEnum migration)
+    "UP046",  # non-pep695-generic-class (Python 3.12+ syntax, gradual adoption)
+    "SIM102", # collapsible-if (expanded form often clearer)
+    "PERF401",# manual-list-comprehension (clarity over micro-optimization)
+    # === Naming conventions (contextual) ===
+    "N806",   # non-lowercase-variable-in-function (SQLAlchemy models, class refs)
+    "N811",   # constant-imported-as-non-constant
+    "N818",   # error-suffix-on-exception-name (existing exception hierarchy)
+    # === Datetime (strptime from user input / DB values) ===
+    "DTZ007", # call-datetime-strptime-without-zone
+    # === Logging (explicit exc_info patterns) ===
+    "G201",   # logging-exc-info (explicit exc_info=True is valid)
+    "LOG014", # exc-info-outside-except-handler
+    # === Typing optimization (not correctness) ===
+    "TC001",  # typing-only-first-party-import
+    "TC002",  # typing-only-third-party-import
+    "TC003",  # typing-only-standard-library-import
+    # === False positives on field names (token_type, password_hash, etc.) ===
+    "S105",   # hardcoded-password-string
+    "S106",   # hardcoded-password-func-arg
+    "S608",   # hardcoded-sql-expression (parameterized query building in ORM)
+    "S311",   # suspicious-non-cryptographic-random-usage (non-security use)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    # --- Security (relaxed for test fixtures) ---
+    "S101",   # assert is expected in tests
+    "S105",   # hardcoded passwords in test fixtures
+    "S106",   # hardcoded password argument in tests
+    "S110",   # try-except-pass (intentional in error-path tests)
+    "S311",   # pseudo-random in tests is fine
+    "S324",   # hashlib insecure (test data hashing)
+    "T20",    # print in tests is fine
+    # --- Code quality (relaxed for test readability) ---
+    "F841",   # unused-variable (side-effect assignments for setup)
+    "F811",   # redefined-while-unused (fixture/parametrize overrides)
+    "B004",   # unreliable-callable-check
+    "B007",   # unused-loop-control-variable
+    "B017",   # assert-raises-exception (broad exception assertions)
+    "B904",   # raise-without-from-inside-except
+    "N802",   # invalid-function-name (test method naming)
+    "N806",   # non-lowercase-variable-in-function (test variable naming)
+    "E402",   # module-import-not-at-top-of-file (conftest patterns)
+    "E711",   # none-comparison (assertion patterns)
+    "E731",   # lambda-assignment
+    "C408",   # unnecessary-collection-call
+    # --- Simplification (clarity over brevity in tests) ---
+    "SIM102", # collapsible-if
+    "SIM105", # suppressible-exception
+    "SIM108", # if-else-block-instead-of-if-exp
+    "SIM110", # reimplemented-builtin
+    "SIM113", # enumerate-for-loop
+    "SIM117", # multiple-with-statements
+    "SIM118", # in-dict-keys
+    "SIM222", # expr-or-true
+    # --- Datetime (test fixtures use naive datetimes) ---
+    "DTZ",    # all datetime timezone rules
+    # --- Style (gradual migration, not blocking tests) ---
+    "UP042",  # replace-str-enum
+    "PERF401",# manual-list-comprehension
+    "TCH",    # typing-only imports
+]
+"app/cli/**" = [
+    "T20",    # print is fine in CLI commands
+    "S603",   # subprocess in CLI is intentional
+    "S607",   # partial path in CLI subprocess
+]
+"app/infrastructure/logging/**" = [
+    "G",      # logging module itself uses various patterns
+]
+"scripts/**" = [
+    "T20",    # print in scripts is fine
+    "S",      # scripts have different security context
+]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+
+# =============================================================================
+# Bandit — Python Security Linter
+# =============================================================================
+# Lessons from 13 security audits codified as automated checks.
+# Runs via pre-commit hook and can be run manually: bandit -c pyproject.toml -r app/
+[tool.bandit]
+exclude_dirs = ["tests", "scripts", "alembic"]
+skips = [
+    "B101",  # assert_used (needed in domain validators)
+    "B104",  # hardcoded_bind_all_interfaces (Docker/uvicorn)
+]
+tests = [
+    "B102",  # exec_used → sev10 RCE (Audit 9, #153)
+    "B105",  # hardcoded_password_string
+    "B106",  # hardcoded_password_funcarg
+    "B107",  # hardcoded_password_default
+    "B110",  # try_except_pass (swallowed exceptions)
+    "B112",  # try_except_continue
+    "B201",  # flask_debug_true (applies to any framework)
+    "B301",  # pickle
+    "B302",  # marshal
+    "B303",  # insecure hash (md5/sha1 without usedforsecurity)
+    "B307",  # eval → sev10 RCE
+    "B310",  # urllib_urlopen
+    "B311",  # random (pseudo-random for security)
+    "B320",  # xml_bad_etree
+    "B324",  # hashlib_insecure_functions
+    "B501",  # request_with_no_cert_validation
+    "B506",  # yaml_load
+    "B602",  # subprocess_popen_with_shell_equals_true
+    "B608",  # hardcoded_sql_expressions → SQL injection
+    "B609",  # linux_commands_wildcard_injection
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+markers = [
+    "unit: fast isolated tests with mocked boundaries",
+    "integration: tests with real infra/services boundaries",
+    "e2e: end-to-end scenarios across full application flow",
+    "smoke: stable high-signal blocking subset for CI",
+    "security: security-focused checks and meta-tests",
+    "flaky: unstable tests tracked for stabilization backlog",
+]
+filterwarnings = [
+    "ignore:coroutine .* was never awaited:RuntimeWarning",
+]

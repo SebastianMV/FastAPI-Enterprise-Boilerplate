@@ -1,0 +1,22 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+{{ t('email.password_reset.title') }}
+=====================================
+
+{{ t('email.password_reset.greeting', name=recipient_name) }}
+
+{{ t('email.password_reset.body') }}
+
+⚠️ {{ t('email.password_reset.warning_title') }}
+{{ t('email.password_reset.expires', hours=expires_in_hours|default(1)) }}
+
+{{ t('email.password_reset.reset_button') }}:
+{{ reset_url }}
+
+{{ t('email.password_reset.link_note') }}
+
+{{ t('email.password_reset.security_warning') }}
+
+{{ t('email.password_reset.ignore_note') }}
+{% endblock %}

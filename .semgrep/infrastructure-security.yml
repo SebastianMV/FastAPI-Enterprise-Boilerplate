@@ -1,0 +1,45 @@
+# =============================================================================
+# Semgrep Custom Rules — Infrastructure & Docker Security
+# =============================================================================
+# Codified lessons from 19 security audits — infrastructure-level patterns.
+#
+# Run: semgrep --config .semgrep/ docker-compose*.yml
+# =============================================================================
+
+rules:
+
+  - id: no-hardcoded-passwords-in-compose
+    patterns:
+      - pattern-either:
+          - pattern: "POSTGRES_PASSWORD: $VALUE"
+          - pattern: "REDIS_PASSWORD: $VALUE"
+          - pattern: "JWT_SECRET_KEY: $VALUE"
+          - pattern: "ENCRYPTION_KEY: $VALUE"
+    pattern-where-python: >
+      "$" not in str(meta_vars.get("$VALUE", "")) and
+      str(meta_vars.get("$VALUE", "")) not in ["''", '""', ""]
+    message: >
+      Hardcoded password/secret detected in docker-compose file. Use
+      ${VAR:?must be set} syntax to require environment variables at runtime.
+      Fixed across all compose files in Audits 5-6.
+    languages: [yaml]
+    severity: ERROR
+    metadata:
+      audit-ref: "Audit 5 (#175-177); Audit 6 (#200-203)"
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      category: security
+      confidence: MEDIUM
+
+  - id: no-latest-docker-tags
+    patterns:
+      - pattern-regex: "image:\\s+\\S+:latest"
+    message: >
+      Pin Docker images to specific version tags (e.g., postgres:17.7-alpine,
+      redis:7.4-alpine) to prevent supply chain attacks. Fixed in Audits 6-9.
+    languages: [yaml]
+    severity: WARNING
+    metadata:
+      audit-ref: "Audit 4, I-03 (#204); Audit 6, I-01 (#242)"
+      cwe: "CWE-1395: Dependency on Vulnerable Third-Party Component"
+      category: security
+      confidence: HIGH

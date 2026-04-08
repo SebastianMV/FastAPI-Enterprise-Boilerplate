@@ -1,0 +1,33 @@
+{% extends "base.text.jinja2" %}
+
+{% block content %}
+👤 {{ t('email.tenant_role_changed.title', default='Role Updated') }}
+=====================================================================
+
+{{ t('email.tenant_role_changed.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}
+
+{{ t('email.tenant_role_changed.body', default='Your role within the organization has been updated.') }}
+
+Role Change Details
+-------------------
+{{ t('email.tenant_role_changed.organization', default='Organization') }}: {{ tenant_name | default('Your Organization') }}
+{{ t('email.tenant_role_changed.previous_role', default='Previous Role') }}: {{ previous_role | default('N/A') }}
+{{ t('email.tenant_role_changed.new_role', default='New Role') }}: {{ new_role | default('Updated') }}
+{{ t('email.tenant_role_changed.changed_by', default='Changed By') }}: {{ changed_by | default('Administrator') }}
+{{ t('email.tenant_role_changed.changed_at', default='Changed At') }}: {{ changed_at | default('Just now') }}
+
+{% if new_permissions is defined and new_permissions %}
+{{ t('email.tenant_role_changed.new_permissions', default='Your New Permissions') }}
+------------------------------------------------------------------------------------
+{% for permission in new_permissions %}
+- {{ permission }}
+{% endfor %}
+{% endif %}
+
+{{ t('email.tenant_role_changed.questions', default='If you have questions about this change, please contact your administrator.') }}
+
+{% if dashboard_url is defined and dashboard_url %}
+{{ t('email.tenant_role_changed.go_to_dashboard', default='Go to Dashboard') }}:
+{{ dashboard_url }}
+{% endif %}
+{% endblock %}

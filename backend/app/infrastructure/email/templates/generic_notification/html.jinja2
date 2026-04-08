@@ -1,0 +1,35 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.generic_notification.preheader', default=subject | default('You have a new notification')) }}{% endblock %}
+
+{% block content %}
+<h1>📬 {{ t('email.generic_notification.title', default=title | default('Notification')) }}</h1>
+
+<p>{{ t('email.generic_notification.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}</p>
+
+<div class="content-block">
+    {{ message | safe | default('You have received a notification.') }}
+</div>
+
+{% if details is defined and details %}
+<div class="info-box">
+    <p style="margin: 0;">
+        {% for key, value in details.items() %}
+        <strong>{{ key }}:</strong> {{ value }}<br>
+        {% endfor %}
+    </p>
+</div>
+{% endif %}
+
+{% if footer_text is defined and footer_text %}
+<p style="color: #6b7280; font-size: 14px;">{{ footer_text }}</p>
+{% endif %}
+{% endblock %}
+
+{% block cta %}
+{% if action_url is defined and action_url %}
+<div class="cta-container">
+    <a href="{{ action_url }}" class="cta-button">{{ action_text | default(t('email.generic_notification.action', default='View Details')) }}</a>
+</div>
+{% endif %}
+{% endblock %}

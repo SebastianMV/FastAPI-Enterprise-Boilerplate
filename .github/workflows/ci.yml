@@ -1,0 +1,589 @@
+# Copyright (c) 2025-2026 Sebastián Muñoz
+# Licensed under the Apache License, Version 2.0
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel redundant runs for the same branch/PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.14"
+  NODE_VERSION: "24.14"
+
+# Least-privilege: only read access to repo contents
+permissions:
+  contents: read
+
+jobs:
+  # ===========================================
+  # Backend Tests
+  # ===========================================
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    services:
+      postgres:
+        image: postgres:17.7-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+
+      - name: Run linting
+        working-directory: backend
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run type checking
+        continue-on-error: true
+        working-directory: backend
+        run: |
+          mypy app --show-error-codes --no-color-output
+
+      - name: Run backend smoke tests (stable gate)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET_KEY: test-secret-key-for-ci-only-min-32-chars-required
+          ENCRYPTION_KEY: test-encryption-key-for-ci-only-32ch
+          ENVIRONMENT: testing
+        run: |
+          pytest \
+            tests/security/test_security_meta.py \
+            tests/unit/api/test_auth_endpoints.py \
+            tests/unit/api/test_auth_endpoints_coverage.py \
+            tests/unit/api/test_dependencies.py \
+            tests/unit/api/test_deps.py \
+            -v --cov=app --cov-report=xml --cov-report=term
+
+      - name: Run release-critical E2E subset (Linux CI)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET_KEY: test-secret-key-for-ci-only-min-32-chars-required
+          ENCRYPTION_KEY: test-encryption-key-for-ci-only-32ch
+          ENVIRONMENT: testing
+        run: |
+          alembic upgrade head
+          NODEIDS=$(tr '\n' ' ' < tests/e2e/release_critical_nodeids.txt)
+          pytest -v $NODEIDS
+
+      - name: Upload coverage
+        if: always()
+        continue-on-error: true
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          files: backend/coverage.xml
+          flags: backend
+          use_oidc: true
+          fail_ci_if_error: false
+
+  # ===========================================
+  # Backend Full Suite Report (Non-blocking)
+  # ===========================================
+  backend-full-suite-report:
+    name: Backend Full Suite Report (Non-blocking)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    continue-on-error: true
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: postgres:17.7-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+
+      - name: Run backend full suite (report only)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET_KEY: test-secret-key-for-ci-only-min-32-chars-required
+          ENCRYPTION_KEY: test-encryption-key-for-ci-only-32ch
+          ENVIRONMENT: testing
+        run: |
+          alembic upgrade head
+          pytest tests/ -v --timeout=120 --junitxml=full-suite-junit.xml --maxfail=0 || true
+
+      - name: Publish full suite summary
+        if: always()
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          path = Path("full-suite-junit.xml")
+          if not path.exists():
+              print("❌ full-suite-junit.xml not found")
+              raise SystemExit(0)
+
+          root = ET.parse(path).getroot()
+          total = int(root.attrib.get("tests", 0))
+          failures = int(root.attrib.get("failures", 0))
+          errors = int(root.attrib.get("errors", 0))
+          skipped = int(root.attrib.get("skipped", 0))
+          passed = max(total - failures - errors - skipped, 0)
+
+          summary = (
+              "## Backend Full Suite (Non-blocking)\n"
+              f"- Total: {total}\n"
+              f"- Passed: {passed}\n"
+              f"- Failed: {failures}\n"
+              f"- Errors: {errors}\n"
+              f"- Skipped: {skipped}\n"
+          )
+
+          print(summary)
+          with Path("../backend-full-suite-summary.md").open("w", encoding="utf-8") as f:
+              f.write(summary)
+          PY
+
+      - name: Upload full suite artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: backend-full-suite-report
+          path: |
+            backend/full-suite-junit.xml
+            backend-full-suite-summary.md
+
+  # ===========================================
+  # Frontend Tests
+  # ===========================================
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run linting
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run type checking
+        working-directory: frontend
+        run: npm run type-check
+
+      - name: Run tests with coverage
+        working-directory: frontend
+        run: npm run test -- --coverage
+
+      - name: Upload frontend coverage
+        if: always()
+        continue-on-error: true
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          files: frontend/coverage/coverage-final.json
+          flags: frontend
+          use_oidc: true
+          fail_ci_if_error: false
+
+  # ===========================================
+  # Security Scan
+  # ===========================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # FS scan covers source dependencies (pip/npm).
+      # Image scanning should be added in the release/deploy pipeline.
+      - name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+
+      - name: Set up Python for pip-audit
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run pip-audit
+        working-directory: backend
+        run: |
+          pip install pip-audit==2.10.0
+          # CVE-2026-4539: pygments 2.19.2 (transitive via rich/pytest) — no fix available yet
+          pip-audit -r requirements.txt --strict --ignore-vuln CVE-2026-4539
+          pip-audit -r requirements-prod.txt --strict --ignore-vuln CVE-2026-4539
+
+      - name: Set up Node.js for npm audit
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+  # ===========================================
+  # SAST — Static Application Security Testing
+  # ===========================================
+  # Custom Semgrep rules codified from 18 security audits.
+  # Catches patterns that were repeatedly found: str(e) in responses,
+  # f-strings in logger, tokens in localStorage, ungated console.error, etc.
+  sast:
+    name: SAST (Semgrep Custom Rules)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python for Semgrep
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run Semgrep with project-specific rules
+        run: |
+          pip install semgrep==1.157.0
+          semgrep --config .semgrep/ backend/app/ frontend/src/ docker-compose*.yml .github/workflows/ --json --output semgrep-results.json || true
+
+          if [ ! -f semgrep-results.json ]; then
+            echo "❌ Semgrep did not produce semgrep-results.json"
+            exit 1
+          fi
+
+          CURRENT=$(python -c "import json;print(len(json.load(open('semgrep-results.json', encoding='utf-8')).get('results', [])))")
+          BASELINE_FILE=".semgrep/baseline.json"
+
+          if [ -f "$BASELINE_FILE" ]; then
+            BASELINE=$(python -c "import json;print(json.load(open('$BASELINE_FILE', encoding='utf-8')).get('baseline_count', 0))")
+          else
+            BASELINE=0
+          fi
+
+          echo "Semgrep findings: current=$CURRENT baseline=$BASELINE"
+
+          if [ "$CURRENT" -gt "$BASELINE" ]; then
+            echo "❌ Semgrep regression detected: findings increased above baseline ($CURRENT > $BASELINE)"
+            exit 1
+          fi
+
+          echo "✅ Semgrep gate passed — no regression vs baseline"
+
+      - name: Set up Python for Bandit
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run Bandit security linter
+        working-directory: backend
+        run: |
+          pip install "bandit[toml]==1.9.4"
+          bandit -c pyproject.toml -r app/ -ll -ii
+
+  # ===========================================
+  # Quality Guardian — Convention Enforcement
+  # ===========================================
+  # Automated checks extracted from the quality-guardian agent.
+  # Enforces the 19 critical rules codified across 38 security audits.
+  # Agents: .github/agents/quality-guardian.agent.md
+  quality-guardian:
+    name: Quality Guardian
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # ── Rule 1: No stdlib logging (get_logger() only) ──────────────────────
+      - name: "Rule 1 · No stdlib logging"
+        run: |
+          COUNT=$(grep -rn "^import logging" backend/app/ --include="*.py" | grep -v "backend/app/infrastructure/observability/logging.py" | wc -l)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ Found $COUNT file(s) using stdlib 'import logging':"
+            grep -rn "^import logging" backend/app/ --include="*.py" | grep -v "backend/app/infrastructure/observability/logging.py"
+            echo "Use: from app.infrastructure.observability.logging import get_logger"
+            exit 1
+          fi
+          echo "✅ Rule 1 passed — 0 stdlib logging imports"
+
+      # ── Rule 7: No blocking subprocess.run in async code ──────────────────
+      - name: "Rule 7 · No sync subprocess.run"
+        run: |
+          COUNT=$(grep -rn "subprocess\.run(" backend/app/ --include="*.py" | wc -l)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ Found $COUNT blocking subprocess.run() call(s):"
+            grep -rn "subprocess\.run(" backend/app/ --include="*.py"
+            echo "Use: asyncio.create_subprocess_exec()"
+            exit 1
+          fi
+          echo "✅ Rule 7 passed — 0 blocking subprocess.run calls"
+
+      # ── Rule 10: No datetime.utcnow() ──────────────────────────────────────
+      - name: "Rule 10 · No datetime.utcnow()"
+        run: |
+          COUNT=$(grep -rn "datetime\.utcnow()" backend/app/ --include="*.py" | wc -l)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ Found $COUNT datetime.utcnow() call(s):"
+            grep -rn "datetime\.utcnow()" backend/app/ --include="*.py"
+            echo "Use: datetime.now(UTC)"
+            exit 1
+          fi
+          echo "✅ Rule 10 passed — 0 datetime.utcnow() calls"
+
+      # ── Rule 16: Docker images pinned to minor version ────────────────────
+      - name: "Rule 16 · Docker image pins (staging & prod)"
+        run: |
+          # In staging/prod, images must use minor pin (no bare :latest or major-only tags)
+          FAIL=0
+          for f in docker-compose.deploy.yml; do
+            if grep -E "(postgres|redis|nginx|python|node):[0-9]+-" "$f" | grep -qv "[0-9]+\.[0-9]+-"; then
+              echo "❌ $f has unpinned image(s):"
+              grep -E "(postgres|redis|nginx|python|node):[0-9]+-" "$f"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Rule 16 passed — all staging/prod images pinned"
+
+      # ── Rule 17: Secrets use :? (fail-safe), not :- (silent default) ──────
+      - name: "Rule 17 · Secrets failsafe (no :- for secrets)"
+        run: |
+          # Check secret vars for default fallbacks in staging/prod compose files
+          FAIL=0
+          SECRET_VARS="JWT_SECRET_KEY|ENCRYPTION_KEY|POSTGRES_PASSWORD|REDIS_PASSWORD|APP_USER_PASSWORD|DATABASE_URL"
+          for f in docker-compose.deploy.yml; do
+            if grep -E "($SECRET_VARS)=\$\{[^}]+:-" "$f"; then
+              echo "❌ $f has secret(s) with :- fallback (use :?must be set instead)"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Rule 17 passed — all secrets use :? failsafe"
+
+      # ── Rule 18: Container security hardening ─────────────────────────────
+      - name: "Rule 18 · Container hardening (no-new-privileges)"
+        run: |
+          # Every service in staging/prod should declare no-new-privileges
+          FAIL=0
+          for f in docker-compose.deploy.yml; do
+            if ! grep -q "no-new-privileges" "$f"; then
+              echo "❌ $f is missing 'no-new-privileges' security option"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Rule 18 passed — containers have no-new-privileges"
+
+      # ── i18n Coverage: PT keys vs EN baseline ─────────────────────────────
+      - name: "i18n Coverage — PT vs EN gap"
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: "i18n Coverage — check PT completion"
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const flatten = (obj, prefix = '') =>
+            Object.entries(obj).flatMap(([k, v]) =>
+              typeof v === 'object' && v !== null
+                ? flatten(v, prefix + k + '.')
+                : [[prefix + k, v]]
+            );
+          const en = JSON.parse(fs.readFileSync('frontend/src/i18n/locales/en.json', 'utf8'));
+          const pt = JSON.parse(fs.readFileSync('frontend/src/i18n/locales/pt.json', 'utf8'));
+          const enKeys = new Set(flatten(en).map(([k]) => k));
+          const ptKeys = new Set(flatten(pt).map(([k]) => k));
+          const missing = [...enKeys].filter(k => !ptKeys.has(k));
+          const coverage = Math.round(((enKeys.size - missing.length) / enKeys.size) * 100);
+          console.log(`EN keys: ${enKeys.size} | PT keys: ${ptKeys.size} | Coverage: ${coverage}%`);
+          if (missing.length > 0) {
+            console.log(`Missing in PT (${missing.length} keys):`);
+            missing.slice(0, 30).forEach(k => console.log('  -', k));
+            if (missing.length > 30) console.log(`  ... and ${missing.length - 30} more`);
+          }
+          // Release-quality gate: locales should stay highly aligned with EN.
+          // PT currently has full key coverage; fail if it drops below 95%.
+          if (coverage < 95) {
+            console.error(`❌ PT coverage ${coverage}% is below minimum 95%`);
+            process.exit(1);
+          }
+          console.log(`✅ i18n PT coverage: ${coverage}% (minimum: 95%)`);
+          EOF
+
+      # ── Architecture: No business logic leaked into endpoints ─────────────
+      - name: "Architecture · Hexagonal boundary check"
+        run: |
+          # Domain layer must not import infrastructure
+          DOM_INFRA=$(grep -rn "from app.infrastructure" backend/app/domain/ --include="*.py" | wc -l)
+          # Application layer must not import FastAPI/HTTP
+          APP_HTTP=$(grep -rn "from fastapi\|import fastapi\|from starlette" backend/app/application/ --include="*.py" | wc -l)
+          FAIL=0
+          if [ "$DOM_INFRA" -gt 0 ]; then
+            echo "❌ Domain layer imports from infrastructure ($DOM_INFRA occurrences):"
+            grep -rn "from app.infrastructure" backend/app/domain/ --include="*.py"
+            FAIL=1
+          fi
+          if [ "$APP_HTTP" -gt 0 ]; then
+            echo "❌ Application layer imports FastAPI/HTTP ($APP_HTTP occurrences):"
+            grep -rn "from fastapi\|import fastapi\|from starlette" backend/app/application/ --include="*.py"
+            FAIL=1
+          fi
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Architecture passed — hexagonal boundaries respected"
+
+      # ── Security meta-tests (requires Python + deps) ──────────────────────
+      - name: Set up Python for meta-tests
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend deps for meta-tests
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+
+      - name: "Security meta-tests (8 rule checkers)"
+        working-directory: backend
+        env:
+          ENVIRONMENT: testing
+          JWT_SECRET_KEY: test-secret-key-for-ci-only-min-32-chars-required
+          ENCRYPTION_KEY: test-encryption-key-for-ci-only-32ch
+        run: |
+          pytest tests/security/test_security_meta.py -v --tb=short
+
+  # ===========================================
+  # Build Docker Images
+  # ===========================================
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-24.04
+    needs: [backend-test, frontend-test, security, sast, quality-guardian]
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build backend image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: backend
+          file: backend/Dockerfile.prod
+          push: false
+          tags: fastapi-boilerplate-backend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: false
+          tags: fastapi-boilerplate-frontend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

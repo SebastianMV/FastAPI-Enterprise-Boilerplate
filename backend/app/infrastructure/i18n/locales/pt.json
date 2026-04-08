@@ -1,0 +1,239 @@
+{
+  "common": {
+    "success": "Operação concluída com sucesso",
+    "error": "Ocorreu um erro",
+    "not_found": "Recurso não encontrado",
+    "forbidden": "Acesso negado",
+    "unauthorized": "Autenticação necessária",
+    "bad_request": "Solicitação inválida",
+    "internal_error": "Erro interno do servidor",
+    "validation_error": "Erro de validação",
+    "created": "Recurso criado com sucesso",
+    "updated": "Recurso atualizado com sucesso",
+    "deleted": "Recurso excluído com sucesso"
+  },
+  "auth": {
+    "login_success": "Login realizado com sucesso",
+    "login_failed": "E-mail ou senha inválidos",
+    "logout_success": "Logout realizado com sucesso",
+    "token_expired": "Sessão expirada. Por favor, faça login novamente",
+    "token_invalid": "Token de autenticação inválido",
+    "refresh_success": "Token atualizado com sucesso",
+    "password_changed": "Senha alterada com sucesso",
+    "password_reset_sent": "E-mail de redefinição de senha enviado",
+    "password_reset_success": "Senha redefinida com sucesso",
+    "account_inactive": "Sua conta está inativa. Entre em contato com o suporte",
+    "account_locked": "Sua conta foi bloqueada devido a muitas tentativas de login falhas",
+    "mfa": {
+      "required": "Autenticação de dois fatores é necessária",
+      "enabled": "Autenticação de dois fatores habilitada com sucesso",
+      "disabled": "Autenticação de dois fatores desabilitada",
+      "invalid_code": "Código de verificação inválido",
+      "code_expired": "Código de verificação expirou",
+      "setup_required": "Por favor, configure a autenticação de dois fatores"
+    },
+    "api_key": {
+      "created": "Chave API criada com sucesso",
+      "revoked": "Chave API revogada",
+      "invalid": "Chave API inválida",
+      "expired": "Chave API expirou"
+    }
+  },
+  "email": {
+    "common": {
+      "sent_by": "Este e-mail foi enviado por {app_name}",
+      "questions": "Dúvidas? Entre em contato conosco em",
+      "all_rights_reserved": "Todos os direitos reservados."
+    },
+    "registration": {
+      "subject": "Bem-vindo ao {app_name} - Conta Criada",
+      "preheader": "Sua conta {app_name} foi criada com sucesso",
+      "title": "Conta Criada com Sucesso",
+      "greeting": "Olá {name},",
+      "body": "Obrigado por se cadastrar no {app_name}! Sua conta foi criada com sucesso.",
+      "account_email": "E-mail da Conta",
+      "next_steps": "Próximos passos:",
+      "step_1": "Verifique seu e-mail clicando no botão abaixo",
+      "step_2": "Complete as informações do seu perfil",
+      "step_3": "Ative a autenticação de dois fatores para maior segurança",
+      "verify_button": "Verificar E-mail",
+      "button_note": "Este link de verificação expira em 24 horas.",
+      "security_note": "Se você não criou esta conta, por favor ignore este e-mail."
+    },
+    "email_verification": {
+      "subject": "Verifique seu E-mail",
+      "preheader": "Por favor, verifique seu e-mail para ativar sua conta",
+      "title": "Verifique seu E-mail",
+      "greeting": "Olá {name},",
+      "body": "Por favor, clique no botão abaixo para verificar seu e-mail e ativar sua conta.",
+      "expires": "Este link de verificação expira em {hours} horas.",
+      "verify_button": "Verificar E-mail",
+      "link_note": "Se o botão não funcionar, copie e cole o seguinte link no seu navegador:",
+      "link_label": "Link de Verificação",
+      "ignore_note": "Se você não criou uma conta, por favor ignore este e-mail."
+    },
+    "password_reset": {
+      "subject": "Redefinir sua Senha",
+      "preheader": "Você solicitou a redefinição de senha",
+      "title": "Redefinir sua Senha",
+      "greeting": "Olá {name},",
+      "body": "Recebemos uma solicitação para redefinir sua senha. Clique no botão abaixo para criar uma nova senha.",
+      "warning_title": "Importante",
+      "expires": "Este link de redefinição expira em {hours} hora(s).",
+      "reset_button": "Redefinir Senha",
+      "link_note": "Se o botão não funcionar, copie e cole o seguinte link no seu navegador:",
+      "link_label": "Link de Redefinição",
+      "security_warning": "Nunca compartilhe este link com ninguém. Nossa equipe nunca pedirá sua senha.",
+      "ignore_note": "Se você não solicitou a redefinição de senha, por favor ignore este e-mail. Sua senha permanecerá inalterada."
+    },
+    "password_changed": {
+      "subject": "Sua Senha Foi Alterada",
+      "preheader": "Sua senha foi alterada com sucesso",
+      "title": "Senha Alterada com Sucesso",
+      "greeting": "Olá {name},",
+      "body": "Esta é uma confirmação de que sua senha foi alterada com sucesso.",
+      "details": "Detalhes da Alteração",
+      "ip_address": "Endereço IP",
+      "device": "Dispositivo",
+      "time": "Hora",
+      "not_you_title": "Não foi você?",
+      "not_you_body": "Se você não fez esta alteração, por favor proteja sua conta imediatamente redefinindo sua senha e ativando a autenticação de dois fatores.",
+      "secure_account_button": "Proteger Minha Conta"
+    },
+    "welcome": {
+      "subject": "Bem-vindo ao {app_name}!",
+      "preheader": "Bem-vindo a bordo! Sua conta está verificada.",
+      "title": "Bem-vindo ao {app_name}!",
+      "greeting": "Olá {name},",
+      "body": "Obrigado por verificar seu e-mail. Bem-vindo ao {app_name}!",
+      "verified_message": "Sua conta agora está totalmente ativada e pronta para uso.",
+      "getting_started": "Primeiros Passos",
+      "tip_1": "Explore seu painel para ver todos os recursos disponíveis",
+      "tip_2": "Complete seu perfil para personalizar sua experiência",
+      "tip_3": "Ative a autenticação de dois fatores para maior segurança",
+      "need_help": "Precisa de Ajuda?",
+      "help_text": "Nossa equipe de suporte está aqui para ajudá-lo a aproveitar ao máximo a plataforma.",
+      "login_button": "Ir para o Painel"
+    },
+    "login_new_device": {
+      "subject": "Novo Login Detectado",
+      "preheader": "Um novo dispositivo fez login na sua conta",
+      "title": "Novo Login Detectado",
+      "greeting": "Olá {name},",
+      "body": "Detectamos um login na sua conta a partir de um novo dispositivo ou localização.",
+      "details": "Detalhes do Login",
+      "device": "Dispositivo",
+      "location": "Localização",
+      "ip_address": "Endereço IP",
+      "time": "Hora",
+      "if_you": "Se foi você, pode ignorar este e-mail com segurança.",
+      "not_you_title": "Não foi você?",
+      "not_you_body": "Se você não reconhece esta atividade, por favor proteja sua conta imediatamente.",
+      "secure_account_button": "Proteger Minha Conta"
+    },
+    "account_locked": {
+      "subject": "Conta Bloqueada - Ação Necessária",
+      "preheader": "Sua conta foi temporariamente bloqueada",
+      "title": "Conta Bloqueada",
+      "greeting": "Olá {name},",
+      "body": "Sua conta foi temporariamente bloqueada por motivos de segurança.",
+      "reason_title": "Motivo",
+      "what_to_do": "O que você pode fazer:",
+      "action_1": "Aguardar o período de bloqueio expirar (geralmente 30 minutos)",
+      "action_2": "Usar o link de desbloqueio abaixo, se disponível",
+      "action_3": "Entrar em contato com o suporte se precisar de assistência imediata",
+      "unlock_button": "Desbloquear Conta",
+      "contact_support": "Se você acredita que isso é um erro, por favor entre em contato com nossa equipe de suporte."
+    },
+    "mfa_enabled": {
+      "subject": "Autenticação de Dois Fatores Ativada",
+      "preheader": "Sua conta agora está mais segura",
+      "title": "Autenticação de Dois Fatores Ativada",
+      "greeting": "Olá {name},",
+      "body": "A autenticação de dois fatores foi ativada com sucesso na sua conta.",
+      "status": "Status MFA: Ativado",
+      "status_message": "Sua conta agora está protegida com uma camada adicional de segurança.",
+      "what_this_means": "O Que Isso Significa",
+      "benefit_1": "Você precisará do seu aplicativo autenticador toda vez que fizer login",
+      "benefit_2": "Mesmo que alguém saiba sua senha, não poderá acessar sua conta",
+      "benefit_3": "Você tem códigos de backup caso perca acesso ao seu dispositivo",
+      "backup_codes_title": "Importante: Salve seus Códigos de Backup",
+      "backup_codes_message": "Certifique-se de salvar seus códigos de backup em um local seguro. Você precisará deles se perder acesso ao seu aplicativo autenticador.",
+      "not_you": "Se você não ativou a autenticação de dois fatores, por favor entre em contato com o suporte imediatamente."
+    },
+    "mfa_disabled": {
+      "subject": "Autenticação de Dois Fatores Desativada",
+      "preheader": "A autenticação de dois fatores foi removida da sua conta",
+      "title": "Autenticação de Dois Fatores Desativada",
+      "greeting": "Olá {name},",
+      "body": "A autenticação de dois fatores foi desativada na sua conta.",
+      "warning": "Sua conta agora está menos segura. Recomendamos reativar o MFA.",
+      "not_you": "Se você não desativou a autenticação de dois fatores, por favor proteja sua conta imediatamente."
+    },
+    "tenant_invitation": {
+      "subject": "Você Foi Convidado a Juntar-se a {tenant_name}",
+      "preheader": "Você tem um convite pendente para juntar-se a {tenant_name}",
+      "title": "Você Foi Convidado!",
+      "greeting": "Olá {name},",
+      "body": "{inviter_name} convidou você para juntar-se a {tenant_name}.",
+      "details": "Detalhes do Convite",
+      "organization": "Organização",
+      "invited_by": "Convidado Por",
+      "role": "Seu Cargo",
+      "what_happens": "Clique no botão abaixo para aceitar o convite e juntar-se à equipe.",
+      "accept_button": "Aceitar Convite",
+      "button_note": "Este link de convite é exclusivo para você.",
+      "ignore_note": "Se você não deseja se juntar, simplesmente ignore este e-mail."
+    }
+  },
+  "users": {
+    "created": "Usuário criado com sucesso",
+    "updated": "Usuário atualizado com sucesso",
+    "deleted": "Usuário excluído com sucesso",
+    "not_found": "Usuário não encontrado",
+    "email_exists": "Já existe um usuário com este e-mail",
+    "activated": "Conta de usuário ativada",
+    "deactivated": "Conta de usuário desativada",
+    "role_assigned": "Função atribuída com sucesso",
+    "role_removed": "Função removida com sucesso",
+    "welcome": "Bem-vindo, {name}!"
+  },
+  "tenants": {
+    "created": "Locatário criado com sucesso",
+    "updated": "Locatário atualizado com sucesso",
+    "deleted": "Locatário excluído com sucesso",
+    "not_found": "Locatário não encontrado",
+    "suspended": "Locatário foi suspenso",
+    "activated": "Locatário ativado",
+    "slug_exists": "Já existe um locatário com este identificador"
+  },
+  "roles": {
+    "created": "Função criada com sucesso",
+    "updated": "Função atualizada com sucesso",
+    "deleted": "Função excluída com sucesso",
+    "not_found": "Função não encontrada",
+    "in_use": "Não é possível excluir função atribuída a usuários"
+  },
+  "permissions": {
+    "denied": "Você não tem permissão para realizar esta ação",
+    "granted": "Permissão concedida",
+    "revoked": "Permissão revogada"
+  },
+  "validation": {
+    "required": "Este campo é obrigatório",
+    "email_invalid": "Formato de e-mail inválido",
+    "password_weak": "A senha deve ter pelo menos 8 caracteres com maiúsculas, minúsculas e números",
+    "password_mismatch": "As senhas não coincidem",
+    "min_length": "Deve ter pelo menos {min} caracteres",
+    "max_length": "Deve ter no máximo {max} caracteres",
+    "invalid_uuid": "Formato UUID inválido",
+    "invalid_date": "Formato de data inválido"
+  },
+  "rate_limit": {
+    "exceeded": "Muitas solicitações. Por favor, tente novamente em {seconds} segundos"
+  },
+  "audit": {
+    "action_logged": "Ação registrada com sucesso",
+    "export_complete": "Exportação do log de auditoria concluída"
+  }
+}

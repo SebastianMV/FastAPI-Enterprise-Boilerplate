@@ -1,0 +1,274 @@
+name: "[Roadmap] Release Readiness Gate"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: release-gate-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.14"
+  NODE_VERSION: "24.14"
+
+jobs:
+  quality-guardian-gate:
+    name: "1) quality-guardian · 30pts"
+    runs-on: ubuntu-24.04
+    outputs:
+      score: ${{ steps.score.outputs.score }}
+      status: ${{ steps.score.outputs.status }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run quality checks and score
+        id: score
+        shell: bash
+        run: |
+          FAILS=0
+
+          if grep -rn "^import logging" backend/app/ --include="*.py" >/dev/null; then
+            echo "❌ Rule 1 failed: stdlib logging imports found"
+            FAILS=$((FAILS + 1))
+          else
+            echo "✅ Rule 1 passed"
+          fi
+
+          if grep -rn "subprocess\.run(" backend/app/ --include="*.py" >/dev/null; then
+            echo "❌ Rule 7 failed: blocking subprocess.run found"
+            FAILS=$((FAILS + 1))
+          else
+            echo "✅ Rule 7 passed"
+          fi
+
+          if grep -rn "datetime\.utcnow()" backend/app/ --include="*.py" >/dev/null; then
+            echo "❌ Rule 10 failed: datetime.utcnow() found"
+            FAILS=$((FAILS + 1))
+          else
+            echo "✅ Rule 10 passed"
+          fi
+
+          SCORE=$((30 - FAILS * 10))
+          if [ "$SCORE" -lt 0 ]; then SCORE=0; fi
+
+          if [ "$FAILS" -eq 0 ]; then
+            STATUS="PASS"
+          elif [ "$FAILS" -eq 1 ]; then
+            STATUS="WARN"
+          else
+            STATUS="FAIL"
+          fi
+
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "quality_score=$SCORE" >> "$GITHUB_STEP_SUMMARY"
+          echo "quality_status=$STATUS" >> "$GITHUB_STEP_SUMMARY"
+
+  security-auditor-gate:
+    name: "2) security-auditor · 40pts"
+    runs-on: ubuntu-24.04
+    needs: [quality-guardian-gate]
+    outputs:
+      score: ${{ steps.score.outputs.score }}
+      status: ${{ steps.score.outputs.status }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run security checks and score
+        id: score
+        shell: bash
+        run: |
+          FAILS=0
+
+          pip install semgrep==1.157.0
+          semgrep --config .semgrep/ backend/app/ frontend/src/ docker-compose*.yml .github/workflows/ --json --output semgrep-results.json || true
+
+          if [ ! -f semgrep-results.json ]; then
+            echo "❌ Semgrep failed to produce results"
+            FAILS=$((FAILS + 1))
+          else
+            CURRENT=$(python -c "import json;print(len(json.load(open('semgrep-results.json', encoding='utf-8')).get('results', [])))")
+            BASELINE_FILE=".semgrep/baseline.json"
+            if [ -f "$BASELINE_FILE" ]; then
+              BASELINE=$(python -c "import json;print(json.load(open('$BASELINE_FILE', encoding='utf-8')).get('baseline_count', 0))")
+            else
+              BASELINE=0
+            fi
+
+            echo "Semgrep findings: current=$CURRENT baseline=$BASELINE"
+            if [ "$CURRENT" -gt "$BASELINE" ]; then
+              echo "❌ Semgrep regression detected"
+              FAILS=$((FAILS + 1))
+            else
+              echo "✅ Semgrep no regression"
+            fi
+          fi
+
+          cd backend
+          python -m pip install --upgrade pip
+          pip install .[dev]
+          if ! pytest tests/security/test_security_meta.py -q --tb=short; then
+            echo "❌ Security meta-tests failed"
+            FAILS=$((FAILS + 1))
+          else
+            echo "✅ Security meta-tests passed"
+          fi
+
+          SCORE=$((40 - FAILS * 20))
+          if [ "$SCORE" -lt 0 ]; then SCORE=0; fi
+
+          if [ "$FAILS" -eq 0 ]; then
+            STATUS="PASS"
+          elif [ "$FAILS" -eq 1 ]; then
+            STATUS="WARN"
+          else
+            STATUS="FAIL"
+          fi
+
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+  dependency-auditor-gate:
+    name: "3) dependency-auditor · 30pts"
+    runs-on: ubuntu-24.04
+    needs: [security-auditor-gate]
+    outputs:
+      score: ${{ steps.score.outputs.score }}
+      status: ${{ steps.score.outputs.status }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run dependency checks and score
+        id: score
+        shell: bash
+        run: |
+          FAILS=0
+
+          cd backend
+          python -m pip install --upgrade pip
+          pip install pip-audit==2.10.0
+          # CVE-2026-4539: pygments 2.19.2 (transitive via rich/pytest) — no fix available yet
+          if ! pip-audit -r requirements.txt --strict --ignore-vuln CVE-2026-4539; then
+            echo "❌ pip-audit failed on requirements.txt"
+            FAILS=$((FAILS + 1))
+          else
+            echo "✅ pip-audit requirements.txt passed"
+          fi
+          if ! pip-audit -r requirements-prod.txt --strict --ignore-vuln CVE-2026-4539; then
+            echo "❌ pip-audit failed on requirements-prod.txt"
+            FAILS=$((FAILS + 1))
+          else
+            echo "✅ pip-audit requirements-prod.txt passed"
+          fi
+
+          cd ../frontend
+          npm ci
+          if ! npm audit --audit-level=high; then
+            echo "❌ npm audit failed"
+            FAILS=$((FAILS + 1))
+          else
+            echo "✅ npm audit passed"
+          fi
+
+          SCORE=$((30 - FAILS * 10))
+          if [ "$SCORE" -lt 0 ]; then SCORE=0; fi
+
+          if [ "$FAILS" -eq 0 ]; then
+            STATUS="PASS"
+          elif [ "$FAILS" -eq 1 ]; then
+            STATUS="WARN"
+          else
+            STATUS="FAIL"
+          fi
+
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+  release-risk-gate:
+    name: "4) Consolidated RISK_SCORE"
+    runs-on: ubuntu-24.04
+    needs:
+      - quality-guardian-gate
+      - security-auditor-gate
+      - dependency-auditor-gate
+
+    steps:
+      - name: Calculate consolidated score
+        id: risk
+        shell: bash
+        run: |
+          Q_SCORE=${{ needs.quality-guardian-gate.outputs.score }}
+          S_SCORE=${{ needs.security-auditor-gate.outputs.score }}
+          D_SCORE=${{ needs.dependency-auditor-gate.outputs.score }}
+
+          Q_STATUS=${{ needs.quality-guardian-gate.outputs.status }}
+          S_STATUS=${{ needs.security-auditor-gate.outputs.status }}
+          D_STATUS=${{ needs.dependency-auditor-gate.outputs.status }}
+
+          TOTAL=$((Q_SCORE + S_SCORE + D_SCORE))
+          if [ "$TOTAL" -ge 85 ]; then
+            GATE_STATUS="APPROVED"
+            GATE_ICON="✅"
+            MERGE_MSG="✅ MERGE OK"
+          else
+            GATE_STATUS="BLOCKED"
+            GATE_ICON="❌"
+            MERGE_MSG="❌ BLOCK MERGE"
+          fi
+
+          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+          echo "gate_status=$GATE_STATUS" >> "$GITHUB_OUTPUT"
+          echo "gate_icon=$GATE_ICON" >> "$GITHUB_OUTPUT"
+          echo "merge_msg=$MERGE_MSG" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## 🛡️ Release Readiness Gate: ${TOTAL}/100 ${GATE_ICON} ${GATE_STATUS}"
+            echo ""
+            echo "| Agent | Score | Status |"
+            echo "|-------|-------|--------|"
+            echo "| quality-guardian | ${Q_SCORE}/30 | ${Q_STATUS} |"
+            echo "| security-auditor | ${S_SCORE}/40 | ${S_STATUS} |"
+            echo "| dependency-auditor | ${D_SCORE}/30 | ${D_STATUS} |"
+            echo "| **TOTAL RISK** | **${TOTAL}/100** | **${MERGE_MSG}** |"
+            echo ""
+            echo "*Auto-generated by Release Gate Pipeline*"
+          } > release_gate_comment.md
+
+          cat release_gate_comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: PR comment step (roadmap note)
+        shell: bash
+        run: |
+          echo "Roadmap mode: PR comment publication is intentionally disabled until this workflow is re-enabled for pull_request events."
+
+      - name: Enforce merge block under 85
+        shell: bash
+        run: |
+          TOTAL=${{ steps.risk.outputs.total }}
+          if [ "$TOTAL" -lt 85 ]; then
+            echo "❌ Release gate failed: RISK_SCORE=${TOTAL} (<85). Merge blocked."
+            exit 1
+          fi
+          echo "✅ Release gate passed: RISK_SCORE=${TOTAL} (>=85)."

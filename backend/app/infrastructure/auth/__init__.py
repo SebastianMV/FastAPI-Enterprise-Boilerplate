@@ -1,0 +1,36 @@
+# Copyright (c) 2025-2026 Sebastián Muñoz
+# Licensed under the Apache License, Version 2.0
+
+"""Infrastructure auth package - JWT, API keys, OAuth."""
+
+from app.infrastructure.auth.jwt_handler import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
+from app.infrastructure.auth.oauth_providers import (
+    OAUTH_PROVIDERS,
+    GitHubOAuthProvider,
+    GoogleOAuthProvider,
+    MicrosoftOAuthProvider,
+    OAuthProviderBase,
+    get_oauth_provider,
+)
+
+__all__ = [
+    # JWT
+    "create_access_token",
+    "create_refresh_token",
+    "decode_token",
+    "hash_password",
+    "verify_password",
+    # OAuth
+    "OAuthProviderBase",
+    "GoogleOAuthProvider",
+    "GitHubOAuthProvider",
+    "MicrosoftOAuthProvider",
+    "get_oauth_provider",
+    "OAUTH_PROVIDERS",
+]

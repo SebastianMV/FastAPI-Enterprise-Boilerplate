@@ -1,0 +1,36 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.mfa_disabled.preheader', default='Two-factor authentication has been disabled') }}{% endblock %}
+
+{% block content %}
+<h1>🔐 {{ t('email.mfa_disabled.title', default='Two-Factor Authentication Disabled') }}</h1>
+
+<p>{{ t('email.mfa_disabled.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}</p>
+
+<p>{{ t('email.mfa_disabled.body', default='Two-factor authentication (2FA) has been disabled on your account.') }}</p>
+
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>⚠️ {{ t('email.mfa_disabled.security_warning', default='Security Warning') }}</strong><br>
+        {{ t('email.mfa_disabled.warning_message', default='Your account is now less secure without 2FA. We strongly recommend re-enabling it.') }}
+    </p>
+</div>
+
+<p>{{ t('email.mfa_disabled.not_you', default='If you did not disable 2FA, please secure your account immediately by changing your password and contacting support.') }}</p>
+
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.mfa_disabled.details', default='Details') }}</strong><br>
+        {{ t('email.mfa_disabled.time', default='Time') }}: {{ disabled_at | default('Just now') }}<br>
+        {{ t('email.mfa_disabled.ip', default='IP Address') }}: {{ ip_address | default('Unknown') }}
+    </p>
+</div>
+{% endblock %}
+
+{% block cta %}
+{% if settings_url is defined and settings_url %}
+<div class="cta-container">
+    <a href="{{ settings_url }}" class="cta-button">{{ t('email.mfa_disabled.reenable_button', default='Re-enable 2FA') }}</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.welcome.preheader', app_name=app_name) }}{% endblock %}
+
+{% block content %}
+<h1>🎉 {{ t('email.welcome.title') }}</h1>
+
+<p>{{ t('email.welcome.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.welcome.body', app_name=app_name) }}</p>
+
+<p>{{ t('email.welcome.verified_message') }}</p>
+
+<h2>{{ t('email.welcome.getting_started') }}</h2>
+
+<ul style="color: #374151; line-height: 1.8;">
+    <li>{{ t('email.welcome.tip_1') }}</li>
+    <li>{{ t('email.welcome.tip_2') }}</li>
+    <li>{{ t('email.welcome.tip_3') }}</li>
+</ul>
+
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.welcome.need_help') }}</strong><br>
+        {{ t('email.welcome.help_text') }}
+    </p>
+</div>
+{% endblock %}
+
+{% block cta %}
+{% if login_url is defined and login_url %}
+<div class="cta-container">
+    <a href="{{ login_url }}" class="cta-button success">{{ t('email.welcome.login_button') }}</a>
+</div>
+{% endif %}
+{% endblock %}

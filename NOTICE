@@ -1,0 +1,42 @@
+FastAPI-Enterprise-Boilerplate
+Copyright 2025-2026 Sebastián Muñoz
+
+This product includes software developed by Sebastián Muñoz.
+Originally created as "FastAPI-Enterprise-Boilerplate" (2025).
+
+Licensed under the Apache License, Version 2.0.
+See LICENSE for the full license text.
+
+---
+
+ATTRIBUTION REQUIREMENT:
+
+If you use FastAPI-Enterprise-Boilerplate (in whole or in part) in your own project,
+you must include this NOTICE file (or its contents) in your
+distribution, as required by Apache License 2.0, Section 4(d).
+
+Acceptable attribution formats:
+
+1. Include this NOTICE file in your project root, OR
+2. Add the following to your README or documentation:
+
+   > Built with [FastAPI-Enterprise-Boilerplate](https://github.com/SebastianMV/FastAPI-Enterprise-Boilerplate)
+   > by Sebastián Muñoz — Licensed under Apache 2.0
+
+---
+
+THIRD-PARTY NOTICES:
+
+This project includes or depends on the following open-source components:
+
+- FastAPI (MIT License) — https://github.com/tiangolo/fastapi
+- SQLAlchemy (MIT License) — https://github.com/sqlalchemy/sqlalchemy
+- React (MIT License) — https://github.com/facebook/react
+- Vite (MIT License) — https://github.com/vitejs/vite
+- PostgreSQL (PostgreSQL License) — https://www.postgresql.org/
+- Redis (BSD 3-Clause) — https://github.com/redis/redis
+
+For the complete list of dependencies and their licenses, see:
+
+- backend/requirements.txt (Python packages)
+- frontend/package.json (Node.js packages)

@@ -1,0 +1,133 @@
+# Dependabot configuration
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Python (pip) — backend
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "backend"
+    open-pull-requests-limit: 10
+    assignees:
+      - "sebastian-munoz"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # npm — frontend
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "frontend"
+    open-pull-requests-limit: 10
+    assignees:
+      - "sebastian-munoz"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+    # Block major version bumps that require manual migration.
+    # These are intentionally pinned to their current major:
+    #   - vite 6.x (8.x requires config migration)
+    #   - eslint 9.x (10.x has breaking config changes)
+    #   - tailwindcss 3.x (4.x requires full CSS-first config rewrite)
+    #   - react-router-dom 6.x (7.x has framework-mode breaking changes)
+    #   - i18next 25.x (26.x has breaking initialization changes)
+    #   - lucide-react 0.x (1.x changes icon import paths)
+    #   - jsdom 27.x (29.x may break vitest test setup)
+    #   - @vitejs/plugin-react 5.x (6.x requires vite 7+)
+    #   - globals 15.x (17.x renames browser global entries)
+    #   - @eslint/js 9.x (10.x requires eslint 10)
+    #   - typescript 5.x (6.x has breaking type changes)
+    #   - react-i18next 16.x (17.x has breaking API changes)
+    #   - tailwind-merge 2.x (3.x has breaking API changes)
+    #   - eslint-plugin-react-hooks 5.x (7.x requires eslint 10)
+    #   - @asamuzakjp/css-color 4.x (5.x has API changes)
+    ignore:
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-router-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "i18next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "lucide-react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "jsdom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "globals"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-i18next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tailwind-merge"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-plugin-react-hooks"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@asamuzakjp/css-color"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci"
+    assignees:
+      - "sebastian-munoz"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+    # Block major version bumps for actions requiring migration
+    ignore:
+      - dependency-name: "docker/setup-buildx-action"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "docker/build-push-action"
+        update-types: ["version-update:semver-major"]
+
+  # Docker — base images
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "docker"
+    assignees:
+      - "sebastian-munoz"
+
+  # Node 24 is the current LTS; Node 25 (odd) is NOT LTS.
+  # Block major bumps to avoid non-LTS Docker images.
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "docker"
+    assignees:
+      - "sebastian-munoz"
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

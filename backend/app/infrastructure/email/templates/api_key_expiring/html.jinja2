@@ -1,0 +1,37 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.api_key_expiring.preheader', default='Your API key is expiring soon') }}{% endblock %}
+
+{% block content %}
+<h1>⏰ {{ t('email.api_key_expiring.title', default='API Key Expiring Soon') }}</h1>
+
+<p>{{ t('email.api_key_expiring.greeting', name=recipient_name, default='Hello ' ~ recipient_name ~ ',') }}</p>
+
+<p>{{ t('email.api_key_expiring.body', default='One of your API keys is about to expire. Please take action to avoid service interruption.') }}</p>
+
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.api_key_expiring.key_name', default='Key Name') }}:</strong> {{ key_name | default('Unnamed Key') }}<br>
+        <strong>{{ t('email.api_key_expiring.expires_in', default='Expires In') }}:</strong> {{ expires_in | default('Soon') }}<br>
+        <strong>{{ t('email.api_key_expiring.expires_at', default='Expiration Date') }}:</strong> {{ expires_at | default('Unknown') }}
+    </p>
+</div>
+
+<h2>{{ t('email.api_key_expiring.what_to_do', default='What should you do?') }}</h2>
+
+<ul style="color: #374151; line-height: 1.8;">
+    <li>{{ t('email.api_key_expiring.step_1', default='Create a new API key before this one expires') }}</li>
+    <li>{{ t('email.api_key_expiring.step_2', default='Update your applications with the new key') }}</li>
+    <li>{{ t('email.api_key_expiring.step_3', default='Revoke the old key once migration is complete') }}</li>
+</ul>
+
+<p>{{ t('email.api_key_expiring.no_action', default='If you no longer need this API key, you can ignore this notification.') }}</p>
+{% endblock %}
+
+{% block cta %}
+{% if api_keys_url is defined and api_keys_url %}
+<div class="cta-container">
+    <a href="{{ api_keys_url }}" class="cta-button">{{ t('email.api_key_expiring.manage_keys', default='Manage API Keys') }}</a>
+</div>
+{% endif %}
+{% endblock %}

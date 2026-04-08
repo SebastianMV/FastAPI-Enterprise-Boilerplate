@@ -1,0 +1,39 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.mfa_enabled.preheader') }}{% endblock %}
+
+{% block content %}
+<h1>🛡️ {{ t('email.mfa_enabled.title') }}</h1>
+
+<p>{{ t('email.mfa_enabled.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.mfa_enabled.body') }}</p>
+
+<div class="info-box">
+    <p style="margin: 0;">
+        <strong>✅ {{ t('email.mfa_enabled.status') }}</strong><br>
+        {{ t('email.mfa_enabled.status_message') }}
+    </p>
+</div>
+
+<h2>{{ t('email.mfa_enabled.what_this_means') }}</h2>
+
+<ul style="color: #374151; line-height: 1.8;">
+    <li>{{ t('email.mfa_enabled.benefit_1') }}</li>
+    <li>{{ t('email.mfa_enabled.benefit_2') }}</li>
+    <li>{{ t('email.mfa_enabled.benefit_3') }}</li>
+</ul>
+
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.mfa_enabled.backup_codes_title') }}</strong><br>
+        {{ t('email.mfa_enabled.backup_codes_message') }}
+    </p>
+</div>
+{% endblock %}
+
+{% block footer_extra %}
+<p style="color: #9ca3af; font-size: 12px;">
+    {{ t('email.mfa_enabled.not_you') }}
+</p>
+{% endblock %}

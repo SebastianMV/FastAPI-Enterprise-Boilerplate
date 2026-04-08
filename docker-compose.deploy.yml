@@ -1,0 +1,251 @@
+# Copyright (c) 2025-2026 Sebastián Muñoz
+# Licensed under the Apache License, Version 2.0
+
+# ============================================
+# Docker Compose - Deploy (Staging & Production)
+# ============================================
+#
+# Single file for both staging and production. Behavior is
+# controlled via the ENVIRONMENT variable (staging | production).
+#
+# Usage:
+#   # Staging
+#   ENVIRONMENT=staging docker compose -f docker-compose.deploy.yml up -d --build
+#
+#   # Production
+#   ENVIRONMENT=production docker compose -f docker-compose.deploy.yml up -d --build
+#
+#   # Run migrations after first deploy / code update
+#   docker compose -f docker-compose.deploy.yml exec backend alembic upgrade head
+#
+# Required env vars (all validated with :? — no silent defaults):
+#   DATABASE_URL, REDIS_URL, JWT_SECRET_KEY, FRONTEND_URL,
+#   AUTH_COOKIE_SECURE, ENCRYPTION_KEY, REDIS_PASSWORD,
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, APP_USER_PASSWORD
+#
+# Optional:
+#   ENVIRONMENT    — staging (default) | production
+#   LOG_LEVEL      — defaults to DEBUG (staging) or INFO (production)
+#   FRONTEND_BIND  — defaults to 0.0.0.0
+#   COMPOSE_PROJECT_NAME — override to isolate multiple deploys
+# ============================================
+
+services:
+  # ===========================================
+  # Backend API
+  # ===========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: ${COMPOSE_PROJECT_NAME:-deploy}-backend
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
+      - REDIS_URL=${REDIS_URL:?REDIS_URL must be set}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set}
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - ENVIRONMENT=${ENVIRONMENT:-staging}
+      - DEBUG=false
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL must be set}
+      - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:?AUTH_COOKIE_SECURE must be set}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY must be set}
+      - RATE_LIMIT_ENABLED=true
+      - CSRF_ENABLED=true
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+    expose:
+      - "8000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - app-frontend
+      - app-backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1G
+          pids: 200
+
+  # ===========================================
+  # Frontend (Nginx)
+  # ===========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-deploy}-frontend
+    restart: unless-stopped
+    stop_grace_period: 15s
+    # Restrict to 127.0.0.1:80:80 when behind a load balancer.
+    ports:
+      - "${FRONTEND_BIND:-0.0.0.0}:80:80"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid,nodev,uid=101,gid=101,mode=1777
+      - /var/cache/nginx:size=128m,noexec,nosuid,nodev,uid=101,gid=101,mode=1775
+      - /var/run:size=8m,noexec,nosuid,nodev,uid=101,gid=101,mode=1775
+    depends_on:
+      - backend
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:80/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+    networks:
+      - app-frontend
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+          pids: 100
+
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  db:
+    image: postgres:17.7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-deploy}-db
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_READ_SEARCH
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?APP_USER_PASSWORD must be set}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/alembic/init_prod.sh:/docker-entrypoint-initdb.d/init_prod.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+          pids: 200
+
+  # ===========================================
+  # Redis Cache
+  # ===========================================
+  redis:
+    image: redis:7.4-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-deploy}-redis
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli -a $${REDIS_PASSWORD} --no-auth-warning ping | grep PONG",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+          pids: 100
+
+networks:
+  app-frontend:
+    driver: bridge
+  app-backend:
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:

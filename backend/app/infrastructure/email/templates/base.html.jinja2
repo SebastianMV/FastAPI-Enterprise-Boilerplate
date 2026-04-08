@@ -1,0 +1,248 @@
+{#
+  Base email template.
+  
+  All email templates should extend this base template.
+  
+  Blocks available:
+  - preheader: Hidden preview text shown in email clients
+  - content: Main email content
+  - cta: Call-to-action button section
+  - footer_extra: Additional footer content
+#}
+<!DOCTYPE html>
+<html lang="{{ locale }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{{ subject if subject is defined else app_name }}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style type="text/css">
+        /* Reset */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+        
+        /* iOS blue links */
+        a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+        
+        /* Gmail blue links */
+        u + #body a { color: inherit; text-decoration: none; font-size: inherit; font-family: inherit; font-weight: inherit; line-height: inherit; }
+        
+        /* Samsung blue links */
+        #MessageViewBody a { color: inherit; text-decoration: none; font-size: inherit; font-family: inherit; font-weight: inherit; line-height: inherit; }
+        
+        /* Universal styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f5;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .email-body {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            max-height: 40px;
+            width: auto;
+        }
+        
+        .content {
+            color: #374151;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .content h1 {
+            color: #111827;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+        }
+        
+        .content h2 {
+            color: #1f2937;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+        }
+        
+        .content p {
+            margin: 0 0 16px 0;
+        }
+        
+        .cta-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .cta-button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .cta-button.secondary {
+            background-color: #6b7280;
+        }
+        
+        .cta-button.success {
+            background-color: #059669;
+        }
+        
+        .cta-button.warning {
+            background-color: #d97706;
+        }
+        
+        .cta-button.danger {
+            background-color: #dc2626;
+        }
+        
+        .info-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .warning-box {
+            background-color: #fffbeb;
+            border-left: 4px solid #d97706;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            padding-top: 30px;
+            margin-top: 30px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        
+        .footer p {
+            margin: 8px 0;
+        }
+        
+        .social-links {
+            margin: 20px 0;
+        }
+        
+        .social-links a {
+            display: inline-block;
+            margin: 0 8px;
+        }
+        
+        .preheader {
+            display: none !important;
+            visibility: hidden;
+            mso-hide: all;
+            font-size: 1px;
+            line-height: 1px;
+            max-height: 0;
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-body {
+                padding: 24px !important;
+            }
+            .content h1 {
+                font-size: 22px !important;
+            }
+        }
+    </style>
+</head>
+<body id="body" style="margin: 0; padding: 0; background-color: #f4f4f5;">
+    <!-- Preheader -->
+    {% block preheader %}
+    <span class="preheader">{% block preheader_text %}{% endblock %}</span>
+    {% endblock %}
+    
+    <!-- Email Container -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f5;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <div class="email-container">
+                    <!-- Email Body -->
+                    <div class="email-body">
+                        <!-- Header -->
+                        <div class="header">
+                            {% block header %}
+                            <span style="font-size: 24px; font-weight: bold; color: #2563eb;">{{ app_name }}</span>
+                            {% endblock %}
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="content">
+                            {% block content %}{% endblock %}
+                        </div>
+                        
+                        <!-- CTA -->
+                        {% block cta %}{% endblock %}
+                        
+                        <!-- Footer -->
+                        <div class="footer">
+                            {% block footer %}
+                            <p>{{ t('email.common.sent_by', app_name=app_name) }}</p>
+                            {% block footer_extra %}{% endblock %}
+                            <p style="margin-top: 16px;">
+                                {{ t('email.common.questions') }} 
+                                <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+                            </p>
+                            <p style="color: #9ca3af; font-size: 12px; margin-top: 16px;">
+                                © {{ year }} {{ app_name }}. {{ t('email.common.all_rights_reserved') }}
+                            </p>
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

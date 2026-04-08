@@ -1,0 +1,48 @@
+# ==========================
+# Frontend .dockerignore
+# ==========================
+
+# Version control
+.git
+.gitignore
+
+# Dependencies (reinstalled in Docker)
+node_modules
+
+# Build output (rebuilt in Docker)
+dist
+
+# Test files
+coverage/
+e2e/
+**/*.test.ts
+**/*.test.tsx
+*.test.ts
+*.test.tsx
+vitest.config.*
+playwright.config.*
+tsconfig.test.json
+tsconfig.e2e.json
+
+# Environment files (secrets!)
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+*.md
+LICENSE
+
+# Docker
+Dockerfile*
+docker-compose*
+nginx.dev.conf
+
+# CI config
+.github/

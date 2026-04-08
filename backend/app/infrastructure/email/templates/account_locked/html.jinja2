@@ -1,0 +1,42 @@
+{% extends "base.html.jinja2" %}
+
+{% block preheader_text %}{{ t('email.account_locked.preheader') }}{% endblock %}
+
+{% block content %}
+<h1>🔒 {{ t('email.account_locked.title') }}</h1>
+
+<p>{{ t('email.account_locked.greeting', name=recipient_name) }}</p>
+
+<p>{{ t('email.account_locked.body') }}</p>
+
+{% if reason %}
+<div class="warning-box">
+    <p style="margin: 0;">
+        <strong>{{ t('email.account_locked.reason_title') }}:</strong><br>
+        {{ reason }}
+    </p>
+</div>
+{% endif %}
+
+<p>{{ t('email.account_locked.what_to_do') }}</p>
+
+<ul style="color: #374151; line-height: 1.8;">
+    <li>{{ t('email.account_locked.action_1') }}</li>
+    <li>{{ t('email.account_locked.action_2') }}</li>
+    <li>{{ t('email.account_locked.action_3') }}</li>
+</ul>
+{% endblock %}
+
+{% block cta %}
+{% if unlock_url is defined and unlock_url %}
+<div class="cta-container">
+    <a href="{{ unlock_url }}" class="cta-button">{{ t('email.account_locked.unlock_button') }}</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block footer_extra %}
+<p style="color: #9ca3af; font-size: 12px;">
+    {{ t('email.account_locked.contact_support') }}
+</p>
+{% endblock %}
