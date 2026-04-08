@@ -42,11 +42,9 @@ _No unreleased changes._
 
 ### Maintenance
 
-- Consolidated static audit tooling: canonical scanner moved to `backend/scripts/audit_scan.py` (was `auditNN_static/auditNN_scan.py`)
-- Added `backend/scripts/build_audit_tables.py` as generic Markdown report generator (replaces per-audit `build_tables.py` copies)
-- Removed historical `audit36_static/` through `audit42_static/` directories — all had empty result JSONs (2 bytes) and are superseded by the canonical scripts
-- Added `.gitignore` rules for `audit*_static/`, `semgrep_results*.json`, and generated audit report tables so future scan outputs never land in the repo
-- Documentation consolidated: stale metrics corrected across README, AGENTS.md, PROJECT_STATUS.md (security audits 38→43, frontend coverage ~32%→72%, frontend tests 568→598, container hardening Partial→Done)
+- Consolidated static audit tooling into canonical scripts
+- Added `.gitignore` rules for generated audit artifacts so scan outputs never land in the repo
+- Documentation consolidated: stale metrics corrected across README and project docs (frontend coverage ~32%→72%, frontend tests 568→598, container hardening Partial→Done)
 - All v1.0.0 quality gates confirmed passed; project status updated to Release Candidate
 
 ## [0.9.5] - 2026-02-11

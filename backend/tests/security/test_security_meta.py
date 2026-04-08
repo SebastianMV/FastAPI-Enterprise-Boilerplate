@@ -1,7 +1,7 @@
 """Security meta-tests — verify security patterns are enforced across the codebase.
 
 These tests don't test business logic. They scan source files to ensure security
-conventions from AGENTS.md are followed. Run as part of the regular test suite.
+conventions are followed. Run as part of the regular test suite.
 
 Based on 788 fixes from 24 security audits. Each test targets a specific
 anti-pattern category.

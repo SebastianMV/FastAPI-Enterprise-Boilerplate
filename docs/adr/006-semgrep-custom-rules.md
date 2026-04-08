@@ -97,4 +97,3 @@ Document patterns in a checklist for human reviewers. Rejected because:
 - `.semgrep/infra-security.yml`: 2 infrastructure rules
 - `.pre-commit-config.yaml`: Semgrep hook configuration
 - `backend/tests/security/test_security_meta.py`: Meta-tests (complementary to Semgrep)
-- `AGENTS.md`: Project context and critical rules for AI agents

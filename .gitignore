@@ -123,7 +123,12 @@ Desktop.ini
 # Secrets (never commit)
 *.pem
 *.key
+*.pfx
+*.p12
+*.cert
+*.env
 secrets/
+secrets.json
 
 # Temporary files
 tmp/

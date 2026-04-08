@@ -517,7 +517,6 @@ RATE_LIMIT_REQUESTS_PER_MINUTE=100
 
 > **Codified from 43+ security audits (992+ issues resolved).**
 > Use this checklist when adding new features, endpoints, or pages.
-> Expanded examples: see [Quality Gates](./analisis_interno/QUALITY_GATES.md).
 
 ### Backend — New API Endpoint
 
@@ -597,5 +596,4 @@ RATE_LIMIT_REQUESTS_PER_MINUTE=100
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment guide
 - [GETTING_STARTED.md](./GETTING_STARTED.md) - Setup and configuration
 - [API_REFERENCE.md](./API_REFERENCE.md) - API endpoints documentation
-- [Quality Gates](./analisis_interno/QUALITY_GATES.md) - Expanded ❌/✅ examples for each rule
 - [ADRs](./adr/) - Architecture Decision Records

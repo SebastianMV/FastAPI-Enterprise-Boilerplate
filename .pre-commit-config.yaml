@@ -80,8 +80,8 @@ repos:
   # =========================================================================
   # Local Quality Gates — executable enforcement of project rules
   # =========================================================================
-  # These hooks convert passive documentation (AGENTS.md, copilot-instructions.md)
-  # into executable checks. They run the security meta-test suite that scans
+  # These hooks enforce security conventions as executable checks.
+  # They run the security meta-test suite that scans
   # source files for pattern violations found across 24 audits.
   # See: backend/tests/security/test_security_meta.py
   # ADR: docs/adr/006-semgrep-custom-rules.md
