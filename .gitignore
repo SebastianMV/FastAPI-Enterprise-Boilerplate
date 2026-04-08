@@ -158,6 +158,10 @@ MAKEFILE.md
 docs/SECURITY_AUDIT.md
 # Personal agent configs
 .github/agents/SebAgent.agent.md
+# All agent definitions (internal Copilot tooling)
+.github/agents/
+# Copilot instructions (local dev tooling)
+.github/copilot-instructions.md
 
 # Internal dev-only scripts and tooling
 backend/_run_mypy.py

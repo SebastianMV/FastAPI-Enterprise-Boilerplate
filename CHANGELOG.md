@@ -15,8 +15,9 @@ _No unreleased changes._
 
 ### Milestone — v1.0.0 Stable Release
 
-- **43 security audit cycles** completed — 994+ individual hardening items resolved
-- **All v1.0.0 quality gates passed** — Release Candidate promoted to stable
+- **Extensive security audit process** — 994+ individual hardening items resolved across multiple audit cycles
+- **27 automated quality gates passed** (9 backend + 10 frontend + 8 infrastructure) — Release Candidate promoted to stable
+- **48 custom Semgrep rules** codified from security audits for continuous regression prevention
 - Backend: 3,500+ unit tests, 247 integration tests, 99% coverage
 - Frontend: 598 unit tests, 72% statement coverage
 - MyPy: 0 errors (baseline reduced from 282 to 0)
@@ -35,9 +36,9 @@ _No unreleased changes._
 
 ### Security
 
-- Audit N°39–N°41 completed (backend + frontend + infrastructure scope) — 0 new issues each
-- Audit N°42: Semgrep isolated run + AST scan — 0 new critical/high issues
-- Audit N°43 (2026-02-20): 2 issues found and fixed (M-01 Stored XSS in `report_templates.py`; L-01 file-type detection by extension in `data_exchange.py`)
+- Security audit completed across backend, frontend, and infrastructure scopes — 0 regressions
+- Semgrep isolated run + AST scan — 0 new critical/high issues
+- 2 issues found and fixed: Stored XSS in `report_templates.py`, file-type detection by extension in `data_exchange.py`
 
 ### Maintenance
 
@@ -50,10 +51,10 @@ _No unreleased changes._
 
 ## [0.9.5] - 2026-02-11
 
-### Security (22 Audit Cycles 700+ items resolved)
+### Security (Comprehensive Hardening — 700+ items resolved)
 
-This release represents a comprehensive security hardening effort across 22
-audit cycles, resolving 700+ individual issues (severity 610).
+This release represents a comprehensive security hardening effort with
+continuous DevSecOps audit processes, resolving 700+ individual issues.
 
 **Authentication & Authorization:**
 
