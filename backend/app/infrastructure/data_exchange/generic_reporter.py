@@ -726,7 +726,7 @@ class GenericReporter(ReportPort):
         """
         # Try weasyprint
         try:
-            from weasyprint import HTML  # type: ignore[import-untyped]
+            from weasyprint import HTML
 
             return HTML(string=html_content.decode("utf-8")).write_pdf()  # type: ignore[no-any-return]
         except ImportError:
