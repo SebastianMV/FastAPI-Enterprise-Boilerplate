@@ -63,28 +63,22 @@ class ErrorDetail(BaseModel):
     """Error detail in response."""
 
     code: ShortStr = Field(..., description="Error code")
-    message: str = Field(
-        ..., max_length=500, description="Human-readable error message"
-    )
-    field: str | None = Field(
-        None, max_length=200, description="Field that caused the error"
-    )
+    message: DescriptionStr = Field(..., description="Human-readable error message")
+    field: NameStr | None = Field(None, description="Field that caused the error")
 
 
 class ErrorResponse(BaseModel):
     """Standard error response."""
 
     error: ErrorDetail
-    request_id: str | None = Field(
-        None, max_length=100, description="Request ID for debugging"
-    )
+    request_id: ScopeStr | None = Field(None, description="Request ID for debugging")
 
 
 class ValidationErrorResponse(BaseModel):
     """Validation error response with multiple errors."""
 
     errors: list[ErrorDetail]
-    request_id: str | None = Field(default=None, max_length=100)
+    request_id: ScopeStr | None = None
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
@@ -118,25 +112,25 @@ class PaginatedResponse(BaseModel, Generic[T]):
 class HealthResponse(BaseModel):
     """Basic health check response for /health and /health/live."""
 
-    status: str = Field(..., max_length=50, description="Service status")
-    version: str | None = Field(
-        None, max_length=50, description="Application version (hidden in production)"
+    status: ShortStr = Field(..., description="Service status")
+    version: ShortStr | None = Field(
+        None, description="Application version (hidden in production)"
     )
-    environment: str | None = Field(
-        None, max_length=50, description="Deployment environment (hidden in production)"
+    environment: ShortStr | None = Field(
+        None, description="Deployment environment (hidden in production)"
     )
 
 
 class ReadinessResponse(HealthResponse):
     """Readiness check response for /health/ready — includes component health."""
 
-    database: str = Field(..., max_length=50, description="Database connection status")
-    redis: str = Field(..., max_length=50, description="Redis connection status")
+    database: ShortStr = Field(..., description="Database connection status")
+    redis: ShortStr = Field(..., description="Redis connection status")
 
 
 class MessageResponse(BaseModel):
     """Simple message response."""
 
-    message: str = Field(max_length=500)
+    message: DescriptionStr
     success: bool = True
     data: dict[str, Any] | None = None

@@ -9,6 +9,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.v1.schemas.common import NameStr, ShortStr, TextStr, UrlStr
+
 
 class NotificationResponse(BaseModel):
     """Notification response."""
@@ -16,12 +18,12 @@ class NotificationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    type: str = Field(max_length=50)
-    title: str = Field(max_length=200)
-    message: str = Field(max_length=2000)
-    priority: str = Field(max_length=20)
+    type: ShortStr
+    title: NameStr
+    message: TextStr
+    priority: ShortStr
     data: dict[str, Any] | None = None
-    action_url: str | None = Field(default=None, max_length=2048)
+    action_url: UrlStr | None = None
     is_read: bool
     read_at: datetime | None = None
     created_at: datetime

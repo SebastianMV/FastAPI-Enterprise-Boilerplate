@@ -5,29 +5,33 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+from app.api.v1.schemas.common import (
+    DescriptionStr,
+    NameStr,
+    ShortStr,
+)
 
 
 class StatItem(BaseModel):
     """Individual statistic item."""
 
-    name: str = Field(max_length=100)
-    value: int | str
-    change: str = Field(max_length=50)
-    change_type: str = Field(
-        max_length=20, description="positive, negative, or neutral"
-    )
+    name: NameStr
+    value: int | ShortStr
+    change: ShortStr
+    change_type: ShortStr
 
 
 class ActivityItem(BaseModel):
     """Recent activity item."""
 
-    id: str = Field(max_length=50)
-    action: str = Field(max_length=100)
-    description: str = Field(max_length=500)
+    id: ShortStr
+    action: NameStr
+    description: DescriptionStr
     timestamp: datetime
-    user_name: str | None = Field(default=None, max_length=200)
-    user_email: str | None = Field(default=None, max_length=320)
+    user_name: NameStr | None = None
+    user_email: NameStr | None = None
 
 
 class DashboardStatsResponse(BaseModel):
@@ -54,8 +58,8 @@ class RecentActivityResponse(BaseModel):
 class SystemHealthResponse(BaseModel):
     """System health metrics."""
 
-    database_status: str = Field(max_length=20)
-    cache_status: str = Field(max_length=20)
+    database_status: ShortStr
+    cache_status: ShortStr
     avg_response_time_ms: float
     uptime_percentage: float
     active_sessions: int

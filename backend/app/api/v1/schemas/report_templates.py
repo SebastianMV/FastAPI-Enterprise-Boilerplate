@@ -8,118 +8,131 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
+from app.api.v1.schemas.common import (
+    NameStr,
+    RoleNameStr,
+    ShortStr,
+    TextStr,
+    UrlStr,
+)
+
 
 class ReportFilterSchema(BaseModel):
     """Filter for report data."""
 
-    field: str = Field(..., max_length=100)
-    operator: str = Field(default="eq", pattern="^(eq|ne|gt|lt|gte|lte|contains|in)$")
+    field: RoleNameStr
+    operator: ShortStr = Field(
+        default="eq", pattern="^(eq|ne|gt|lt|gte|lte|contains|in)$"
+    )
     value: Any
 
 
 class ReportTemplateCreate(BaseModel):
     """Request to create a report template."""
 
-    name: str = Field(..., min_length=1, max_length=100)
-    description: str | None = Field(default=None, max_length=2000)
-    entity: str = Field(..., min_length=1, max_length=50)
+    name: RoleNameStr
+    description: TextStr | None = None
+    entity: ShortStr
 
     # Report configuration
-    title: str = Field(..., min_length=1, max_length=200)
-    format: str = Field(default="pdf", pattern="^(pdf|excel|csv|html)$")
-    columns: list[Annotated[str, Field(max_length=100)]] | None = None
+    title: NameStr
+    format: ShortStr = Field(default="pdf", pattern="^(pdf|excel|csv|html)$")
+    columns: list[RoleNameStr] | None = None
     filters: list[ReportFilterSchema] = Field(
         default_factory=lambda: list[ReportFilterSchema]()
     )
-    group_by: list[Annotated[str, Field(max_length=100)]] | None = None
-    sort_by: str | None = Field(default=None, max_length=100)
+    group_by: list[RoleNameStr] | None = None
+    sort_by: RoleNameStr | None = None
     include_summary: bool = True
 
     # Date range configuration
-    date_range_field: str | None = Field(default=None, max_length=100)
-    date_range_type: str | None = Field(
+    date_range_field: RoleNameStr | None = None
+    date_range_type: ShortStr | None = Field(
         default=None,
         pattern="^(today|yesterday|this_week|last_week|this_month|last_month|this_quarter|this_year|custom)$",
     )
 
     # PDF/Excel specific options
-    page_orientation: str | None = Field(default=None, pattern="^(portrait|landscape)$")
-    page_size: str | None = Field(default=None, pattern="^(A4|letter|legal|A3|A5)$")
+    page_orientation: ShortStr | None = Field(
+        default=None, pattern="^(portrait|landscape)$"
+    )
+    page_size: ShortStr | None = Field(
+        default=None, pattern="^(A4|letter|legal|A3|A5)$"
+    )
     include_charts: bool = False
-    watermark: str | None = Field(default=None, max_length=200)
+    watermark: NameStr | None = None
 
     # Metadata
     is_public: bool = False
-    tags: list[Annotated[str, Field(max_length=100)]] = Field(
-        default_factory=list, max_length=50
-    )
+    tags: list[RoleNameStr] = Field(default_factory=list, max_length=50)
 
 
 class ReportTemplateUpdate(BaseModel):
     """Request to update a report template."""
 
-    name: str | None = Field(None, min_length=1, max_length=100)
-    description: str | None = Field(default=None, max_length=2000)
-    title: str | None = Field(None, min_length=1, max_length=200)
-    format: str | None = Field(None, pattern="^(pdf|excel|csv|html)$")
-    columns: list[Annotated[str, Field(max_length=100)]] | None = None
+    name: RoleNameStr | None = None
+    description: TextStr | None = None
+    title: NameStr | None = None
+    format: ShortStr | None = Field(None, pattern="^(pdf|excel|csv|html)$")
+    columns: list[RoleNameStr] | None = None
     filters: list[ReportFilterSchema] | None = None
-    group_by: list[Annotated[str, Field(max_length=100)]] | None = None
-    sort_by: str | None = Field(default=None, max_length=100)
+    group_by: list[RoleNameStr] | None = None
+    sort_by: RoleNameStr | None = None
     include_summary: bool | None = None
-    date_range_field: str | None = Field(default=None, max_length=100)
-    date_range_type: str | None = Field(
+    date_range_field: RoleNameStr | None = None
+    date_range_type: ShortStr | None = Field(
         default=None,
         pattern="^(today|yesterday|this_week|last_week|this_month|last_month|this_quarter|this_year|custom)$",
     )
-    page_orientation: str | None = Field(default=None, pattern="^(portrait|landscape)$")
-    page_size: str | None = Field(default=None, pattern="^(A4|letter|legal|A3|A5)$")
-    include_charts: bool | None = None
-    watermark: str | None = Field(default=None, max_length=200)
-    is_public: bool | None = None
-    tags: list[Annotated[str, Field(max_length=100)]] | None = Field(
-        default=None, max_length=50
+    page_orientation: ShortStr | None = Field(
+        default=None, pattern="^(portrait|landscape)$"
     )
+    page_size: ShortStr | None = Field(
+        default=None, pattern="^(A4|letter|legal|A3|A5)$"
+    )
+    include_charts: bool | None = None
+    watermark: NameStr | None = None
+    is_public: bool | None = None
+    tags: list[RoleNameStr] | None = Field(default=None, max_length=50)
 
 
 class ReportTemplateResponse(BaseModel):
     """Response for a report template."""
 
-    id: str = Field(max_length=50)
-    name: str = Field(max_length=100)
-    description: str | None = Field(default=None, max_length=2000)
-    entity: str = Field(max_length=50)
-    title: str = Field(max_length=200)
-    format: str = Field(max_length=10)
-    columns: list[Annotated[str, Field(max_length=100)]] | None = None
+    id: ShortStr
+    name: RoleNameStr
+    description: TextStr | None = None
+    entity: ShortStr
+    title: NameStr
+    format: ShortStr
+    columns: list[RoleNameStr] | None = None
     filters: list[ReportFilterSchema]
-    group_by: list[Annotated[str, Field(max_length=100)]] | None = None
-    sort_by: str | None = Field(default=None, max_length=100)
+    group_by: list[RoleNameStr] | None = None
+    sort_by: RoleNameStr | None = None
     include_summary: bool
-    date_range_field: str | None = Field(default=None, max_length=100)
-    date_range_type: str | None = Field(default=None, max_length=20)
-    page_orientation: str | None = Field(default=None, max_length=10)
-    page_size: str | None = Field(default=None, max_length=10)
+    date_range_field: RoleNameStr | None = None
+    date_range_type: ShortStr | None = None
+    page_orientation: ShortStr | None = None
+    page_size: ShortStr | None = None
     include_charts: bool
-    watermark: str | None = Field(default=None, max_length=200)
+    watermark: NameStr | None = None
     is_public: bool
-    tags: list[Annotated[str, Field(max_length=100)]]
-    created_by: str = Field(max_length=50)
+    tags: list[RoleNameStr]
+    created_by: ShortStr
     created_at: datetime
     updated_at: datetime
-    tenant_id: str | None = Field(default=None, max_length=50)
+    tenant_id: ShortStr | None = None
 
 
 class ScheduleFrequency(BaseModel):
     """Schedule frequency configuration."""
 
-    type: str = Field(..., pattern="^(once|daily|weekly|monthly|quarterly)$")
+    type: ShortStr = Field(..., pattern="^(once|daily|weekly|monthly|quarterly)$")
     day_of_week: int | None = Field(default=None, ge=0, le=6)  # 0=Monday
     day_of_month: int | None = Field(default=None, ge=1, le=31)
-    time: str = Field(default="09:00", pattern="^\\d{2}:\\d{2}$")  # HH:MM
-    timezone: str = Field(
+    time: ShortStr = Field(default="09:00", pattern="^\\d{2}:\\d{2}$")  # HH:MM
+    timezone: ShortStr = Field(
         default="UTC",
-        max_length=50,
         pattern="^[A-Za-z_/+-]+$",
     )
 
@@ -127,8 +140,8 @@ class ScheduleFrequency(BaseModel):
 class ScheduledReportCreate(BaseModel):
     """Request to schedule a report."""
 
-    name: str = Field(..., min_length=1, max_length=100)
-    description: str | None = Field(default=None, max_length=2000)
+    name: RoleNameStr
+    description: TextStr | None = None
 
     # Schedule configuration
     frequency: ScheduleFrequency
@@ -136,16 +149,14 @@ class ScheduledReportCreate(BaseModel):
     end_date: datetime | None = None
 
     # Delivery options
-    delivery_method: str = Field(default="email", pattern="^(email|storage|webhook)$")
+    delivery_method: ShortStr = Field(
+        default="email", pattern="^(email|storage|webhook)$"
+    )
     recipients: list[Annotated[str, Field(max_length=320)]] = Field(
         default_factory=list, max_length=100
     )  # Email addresses
-    storage_path: str | None = Field(
-        default=None, max_length=2048
-    )  # For storage delivery
-    webhook_url: str | None = Field(
-        default=None, max_length=2048
-    )  # For webhook delivery
+    storage_path: UrlStr | None = None  # For storage delivery
+    webhook_url: UrlStr | None = None  # For webhook delivery
 
     # Options
     enabled: bool = True
@@ -155,19 +166,19 @@ class ScheduledReportCreate(BaseModel):
 class ScheduledReportUpdate(BaseModel):
     """Request to update a scheduled report."""
 
-    name: str | None = Field(default=None, min_length=1, max_length=100)
-    description: str | None = Field(default=None, max_length=2000)
+    name: RoleNameStr | None = None
+    description: TextStr | None = None
     frequency: ScheduleFrequency | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
-    delivery_method: str | None = Field(
+    delivery_method: ShortStr | None = Field(
         default=None, pattern="^(email|storage|webhook)$"
     )
     recipients: list[Annotated[str, Field(max_length=320)]] | None = Field(
         default=None, max_length=100
     )
-    storage_path: str | None = Field(default=None, max_length=2048)
-    webhook_url: str | None = Field(default=None, max_length=2048)
+    storage_path: UrlStr | None = None
+    webhook_url: UrlStr | None = None
     enabled: bool | None = None
     notify_on_failure: bool | None = None
 
@@ -175,36 +186,36 @@ class ScheduledReportUpdate(BaseModel):
 class ScheduledReportResponse(BaseModel):
     """Response for a scheduled report."""
 
-    id: str = Field(max_length=50)
-    template_id: str = Field(max_length=50)
-    template_name: str = Field(max_length=100)
-    name: str = Field(max_length=100)
-    description: str | None = Field(default=None, max_length=2000)
+    id: ShortStr
+    template_id: ShortStr
+    template_name: RoleNameStr
+    name: RoleNameStr
+    description: TextStr | None = None
     frequency: ScheduleFrequency
     start_date: datetime | None
     end_date: datetime | None
-    delivery_method: str = Field(max_length=20)
+    delivery_method: ShortStr
     recipients: list[Annotated[str, Field(max_length=320)]]
-    storage_path: str | None = Field(default=None, max_length=2048)
-    webhook_url: str | None = Field(default=None, max_length=2048)
+    storage_path: UrlStr | None = None
+    webhook_url: UrlStr | None = None
     enabled: bool
     notify_on_failure: bool
     last_run: datetime | None
     next_run: datetime | None
     run_count: int
     error_count: int
-    created_by: str = Field(max_length=50)
+    created_by: ShortStr
     created_at: datetime
 
 
 class ScheduleExecutionHistory(BaseModel):
     """History entry for scheduled report execution."""
 
-    id: str = Field(max_length=50)
-    schedule_id: str = Field(max_length=50)
+    id: ShortStr
+    schedule_id: ShortStr
     executed_at: datetime
-    status: str = Field(max_length=20)  # success, failed, cancelled
+    status: ShortStr  # success, failed, cancelled
     duration_seconds: float
-    error_message: str | None = Field(default=None, max_length=2000)
+    error_message: TextStr | None = None
     file_size_bytes: int | None
     recipients_notified: int

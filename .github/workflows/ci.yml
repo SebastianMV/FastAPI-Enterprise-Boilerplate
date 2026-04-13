@@ -81,7 +81,6 @@ jobs:
           ruff format --check .
 
       - name: Run type checking
-        continue-on-error: true
         working-directory: backend
         run: |
           mypy app --show-error-codes --no-color-output
