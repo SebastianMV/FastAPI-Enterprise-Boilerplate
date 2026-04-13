@@ -145,7 +145,7 @@ async def login(
 
     user_repository = SQLAlchemyUserRepository(session)
     session_repo = SQLAlchemySessionRepository(session)
-    use_case = LoginUseCase(user_repository, session_repo, session)  # type: ignore[arg-type]
+    use_case = LoginUseCase(user_repository, session_repo, session)
 
     # Extract real client IP (nginx sets X-Forwarded-For)
     # Only trust proxy headers if connection comes from a trusted proxy network
@@ -307,7 +307,7 @@ async def refresh_token(
 
     user_repository = SQLAlchemyUserRepository(session)
     session_repo = SQLAlchemySessionRepository(session)
-    use_case = RefreshTokenUseCase(user_repository, session_repo, session)  # type: ignore[arg-type]
+    use_case = RefreshTokenUseCase(user_repository, session_repo, session)
 
     try:
         result = await use_case.execute(RefreshInput(refresh_token=token or ""))

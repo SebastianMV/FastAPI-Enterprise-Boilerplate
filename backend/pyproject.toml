@@ -232,6 +232,18 @@ python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+module = [
+    "openpyxl",
+    "openpyxl.*",
+    "boto3",
+    "botocore",
+    "botocore.*",
+    "weasyprint",
+    "weasyprint.*",
+]
+ignore_missing_imports = true
+
 # =============================================================================
 # Bandit — Python Security Linter
 # =============================================================================

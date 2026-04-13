@@ -128,7 +128,7 @@ class CachedRoleRepository:
 
         return roles
 
-    async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:  # type: ignore[valid-type]
+    async def list_by_ids(self, role_ids: list[UUID]) -> list[Role]:
         """Get multiple roles by IDs with caching."""
         if not role_ids:
             return []
@@ -138,7 +138,7 @@ class CachedRoleRepository:
         missing_ids: list[UUID] = []
 
         # Check cache for each role
-        for role_id in role_ids:  # type: ignore[attr-defined]
+        for role_id in role_ids:
             cache_key = CacheKeyBuilder.build(self.CACHE_PREFIX, "id", role_id)
             cached = await cache.get(cache_key)
             if cached:
@@ -149,7 +149,7 @@ class CachedRoleRepository:
         # Fetch missing from DB
         if missing_ids:
             db_roles = await self._repo.list_by_ids(missing_ids)
-            for role in db_roles:  # type: ignore[attr-defined]
+            for role in db_roles:
                 # Cache each role
                 cache_key = CacheKeyBuilder.build(self.CACHE_PREFIX, "id", role.id)
                 await cache.set(cache_key, self._role_to_dict(role), self._ttl)
@@ -157,7 +157,7 @@ class CachedRoleRepository:
 
         return roles
 
-    async def get_user_roles(self, user_id: UUID) -> list[Role]:  # type: ignore[valid-type]
+    async def get_user_roles(self, user_id: UUID) -> list[Role]:
         """Get all roles assigned to a user with caching."""
         cache = await get_cache_service()
         cache_key = CacheKeyBuilder.build(self.CACHE_PREFIX, "user", user_id)
@@ -174,7 +174,7 @@ class CachedRoleRepository:
         # Cache result (shorter TTL since user-role assignment changes more)
         await cache.set(
             cache_key,
-            [self._role_to_dict(r) for r in roles],  # type: ignore[attr-defined]
+            [self._role_to_dict(r) for r in roles],
             min(self._ttl, 60),  # Max 1 minute for user roles
         )
 

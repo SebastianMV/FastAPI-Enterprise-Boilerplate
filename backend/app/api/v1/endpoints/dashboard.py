@@ -213,7 +213,7 @@ async def get_recent_activity(
     # Get recent user registrations (tenant-scoped)
     user_filters: list[Any] = [UserModel.deleted_at.is_(None)]
     if tenant_id:
-        user_filters.append(UserModel.tenant_id == tenant_id)  # type: ignore[arg-type]
+        user_filters.append(UserModel.tenant_id == tenant_id)
 
     recent_users_result = await session.execute(
         select(UserModel)

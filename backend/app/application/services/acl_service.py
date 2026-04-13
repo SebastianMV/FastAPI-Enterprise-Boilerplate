@@ -61,7 +61,7 @@ class ACLService:
         roles = await self._role_repository.get_user_roles(user_id)
 
         # Check if any role has the permission
-        return any(role.has_permission(resource, action) for role in roles)  # type: ignore[attr-defined]
+        return any(role.has_permission(resource, action) for role in roles)
 
     async def require_permission(
         self,
@@ -126,7 +126,7 @@ class ACLService:
 
         # Collect unique permissions from all roles
         permissions: set[str] = set()
-        for role in roles:  # type: ignore[attr-defined]
+        for role in roles:
             permissions.update(role.permission_strings)
 
         return sorted(permissions)
@@ -159,13 +159,13 @@ class ACLService:
         if require_all:
             # Must have all permissions
             for resource, action in permissions:
-                has_perm = any(r.has_permission(resource, action) for r in roles)  # type: ignore[attr-defined]
+                has_perm = any(r.has_permission(resource, action) for r in roles)
                 if not has_perm:
                     return False
             return True
         # Must have at least one permission
         for resource, action in permissions:
-            if any(r.has_permission(resource, action) for r in roles):  # type: ignore[attr-defined]
+            if any(r.has_permission(resource, action) for r in roles):
                 return True
         return False
 
