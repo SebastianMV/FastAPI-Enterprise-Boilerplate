@@ -8,7 +8,7 @@
 
 # Stage 1: Dependencies
 # Pin to LTS minor; update patch periodically: docker pull node:24.14-alpine
-FROM node:24.14-alpine AS deps
+FROM node:24.15-alpine AS deps
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN npm ci --ignore-scripts --legacy-peer-deps
 
 
 # Stage 2: Builder
-FROM node:24.14-alpine AS builder
+FROM node:24.15-alpine AS builder
 
 WORKDIR /app
 

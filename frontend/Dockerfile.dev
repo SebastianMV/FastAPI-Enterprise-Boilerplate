@@ -7,7 +7,7 @@
 # ============================================
 
 # Pin to LTS minor; update patch periodically: docker pull node:24.14-alpine
-FROM node:24.14-alpine
+FROM node:24.15-alpine
 
 WORKDIR /app
 
